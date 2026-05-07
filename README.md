@@ -20,4 +20,4 @@ Before running the following steps, ensure you have activated the virtual enviro
 ```shell
 source .venv/bin/activate
 ```
-You can also skip manual activation and run commands through `uv run`, which is the recommended style used below.
+You can also skip manual activation and run commands through `uv run`, which is the recommended style.
