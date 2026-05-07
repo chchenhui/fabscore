@@ -1,0 +1,19 @@
+===== Command 1: GPU timing (suggested entrypoint) =====
+cd /home/chenhui/fabscore/agent4sci_acc/submission_23/code/IVTFuse-main && python -c "import torch; from new_film import Net; m=Net().cuda(); x=torch.randn(1,1,288,384).cuda(); t=torch.randn(1,32,768).cuda(); import time; [m(x,x,t) for _ in range(10)]; t0=time.time(); [m(x,x,t) for _ in range(100)]; print((time.time()-t0)/100*1000)"
+
+Output:
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 108.00 MiB. GPU 0 has a total capacity of 139.80 GiB of which 39.69 MiB is free. Process 3946034 has 15.24 GiB memory in use. Process 1074790 has 15.14 GiB memory in use. Including non-PyTorch memory, this process has 109.36 GiB memory in use. Of the allocated memory 108.28 GiB is allocated by PyTorch, and 425.76 MiB is reserved by PyTorch but unallocated.
+
+===== Command 2: CPU timing (fallback) =====
+cd /home/chenhui/fabscore/agent4sci_acc/submission_23/code/IVTFuse-main && python -c "
+import torch; from new_film import Net; import time
+m = Net(); x = torch.randn(1,1,288,384); t = torch.randn(1,32,768)
+[m(x,x,t) for _ in range(3)]
+t0 = time.time(); [m(x,x,t) for _ in range(10)]
+print(f'CPU inference time (ms): {(time.time()-t0)/10*1000:.2f}')
+"
+
+Output:
+CPU inference time (ms): 1484.65

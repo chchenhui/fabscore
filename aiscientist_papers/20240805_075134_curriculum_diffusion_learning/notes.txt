@@ -1,0 +1,97 @@
+# Title: Curriculum Learning via Progressive Diffusion Steps in Low-Dimensional Diffusion Models
+# Experiment description: 1. Modify NoiseScheduler to support a variable number of maximum timesteps. 2. Implement a simple curriculum that linearly increases the maximum number of diffusion steps during training. 3. Adjust the training loop to use the current maximum timestep when sampling. 4. Train models using both standard and curriculum approaches on all datasets. 5. Compare convergence speed, final KL divergence, and sample quality. 6. Evaluate sample quality at fixed intervals (e.g., every 1000 steps) during training for both approaches. 7. Analyze how curriculum learning affects the model's denoising ability at different noise levels throughout training.
+## Run 0: Baseline
+Results: {'circle': {'training_time': 48.47419357299805, 'eval_loss': 0.4392722546292083, 'inference_time': 0.18316245079040527, 'kl_divergence': 0.35930819035619976}, 'dino': {'training_time': 41.885783672332764, 'eval_loss': 0.6636652672077383, 'inference_time': 0.18297195434570312, 'kl_divergence': 1.060376674621348}, 'line': {'training_time': 38.887343406677246, 'eval_loss': 0.8017848281909132, 'inference_time': 0.17120051383972168, 'kl_divergence': 0.15692256311119815}, 'moons': {'training_time': 38.7231330871582, 'eval_loss': 0.6203141152248968, 'inference_time': 0.1772310733795166, 'kl_divergence': 0.09455949519397541}}
+Description: Baseline results.
+
+## Run 1: Linear Curriculum Learning
+Results: {'circle': {'training_time': 41.208433389663696, 'eval_loss': 0.4710034114473006, 'inference_time': 0.14952683448791504, 'kl_divergence': 0.39473524369449875}, 'dino': {'training_time': 40.93442630767822, 'eval_loss': 0.6767326530898014, 'inference_time': 0.15770554542541504, 'kl_divergence': 0.3565630282594752}, 'line': {'training_time': 41.35802340507507, 'eval_loss': 0.8124475988280743, 'inference_time': 0.15441513061523438, 'kl_divergence': 0.13966528655996688}, 'moons': {'training_time': 41.93157243728638, 'eval_loss': 0.635674276239122, 'inference_time': 0.15305018424987793, 'kl_divergence': 0.0996908877400447}}
+Description: This run implemented a linear curriculum learning approach, where the maximum number of diffusion steps increased linearly during training. The results show some improvements in KL divergence for certain datasets (e.g., 'dino'), but mixed results for others. Training times were generally consistent with the baseline. The linear curriculum approach seems to have a positive impact on sample quality for some datasets, as indicated by the lower KL divergence values.
+
+## Run 2: Quadratic Curriculum Learning
+Results: {'circle': {'training_time': 42.437124729156494, 'eval_loss': 0.523096875156588, 'inference_time': 0.15914034843444824, 'kl_divergence': 0.4958927891501189}, 'dino': {'training_time': 41.76319932937622, 'eval_loss': 0.705921841399444, 'inference_time': 0.14972496032714844, 'kl_divergence': 0.4403325711969118}, 'line': {'training_time': 42.98893165588379, 'eval_loss': 0.8326308705922588, 'inference_time': 0.17252302169799805, 'kl_divergence': 0.1427399565268673}, 'moons': {'training_time': 210.33777403831482, 'eval_loss': 0.6570018473488596, 'inference_time': 0.15831613540649414, 'kl_divergence': 0.16570821060337074}}
+Description: This run implemented a quadratic curriculum learning approach, where the maximum number of diffusion steps increased quadratically during training. The experiment aimed to compare the effectiveness of a more aggressive curriculum strategy to the linear approach used in Run 1. 
+
+Observations:
+1. Training times were generally consistent with the baseline and Run 1, except for the 'moons' dataset, which showed a significant increase (210.34s vs ~42s in previous runs).
+2. Eval losses were slightly higher across all datasets compared to both the baseline and Run 1.
+3. KL divergence results were mixed:
+   - For 'circle' and 'moons', the KL divergence increased compared to both baseline and Run 1.
+   - For 'dino', the KL divergence (0.4403) was higher than Run 1 (0.3566) but still lower than the baseline (1.0604).
+   - For 'line', the KL divergence (0.1427) was slightly higher than Run 1 (0.1397) but still lower than the baseline (0.1569).
+
+The quadratic curriculum approach did not consistently outperform the linear curriculum or the baseline. It showed some benefits for the 'dino' dataset but performed worse on others, particularly 'circle' and 'moons'. The significant increase in training time for the 'moons' dataset is also noteworthy and may require further investigation.
+
+These results suggest that the effectiveness of curriculum learning strategies may be dataset-dependent, and a more aggressive (quadratic) approach is not always beneficial. Further analysis of the training dynamics and sample quality throughout the training process could provide more insights into the impact of different curriculum strategies.
+
+## Run 3: Cosine Beta Schedule
+Results: {'circle': {'training_time': 41.397218227386475, 'eval_loss': 0.49059835381215183, 'inference_time': 0.16146206855773926, 'kl_divergence': 12.420027910397964}, 'dino': {'training_time': 41.31369161605835, 'eval_loss': 0.5683569433286672, 'inference_time': 0.16046738624572754, 'kl_divergence': 15.152653210125315}, 'line': {'training_time': 41.89928841590881, 'eval_loss': 0.6294895566028097, 'inference_time': 0.1651754379272461, 'kl_divergence': 9.448762705431877}, 'moons': {'training_time': 41.13897752761841, 'eval_loss': 0.5119835115454691, 'inference_time': 0.17275547981262207, 'kl_divergence': 11.532745582410032}}
+Description: This run implemented a cosine beta schedule for the noise scheduler, as proposed in the previous experiment plan. The cosine schedule is designed to provide a smoother transition between noise levels, potentially leading to better sample quality and training stability.
+
+Experiment description: Modify the NoiseScheduler class to include a cosine beta schedule option. Train models using this new schedule on all datasets and compare the results with previous runs.
+
+Observations:
+1. Training times were consistent with previous runs, ranging from 41.14 to 41.90 seconds across all datasets.
+2. Eval losses were generally lower compared to the quadratic curriculum approach (Run 2) and more in line with the baseline (Run 0) and linear curriculum (Run 1) results.
+3. KL divergence values were significantly higher across all datasets compared to previous runs:
+   - Circle: 12.42 (vs 0.36-0.50 in previous runs)
+   - Dino: 15.15 (vs 0.36-1.06 in previous runs)
+   - Line: 9.45 (vs 0.14-0.16 in previous runs)
+   - Moons: 11.53 (vs 0.09-0.17 in previous runs)
+
+The cosine beta schedule appears to have had a substantial negative impact on sample quality, as indicated by the much higher KL divergence values. This is unexpected, as cosine schedules are often reported to improve performance in diffusion models. 
+
+These results suggest that the cosine beta schedule, at least in its current implementation, may not be suitable for these low-dimensional datasets or may require further tuning. The significant increase in KL divergence across all datasets indicates that the generated samples are much less similar to the true data distribution compared to previous approaches.
+
+Further investigation is needed to understand why the cosine schedule performed poorly. Possible areas to explore include:
+1. Verifying the implementation of the cosine schedule
+2. Adjusting the parameters of the cosine schedule
+3. Analyzing the noise levels at different timesteps to ensure they behave as expected
+4. Examining the sample quality throughout the diffusion process to identify where the quality degradation occurs
+
+Given these unexpected results, it may be beneficial to revisit the baseline approach and focus on other aspects of the model architecture or training process that could potentially improve performance.
+
+## Run 4: Increased Model Capacity
+Results: {'circle': {'training_time': 51.11856245994568, 'eval_loss': 0.4564891889729463, 'inference_time': 0.3447303771972656, 'kl_divergence': 9.401072642118669}, 'dino': {'training_time': 51.21442151069641, 'eval_loss': 0.5377466545233032, 'inference_time': 0.3443782329559326, 'kl_divergence': 13.265862188768878}, 'line': {'training_time': 51.997416257858276, 'eval_loss': 0.6306443603142448, 'inference_time': 0.3443338871002197, 'kl_divergence': 14.338292038099345}, 'moons': {'training_time': 50.4813506603241, 'eval_loss': 0.49410839908568144, 'inference_time': 0.34444141387939453, 'kl_divergence': 7.277539353610578}}
+
+Description: This run investigated the impact of increasing the model capacity by doubling the hidden size (from 256 to 512) and the number of hidden layers (from 3 to 6) in the MLPDenoiser.
+
+Experiment description: Modify the MLPDenoiser class to increase the hidden size and number of hidden layers. Train models using this larger architecture on all datasets and compare the results with previous runs.
+
+Observations:
+1. Training times increased by about 20-25% compared to previous runs, ranging from 50.48 to 51.99 seconds across all datasets. This is expected due to the increased model size.
+2. Inference times approximately doubled, increasing from ~0.16-0.17 seconds in previous runs to ~0.34 seconds across all datasets. This is also expected due to the larger model size.
+3. Eval losses were generally lower compared to the cosine beta schedule approach (Run 3) and more in line with the baseline (Run 0) and linear curriculum (Run 1) results.
+4. KL divergence values were significantly lower than in Run 3 but still higher than in Runs 0-2:
+   - Circle: 9.40 (vs 12.42 in Run 3, 0.36-0.50 in Runs 0-2)
+   - Dino: 13.27 (vs 15.15 in Run 3, 0.36-1.06 in Runs 0-2)
+   - Line: 14.34 (vs 9.45 in Run 3, 0.14-0.16 in Runs 0-2)
+   - Moons: 7.28 (vs 11.53 in Run 3, 0.09-0.17 in Runs 0-2)
+
+The increased model capacity appears to have partially mitigated the negative impact of the cosine beta schedule observed in Run 3. While the KL divergence values are still higher than in the initial runs, they show a significant improvement compared to Run 3. This suggests that the larger model is better able to capture the complexities introduced by the cosine beta schedule.
+
+Notably, the 'line' dataset showed worse performance in terms of KL divergence compared to Run 3, while all other datasets improved. This could indicate that the increased model capacity may have led to overfitting on this simpler dataset.
+
+These results suggest that increasing model capacity can help improve performance when using more complex noise schedules like the cosine beta schedule. However, the performance is still not on par with the simpler linear and quadratic approaches used in earlier runs.
+
+Further investigation could focus on:
+1. Fine-tuning the cosine beta schedule parameters
+2. Exploring different model architectures that might be better suited for these low-dimensional datasets
+3. Investigating the impact of regularization techniques to prevent potential overfitting
+4. Analyzing the generated samples visually to better understand the nature of the improvements and remaining issues
+
+# Plot Descriptions
+
+1. Training Loss Across Datasets (train_loss.png):
+This plot shows the training loss over time for each dataset (circle, dino, line, and moons) across all runs. The figure is divided into four subplots, one for each dataset. Each subplot displays the smoothed training loss curves for all runs, allowing for easy comparison of convergence rates and final loss values. The x-axis represents the training steps, while the y-axis shows the loss value. Different colors are used to distinguish between runs, with a legend provided for easy identification. This plot is crucial for understanding how different approaches (baseline, curriculum learning, cosine beta schedule, and increased model capacity) affect the training dynamics for each dataset.
+
+2. KL Divergence Comparison (kl_divergence_comparison.png):
+This bar plot compares the final KL divergence values for each run across all datasets. The x-axis shows the four datasets, while the y-axis represents the KL divergence value. Each run is represented by a group of bars, with different colors for easy distinction. The actual KL divergence values are displayed on top of each bar for precise comparison. This plot provides a clear overview of how well each approach performs in terms of generating samples that match the true data distribution. Lower KL divergence values indicate better performance. This visualization is particularly useful for identifying which approaches work best for specific datasets and for observing overall trends across runs.
+
+3. Sample Quality During Training (sample_quality_during_training.png):
+This plot illustrates how the sample quality, measured by KL divergence, evolves during the training process for each dataset and run. Similar to the training loss plot, it consists of four subplots, one for each dataset. The x-axis represents the training steps, while the y-axis shows the KL divergence. Each run is represented by a different colored line. This plot is invaluable for understanding how quickly each approach improves sample quality and whether there are any fluctuations or plateaus during training. It can reveal whether certain approaches lead to faster improvements in sample quality or if they maintain better quality throughout the training process.
+
+4. Generated Samples Across Datasets and Runs (generated_samples.png):
+This figure provides a visual representation of the actual samples generated by each run for all datasets. It consists of a grid of scatter plots, where each row represents a different run, and each column represents a dataset. Each scatter plot shows the distribution of generated samples in 2D space, with the x and y axes corresponding to the two dimensions of the data. The color of the points in each plot matches the color used for that run in other plots for consistency. This visualization is crucial for qualitative assessment of the generated samples. It allows for direct comparison between the true data distribution (which should be familiar for these standard 2D datasets) and the generated samples. This can reveal issues such as mode collapse, failure to capture certain features of the distribution, or generation of samples outside the expected range.
+
+These plots, when analyzed together, provide a comprehensive view of the performance of different approaches in training diffusion models on low-dimensional datasets. They allow for both quantitative (through loss and KL divergence metrics) and qualitative (through visual inspection of generated samples) evaluation of the models' performance across different datasets and experimental conditions.

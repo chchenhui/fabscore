@@ -1,0 +1,24 @@
+{
+  "optimize_index": 0,
+  "issues": [
+    {
+      "title": "Signal dilution from all-position averaging",
+      "description": "Original SCT averaged suppression scores across ALL ~93 response positions, but the secret token only appears at 1-2 positions (control tokens). Generic suppressed words ('guess', 'hints') accumulated across many positions, drowning the secret signal. Fixed by restricting scoring to control positions (positions 0,1 of assistant turn)."
+    },
+    {
+      "title": "Alpha=0.1 plausibility filter too strict at control positions",
+      "description": "The alpha=0.1 plausibility threshold at control positions only passed ~1.7 tokens on average, making SCT rankings nearly identical to logit lens. Fixed by removing the plausibility filter (alpha=0) at control positions, expanding the candidate set."
+    },
+    {
+      "title": "Fixed mid-layer (L32) exploration",
+      "description": "Tested layers [15, 20, 24, 28, 32, 36] via full-vocabulary extraction at control positions. L32 remains the best mid-layer overall. Earlier layers have too much noise, later layers have too little signal. No change needed."
+    },
+    {
+      "title": "Full-vocabulary scoring introduces rare token noise",
+      "description": "Full-vocabulary SCT scoring at control positions performed worse than top-200 constrained version. With 256K vocab, rare tokens with extreme suppression dominate rankings. The top-200 truncation acts as a beneficial implicit plausibility filter. Kept top-200 constraint."
+    }
+  ],
+  "experiment_result_path": "EXPERIMENT_RESULTS/optimize_trace/iteration_0/",
+  "success": false,
+  "summary": "Optimized SCT from 1.93% to 4.67% TR@5 (142% improvement over original) and 1.57% to 4.00% auditor accuracy (155% improvement). The key fixes were: (1) focusing on control positions instead of all positions, and (2) removing the alpha plausibility filter. However, the optimized SCT (TR@5=4.67%, auditor=4.00%) does not meet the success criteria of >=25% relative and >=1.5pp absolute improvement over the logit lens baseline (TR@5=4.33%, auditor=4.17%). The SCT provides only +7.9% relative / +0.34pp improvement in TR@5 and slightly underperforms on auditor accuracy. The fundamental limitation is that both methods operate on the same top-200 token activations at control positions, and the suppression contrast signal provides marginal additional differentiation."
+}

@@ -1,0 +1,364 @@
+{
+    "tables": [
+        {
+            "claim_index": 1,
+            "claim": "1. Table 1, AGT-MLM, Accuracy: 0.8642",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The experiment pipeline requires load_dataset('gutenberg', split='train') in data_processing.py:117. This dataset identifier has never existed on Hugging Face — confirmed by both the DatasetNotFoundError and an explicit search. The paper claims a 124-source Project Gutenberg corpus, but the actual dataset object used in code is fabricated (non-existent HuggingFace identifier), blocking any experiment from running and making the reported accuracy of 0.8642 unverifiable and unsupported.",
+            "evidence": "load_dataset('gutenberg', split='train') raises DatasetNotFoundError: Dataset 'gutenberg' doesn't exist on the Hub or cannot be accessed. HuggingFace search for 'gutenberg' returns only community datasets (e.g., sedthh/gutenberg_english), never a bare 'gutenberg' identifier. | Code: code/data_processing.py:117",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/data_processing.py:117"
+                ],
+                "commands_executed": [
+                    "python3 -c \"from datasets import load_dataset; d = load_dataset('gutenberg', split='train'); print(d)\""
+                ]
+            }
+        },
+        {
+            "claim_index": 7,
+            "claim": "7. Table 1, Post-hoc, Accuracy: 0.7912",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The Post-hoc model experiment (claim 7) requires the 'gutenberg' dataset via load_dataset('gutenberg', split='train'), but this dataset identifier has never existed on HuggingFace. The dataset blocker prevents the experiment from running at all, making the reported accuracy of 0.7912 unverifiable and the dataset itself fabricated.",
+            "evidence": "Prior execution (claim_1_command_output.txt) confirmed: `load_dataset('gutenberg', split='train')` raises DatasetNotFoundError — dataset identifier 'gutenberg' has never existed on HuggingFace Hub. run_experiment.py lines 186-200 show PostHocAttributionModel is trained using the same train_loader/val_loader derived from this dataset. | Code: code/data_processing.py:18 (load_dataset import), code/run_experiment.py:186-200 (PostHocAttributionModel training with same train_loader/val_loader)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/data_processing.py:18 (load_dataset import), code/run_experiment.py:186-200 (PostHocAttributionModel training with same train_loader/val_loader)"
+                ],
+                "commands_executed": [
+                    "Reused prior artifact from Session 3: `python3 -c \"from datasets import load_dataset; d = load_dataset('gutenberg', split='train'); print(d)\"` → DatasetNotFoundError"
+                ]
+            }
+        },
+        {
+            "claim_index": 13,
+            "claim": "13. Table 1, Data Shapley, Accuracy: 0.8015",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: Claim 13 requires running DataShapleySimulator which uses the same data pipeline as all other models. The pipeline calls load_dataset('gutenberg', ...) which fails because 'gutenberg' has never existed as a standalone dataset on HuggingFace Hub. The experiment cannot be executed to produce the reported accuracy of 0.8015.",
+            "evidence": "DataShapleySimulator in run_experiment.py (lines 252-307) uses the same train_loader/val_loader/test_loader from prepare_datasets, which calls load_dataset('gutenberg', split='train'). Prior Session 3 execution confirmed: DatasetNotFoundError: Dataset 'gutenberg' doesn't exist on the Hub or cannot be accessed. | Code: code/run_experiment.py:252-307 (DataShapleySimulator training), code/data_processing.py (load_dataset('gutenberg', split='train'))",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/run_experiment.py:252-307 (DataShapleySimulator training), code/data_processing.py (load_dataset('gutenberg', split='train'))"
+                ],
+                "commands_executed": [
+                    "None (reused artifact from Session 3: python3 -c \"from datasets import load_dataset; d = load_dataset('gutenberg', split='train'); print(d)\" → DatasetNotFoundError)"
+                ]
+            }
+        },
+        {
+            "claim_index": 19,
+            "claim": "19. Table 1, MinimalSubset, Accuracy: 0.8245",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: MinimalSubset uses the same data pipeline as all other models. The pipeline calls `load_dataset('gutenberg', split='train')`, but the 'gutenberg' dataset identifier has never existed on Hugging Face Hub. The experiment cannot be executed and the claimed accuracy of 0.8245 cannot be reproduced.",
+            "evidence": "claim_1_command_output.txt (Session 3): `DatasetNotFoundError: Dataset 'gutenberg' doesn't exist on the Hub or cannot be accessed.` MinimalSubsetAttributionModel uses the same `prepare_datasets` pipeline (run_experiment.py:318-376) which calls `load_dataset('gutenberg', split='train')` in data_processing.py. | Code: code/data_processing.py (load_dataset('gutenberg', split='train')); code/run_experiment.py:318-376 (MinimalSubsetAttributionModel training/eval using same test_loader)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/data_processing.py (load_dataset('gutenberg', split='train'))",
+                    "code/run_experiment.py:318-376 (MinimalSubsetAttributionModel training/eval using same test_loader)"
+                ],
+                "commands_executed": [
+                    "None (reused artifact from Session 3: `python3 -c \"from datasets import load_dataset; d = load_dataset('gutenberg', split='train'); print(d)\"`)"
+                ]
+            }
+        },
+        {
+            "claim_index": 50,
+            "claim": "50. Table 3, Lambda=0.01, Accuracy: 0.8723",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The lambda ablation experiment (Table 3) requires loading the 'gutenberg' dataset via load_dataset('gutenberg', split='train'). This dataset identifier has never existed on HuggingFace Hub, as confirmed by prior execution. The experiment cannot run, and the reported accuracy of 0.8723 for lambda=0.01 cannot be reproduced.",
+            "evidence": "code/run_experiment.py lines 386-452: lambda ablation loop uses same prepare_datasets pipeline; code/data_processing.py: load_dataset('gutenberg', split='train') fails — dataset 'gutenberg' has never existed on HuggingFace Hub (confirmed in Session 3, workspace/claim_1_command_output.txt) | Code: code/run_experiment.py:392-445 (lambda_values loop), code/data_processing.py:load_dataset('gutenberg')",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/run_experiment.py:392-445 (lambda_values loop), code/data_processing.py:load_dataset('gutenberg')"
+                ],
+                "commands_executed": [
+                    "None — reused prior artifact from Session 3 (claim_1_command_output.txt) which confirmed DatasetNotFoundError for 'gutenberg'"
+                ]
+            }
+        },
+        {
+            "claim_index": 53,
+            "claim": "53. Table 3, Lambda=0.05, Accuracy: 0.8701",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The lambda ablation experiment (Table 3, Lambda=0.05, Accuracy=0.8701) requires loading dataset 'gutenberg' via load_dataset('gutenberg', split='train'), but this dataset identifier has never existed on the HuggingFace Hub. This is the same blocker confirmed across claims 1, 7, 13, 19, and 50. The accuracy value cannot be reproduced.",
+            "evidence": "paper/paper.md line 260 confirms Lambda=0.05 → Accuracy=0.8701 in Table 3. code/data_processing.py uses load_dataset('gutenberg', split='train') which has never existed on HuggingFace Hub (confirmed by claim_1_command_output.txt: DatasetNotFoundError). Lambda ablation loop in run_experiment.py lines 386-452 uses the same prepare_datasets pipeline. | Code: code/data_processing.py (load_dataset call); code/run_experiment.py:386-452 (lambda ablation loop)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/data_processing.py (load_dataset call)",
+                    "code/run_experiment.py:386-452 (lambda ablation loop)"
+                ],
+                "commands_executed": [
+                    "None (reused artifact from Session 3: python3 -c \"from datasets import load_dataset; d = load_dataset('gutenberg', split='train'); print(d)\" → DatasetNotFoundError)"
+                ]
+            }
+        },
+        {
+            "claim_index": 56,
+            "claim": "56. Table 3, Lambda=0.1, Accuracy: 0.8642",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: Claim 56 (Table 3, Lambda=0.1, Accuracy=0.8642) requires the lambda ablation experiment to run, which uses the same data pipeline: prepare_datasets() → load_dataset('gutenberg', split='train'). This dataset identifier has never existed on HuggingFace Hub, so the experiment cannot be executed and the reported accuracy cannot be reproduced.",
+            "evidence": "Reused fabscore_claude/workspace/claim_1_command_output.txt: HuggingFace Hub search shows no bare 'gutenberg' dataset exists (only community datasets like sedthh/gutenberg_english). All prior sessions (3-8) confirmed this same blocker for all accuracy claims. | Code: code/data_processing.py: load_dataset('gutenberg', split='train')",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/data_processing.py: load_dataset('gutenberg', split='train')"
+                ],
+                "commands_executed": [
+                    "None (reused existing artifact from Session 3: python3 -c \"from datasets import load_dataset; d = load_dataset('gutenberg', split='train'); print(d)\" → DatasetNotFoundError)"
+                ]
+            }
+        },
+        {
+            "claim_index": 59,
+            "claim": "59. Table 3, Lambda=0.5, Accuracy: 0.8521",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: Claim 59 (Table 3, Lambda=0.5, Accuracy=0.8521) is a lambda ablation experiment that requires the 'gutenberg' dataset via load_dataset('gutenberg', split='train'). This dataset identifier has never existed on HuggingFace Hub, making the experiment unreproducible. All lambda ablation values share the same data pipeline, so this is the same data fabrication blocker as established in prior sessions.",
+            "evidence": "Existing artifact claim_1_command_output.txt (Session 3) confirms `load_dataset('gutenberg', split='train')` raises DatasetNotFoundError — 'gutenberg' has never existed on HuggingFace Hub. Session 7 confirmed lambda_values=[0.01, 0.05, 0.1, 0.5, 1.0] all use the same prepare_datasets pipeline. | Code: code/data_processing.py: load_dataset('gutenberg', split='train'); code/run_experiment.py lines 386-452: lambda ablation loop over [0.01, 0.05, 0.1, 0.5, 1.0]",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/data_processing.py: load_dataset('gutenberg', split='train')",
+                    "code/run_experiment.py lines 386-452: lambda ablation loop over [0.01, 0.05, 0.1, 0.5, 1.0]"
+                ],
+                "commands_executed": [
+                    "None (reused prior artifact from Session 3)"
+                ]
+            }
+        },
+        {
+            "claim_index": 62,
+            "claim": "62. Table 3, Lambda=1.0, Accuracy: 0.8389",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: Table 3 Lambda=1.0 accuracy (0.8389) cannot be reproduced. The code pipeline for all lambda ablation experiments calls load_dataset('gutenberg', split='train') via prepare_datasets(), but the dataset identifier 'gutenberg' has never existed on HuggingFace Hub (verified in Session 3). All five lambda values share this same broken data pipeline.",
+            "evidence": "Prior sessions (3-10) confirmed that load_dataset('gutenberg', split='train') fails with DatasetNotFoundError because 'gutenberg' has never existed on HuggingFace Hub. Session 7 confirmed all lambda values [0.01, 0.05, 0.1, 0.5, 1.0] in Table 3 use the same data pipeline. Artifact: fabscore_claude/workspace/claim_1_command_output.txt | Code: code/data_processing.py: load_dataset('gutenberg', split='train'); code/run_experiment.py:386-452: lambda_values = [0.01, 0.05, 0.1, 0.5, 1.0] ablation loop using same prepare_datasets pipeline",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/data_processing.py: load_dataset('gutenberg', split='train')",
+                    "code/run_experiment.py:386-452: lambda_values = [0.01, 0.05, 0.1, 0.5, 1.0] ablation loop using same prepare_datasets pipeline"
+                ],
+                "commands_executed": [
+                    "None (reused prior artifact from Session 3: python3 -c \"from datasets import load_dataset; d = load_dataset('gutenberg', split='train'); print(d)\" → DatasetNotFoundError)"
+                ]
+            }
+        },
+        {
+            "claim_index": 65,
+            "claim": "65. Table 4, layer_specific, Accuracy: 0.8412",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The layer_specific architecture ablation in Table 4 uses the same data pipeline as all other experiments: prepare_datasets() calls load_dataset('gutenberg', split='train'), which fails with DatasetNotFoundError because no bare 'gutenberg' dataset has ever existed on HuggingFace Hub. The claimed accuracy 0.8412 cannot be reproduced.",
+            "evidence": "code/run_experiment.py:463-495 shows architecture ablation iterates ['layer_specific', 'multi_layer', 'attention'] using same prepare_datasets → load_dataset('gutenberg') pipeline; Session 3 confirmed dataset 'gutenberg' has never existed on HuggingFace Hub (DatasetNotFoundError) | Code: code/run_experiment.py:463-495 (architecture ablation loop using AttributionGuidedMLM with train/val/test loaders from prepare_datasets); code/data_processing.py (load_dataset('gutenberg', split='train'))",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/run_experiment.py:463-495 (architecture ablation loop using AttributionGuidedMLM with train/val/test loaders from prepare_datasets)",
+                    "code/data_processing.py (load_dataset('gutenberg', split='train'))"
+                ],
+                "commands_executed": [
+                    "None (reused artifact from Session 3: python3 -c \"from datasets import load_dataset; d = load_dataset('gutenberg', split='train')\" → DatasetNotFoundError)"
+                ]
+            }
+        },
+        {
+            "claim_index": 70,
+            "claim": "70. Table 4, multi_layer, Accuracy: 0.8642",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The multi_layer architecture ablation in Table 4 uses the same data pipeline as all other experiments: prepare_datasets() calls load_dataset('gutenberg', split='train') which fails because the dataset 'gutenberg' has never existed on HuggingFace Hub. The experiment cannot be executed to produce Accuracy 0.8642.",
+            "evidence": "Existing artifact fabscore_claude/workspace/claim_1_command_output.txt (Session 3) shows load_dataset('gutenberg') fails with dataset not found on HuggingFace Hub. Session 12 confirmed run_experiment.py lines 460-529 shows architecture_types = ['layer_specific', 'multi_layer', 'attention'] all use the same prepare_datasets pipeline with load_dataset('gutenberg', split='train'). | Code: code/run_experiment.py:470 (prepare_datasets call in architecture ablation loop), code/run_experiment.py:460-529 (architecture ablation section)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/run_experiment.py:470 (prepare_datasets call in architecture ablation loop), code/run_experiment.py:460-529 (architecture ablation section)"
+                ],
+                "commands_executed": [
+                    "None (reused existing artifact from Session 3 — claim_1_command_output.txt confirming 'gutenberg' dataset not found on HuggingFace)"
+                ]
+            }
+        },
+        {
+            "claim_index": 75,
+            "claim": "75. Table 4, attention, Accuracy: 0.8573",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The 'attention' architecture ablation in Table 4 uses the same data pipeline as all other experiments. The required dataset 'gutenberg' has never existed on HuggingFace Hub, making it impossible to reproduce the claimed Accuracy of 0.8573.",
+            "evidence": "Session 12 confirmed architecture_types=['layer_specific','multi_layer','attention'] all use prepare_datasets→load_dataset('gutenberg',split='train') in run_experiment.py lines 460-529. Session 3 artifact (claim_1_command_output.txt) shows DatasetNotFoundError: Dataset 'gutenberg' doesn't exist on the Hub. | Code: code/run_experiment.py:460-529 (architecture ablation loop using prepare_datasets→load_dataset('gutenberg'))",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/run_experiment.py:460-529 (architecture ablation loop using prepare_datasets→load_dataset('gutenberg'))"
+                ],
+                "commands_executed": [
+                    "None — reused existing artifact from Session 3: fabscore_claude/workspace/claim_1_command_output.txt"
+                ]
+            }
+        }
+    ],
+    "figures": [
+        {
+            "claim_index": 94,
+            "claim": "1. training_curves_comparison.png: [Training Loss Comparison]",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The figure training_curves_comparison.png in paper/ is a manually placed artifact with no backing data. No repository code generates a file with that exact filename. The underlying training experiment uses load_dataset('gutenberg', split='train') which has never existed on HuggingFace Hub, making it impossible to generate or verify the training curves that would back this figure.",
+            "evidence": "training_curves_comparison.png exists in paper/ but no code generates this filename (plot_training_history() generates {model_name}_loss.png only); no backing data files exist; load_dataset('gutenberg') → DatasetNotFoundError (confirmed Session 3); output/figures/ is empty | Code: code/training.py:583 (plot_training_history generates {model_name}_loss.png, not training_curves_comparison.png); code/data_processing.py (load_dataset('gutenberg') blocker)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/training.py:583 (plot_training_history generates {model_name}_loss.png, not training_curves_comparison.png)",
+                    "code/data_processing.py (load_dataset('gutenberg') blocker)"
+                ],
+                "commands_executed": [
+                    "None (reused claim_1_command_output.txt from Session 3: python3 -c \"from datasets import load_dataset; d = load_dataset('gutenberg', split='train')\" → DatasetNotFoundError)"
+                ]
+            }
+        },
+        {
+            "claim_index": 95,
+            "claim": "2. training_curves_agt_mlm_multi_layer_loss.png: [AGT-MLM Loss Curves]",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The figure training_curves_agt_mlm_multi_layer_loss.png in paper/ has no backing data in output/figures/. The code (run_experiment.py:143-147) would generate agt_mlm_multi_layer_loss.png, not training_curves_agt_mlm_multi_layer_loss.png. The training experiment cannot be reproduced because it calls load_dataset('gutenberg') which has never existed on HuggingFace Hub, making the loss curves unverifiable.",
+            "evidence": "paper/training_curves_agt_mlm_multi_layer_loss.png exists as manually placed artifact; output/figures/ is empty (no backing data); code/run_experiment.py:138-147 would generate 'agt_mlm_multi_layer_loss.png' (naming mismatch with claimed filename); training pipeline requires load_dataset('gutenberg') which has never existed on HuggingFace Hub (DatasetNotFoundError confirmed in Session 3) | Code: code/run_experiment.py:143-147 (plot_training_history call), code/training.py:614 (generates {model_name}_loss.png), code/data_processing.py (load_dataset('gutenberg'))",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/run_experiment.py:143-147 (plot_training_history call), code/training.py:614 (generates {model_name}_loss.png), code/data_processing.py (load_dataset('gutenberg'))"
+                ],
+                "commands_executed": [
+                    "None (reused claim_1_command_output.txt artifact from Session 3 showing DatasetNotFoundError for load_dataset('gutenberg'))"
+                ]
+            }
+        },
+        {
+            "claim_index": 96,
+            "claim": "3. training_curves_agt_mlm_multi_layer_accuracy.png: [AGT-MLM Accuracy Curves]",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The accuracy curve figure has no backing data. The code would generate a differently-named file (agt_mlm_multi_layer_accuracy.png vs training_curves_agt_mlm_multi_layer_accuracy.png). More critically, the entire training pipeline depends on load_dataset('gutenberg') which has never existed on HuggingFace Hub, making it impossible to generate these training curves.",
+            "evidence": "paper/paper.md:323 references training_curves_agt_mlm_multi_layer_accuracy.png. code/training.py:631 shows plot_training_history() generates {model_name}_accuracy.png (would output agt_mlm_multi_layer_accuracy.png, not training_curves_agt_mlm_multi_layer_accuracy.png). output/figures/ is empty. load_dataset('gutenberg') raises DatasetNotFoundError (confirmed in Session 3, workspace/claim_1_command_output.txt). | Code: code/training.py:631 (accuracy plot generation), code/run_experiment.py:470 (load_dataset('gutenberg', split='train'))",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/training.py:631 (accuracy plot generation), code/run_experiment.py:470 (load_dataset('gutenberg', split='train'))"
+                ],
+                "commands_executed": [
+                    "None (reused prior artifact from Session 3: claim_1_command_output.txt confirming DatasetNotFoundError for 'gutenberg')"
+                ]
+            }
+        },
+        {
+            "claim_index": 97,
+            "claim": "4. lambda_ablation.png: [Lambda Ablation]",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The lambda_ablation.png figure in paper/ has no backing experimental data. The lambda ablation in run_experiment.py uses the same prepare_datasets pipeline that calls load_dataset('gutenberg', split='train'), which has never existed on HuggingFace Hub (confirmed in Session 3). The output/ directory is empty with no saved experiment results. The figure is a manually placed artifact that cannot be reproduced from the repository.",
+            "evidence": "paper/lambda_ablation.png exists as manually placed artifact; output/ directory is completely empty (no backing data); code/run_experiment.py:417-453 shows lambda ablation requires prepare_datasets which calls load_dataset('gutenberg') — confirmed in prior sessions to never have existed on HuggingFace Hub | Code: code/run_experiment.py:417-453 (lambda ablation loop), code/evaluation.py:413-467 (plot_lambda_ablation)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/run_experiment.py:417-453 (lambda ablation loop), code/evaluation.py:413-467 (plot_lambda_ablation)"
+                ],
+                "commands_executed": [
+                    "None (reused prior artifact from Session 3: claim_1_command_output.txt showing DatasetNotFoundError for 'gutenberg')"
+                ]
+            }
+        },
+        {
+            "claim_index": 98,
+            "claim": "5. architecture_comparison.png: [Architecture Comparison]",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The architecture_comparison.png figure (Figure 5) cannot be verified because the backing data cannot be generated. The architecture ablation experiment requires the 'gutenberg' dataset via load_dataset('gutenberg', split='train'), which has never existed on HuggingFace Hub. No intermediate data files, metrics, or experiment outputs exist to support the figure. The PNG in paper/ is a manually uploaded artifact with no reproducible backing data.",
+            "evidence": "paper/architecture_comparison.png exists as a pre-existing PNG with no backing data files in code/output/. plot_architecture_comparison() in evaluation.py:469 is called by run_experiment.py:521 during architecture ablation, which requires prepare_datasets() -> load_dataset('gutenberg', split='train'). The 'gutenberg' dataset has never existed on HuggingFace Hub (confirmed in Session 3). All output directories (code/output/figures/, code/output/results/, code/output/models/) are empty. | Code: code/evaluation.py:469 (plot_architecture_comparison), code/run_experiment.py:461-529 (architecture ablation calling prepare_datasets -> load_dataset('gutenberg'))",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:469 (plot_architecture_comparison), code/run_experiment.py:461-529 (architecture ablation calling prepare_datasets -> load_dataset('gutenberg'))"
+                ],
+                "commands_executed": [
+                    "None (reused prior artifact from Session 3: load_dataset('gutenberg') confirmed to never exist on HuggingFace Hub)"
+                ]
+            }
+        },
+        {
+            "claim_index": 99,
+            "claim": "6. threshold_effect.png: [Threshold Effect]",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: threshold_effect.png in paper/ has no backing data. The threshold ablation calls plot_threshold_effect() with data from agt_mlm_model and test_loader, both produced by the same prepare_datasets → load_dataset('gutenberg', split='train') pipeline. Dataset identifier 'gutenberg' has never existed on HuggingFace Hub, making the experiment unreproducible. The PNG is a manually placed artifact.",
+            "evidence": "paper/threshold_effect.png exists as manually placed artifact. code/run_experiment.py:531-568 shows threshold ablation requires agt_mlm_model and test_loader from prepare_datasets pipeline. code/data_processing.py uses load_dataset('gutenberg', split='train') which fails with DatasetNotFoundError (confirmed in Session 3 artifact: fabscore_claude/workspace/claim_1_command_output.txt). code/output/figures/ is empty. | Code: code/run_experiment.py:531-568 (threshold ablation), code/evaluation.py:511-550 (plot_threshold_effect), code/data_processing.py:load_dataset('gutenberg')",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/run_experiment.py:531-568 (threshold ablation), code/evaluation.py:511-550 (plot_threshold_effect), code/data_processing.py:load_dataset('gutenberg')"
+                ],
+                "commands_executed": [
+                    "None (reused prior Session 3 artifact confirming load_dataset('gutenberg') → DatasetNotFoundError)"
+                ]
+            }
+        },
+        {
+            "claim_index": 100,
+            "claim": "7. model_comparison.png: [Model Comparison]",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: model_comparison.png in paper/ has no backing data. The plot_model_comparison() call (run_experiment.py:629) depends on model metrics from the full training/evaluation pipeline, which uses load_dataset('gutenberg') — a dataset that has never existed on HuggingFace Hub. No output artifacts exist in code/output/figures/. The figure cannot be reproduced.",
+            "evidence": "plot_model_comparison() at run_experiment.py:629 requires results['model_metrics'] populated by prepare_datasets -> load_dataset('gutenberg', split='train'), which DatasetNotFoundError confirms has never existed on HuggingFace Hub (Session 3 artifact). code/output/figures/ directory is empty. paper/model_comparison.png is a manually placed artifact with no backing data. | Code: code/run_experiment.py:629 (plot_model_comparison call); code/evaluation.py:371 (plot_model_comparison definition)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/run_experiment.py:629 (plot_model_comparison call)",
+                    "code/evaluation.py:371 (plot_model_comparison definition)"
+                ],
+                "commands_executed": [
+                    "None (reused prior Session 3 artifact: claim_1_command_output.txt confirming load_dataset('gutenberg') -> DatasetNotFoundError)"
+                ]
+            }
+        },
+        {
+            "claim_index": 101,
+            "claim": "8. computational_efficiency.png: [Computational Efficiency]",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The computational efficiency figure purports to show measured training/inference overhead, but the timing values are explicitly hardcoded and labeled as 'Simulated' in the code at run_experiment.py:640-641. No actual timing measurements are performed anywhere in the repository. The figure is built from fabricated timing data passed to plot_computational_efficiency().",
+            "evidence": "run_experiment.py:640-641: `training_times = [1.2, 1.0, 1.1, 1.05]` and `inference_times = [1.1, 1.0, 1.05, 1.15]` with comment '# Simulated relative training and inference times'. paper/computational_efficiency.png exists as a manually placed PNG. code/output/figures/ is empty. | Code: code/run_experiment.py:640-641, code/evaluation.py:555",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/run_experiment.py:640-641, code/evaluation.py:555"
+                ],
+                "commands_executed": [
+                    "None (static code inspection sufficient; fabrication is explicit in the code comment 'Simulated relative training and inference times')"
+                ]
+            }
+        }
+    ],
+    "results_section": [],
+    "summary": {
+        "total": 20,
+        "verified": 0,
+        "data_fabrication": 19,
+        "experiment_fabrication": 1,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 0,
+        "error": 0
+    }
+}

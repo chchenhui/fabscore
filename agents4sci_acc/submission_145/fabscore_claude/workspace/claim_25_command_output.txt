@@ -1,0 +1,44 @@
+=== Command 1 ===
+cd /home/chenhui/fabscore/agent4sci_acc/submission_145/anon-submission-1-main && python -c "
+from greenhouse.runners import eval_rule
+from greenhouse.optimizers import baseline_rules
+r = baseline_rules()['SGD']
+loss, _ = eval_rule(r, 'rastrigin', dim=20, steps=200, seeds=(0,1,2))
+print('SGD rastrigin dim=20 steps=200:', loss)
+"
+--- Output ---
+SGD rastrigin dim=20 steps=200: 59.69741397011401
+
+=== Command 2 ===
+python -c "
+from greenhouse.runners import eval_rule
+from greenhouse.optimizers import baseline_rules
+r = baseline_rules()['SGD']
+for seeds in [(0,1,2), (0,1), (0,), (1,), (2,)]:
+    loss, _ = eval_rule(r, 'rastrigin', dim=20, steps=200, seeds=seeds)
+    print(f'seeds={seeds}: {loss}')
+"
+--- Output ---
+seeds=(0, 1, 2): 59.69741397011401
+seeds=(0, 1): 65.66714645183232
+seeds=(0,): 74.62174769331932
+seeds=(1,): 56.712545210345326
+seeds=(2,): 47.75794900667739
+
+=== Command 3 ===
+python -c "
+from greenhouse.runners import eval_rule
+from greenhouse.optimizers import baseline_rules
+r = baseline_rules()['SGD']
+loss3, _ = eval_rule(r, 'rastrigin', dim=20, steps=200, seeds=(0,1,2))
+print('SGD rastrigin dim=20 steps=200, seeds=(0,1,2):', loss3)
+loss2, _ = eval_rule(r, 'rastrigin', dim=20, steps=200, seeds=(0,1))
+print('SGD rastrigin dim=20 steps=200, seeds=(0,1):', loss2)
+print('Paper claim: 65.67')
+print('Match with seeds=(0,1):', round(loss2, 2) == 65.67)
+"
+--- Output ---
+SGD rastrigin dim=20 steps=200, seeds=(0,1,2): 59.69741397011401
+SGD rastrigin dim=20 steps=200, seeds=(0,1): 65.66714645183232
+Paper claim: 65.67
+Match with seeds=(0,1): True

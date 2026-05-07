@@ -1,0 +1,376 @@
+# Baseline Configurations for BiCA Comparison
+# Implements various baseline methods mentioned in the paper
+
+# One-Way (RLHF-style) Baseline
+one_way:
+  experiment: one_way_baseline
+  
+  # Inherit base environment and model settings
+  env:
+    grid_size: 8
+    obstacle_rate: [0.2, 0.3]
+    max_steps: 60
+    reward_step: -1.0
+    reward_collision: -5.0
+    reward_success: 50.0
+    reward_token_cost: -0.05
+  
+  model:
+    # Same architecture but disable bidirectional components
+    embed_dim: 128
+    policy_hidden_dim: 256
+    value_hidden_dim: 256
+    gru_hidden_dim: 128
+    ai_obs_dim: 22
+    human_vocab_size: 32
+    
+    # Disable bidirectional components
+    disable_protocol_learning: true
+    disable_instructor: true
+    disable_rep_mapper: true
+    disable_human_adaptation: true
+  
+  train:
+    episodes: 2000
+    batch_episodes: 32
+    lr: 3e-4
+    ppo_clip: 0.2
+    gamma: 0.99
+    gae_lambda: 0.95
+  
+  regularizers:
+    # Only AI adaptation with simple KL penalty
+    lambda_A: 0.02
+    lambda_H: 0.0  # No human adaptation
+    beta_ib: 0.0   # No protocol learning
+    mu_rep: 0.0    # No representation alignment
+    kappa_teach: 0.0  # No instructor
+  
+  logging:
+    use_wandb: true
+    project: "bica-baselines"
+    tags: ["baseline", "one_way", "rlhf_style"]
+
+# No-Budget Baseline
+no_budget:
+  experiment: no_budget_baseline
+  
+  env:
+    grid_size: 8
+    obstacle_rate: [0.2, 0.3]
+    max_steps: 60
+    reward_step: -1.0
+    reward_collision: -5.0
+    reward_success: 50.0
+    reward_token_cost: -0.05
+  
+  model:
+    embed_dim: 128
+    policy_hidden_dim: 256
+    value_hidden_dim: 256
+    human_gru_hidden: 128
+    protocol_hidden_dim: 128
+    code_dim: 16
+    ai_obs_dim: 22
+    human_obs_dim: 192
+    human_vocab_size: 32
+    ai_vocab_size: 64
+  
+  train:
+    episodes: 2000
+    batch_episodes: 32
+    lr: 3e-4
+    ppo_clip: 0.2
+    gamma: 0.99
+    gae_lambda: 0.95
+  
+  regularizers:
+    # Remove all KL penalties and RepGap
+    lambda_A: 0.0
+    lambda_H: 0.0
+    beta_ib: 1.0    # Keep protocol learning
+    mu_rep: 0.0     # Remove representation gap
+    kappa_teach: 0.05  # Keep instructor cost
+  
+  protocol:
+    gumbel_tau_start: 1.0
+    gumbel_tau_end: 0.3
+    tau_decay: 0.95
+  
+  logging:
+    use_wandb: true
+    project: "bica-baselines"
+    tags: ["baseline", "no_budget", "unconstrained"]
+
+# No-IB Baseline
+no_ib:
+  experiment: no_ib_baseline
+  
+  env:
+    grid_size: 8
+    obstacle_rate: [0.2, 0.3]
+    max_steps: 60
+    reward_step: -1.0
+    reward_collision: -5.0
+    reward_success: 50.0
+    reward_token_cost: -0.05
+  
+  model:
+    embed_dim: 128
+    policy_hidden_dim: 256
+    value_hidden_dim: 256
+    human_gru_hidden: 128
+    protocol_hidden_dim: 128
+    code_dim: 16
+    ai_obs_dim: 22
+    human_obs_dim: 192
+    human_vocab_size: 32
+    ai_vocab_size: 64
+  
+  train:
+    episodes: 2000
+    batch_episodes: 32
+    lr: 3e-4
+    ppo_clip: 0.2
+    gamma: 0.99
+    gae_lambda: 0.95
+  
+  regularizers:
+    lambda_A: 0.02
+    lambda_H: 0.01
+    # Remove Information Bottleneck
+    beta_ib: 0.0
+    ib_weight: 0.0
+    mdl_weight: 0.0
+    mu_rep: 0.1
+    kappa_teach: 0.05
+  
+  protocol:
+    gumbel_tau_start: 1.0
+    gumbel_tau_end: 0.3
+    tau_decay: 0.95
+  
+  logging:
+    use_wandb: true
+    project: "bica-baselines"
+    tags: ["baseline", "no_ib", "no_information_bottleneck"]
+
+# No-Mapper Baseline
+no_mapper:
+  experiment: no_mapper_baseline
+  
+  env:
+    grid_size: 8
+    obstacle_rate: [0.2, 0.3]
+    max_steps: 60
+    reward_step: -1.0
+    reward_collision: -5.0
+    reward_success: 50.0
+    reward_token_cost: -0.05
+  
+  model:
+    embed_dim: 128
+    policy_hidden_dim: 256
+    value_hidden_dim: 256
+    human_gru_hidden: 128
+    protocol_hidden_dim: 128
+    code_dim: 16
+    ai_obs_dim: 22
+    human_obs_dim: 192
+    human_vocab_size: 32
+    ai_vocab_size: 64
+    # Disable representation mapper
+    disable_rep_mapper: true
+  
+  train:
+    episodes: 2000
+    batch_episodes: 32
+    lr: 3e-4
+    ppo_clip: 0.2
+    gamma: 0.99
+    gae_lambda: 0.95
+  
+  regularizers:
+    lambda_A: 0.02
+    lambda_H: 0.01
+    beta_ib: 1.0
+    # Remove representation gap loss
+    mu_rep: 0.0
+    kappa_teach: 0.05
+  
+  protocol:
+    gumbel_tau_start: 1.0
+    gumbel_tau_end: 0.3
+    tau_decay: 0.95
+  
+  logging:
+    use_wandb: true
+    project: "bica-baselines"
+    tags: ["baseline", "no_mapper", "no_representation_alignment"]
+
+# No-Teacher Baseline
+no_teacher:
+  experiment: no_teacher_baseline
+  
+  env:
+    grid_size: 8
+    obstacle_rate: [0.2, 0.3]
+    max_steps: 60
+    reward_step: -1.0
+    reward_collision: -5.0
+    reward_success: 50.0
+    reward_token_cost: -0.05
+  
+  model:
+    embed_dim: 128
+    policy_hidden_dim: 256
+    value_hidden_dim: 256
+    human_gru_hidden: 128
+    protocol_hidden_dim: 128
+    code_dim: 16
+    ai_obs_dim: 22
+    human_obs_dim: 192
+    human_vocab_size: 32
+    ai_vocab_size: 64
+    # Disable instructor
+    disable_instructor: true
+  
+  train:
+    episodes: 2000
+    batch_episodes: 32
+    lr: 3e-4
+    ppo_clip: 0.2
+    gamma: 0.99
+    gae_lambda: 0.95
+  
+  regularizers:
+    lambda_A: 0.02
+    lambda_H: 0.01
+    beta_ib: 1.0
+    mu_rep: 0.1
+    # Remove instructor cost
+    kappa_teach: 0.0
+  
+  protocol:
+    gumbel_tau_start: 1.0
+    gumbel_tau_end: 0.3
+    tau_decay: 0.95
+  
+  logging:
+    use_wandb: true
+    project: "bica-baselines"
+    tags: ["baseline", "no_teacher", "no_instructor"]
+
+# Random Baseline (for sanity check)
+random_baseline:
+  experiment: random_baseline
+  
+  env:
+    grid_size: 8
+    obstacle_rate: [0.2, 0.3]
+    max_steps: 60
+    reward_step: -1.0
+    reward_collision: -5.0
+    reward_success: 50.0
+    reward_token_cost: -0.05
+  
+  # Use random policies (no training)
+  policy_type: "random"
+  
+  evaluation:
+    num_episodes: 1000  # More episodes for stable random baseline
+  
+  logging:
+    use_wandb: true
+    project: "bica-baselines"
+    tags: ["baseline", "random", "sanity_check"]
+
+# Oracle Baseline (with perfect information)
+oracle_baseline:
+  experiment: oracle_baseline
+  
+  env:
+    grid_size: 8
+    obstacle_rate: [0.2, 0.3]
+    max_steps: 60
+    reward_step: -1.0
+    reward_collision: -5.0
+    reward_success: 50.0
+    reward_token_cost: -0.05
+  
+  model:
+    # Oracle has access to full state information
+    oracle_mode: true
+    embed_dim: 128
+    policy_hidden_dim: 256
+    ai_obs_dim: 192  # Full map access for AI too
+    human_obs_dim: 192
+    perfect_communication: true  # No communication noise
+  
+  train:
+    episodes: 2000
+    batch_episodes: 32
+    lr: 3e-4
+    ppo_clip: 0.2
+    gamma: 0.99
+    gae_lambda: 0.95
+  
+  regularizers:
+    # Minimal regularization for oracle
+    lambda_A: 0.01
+    lambda_H: 0.01
+    beta_ib: 0.1
+    mu_rep: 0.01
+    kappa_teach: 0.01
+  
+  logging:
+    use_wandb: true
+    project: "bica-baselines"
+    tags: ["baseline", "oracle", "upper_bound"]
+
+# Comparison settings
+comparison:
+  # Metrics to compare across baselines
+  primary_metrics:
+    - "success_rate"
+    - "collision_rate"
+    - "avg_steps"
+    - "avg_tokens"
+    - "bas_score"
+    - "ccm_score"
+  
+  # Statistical significance testing
+  significance_tests:
+    - "mann_whitney_u"
+    - "paired_t_test"
+    - "bootstrap_ci"
+  
+  confidence_level: 0.95
+  num_bootstrap_samples: 1000
+  
+  # Performance thresholds
+  thresholds:
+    success_rate_min: 0.7
+    collision_rate_max: 0.2
+    steps_max: 45
+    bas_score_min: 0.4
+
+# Evaluation protocol
+evaluation_protocol:
+  # Standard evaluation
+  standard:
+    num_episodes: 100
+    num_seeds: 5
+    environments: ["id", "ood"]
+  
+  # Extended evaluation for paper results
+  extended:
+    num_episodes: 500
+    num_seeds: 10
+    environments: ["id", "ood_high_obstacles", "ood_sensor_noise", "ood_corridors", "ood_rooms"]
+    
+  # Quick evaluation for development
+  quick:
+    num_episodes: 20
+    num_seeds: 3
+    environments: ["id"]

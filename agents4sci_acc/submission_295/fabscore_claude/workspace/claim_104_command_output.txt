@@ -1,0 +1,66 @@
+=== Command ===
+python3 -c "
+import pandas as pd
+import numpy as np
+
+df = pd.read_csv('code_data/candidate_selection_data.csv')
+print('=== CSV Info ===')
+print('Columns:', df.columns.tolist())
+print('Catalyst types:', df['catalyst_type'].value_counts().to_dict())
+print()
+print('=== delta_e_noh_ev stats ===')
+print(df['delta_e_noh_ev'].describe())
+print()
+
+# Claim: 78% of LLM catalysts within 0.15eV of optimal binding energy 1.6eV
+optimal = 1.6
+threshold = 0.15
+llm_cats = df[df['catalyst_type'].str.startswith('LLM')]
+within_range = llm_cats[abs(llm_cats['delta_e_noh_ev'] - optimal) <= threshold]
+pct = len(within_range) / len(llm_cats) * 100
+print(f'=== LLM catalysts within {threshold}eV of optimal ({optimal}eV) ===')
+print(f'Total LLM: {len(llm_cats)}')
+print(f'Within range: {len(within_range)}')
+print(f'Percentage: {pct:.1f}%')
+print()
+
+# Also check the known catalysts
+known = df[df['catalyst_type'] == 'Known']
+print(f'Known catalysts in CSV: {len(known)}')
+print()
+
+# Check what % falls within various ranges
+for opt in [0.6, 0.8, 1.0, 1.2, 1.4, 1.6]:
+    n = len(llm_cats[abs(llm_cats['delta_e_noh_ev'] - opt) <= threshold])
+    print(f'Within 0.15 of {opt}eV: {n}/{len(llm_cats)} = {n/len(llm_cats)*100:.1f}%')
+"
+
+=== Output ===
+=== CSV Info ===
+Columns: ['catalyst_type', 'mixing_enthalpy_ev_atom', 'd_band_center_ev', 'delta_e_noh_ev', 'limiting_potential_v']
+Catalyst types: {'LLM_Generated_HEA': 50, 'LLM_Generated_DA': 30}
+
+=== delta_e_noh_ev stats ===
+count    80.000000
+mean      0.773982
+std       0.393707
+min      -0.129432
+25%       0.480651
+50%       0.789256
+75%       1.083115
+max       1.625815
+Name: delta_e_noh_ev, dtype: float64
+
+=== LLM catalysts within 0.15eV of optimal (1.6eV) ===
+Total LLM: 80
+Within range: 2
+Percentage: 2.5%
+
+Known catalysts in CSV: 0
+
+Within 0.15 of 0.6eV: 18/80 = 22.5%
+Within 0.15 of 0.8eV: 21/80 = 26.2%
+Within 0.15 of 1.0eV: 17/80 = 21.2%
+Within 0.15 of 1.2eV: 21/80 = 26.2%
+Within 0.15 of 1.4eV: 9/80 = 11.2%
+Within 0.15 of 1.6eV: 2/80 = 2.5%

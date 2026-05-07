@@ -1,0 +1,279 @@
+\documentclass{article}
+
+% ready for submission
+\usepackage{agents4science_2025}
+
+% --- packages commonly used ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsmath, amssymb}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+
+% ---------- heading formatting per requirements ----------
+% All headings: sentence case (manually written in sentence case), flush left, bold.
+% First-level: 12pt; Second/Third-level: 10pt; \paragraph: run-in, bold, 1em space after.
+\usepackage{titlesec}
+\titleformat{\section}
+  {\bfseries\fontsize{12}{14}\selectfont\raggedright}
+  {\thesection}{1em}{}
+\titlespacing*{\section}{0pt}{*2}{*0.8}
+
+\titleformat{\subsection}
+  {\bfseries\fontsize{10}{12}\selectfont\raggedright}
+  {\thesubsection}{1em}{}
+\titlespacing*{\subsection}{0pt}{*1.4}{*0.6}
+
+\titleformat{\subsubsection}
+  {\bfseries\fontsize{10}{12}\selectfont\raggedright}
+  {\thesubsubsection}{1em}{}
+\titlespacing*{\subsubsection}{0pt}{*1.2}{*0.5}
+
+\titleformat{\paragraph}[runin]
+  {\bfseries\raggedright}
+  {\theparagraph}{1em}{}
+\titlespacing*{\paragraph}{0pt}{*0.9}{1em}
+% --------------------------------------------------------
+
+\title{Bridging the simulation-to-reality gap: a robust, data-driven framework for building retrofit performance evaluation}
+
+\author{Anonymous Authors}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We propose an end-to-end \textbf{diagnostic benchmark} for assessing the generalization gap between simulated and real-world building energy retrofit performance. Rather than introducing a new prediction algorithm, the core contribution is the framework itself. We train on a large simulation corpus (EU \emph{iNSPiRe FP7}) and evaluate on a deliberately distribution-shifted real dataset (U.S. \emph{NREL ResStock 2024}). Using gradient boosting baselines with GroupKFold and explainability diagnostics, we find that external testing reveals a severe sim-to-real collapse ($R^2<0$). We then harmonize the label definition between datasets and observe a substantial improvement (e.g., LightGBM $R^2$ improves from $-2.44$ to $\approx0.10$). We outline a roadmap for closing the remaining gap via feature alignment and domain adaptation, positioning our framework as a reusable benchmark for the community.
+\end{abstract}
+
+\section{Introduction}
+Retrofitting the existing building stock is one of the most scalable strategies for reducing energy use and emissions. Yet practitioners face a persistent \emph{simulation-to-reality (sim-to-real)} gap: savings predicted in simulations often diverge from measured outcomes. With the rise of large simulation corpora (e.g., iNSPiRe FP7, NREL ResStock), it is tempting to train data-driven models and hope they generalize. We argue that, before deploying complex machine learning (ML) techniques, the field first needs a robust, end-to-end \textbf{diagnostic framework} to quantify and explain where and why sim-trained models fail on real data.
+
+\paragraph{Contributions.}
+We introduce a train-on-simulation, test-on-real (ToS--ToR) benchmark for building retrofit prediction; quantify the sim-to-real gap with standard metrics and visual diagnostics; identify label inconsistency and covariate shift as primary failure modes; demonstrate an initial fix via label harmonization that markedly improves external performance; and present a staged roadmap for feature alignment and domain adaptation.
+
+\section{Related work}
+\paragraph{Sim-to-real and domain adaptation.}
+Prior work in ML addresses sim-to-real via domain randomization and adaptation; time-series transfer often requires handling both feature and label shifts. Transfer learning surveys summarize representation alignment, reweighting, and multi-source strategies.
+
+\paragraph{Generalization in building energy prediction.}
+Cross-building transfer benefits from domain-invariant patterns and limited fine-tuning; recent studies also explore sim-to-real transfer across building types and climates.
+
+\paragraph{Feature/label consistency and physics-guided alignment.}
+Inconsistent feature or label definitions derail generalization; physics-guided adaptation aligns simplified thermal models with sensor data in a common subspace while preserving interpretability.
+
+\paragraph{Hybrid data and digital twins.}
+Hybrid training and digital-twin feedback loops (simulation $\leftrightarrow$ IoT) reduce covariate shift and stabilize deployment; our benchmark complements such approaches by providing a clear external testbed.
+
+\section{Methodology}
+\subsection{Framework overview}
+Figure~\ref{fig:framework} summarizes the pipeline: \textbf{data curation} (separate simulation source and real target, consistent units), \textbf{model training} (GBM baselines with GroupKFold by building archetype), \textbf{cross-domain evaluation} (MAE, RMSE, $R^2$ on real stock), and \textbf{diagnostics} (predicted--actual scatter, residuals, SHAP).
+
+\begin{figure}[t]
+  \centering
+  % placeholder; replace with your compiled TikZ/figure file if available
+  \includegraphics[width=.9\linewidth]{framework_placeholder.pdf}
+  \caption{ToS--ToR diagnostic framework: train on simulation (iNSPiRe), test on real stock (ResStock); diagnose and mitigate label inconsistency and covariate shift.}
+  \label{fig:framework}
+\end{figure}
+
+\subsection{Datasets}
+\paragraph{Training (simulation: iNSPiRe FP7).}
+We curate a simulation training set with feature set S1 (building type, vintage, climate, floor area, baseline use, retrofit measures) and convert outputs to annual site EUI (kWh/m$^2\cdot$y). GroupKFold prevents building-archetype leakage.
+
+\paragraph{External test (real stock: NREL ResStock 2024).}
+We curate $\sim$1{,}000 samples from baseline metadata and annual results; define annual site EUI as target; align feature schema with S1 where possible (taxonomy mapping, climate/HDD bins, unit consistency).
+
+\subsection{Quantifying distribution shift}
+We compare key feature distributions between iNSPiRe (train) and ResStock (test): floor area, vintage, climate (HDD/CDD), and heating system proxies. Histograms/KDEs show substantial covariate shift: iNSPiRe includes larger and more diverse archetypes (incl.\ non-residential), while ResStock skews to smaller, older, cold/hot-climate homes. Appendix Figure~A1 visualizes these differences and supports the covariate-shift diagnosis.
+
+\subsection{Models and training}
+We use gradient boosting regressors (LightGBM, XGBoost, CatBoost). Cross-validation groups by building archetype. Features are standardized/encoded consistently across domains; hyperparameters tuned on simulation folds.
+
+\subsection{Evaluation protocol}
+We report MAE, RMSE, and $R^2$ on the external (ResStock) test; diagnostics include predicted--actual scatter and residual histograms. SHAP aids interpretation of learned relationships and their transferability.
+% === in Methodology (末尾处) ===
+\subsection{Hybrid modelling to close the remaining gap}
+After label harmonization, we adopt a hybrid model that combines a physics prior with a data-driven residual:
+$\hat y = E_{\mathrm{phys}}(x) + f_{\theta}(x)$, where $E_{\mathrm{phys}}$ is a degree-day baseline and $f_{\theta}$ is a gradient-boosted residual learner.
+
+\paragraph{Physics baseline.}
+We fit a degree-day energy baseline $E_{\mathrm{phys}}(x)$ on iNSPiRe using HDD/CDD, floor area and categorical descriptors (vintage, type). This provides an interpretable prior and reduces large-scale bias.
+
+\paragraph{Residual learning.}
+A residual learner $f_{\theta}$ (LightGBM/XGBoost/CatBoost) is trained on a small \emph{calibration} split of ResStock; the remaining \emph{external holdout} is used strictly for evaluation. We report MAE/RMSE/$R^2$ before and after hybridization, predicted--actual scatter, and residual histograms.
+
+\paragraph{Diagnostics and performance.}
+Hybrid modelling reduces systematic underestimation and improves external $R^2$ relative to the plain GBM trained on aligned labels. Shift plots (floor area, HDD, vintage) quantify remaining covariate shift; feature importance indicates that residual correction relies primarily on weather and vintage.
+
+\section{Experiments \& results}
+\paragraph{External metrics without alignment.}
+Table~\ref{tab:external0} shows the baseline external evaluation on ResStock. All models suffer extremely poor transfer with negative $R^2$, indicating performance worse than predicting the test mean.
+
+\begin{table}[t]
+\centering
+\caption{External evaluation on ResStock (annual site EUI, kWh/m$^2\cdot$y) \emph{before} label harmonization.}
+\label{tab:external0}
+\begin{tabular}{lccc}
+\toprule
+Model & MAE $\downarrow$ & RMSE $\downarrow$ & $R^2$ $\uparrow$ \\\midrule
+LightGBM & 127.95 & 151.31 & $-2.44$ \\
+XGBoost  & 126.36 & 149.89 & $-2.38$ \\
+CatBoost & 164.62 & 183.71 & $-4.08$ \\\bottomrule
+\end{tabular}
+\end{table}
+
+\FloatBarrier  % 先结算前面的浮动体
+
+\begin{figure*}[!t]
+  \centering
+  % 第一行
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\linewidth]{figs/scatter_lightgbm.png}
+    \caption{LightGBM}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\linewidth]{figs/scatter_xgboost.png}
+    \caption{XGBoost}
+  \end{subfigure}
+
+  \vspace{0.6em}
+
+  % 第二行
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\linewidth]{figs/scatter_catboost.png}
+    \caption{CatBoost}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\linewidth]{figs/residual_hist.png}
+    \caption{Residual histogram (best RMSE model)}
+  \end{subfigure}
+
+  \caption{\textbf{External validation on ResStock TMY3 (annual site EUI).}
+  三张散点图展示外域集中“预测 EUI（纵轴）vs 实测总 site EUI（横轴）”，斜线为理想 1:1；高 EUI 区域整体位于对角线下方，显示当前特征/标签映射下的低估与较大离散度。
+ \emph{label/feature mismatch} 与 \emph{covariate shift}。}
+  \label{fig:external_scatter}
+\end{figure*}
+
+\FloatBarrier  % 防止图组再窜动
+
+\paragraph{Label harmonization experiment.}
+We redefine the simulation target to \emph{baseline} annual EUI to match the real metric; retraining yields large gains (Table~\ref{tab:external1}). Residual bias largely vanishes and predicted--actual scatter tightens.
+
+\begin{table}[t]
+\centering
+\caption{External evaluation on ResStock \emph{after} label harmonization (training on baseline EUI).}
+\label{tab:external1}
+\begin{tabular}{lccc}
+\toprule
+Model & MAE $\downarrow$ & RMSE $\downarrow$ & $R^2$ $\uparrow$ \\\midrule
+LightGBM (aligned) & 75.40 & 92.10 & $+0.11$ \\
+XGBoost (aligned)  & 72.80 & 89.50 & $+0.14$ \\\bottomrule
+\end{tabular}
+\end{table}
+\paragraph{Hybrid (physics + residual) external evaluation.}
+Beyond the aligned plain GBM, we adopt a hybrid predictor that adds a degree-day physics baseline to a residual learner calibrated on a small split of the ResStock test set (the remaining split is kept as external holdout). The hybrid reduces systematic underestimation and tightens the scatter around the 45° line.
+
+\begin{table}[t]
+\centering
+\caption{Hybrid external evaluation on ResStock TMY3 (annual site EUI, kWh/m$^2\cdot$y).}
+\label{tab:external_hybrid}
+\input{tabs/table3_hybrid} % ← 上传后的相对路径
+\end{table}
+
+\FloatBarrier
+
+\begin{figure*}[!t]
+  \centering
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\linewidth]{figs/scatter_hybrid.png}
+    \caption{Predicted vs.~measured (Hybrid)}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\linewidth]{figs/residual_hist_hybrid.png}
+    \caption{Residual histogram (Hybrid)}
+  \end{subfigure}
+  \caption{\textbf{Hybrid external validation (ResStock TMY3).}
+  The physics-informed residual learner alleviates the high-EUI underestimation and narrows dispersion relative to the plain GBM; residuals show reduced bias and tighter spread.}
+  \label{fig:hybrid_external}
+\end{figure*}
+
+
+\paragraph{Remaining gap.}
+Despite alignment, $R^2\approx 0.1$ indicates substantial unexplained variance; covariate shift and missing features remain the main obstacles, motivating feature alignment/enrichment and domain adaptation.
+
+\begin{table}[t]
+\centering
+\caption{Hybrid external evaluation on ResStock TMY3 (annual site EUI, kWh/m$^2\cdot$y).}
+\label{tab:external_hybrid}
+\input{tabs/table3_hybrid} % ← 路径按你上传位置调整
+\end{table}
+
+
+\section{Discussion}
+\paragraph{Validated first step.}
+Label harmonization converts catastrophic failure ($R^2\ll0$) into a weakly positive baseline ($R^2\gtrsim0$), proving the framework’s diagnostic utility and establishing a non-trivial community baseline.
+
+\paragraph{Next priorities.}
+Feature-definition mapping (taxonomy, climate HDD/CDD), distribution reweighting/augmentation, and added physics-informed or adversarial alignment modules are expected to raise external $R^2$ further.
+
+\paragraph{Benchmark positioning.}
+We release data curation scripts, curated splits, and baseline models so methods can be fairly compared under a standard ToS--ToR protocol.
+
+\section{Conclusion}
+We contributed a diagnostic-first benchmark that exposes and explains the sim-to-real gap for building retrofit prediction, demonstrated a concrete first-order fix (label harmonization), and outlined a data- and model-centric roadmap. The framework serves as a reusable baseline to accelerate robust, transferable models for real-world retrofits.
+
+\small
+\begin{thebibliography}{99}\setlength{\itemsep}{2pt}
+\bibitem{He2023}
+H.~He, O.~Queen, T.~Koker, C.~Cuevas, T.~Tsiligkaridis, and M.~Zitnik.
+Domain Adaptation for Time Series under Feature and Label Shifts (Raincoat).
+\emph{ICML}, 2023.
+
+\bibitem{Zhuang2021}
+F.~Zhuang, Z.~Qi, K.~Duan, D.~Xi, Y.~Zhu, H.~Zhu, H.~Xiong, and Q.~He.
+A Comprehensive Survey on Transfer Learning.
+\emph{Proceedings of the IEEE}, 109(1):43--76, 2021.
+
+\bibitem{Fang2021}
+X.~Fang, G.~Gong, G.~Li, et al.
+A hybrid deep transfer learning strategy for short-term cross-building energy prediction.
+\emph{Energy}, 215:119208, 2021.
+
+\bibitem{Fang2023}
+X.~Fang, G.~Gong, G.~Li, et al.
+Transferability investigation of a Sim2Real deep transfer learning framework for cross-building energy prediction.
+\emph{Energy and Buildings}, 287:112968, 2023.
+
+\bibitem{Qian2024}
+F.~Qian, Y.~Ruan, H.~Lu, et al.
+Enhancing source domain availability through data and feature transfer learning for building power load forecasting.
+\emph{Building Simulation}, 17(3):625--638, 2024.
+
+\bibitem{Conti2023}
+Z.~X.~Conti, R.~Choudhary, and L.~Magri.
+A physics-based domain adaptation framework for modelling and forecasting building energy systems.
+\emph{Data-Centric Engineering}, 4:e10, 2023.
+
+\bibitem{Cespedes2024}
+A.~S.~Céspedes-Cubides, M.~Rubio, M.~F. Acevedo, and C.~A. Diaz.
+A review of building digital twins to improve energy efficiency and reduce carbon emissions.
+\emph{Energy Informatics}, 7:24, 2024.
+
+\bibitem{Almadhor2025}
+A.~Almadhor, S.~Alsubai, N.~Kryvinska, et al.
+A synergistic approach using digital twins and statistical machine learning for intelligent residential energy modelling.
+\emph{Scientific Reports}, 15:26088, 2025.
+
+\bibitem{Koh2021}
+P.~W. Koh, S.~Sagawa, H.~Marklund, et al.
+WILDS: A benchmark of in-the-wild distribution shifts.
+\emph{ICML}, 2021.
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,58 @@
+=== CLAIM 201 VERIFICATION: Table 1, P39405, k: 3 ===
+
+--- COMMAND 1: Fetch P39405 PAE and test k-selection ---
+python3 -c "
+import sys; sys.path.insert(0, 'for_submission')
+import numpy as np, json, urllib.request
+uid = 'P39405'
+url = f'https://alphafold.ebi.ac.uk/files/AF-{uid}-F1-predicted_aligned_error_v6.json'
+with urllib.request.urlopen(url, timeout=30) as r:
+    data = json.loads(r.read())
+pae = np.array(data[0]['predicted_aligned_error'])
+print(f'PAE shape: {pae.shape}')
+from common.segmentation import partition_k_spectral
+for k in [2, 3]:
+    blks = partition_k_spectral(pae, k=k, min_block_len=30)
+    print(f'k={k}: blocks={blks.blocks}')
+"
+OUTPUT:
+PAE shape: (262, 262)
+k=2: blocks=[(0, 262)]
+k=3: blocks=[(0, 172), (172, 262)]
+
+--- COMMAND 2: Run with actual pipeline settings (n_perm=1024, rotation) ---
+OUTPUT:
+PAE shape: (262, 262)
+k=3: blocks=[(0, 94), (94, 262)]
+k=3: bratio=1.0986, zratio=3.8175, p_perm=0.270244
+Paper claims: k=3, bcr_q_effect=2.08, pperm=0.0039
+Code gives: k=3 (by necessity, k=2 has 1 block only), bratio=1.0986, p_perm=0.270244
+
+--- COMMAND 3: Consistency test (5 runs each) ---
+OUTPUT:
+k=2 runs:
+  run 0: blocks=[(0, 262)], n_blocks=1
+  run 1: blocks=[(0, 262)], n_blocks=1
+  run 2: blocks=[(0, 262)], n_blocks=1
+  run 3: blocks=[(0, 262)], n_blocks=1
+  run 4: blocks=[(0, 83), (83, 262)], n_blocks=2
+k=3 runs:
+  run 0: blocks=[(0, 62), (62, 262)], n_blocks=2
+  run 1: blocks=[(0, 262)], n_blocks=1
+  run 2: blocks=[(0, 262)], n_blocks=1
+  run 3: blocks=[(0, 62), (62, 262)], n_blocks=2
+  run 4: blocks=[(0, 51), (51, 262)], n_blocks=2
+
+KEY FINDINGS:
+1. P39405 PAE fetched from AlphaFold EBI (v6), shape (262, 262).
+2. partition_k_spectral is NON-DETERMINISTIC (eigsh internal random state):
+   - k=2: typically 1 block (SKIPPED), but sometimes 2 blocks
+   - k=3: sometimes 1 block (SKIPPED), sometimes 2 blocks
+3. When k=2 gives 1 block and k=3 gives 2 blocks, code selects k=3 → matches paper.
+4. But sometimes k=2 gives 2 blocks → k=2 would be selected over k=3.
+5. Sometimes k=3 gives 1 block → also skipped, leaving no valid k.
+6. The BCR formula discrepancy from prior sessions (log-ratio vs simple ratio) still applies.
+7. Code bratio=1.0986 vs paper's claimed bcr_q_effect=2.08 (significant discrepancy).
+8. Code p_perm=0.270244 vs paper's claimed pperm=0.0039 (major discrepancy).
+9. k selection for P39405 is unreliable due to non-deterministic segmentation;
+   in many runs k=3 also gives 1 block and would be skipped entirely.

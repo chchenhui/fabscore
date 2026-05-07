@@ -1,0 +1,1342 @@
+===== COMMAND: python - <<'PY'
+from pathlib import Path
+import fitz
+pdf = fitz.open('206_Self_Spec_Model_Authored_S.pdf')
+for i, page in enumerate(pdf):
+    text = page.get_text()
+    if 'Table 1' in text or 'GPT-4o' in text or 'Native' in text:
+        print(f'--- PAGE {i+1} ---')
+        print(text[:5000])
+PY =====
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+ModuleNotFoundError: No module named 'fitz'
+
+===== COMMAND: sed -n '1,220p' A4S_update/readme.md =====
+# Vibe Programming · HumanEval Pipeline (Baseline & Spec-Driven)
+
+A reproducible pipeline for evaluating LLM code generation on **HumanEval** with two modes:
+
+- **Baseline:** generate code directly from original HumanEval prompts.
+- **Spec-Driven (Vibe Programming):** first convert prompts to natural language requests, then run a specification-guided generation pipeline.
+
+It supports parallel runs and logs all generations for re-evaluation.
+
+---
+
+## What’s Included
+
+**Data**
+- `HumanEval.jsonl` — Original HumanEval tasks (prompts / solutions / tests).
+- `HumanEval_with_nl.jsonl` — HumanEval with added natural-language requests (`nl_request`) produced by `humaneval_convert.py`.
+
+**Pipelines & Utils**
+- `humaneval.py` — Utilities for HumanEval format.
+- `humaneval_convert.py` — Convert code prompts → natural language (`nl_request`) for spec pipeline.
+- `spec_result_generation.py` — Generate **spec-driven** solutions (defaults configured for Claude Sonnet; see below).
+- `spec_result_evaluation.py` — Evaluate spec-driven generations.
+- `evaluation_baseline_pipeline.py` — Run **baseline** generation + evaluation for (e.g.) GPT‑4o.
+- `baseline_result_evaluation.py` — Evaluate existing baseline generations in `all_baseline_*.jsonl`.
+
+**Results (examples already in repo)**
+- `all_baseline_claude_3_5_sonnet_20241022.jsonl` — baseline generations (Claude 3.5 Sonnet 2024-10-22).
+- `all_baseline_claude_3_7_sonnet_20250219.jsonl` — baseline generations (Claude 3.7 Sonnet 2025-02-19).
+- `all_spec_claude_3_7_sonnet_20250219.jsonl` — spec-driven generations (Claude 3.7 Sonnet 2025-02-19).
+- `all_spec_gpt_4o.jsonl` — spec-driven generations (GPT-4o).
+- `results_summary_*.txt` — one-line summary: `Total / Passed / Failed`.
+- `failed_*.jsonl` — failing cases for quick inspection.
+
+---
+> **Heads-up (easy to re-run):** Two artifacts are not committed — **GPT-4o baseline** and **Claude 3.5 spec**.  
+> These files were originally saved but later misplaced. If you wish to verify, you can easily regenerate them:
+>
+> **GPT-4o baseline**:
+> ```bash
+> python evaluation_baseline_pipeline.py
+> ```
+> **Claude 3.5 spec**
+> ```bash
+> python spec_result_generation.py
+> python spec_result_evaluation.py
+> ```
+
+---
+
+## Requirements
+
+- Python **3.8+**
+- Python packages: `openai`  *(native Anthropic SDK not required if you’re using an OpenAI‑compatible endpoint via `base_url`)*
+
+```bash
+pip install -U openai
+# optional, if you prefer .env management
+pip install -U python-dotenv
+```
+
+**Environment variables**
+- `OPENAI_API_KEY` — used for both OpenAI and OpenAI‑compatible endpoints (e.g., Claude via `base_url`).
+- (Optional) `OPENAI_BASE_URL` — if you prefer to set the endpoint globally; otherwise the scripts have it inline.
+
+---
+
+## Quickstart
+
+### A) Baseline Pipeline (e.g., GPT‑4o)
+
+**Option 1 (one-shot, recommended):**
+```bash
+python evaluation_baseline_pipeline.py
+```
+- Uses GPT‑4o by default.
+- Produces `all_baseline_<model>.jsonl`, `results_summary_baseline_<model>.txt`, and `failed_baseline_<model>.jsonl`.
+
+**Option 2 (evaluate an existing result file):**
+```bash
+python baseline_result_evaluation.py
+```
+- Reads `all_baseline_*.jsonl` files and writes summaries + failures.
+
+---
+
+### B) Spec-Driven (Vibe Programming) Pipeline
+
+1) **Convert prompts → natural language (`nl_request`)**  
+   (Skip if `HumanEval_with_nl.jsonl` already exists.)
+```bash
+python humaneval_convert.py
+```
+
+2) **Generate spec-driven solutions**  
+   `spec_result_generation.py` already sets **Claude 3.5 Sonnet** model name and **base_url**.  
+   **Just set your API key** (e.g., `OPENAI_API_KEY`) and run:
+```bash
+python spec_result_generation.py
+```
+This writes `all_spec_<model>.jsonl` (e.g., `all_spec_claude_3_5_sonnet_20241022.jsonl`).
+
+3) **Evaluate**
+```bash
+python spec_result_evaluation.py
+```
+This writes `results_summary_spec_<model>.txt` and `failed_spec_<model>.jsonl`.
+
+---
+
+## File Naming Conventions
+
+- **Generations:**  
+  `all_baseline_<model>.jsonl` · `all_spec_<model>.jsonl`
+- **Summaries:**  
+  `results_summary_baseline_<model>.txt` · `results_summary_spec_<model>.txt`
+- **Failures (per-case debug):**  
+  `failed_baseline_<model>.jsonl` · `failed_spec_<model>.jsonl`
+
+Each `all_*.jsonl` line contains the full prompt, model settings, the model output, and bookkeeping fields used by the evaluators.
+
+---
+
+## Reproducibility Statement
+
+- **Determinism:** All generations use `temperature = 0`. We avoid sampling to reduce variance.
+- **Model & Endpoint Pinning:** We record the exact **model IDs** (e.g., `claude-3-5-sonnet-20241022`, `claude-3-7-sonnet-20250219`, `gpt-4o`) and, when applicable, the **`base_url`** used for OpenAI‑compatible providers.
+- **Artifacts:** We publish raw generations as `all_*.jsonl`, summaries as `results_summary_*.txt`, and failure cases as `failed_*.jsonl`. Anyone can re‑evaluate the same generations with `*_result_evaluation.py` scripts to reproduce Pass@1 outcomes.
+- **Environment:** Python 3.8+; `openai` Python package. 
+
+---
+
+
+
+
+## License
+
+For research and educational use. See individual files for details.
+
+===== COMMAND: sed -n '1,220p' A4S_update/evaluation_baseline_pipeline.py =====
+import os
+import json
+import asyncio
+from typing import Tuple, Dict, Any, List
+
+from openai import AsyncOpenAI
+
+API_KEY = ""
+client = AsyncOpenAI(api_key=API_KEY)
+# client = AsyncOpenAI(api_key=API_KEY, base_url="https://api.anthropic.com/v1/")
+
+# claude-3-5-sonnet-20241022
+# MODEL = "claude-3-7-sonnet-20250219"
+MODEL = "gpt-4o"
+TEMPERATURE = 0
+
+MAX_CONCURRENCY = 10
+sem = asyncio.Semaphore(MAX_CONCURRENCY)
+
+SUMMARY_TXT = f"results_summary_baseline_{MODEL}.txt" 
+PRELUDE = (
+    "from typing import *\n"
+    "import math, functools, itertools, collections\n"
+)
+
+
+async def fetch_code(prompt: str, task_id: str) -> Tuple[str, str]:
+    try:
+        async with sem:
+            resp = await client.chat.completions.create(
+                model=MODEL,
+                temperature=TEMPERATURE,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a careful coding assistant. "
+                            "Return ONLY valid Python code that defines the requested function "
+                            "with the EXACT SAME name/signature. "
+                            "You may add standard-library imports if needed. "
+                            "No explanations, no markdown fences, no comments, no tests."
+                        ),
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+            )
+        code = resp.choices[0].message.content or ""
+        return task_id, code
+    except Exception as e:
+        return task_id, f"ERROR: {e}"
+
+
+def run_test(task: Dict[str, Any], code: str) -> Tuple[bool, str]:
+    if code.startswith("ERROR:"):
+        return False, code
+
+    ns: Dict[str, Any] = {}
+    try:
+    
+        code_wrapped = f"{PRELUDE}\n{code}\n\n{task['test']}\n\ncheck({task['entry_point']})"
+        exec(code_wrapped, ns)
+        return True, ""
+    except Exception as e:
+        return False, str(e)
+
+
+async def main() -> None:
+    with open("HumanEval.jsonl", "r", encoding="utf-8") as f:
+        data: List[Dict[str, Any]] = [json.loads(line) for line in f]
+
+    coros = [fetch_code(item["prompt"], item["task_id"]) for item in data]
+    codes = await asyncio.gather(*coros, return_exceptions=False)
+
+    results: Dict[str, Dict[str, Any]] = {}
+    index = {d["task_id"]: d for d in data}
+
+    for task_id, code in codes:
+        task = index[task_id]
+        passed, err = run_test(task, code)
+        results[task_id] = {"passed": passed, "error": err}
+
+    total = len(results)
+    passed_cnt = sum(1 for v in results.values() if v["passed"])
+    print(f"Total: {total}, Passed: {passed_cnt}, Failed: {total - passed_cnt}")
+    for tid, res in results.items():
+        if res["passed"]:
+            print(f"{tid} ✅")
+        else:
+            print(f"{tid} ❌ {res['error']}")
+    with open(SUMMARY_TXT, "w", encoding="utf-8") as f:
+        f.write(f"Total: {total}, Passed: {passed_cnt}, Failed: {total - passed_cnt}\n")
+
+
+    with open(f"all_baseline_{MODEL}.jsonl", "w", encoding="utf-8") as f:
+        for tid, res in results.items():
+            item = index[tid]
+            item["generated_solution"] = code
+            item["error"] = res["error"]
+            item["passed"] = res["passed"]
+            f.write(json.dumps(item, ensure_ascii=False) + "\n")
+
+    with open(f"failed_baseline_{MODEL}.jsonl", "w", encoding="utf-8") as f:
+        for tid, res in results.items():
+            if not res["passed"]:
+                item = index[tid]
+                item["generated_solution"] = code
+                item["error"] = res["error"]
+                f.write(json.dumps(item, ensure_ascii=False) + "\n")
+
+
+if __name__ == "__main__":
+    if API_KEY == "YOUR_API_KEY_HERE":
+        print("⚠️ NEED OPENAI_API_KEY 。")
+    asyncio.run(main())
+
+===== COMMAND: sed -n '1,220p' A4S_update/baseline_result_evaluation.py =====
+
+import os, sys, glob, json, re
+
+def process(all_path: str) -> None:
+    m = re.fullmatch(r"all_baseline_(.+)\.jsonl", os.path.basename(all_path))
+    if not m:
+        return
+    model = m.group(1)
+    summary_path = f"results_summary_baseline_{model}.txt"
+    failed_path  = f"failed_baseline_{model}.jsonl"
+
+    total = passed = failed = 0
+    failed_lines = []
+
+    with open(all_path, "r", encoding="utf-8") as fin:
+        for lineno, line in enumerate(fin, 1):
+            if not line.strip():
+                continue
+            obj = json.loads(line)
+            total += 1
+            if obj.get("passed", False):
+                passed += 1
+            else:
+                failed += 1
+         
+                failed_lines.append(line.rstrip("\n"))
+
+    with open(summary_path, "w", encoding="utf-8") as fsum:
+        fsum.write(f"Total: {total}, Passed: {passed}, Failed: {failed}\n")
+
+    with open(failed_path, "w", encoding="utf-8") as ff:
+        for s in failed_lines:
+            ff.write(s + "\n")
+
+    print(f"✓ {all_path} -> {summary_path}, {failed_path}  (Total={total} Passed={passed} Failed={failed})")
+
+def main() -> None:
+    paths = sorted(glob.glob("all_baseline_*.jsonl"))
+    if not paths:
+        print("❌ Not Found all_baseline_*.jsonl", file=sys.stderr)
+        sys.exit(1)
+    for p in paths:
+        process(p)
+
+if __name__ == "__main__":
+    main()
+
+===== COMMAND: sed -n '1,40p' A4S_update/results_summary_baseline_gpt-4o.txt =====
+Total: 164, Passed: 0, Failed: 164
+
+===== COMMAND: python - <<'PY'
+import json
+from pathlib import Path
+path = Path('A4S_update/all_baseline_gpt-4o.jsonl')
+count = 0
+samples = []
+errs = 0
+with path.open() as f:
+    for line in f:
+        count += 1
+        obj = json.loads(line)
+        if len(samples) < 3:
+            samples.append(obj)
+        content = json.dumps(obj)
+        if 'api_key client option must be set' in content.lower():
+            errs += 1
+print({'total_lines': count, 'error_lines_matching_auth': errs})
+for i, obj in enumerate(samples, 1):
+    print(f'--- SAMPLE {i} ---')
+    print(json.dumps(obj, indent=2)[:2500])
+PY =====
+{'total_lines': 164, 'error_lines_matching_auth': 0}
+--- SAMPLE 1 ---
+{
+  "task_id": "HumanEval/0",
+  "prompt": "from typing import List\n\n\ndef has_close_elements(numbers: List[float], threshold: float) -> bool:\n    \"\"\" Check if in given list of numbers, are any two numbers closer to each other than\n    given threshold.\n    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)\n    False\n    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)\n    True\n    \"\"\"\n",
+  "canonical_solution": "    for idx, elem in enumerate(numbers):\n        for idx2, elem2 in enumerate(numbers):\n            if idx != idx2:\n                distance = abs(elem - elem2)\n                if distance < threshold:\n                    return True\n\n    return False\n",
+  "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate([1.0, 2.0, 3.9, 4.0, 5.0, 2.2], 0.3) == True\n    assert candidate([1.0, 2.0, 3.9, 4.0, 5.0, 2.2], 0.05) == False\n    assert candidate([1.0, 2.0, 5.9, 4.0, 5.0], 0.95) == True\n    assert candidate([1.0, 2.0, 5.9, 4.0, 5.0], 0.8) == False\n    assert candidate([1.0, 2.0, 3.0, 4.0, 5.0, 2.0], 0.1) == True\n    assert candidate([1.1, 2.2, 3.1, 4.1, 5.1], 1.0) == True\n    assert candidate([1.1, 2.2, 3.1, 4.1, 5.1], 0.5) == False\n\n",
+  "entry_point": "has_close_elements",
+  "generated_solution": "ERROR: Error code: 401 - {'error': {'message': \"You didn't provide an API key. You need to provide your API key in an Authorization header using Bearer auth (i.e. Authorization: Bearer YOUR_KEY), or as the password field (with blank username) if you're accessing the API from your browser and are prompted for a username and password. You can obtain an API key from https://platform.openai.com/account/api-keys.\", 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+  "error": "ERROR: Error code: 401 - {'error': {'message': \"You didn't provide an API key. You need to provide your API key in an Authorization header using Bearer auth (i.e. Authorization: Bearer YOUR_KEY), or as the password field (with blank username) if you're accessing the API from your browser and are prompted for a username and password. You can obtain an API key from https://platform.openai.com/account/api-keys.\", 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+  "passed": false
+}
+--- SAMPLE 2 ---
+{
+  "task_id": "HumanEval/1",
+  "prompt": "from typing import List\n\n\ndef separate_paren_groups(paren_string: str) -> List[str]:\n    \"\"\" Input to this function is a string containing multiple groups of nested parentheses. Your goal is to\n    separate those group into separate strings and return the list of those.\n    Separate groups are balanced (each open brace is properly closed) and not nested within each other\n    Ignore any spaces in the input string.\n    >>> separate_paren_groups('( ) (( )) (( )( ))')\n    ['()', '(())', '(()())']\n    \"\"\"\n",
+  "canonical_solution": "    result = []\n    current_string = []\n    current_depth = 0\n\n    for c in paren_string:\n        if c == '(':\n            current_depth += 1\n            current_string.append(c)\n        elif c == ')':\n            current_depth -= 1\n            current_string.append(c)\n\n            if current_depth == 0:\n                result.append(''.join(current_string))\n                current_string.clear()\n\n    return result\n",
+  "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate('(()()) ((())) () ((())()())') == [\n        '(()())', '((()))', '()', '((())()())'\n    ]\n    assert candidate('() (()) ((())) (((())))') == [\n        '()', '(())', '((()))', '(((())))'\n    ]\n    assert candidate('(()(())((())))') == [\n        '(()(())((())))'\n    ]\n    assert candidate('( ) (( )) (( )( ))') == ['()', '(())', '(()())']\n",
+  "entry_point": "separate_paren_groups",
+  "generated_solution": "ERROR: Error code: 401 - {'error': {'message': \"You didn't provide an API key. You need to provide your API key in an Authorization header using Bearer auth (i.e. Authorization: Bearer YOUR_KEY), or as the password field (with blank username) if you're accessing the API from your browser and are prompted for a username and password. You can obtain an API key from https://platform.openai.com/account/api-keys.\", 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+  "error": "ERROR: Error code: 401 - {'error': {'message': \"You didn't provide an API key. You need to provide your API key in an Authorization header using Bearer auth (i.e. Authorization: Bearer YOUR_KEY), or as the password field (with blank username) if you're accessing the API from your browser and are prompted for a username and password. You can obtain an API key from https://platform.openai.com/account/api-keys.\", 'type': 'invalid_
+--- SAMPLE 3 ---
+{
+  "task_id": "HumanEval/2",
+  "prompt": "\n\ndef truncate_number(number: float) -> float:\n    \"\"\" Given a positive floating point number, it can be decomposed into\n    and integer part (largest integer smaller than given number) and decimals\n    (leftover part always smaller than 1).\n\n    Return the decimal part of the number.\n    >>> truncate_number(3.5)\n    0.5\n    \"\"\"\n",
+  "canonical_solution": "    return number % 1.0\n",
+  "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate(3.5) == 0.5\n    assert abs(candidate(1.33) - 0.33) < 1e-6\n    assert abs(candidate(123.456) - 0.456) < 1e-6\n",
+  "entry_point": "truncate_number",
+  "generated_solution": "ERROR: Error code: 401 - {'error': {'message': \"You didn't provide an API key. You need to provide your API key in an Authorization header using Bearer auth (i.e. Authorization: Bearer YOUR_KEY), or as the password field (with blank username) if you're accessing the API from your browser and are prompted for a username and password. You can obtain an API key from https://platform.openai.com/account/api-keys.\", 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+  "error": "ERROR: Error code: 401 - {'error': {'message': \"You didn't provide an API key. You need to provide your API key in an Authorization header using Bearer auth (i.e. Authorization: Bearer YOUR_KEY), or as the password field (with blank username) if you're accessing the API from your browser and are prompted for a username and password. You can obtain an API key from https://platform.openai.com/account/api-keys.\", 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+  "passed": false
+}
+
+===== COMMAND: sed -n '1,220p' fabscore_codex/progress.md =====
+# Progress Log
+
+## 2026-04-11 UTC
+- Session purpose: `extraction`
+- Paper/context inspected: `206_Self_Spec_Model_Authored_S.pdf` (PDF). Inspected the full paper text with emphasis on Table 1–3, Figure 1, and Section 5 (`Results`) for body-text numerical claims with table-result deduplication.
+- JSON files created or updated in this session: `fabscore_codex/fs_extracted.json`
+- Next session should do: verify the extracted entries against the PDF render if needed, then continue any downstream scoring or review steps that consume `fabscore_codex/fs_extracted.json`.
+
+## 2026-04-11 UTC
+- Session purpose: `analysis`
+- Files/context inspected: `206_Self_Spec_Model_Authored_S.pdf`; `A4S_update/readme.md`; `A4S_update/evaluation_baseline_pipeline.py`; `A4S_update/baseline_result_evaluation.py`; `A4S_update/spec_result_generation.py`; `A4S_update/spec_result_evaluation.py`; `A4S_update/results_summary_*.txt`; `A4S_update/all_baseline_*.jsonl`; `A4S_update/all_spec_*.jsonl`; `A4S_update/failed_*.jsonl`.
+- JSON files created or updated in this session: `fabscore_codex/fs_analysis.json`
+- Concise classification summary: 42 total claims. `static_verifiable`: 4 claims (Claude 3.7 native/self-spec, Claude 3.7 delta, Claude 3.5 native). `obvious_hallucination`: 1 claim (Figure 1 control flow conflicts with code because implementation can proceed without explicit `CONFIRM` and without a hard no-`TBD` check). `execution_required`: 37 claims, mainly because GPT-4o baseline artifacts in the repo are a failed 401 run, GPT-4o Self-Spec summary is 150/164 rather than the paper's 92%, and Claude 3.5 Self-Spec artifacts needed for Table 1/Table 2/Table 3 are missing but have an identifiable regeneration path.
+- Recommended next step for the next session: if execution is allowed, regenerate GPT-4o baseline and Claude 3.5 Self-Spec with the repo-native scripts, then recompute the Table 1 numbers and the Table 2/Table 3 task-ID sets from the regenerated failure logs. Also verify whether the six `rounds=-1` GPT-4o Self-Spec records correspond to cases that bypassed confirmation.
+
+===== COMMAND: pdftotext 206_Self_Spec_Model_Authored_S.pdf - | rg -n -C 3 'Table 1|GPT-4o|Native' =====
+bash: line 1: pdftotext: command not found
+
+===== COMMAND: python - <<'PY'
+import json
+from pathlib import Path
+path = Path('A4S_update/all_baseline_gpt-4o.jsonl')
+needle = "you didn't provide an api key"
+total = 0
+matches = 0
+for line in path.open():
+    obj = json.loads(line)
+    total += 1
+    blob = json.dumps(obj).lower()
+    if needle in blob:
+        matches += 1
+print({'total': total, 'api_key_error_matches': matches})
+PY =====
+{'total': 164, 'api_key_error_matches': 164}
+
+===== COMMAND: python - <<'PY'
+from pathlib import Path
+text = Path('A4S_update/evaluation_baseline_pipeline.py').read_text()
+for i, line in enumerate(text.splitlines(), 1):
+    if 'API_KEY =' in line or 'client = AsyncOpenAI' in line or 'MODEL = ' in line or 'generated_solution' in line:
+        print(f'{i}: {line}')
+PY =====
+8: API_KEY = ""
+9: client = AsyncOpenAI(api_key=API_KEY)
+10: # client = AsyncOpenAI(api_key=API_KEY, base_url="https://api.anthropic.com/v1/")
+13: # MODEL = "claude-3-7-sonnet-20250219"
+14: MODEL = "gpt-4o"
+97:             item["generated_solution"] = code
+106:                 item["generated_solution"] = code
+112:     if API_KEY == "YOUR_API_KEY_HERE":
+
+===== COMMAND: python - <<'PY'
+mods = ['PyPDF2', 'pypdf', 'pdfplumber', 'fitz']
+for name in mods:
+    try:
+        __import__(name)
+        print(name, 'OK')
+    except Exception as e:
+        print(name, 'ERR', type(e).__name__, str(e))
+PY =====
+PyPDF2 OK
+pypdf OK
+pdfplumber ERR ModuleNotFoundError No module named 'pdfplumber'
+fitz ERR ModuleNotFoundError No module named 'fitz'
+
+===== COMMAND: python - <<'PY'
+from PyPDF2 import PdfReader
+reader = PdfReader('206_Self_Spec_Model_Authored_S.pdf')
+for i, page in enumerate(reader.pages, 1):
+    text = page.extract_text() or ''
+    if 'Table 1' in text or 'GPT-4o' in text or 'Native' in text:
+        print(f'--- PAGE {i} ---')
+        lines = text.splitlines()
+        for j, line in enumerate(lines):
+            if 'Table 1' in line or 'GPT-4o' in line or 'Native' in line:
+                start = max(0, j-4)
+                end = min(len(lines), j+8)
+                for k in range(start, end):
+                    print(lines[k])
+                print('---')
+PY =====
+--- PAGE 1 ---
+minimal Q&A loop, and (iv) generate codeonlyfrom the confirmed spec. The
+intuition is distributional: a self-authored spec better aligns with a model’s internal
+representational bias, reducing docstring drift and format/edge-case mistakes. On
+HumanEval (pass@1, single sample), SELF-SPECimproves over direct NL →code
+for stronger models: GPT-4o 87%→92% (+5) and Claude 3.7 92%→94%
+(+2); Claude 3.5 dips 90%→89% (−1), which returns to baseline once we
+remove over-defensive guards in generated code(e.g., replacing raise /assert
+with no-ops when unspecified). To our knowledge, this is the first systematic
+study that lets an LLM design its own spec language for coding. The method
+is simple (no finetuning), model-agnostic (each model chooses its spec shape),
+and practical (assumptions are made explicit). We release prompts and code for
+reproduction. Overall, our results show that SELF-SPECworks in practiceand
+---
+--- PAGE 2 ---
+constraints, mini-APIs), reducing docstring drift, inconsistent assumptions, and formatting/edge-case
+errors. Unlike free-form reasoning traces [ 2], the result is astable, reusable schemathat functions as
+a contract for code generation.
+Evaluation preview.We evaluate on HumanEval [ 3] under pass@1 (single sample, T=0 ) using
+three production models: GPT-4o [ 4], Claude 3.7 [ 5], and Claude 3.5 [ 6]. We compare aNative
+baseline (direct NL →code) againstSelf-Spec.Results:GPT-4o improves from 87% to92% (+5);
+Claude 3.7 improves from 92% to94% (+2); Claude 3.5 dips slightly from 90% to89% (−1). We
+trace the dip to over-defensive guards (e.g., raise /assert ) conflicting with HumanEval’s weak
+preconditions; replacing such guards with no-ops when unspecified restores ∼baseline for Claude 3.5.
+In contrast, fixed formal IRs like Dafny—while principled—report ∼77% in the pure setting and
+∼88% with a hybrid fallback on related configurations [ 1], underscoring the practicality of staying
+on-distribution.
+---
+errors. Unlike free-form reasoning traces [ 2], the result is astable, reusable schemathat functions as
+a contract for code generation.
+Evaluation preview.We evaluate on HumanEval [ 3] under pass@1 (single sample, T=0 ) using
+three production models: GPT-4o [ 4], Claude 3.7 [ 5], and Claude 3.5 [ 6]. We compare aNative
+baseline (direct NL →code) againstSelf-Spec.Results:GPT-4o improves from 87% to92% (+5);
+Claude 3.7 improves from 92% to94% (+2); Claude 3.5 dips slightly from 90% to89% (−1). We
+trace the dip to over-defensive guards (e.g., raise /assert ) conflicting with HumanEval’s weak
+preconditions; replacing such guards with no-ops when unspecified restores ∼baseline for Claude 3.5.
+In contrast, fixed formal IRs like Dafny—while principled—report ∼77% in the pure setting and
+∼88% with a hybrid fallback on related configurations [ 1], underscoring the practicality of staying
+on-distribution.
+Contributions and significance.
+---
+--- PAGE 3 ---
+•Reproducibility.We release prompts, scripts, model IDs/decoding parameters, and harness
+configuration to reproduce Table 1.2
+Roadmap.We situate Self-Spec relative to formal IRs and intermediate-reasoning prompts (§2);
+describe the orchestrator with Figure 1 (§3); detail the experimental setup (§4); present HumanEval
+results in Table 1 (§5); analyze model-specific behaviors (§6); and discuss implications and limitations
+(§7, §8).
+2 Background & Motivation
+Specifications in software practice.Specifications operationalize intent by forcing early, explicit
+choices about inputs/outputs, error policy, edge cases, state, and invariants. Mature ecosystems span
+---
+•Reproducibility.We release prompts, scripts, model IDs/decoding parameters, and harness
+configuration to reproduce Table 1.2
+Roadmap.We situate Self-Spec relative to formal IRs and intermediate-reasoning prompts (§2);
+describe the orchestrator with Figure 1 (§3); detail the experimental setup (§4); present HumanEval
+results in Table 1 (§5); analyze model-specific behaviors (§6); and discuss implications and limitations
+(§7, §8).
+2 Background & Motivation
+Specifications in software practice.Specifications operationalize intent by forcing early, explicit
+choices about inputs/outputs, error policy, edge cases, state, and invariants. Mature ecosystems span
+from temporal logics and model checkers (e.g., TLA+[ 7]) that specifywhata system may do, to
+lightweight relational modeling (Alloy[ 8]) for bounded structural exploration, to verification-oriented
+languages (Dafny[ 9]) with pre/postconditions, loop invariants, and SMT-backed proofs—consistently
+---
+--- PAGE 4 ---
+loop for any TBDfields)→FMConfirmer(await explicit "CONFIRM") →SpecExecutor(generate
+code). The FMInterviewer–SpecApplier loop repeats until no TBDremains and the user (or system)
+confirms the spec.
+and deterministic. We later show uplifts on HumanEval (pass@1, single-sample,T=0) for stronger
+models (GPT-4o, Claude 3.7) and a near-baseline result for Claude 3.5 once over-defensive guards
+are removed—supporting the hypothesis that amodel-authoredspec can be an effective, practical
+middle path.
+3 Method: Self-Spec Orchestrator
+Figure 1 illustrates the Self-Spec orchestration process. The pipeline consists of a sequence of
+coordinated prompt stages that guide the LLM from an initial natural language problem description
+to a final solution, via a custom spec that the model defines and uses. We briefly describe each
+component and its role in the loop:
+---
+--- PAGE 5 ---
+provides problems, each with a target function signature, a natural-language description, and hidden
+tests. For consistency and clarity, wepreprocesseach item into a concise natural-language problem
+statement paired with theexactfunction signature (no examples or auxiliary hints), which is used as
+the input in all conditions.
+Models.We experiment with three state-of-the-art closed-source LLMs:GPT-4o,Claude 3.7, and
+Claude 3.5. These represent two providers and varying capability levels (GPT-4o and Claude 3.7 are
+stronger models, while Claude 3.5 is a slightly older/less capable version). All models are used via
+their respective APIs on Mac M4.
+Conditions.For each model, we compare two generation modes: (1)Native, a direct NL →code
+generation baseline (the model is given the problem description and asked to produce the solution
+code directly, with no intermediate spec); and (2)Self-Spec, our proposed pipeline described in
+Section 3. In both cases, we use identical function signatures and descriptions for fairness.
+---
+tests. For consistency and clarity, wepreprocesseach item into a concise natural-language problem
+statement paired with theexactfunction signature (no examples or auxiliary hints), which is used as
+the input in all conditions.
+Models.We experiment with three state-of-the-art closed-source LLMs:GPT-4o,Claude 3.7, and
+Claude 3.5. These represent two providers and varying capability levels (GPT-4o and Claude 3.7 are
+stronger models, while Claude 3.5 is a slightly older/less capable version). All models are used via
+their respective APIs on Mac M4.
+Conditions.For each model, we compare two generation modes: (1)Native, a direct NL →code
+generation baseline (the model is given the problem description and asked to produce the solution
+code directly, with no intermediate spec); and (2)Self-Spec, our proposed pipeline described in
+Section 3. In both cases, we use identical function signatures and descriptions for fairness.
+Decoding.We use deterministic decoding for all runs to eliminate randomness: temperatureT= 0.
+---
+Models.We experiment with three state-of-the-art closed-source LLMs:GPT-4o,Claude 3.7, and
+Claude 3.5. These represent two providers and varying capability levels (GPT-4o and Claude 3.7 are
+stronger models, while Claude 3.5 is a slightly older/less capable version). All models are used via
+their respective APIs on Mac M4.
+Conditions.For each model, we compare two generation modes: (1)Native, a direct NL →code
+generation baseline (the model is given the problem description and asked to produce the solution
+code directly, with no intermediate spec); and (2)Self-Spec, our proposed pipeline described in
+Section 3. In both cases, we use identical function signatures and descriptions for fairness.
+Decoding.We use deterministic decoding for all runs to eliminate randomness: temperatureT= 0.
+This means the model will always produce the same output for a given prompt. We sample a single
+solution per task (pass@1 setting). No additional reranking or self-consistency voting is applied.
+Evaluation.We use the standard HumanEval evaluation harness, which executes the generated
+---
+tests. We report the fraction of tasks solved (pass@1 rate) for each model under each condition. All
+tasks use the same function signatures (we do not allow the model to change the function name or
+arguments) to ensure the solutions are comparable and directly runnable by the harness.
+5 Results
+Results on HumanEval are summarized in Table 1. We observe that for two of the models (GPT-4o
+and Claude 3.7), the Self-Spec approach yields a higher pass@1 compared to the native direct
+generation. GPT-4o improves from 87% to 92% (a +5 point gain), and Claude 3.7 rises from 92% to
+94% (+2). These improvements indicate that the stronger models benefit from the self-authored spec
+5
+---
+arguments) to ensure the solutions are comparable and directly runnable by the harness.
+5 Results
+Results on HumanEval are summarized in Table 1. We observe that for two of the models (GPT-4o
+and Claude 3.7), the Self-Spec approach yields a higher pass@1 compared to the native direct
+generation. GPT-4o improves from 87% to 92% (a +5 point gain), and Claude 3.7 rises from 92% to
+94% (+2). These improvements indicate that the stronger models benefit from the self-authored spec
+5
+---
+--- PAGE 6 ---
+Model Native Self-Spec∆
+GPT-4o 87% 92% +5
+Claude 3.7 92% 94% +2
+Claude 3.5 90% 89%−1
+Table 1:HumanEval pass@1 (single sample, T= 0 ).Each model is evaluated on 164 HumanEval
+problems under two conditions: direct code generation (Native) vs. the Self-Spec pipeline. ∆denotes
+the percentage point difference. GPT-4o and Claude 3.7 clearly benefit from Self-Spec, while Claude
+3.5 sees a negligible drop.
+---
+Model Native Self-Spec∆
+GPT-4o 87% 92% +5
+Claude 3.7 92% 94% +2
+Claude 3.5 90% 89%−1
+Table 1:HumanEval pass@1 (single sample, T= 0 ).Each model is evaluated on 164 HumanEval
+problems under two conditions: direct code generation (Native) vs. the Self-Spec pipeline. ∆denotes
+the percentage point difference. GPT-4o and Claude 3.7 clearly benefit from Self-Spec, while Claude
+3.5 sees a negligible drop.
+guiding their solution. In contrast, Claude 3.5 shows a slight decrease in performance with Self-Spec
+---
+Model Native Self-Spec∆
+GPT-4o 87% 92% +5
+Claude 3.7 92% 94% +2
+Claude 3.5 90% 89%−1
+Table 1:HumanEval pass@1 (single sample, T= 0 ).Each model is evaluated on 164 HumanEval
+problems under two conditions: direct code generation (Native) vs. the Self-Spec pipeline. ∆denotes
+the percentage point difference. GPT-4o and Claude 3.7 clearly benefit from Self-Spec, while Claude
+3.5 sees a negligible drop.
+guiding their solution. In contrast, Claude 3.5 shows a slight decrease in performance with Self-Spec
+(90% down to 89%, i.e. −1 point). In absolute terms, this drop is very small (essentially one fewer
+problem solved) and suggests that for this less capable model, the additional spec process did not
+yield an immediate benefit. We analyze these patterns further in the next section.
+---
+GPT-4o 87% 92% +5
+Claude 3.7 92% 94% +2
+Claude 3.5 90% 89%−1
+Table 1:HumanEval pass@1 (single sample, T= 0 ).Each model is evaluated on 164 HumanEval
+problems under two conditions: direct code generation (Native) vs. the Self-Spec pipeline. ∆denotes
+the percentage point difference. GPT-4o and Claude 3.7 clearly benefit from Self-Spec, while Claude
+3.5 sees a negligible drop.
+guiding their solution. In contrast, Claude 3.5 shows a slight decrease in performance with Self-Spec
+(90% down to 89%, i.e. −1 point). In absolute terms, this drop is very small (essentially one fewer
+problem solved) and suggests that for this less capable model, the additional spec process did not
+yield an immediate benefit. We analyze these patterns further in the next section.
+Overall, two out of three models saw an accuracy gain by using Self-Spec, highlighting the potential
+---
+Claude 3.7 92% 94% +2
+Claude 3.5 90% 89%−1
+Table 1:HumanEval pass@1 (single sample, T= 0 ).Each model is evaluated on 164 HumanEval
+problems under two conditions: direct code generation (Native) vs. the Self-Spec pipeline. ∆denotes
+the percentage point difference. GPT-4o and Claude 3.7 clearly benefit from Self-Spec, while Claude
+3.5 sees a negligible drop.
+guiding their solution. In contrast, Claude 3.5 shows a slight decrease in performance with Self-Spec
+(90% down to 89%, i.e. −1 point). In absolute terms, this drop is very small (essentially one fewer
+problem solved) and suggests that for this less capable model, the additional spec process did not
+yield an immediate benefit. We analyze these patterns further in the next section.
+Overall, two out of three models saw an accuracy gain by using Self-Spec, highlighting the potential
+of the approach for state-of-the-art LLMs. The slight regression for Claude 3.5 points to differences
+---
+in how smaller/older models handle the spec process.
+6 Analysis
+Category Task IDs
+Persistent across all three 75, 145, 160
+Shared (Claude 3.7 & GPT-4o) 65, 134, 163
+Shared (Claude 3.7 & Claude 3.5) 92, 146
+Shared (GPT-4o & Claude 3.5) 50, 83
+Table 2: Common errors across models (self-spec only)
+Model Task IDs (unique among the three self-spec logs)
+Claude 3.7 10, 116
+GPT-4o 74, 91, 102, 115, 132, 141
+Claude 3.5 9, 14, 17, 19, 32, 112, 113, 125, 126, 129, 135, 138, 153
+---
+Category Task IDs
+Persistent across all three 75, 145, 160
+Shared (Claude 3.7 & GPT-4o) 65, 134, 163
+Shared (Claude 3.7 & Claude 3.5) 92, 146
+Shared (GPT-4o & Claude 3.5) 50, 83
+Table 2: Common errors across models (self-spec only)
+Model Task IDs (unique among the three self-spec logs)
+Claude 3.7 10, 116
+GPT-4o 74, 91, 102, 115, 132, 141
+Claude 3.5 9, 14, 17, 19, 32, 112, 113, 125, 126, 129, 135, 138, 153
+Table 3: Model-unique failure candidates (potential regressions; baseline not provided)
+Error analysis.Baseline runs often fail for orchestration reasons—entry-point hijacking, template
+---
+Shared (GPT-4o & Claude 3.5) 50, 83
+Table 2: Common errors across models (self-spec only)
+Model Task IDs (unique among the three self-spec logs)
+Claude 3.7 10, 116
+GPT-4o 74, 91, 102, 115, 132, 141
+Claude 3.5 9, 14, 17, 19, 32, 112, 113, 125, 126, 129, 135, 138, 153
+Table 3: Model-unique failure candidates (potential regressions; baseline not provided)
+Error analysis.Baseline runs often fail for orchestration reasons—entry-point hijacking, template
+bleed, helper-bridging failures, or environment drift—but these largely vanish under Self-Spec,
+which pins entry points, fixes helper usage, and enforces return types and operation order. The
+remaining errors are genuine specification-following mistakes. We observe three persistent classes:
+(i)constraint misreads, where models over-interpret bounds (e.g., HE/75, treating “ a <100 ” as
+---
+(single-letter tail cases), HE/163 (misreading “even digits” as characters rather than integers), HE/50
+(dependency coupling on helpers), and HE/83 (tokenization/case-sensitivity for sentence starts).
+Model-specific errors suggest characteristic tendencies: Claude 3.5 often inserts over-strict “defensive”
+guards (e.g., raising on empty input in HE/9/14/17/19/112/125), a side-effect of self-specification;
+GPT-4o shows localized logic slips (per-row vs. global accounting in HE/115, filename rules in
+HE/141); Claude 3.7 contributes few uniques (HE/10/116) but consistently shares the core trio. In
+sum, persistent failures cluster on compressed prompts with multiple constraints or counter-intuitive
+exceptions, making them prime candidates for templated Self-Spec guidance. Without baseline error
+IDs, model-unique failures are conservatively treated as regression candidates.
+6
+---
+--- PAGE 7 ---
+Model-specific tendencies.What remains differs by model.Claude 3.5still adds unasked vali-
+dations (extra checks or exceptions) unless the spec explicitly bans them, which conflicts with tests
+that assume minimal guarding.Claude 3.7is improved but can still normalize early or relax type
+strictness unless precedence and typing are made explicit.GPT-4ousually follows the literal reading
+but may omit secondary clauses—tie-breaks, token boundaries, or per-row directives—if they are not
+spelled out. These patterns explain small residual gaps even after Self-Spec.
+Why Self-Spec helps some models more than others.The slight dip for Claude 3.5 under Self-
+Spec is attributable to over-cautious or defensive coding (for example, inserting range assertions that
+cause otherwise valid edge cases to fail), not to the framework itself. A simple post-processing pass
+that strips unrequested guards or imports eliminates this regression; with that adjustment, Claude
+3.5’s Self-Spec performance returns to its direct baseline. By contrast, GPT-4o and Claude 3.7 have
+---
+Why Self-Spec helps some models more than others.The slight dip for Claude 3.5 under Self-
+Spec is attributable to over-cautious or defensive coding (for example, inserting range assertions that
+cause otherwise valid edge cases to fail), not to the framework itself. A simple post-processing pass
+that strips unrequested guards or imports eliminates this regression; with that adjustment, Claude
+3.5’s Self-Spec performance returns to its direct baseline. By contrast, GPT-4o and Claude 3.7 have
+stronger planning and benefit directly: the explicit spec reduces docstring drift, clarifies edge cases,
+and acts as a checklist that lowers omissions and off-by-one or format mismatches.
+Relation to reasoning scale.These trends mirror findings on intermediate-reasoning benefits:
+larger models leverage structured scaffolds more reliably, while smaller ones can be distracted by
+extra steps unless guided. In our setting, Self-Spec supplies the structure that stronger models exploit
+to refine correctness, and it helps weaker models once defensive tendencies are tuned.“‘
+7 Discussion: Why Self-Spec is Useful
+---
+--- PAGE 8 ---
+Scope of evaluation.We focused solely on HumanEval (164 Python tasks), which is widely used
+and representative.
+Model variability and versioning.We used specific model versions (GPT-4o version and claude-3-
+5-sonnet-20241022,Claude-3-7-sonnet-20250219). LLM providers frequently update their models,
+which could affect results. We ran deterministic decoding to control randomness, but the underlying
+model changes (or differences in API instantiation) could still lead to non-identical outputs. Repro-
+ducing our exact numbers in the future might require using the exact model snapshots or versions we
+did. We note that provider-side changes are an external factor; however, our released code will log
+model version identifiers where possible to aid reproducibility.
+To facilitate verification of our claims, we are releasing all materials needed to reproduce Table 1.
+---
+model changes (or differences in API instantiation) could still lead to non-identical outputs. Repro-
+ducing our exact numbers in the future might require using the exact model snapshots or versions we
+did. We note that provider-side changes are an external factor; however, our released code will log
+model version identifiers where possible to aid reproducibility.
+To facilitate verification of our claims, we are releasing all materials needed to reproduce Table 1.
+This includes the prompt scripts for each stage of Self-Spec, the list of HumanEval problem IDs
+used, model API identifiers and parameters, and the evaluation harness setup. With these, one can
+run the same experiments on the specified models. We also include execution logs and outputs for
+transparency. We hope that this will enable others to validate our results and build upon the Self-Spec
+approach in their own code-generation pipelines.
+Future work: spec-level remedies.The residual errors under Self-Spec suggest targeted upgrades
+to the spec and the interviewer loop. First, to reducespec-ambiguity misreads, we will require four
+---
+one-line assertion (or a tiny precheck) that computes a sentinel case both ways and confirms the
+chosen scope. Finally, we will add small model-specific guards in the spec: aguard levelflag
+defaulting to “no extra validation unless stated” (to curb Claude 3.5’s defensive checks), anallowed
+normalizationswhitelist (to limit Claude 3.7’s early cleanup), and asecondary-clauses checklistthat
+must be ticked before code emission (to remind GPT-4o to include tie-breaks, token boundaries, and
+per-row directives). As a lightweight safety net, the executor will auto-synthesize three micro-tests
+from the spec (one boundary, one typical, one counterexample for scope/priority) and run them
+deterministically before returning code. We expect these additions to directly target the remaining
+failure classes without increasing orchestration complexity beyond one short interviewer turn and a
+fast preflight check.
+9 Conclusion
+We introduced SELF-SPEC, a simple orchestration that compels an LLM to first author its own
+---
+We introduced SELF-SPEC, a simple orchestration that compels an LLM to first author its own
+specification schema, instantiate and confirm it through a lightweight Q&A loop, and only then
+generate code. This self-authored representation provides a middle ground between brittle NL →code
+prompting and off-distribution formal IRs. Our experiments on HumanEval show that SELF-SPEC
+yields consistent gains for stronger models such as GPT-4o and Claude 3.7, while diagnosing the
+minor drop for Claude 3.5 as an artifact of over-defensive guard generation.
+Beyond immediate accuracy improvements, the broader contribution is conceptual: by aligning
+external representations with the model’s internal distributional biases, we reduce ambiguity and
+make assumptions explicit. This work opens several avenues for future research, including extending
+Self-Spec to multi-turn interactive programming, adapting to domain-specific APIs, and integrating
+with formal verification frameworks. We hope our findings encourage the community to explore
+LLM-authored specifications as a practical, reproducible way to improve code reliability without
+---
+--- PAGE 9 ---
+10 AI Agent Setup
+All experiments were conducted using a deterministic, Python-controlled orchestration implementing
+the six functional roles described in §3:SpecDesigner,SpecInstantiator,FMInterviewer,SpecApplier,
+FMConfirmer, andSpecExecutor. Each benchmark run was executed end-to-end by the same LLM
+under evaluation—GPT-4o, Claude 3.7, or Claude 3.5—without any fine-tuning, retrieval, or external
+tools. All generations used strictly deterministic decoding with temperature T=0 , and evaluations
+were performed on the HumanEval dataset.
+References
+[1]Yue Chen Li, Stefan Zetzsche, and Siva Somayyajula. Dafny as verification-aware interme-
+diate language for code generation. InDafny 2025 Workshop @ POPL 2025, Denver, CO,
+USA, 2025. URL https://popl25.sigplan.org/details/dafny-2025-papers/11/
+Dafny-as-Verification-Aware-Intermediate-Language-for-Code-Generation.
+---
+Advances in neural information processing systems, 35:24824–24837, 2022.
+[3]Mark Chen, Jerry Tworek, Heewoo Jun, Qiming Yuan, Henrique Ponde De Oliveira Pinto, Jared
+Kaplan, Harri Edwards, Yuri Burda, Nicholas Joseph, Greg Brockman, et al. Evaluating large
+language models trained on code.arXiv preprint arXiv:2107.03374, 2021.
+[4]OpenAI. Hello GPT-4o. https://openai.com/index/hello-gpt-4o/ , 2024. Accessed
+2025-09-15.
+[5]Anthropic. Claude 3.7 sonnet and claude code. https://www.anthropic.com/news/
+claude-3-7-sonnet, 2025. Accessed 2025-09-15.
+[6]Anthropic. Introducing claude 3.5 sonnet. https://www.anthropic.com/news/
+claude-3-5-sonnet, 2024. Accessed 2025-09-15.
+[7]Leslie Lamport.Specifying Systems: The TLA+ Language and Tools for Hardware and
+Software Engineers. Addison-Wesley, 2002. URL https://lamport.azurewebsites.net/
+---
+
+===== COMMAND: python - <<'PY'
+from PyPDF2 import PdfReader
+reader = PdfReader('206_Self_Spec_Model_Authored_S.pdf')
+for i, page in enumerate(reader.pages, 1):
+    text = page.extract_text() or ''
+    if 'Table 1' in text:
+        print(f'--- PAGE {i} ---')
+        lines = text.splitlines()
+        for j, line in enumerate(lines):
+            if 'Table 1' in line or 'GPT-4o' in line or 'Claude 3.7' in line or 'Claude 3.5' in line or 'Native' in line or 'Self-Spec' in line:
+                print(f'{j+1}: {line}')
+PY =====
+--- PAGE 3 ---
+2: configuration to reproduce Table 1.2
+3: Roadmap.We situate Self-Spec relative to formal IRs and intermediate-reasoning prompts (§2);
+5: results in Table 1 (§5); analyze model-specific behaviors (§6); and discuss implications and limitations
+--- PAGE 5 ---
+25: We evaluateSelf-Specon the HumanEval benchmark for Python code generation. HumanEval
+30: Models.We experiment with three state-of-the-art closed-source LLMs:GPT-4o,Claude 3.7, and
+31: Claude 3.5. These represent two providers and varying capability levels (GPT-4o and Claude 3.7 are
+32: stronger models, while Claude 3.5 is a slightly older/less capable version). All models are used via
+34: Conditions.For each model, we compare two generation modes: (1)Native, a direct NL →code
+36: code directly, with no intermediate spec); and (2)Self-Spec, our proposed pipeline described in
+47: Results on HumanEval are summarized in Table 1. We observe that for two of the models (GPT-4o
+48: and Claude 3.7), the Self-Spec approach yields a higher pass@1 compared to the native direct
+49: generation. GPT-4o improves from 87% to 92% (a +5 point gain), and Claude 3.7 rises from 92% to
+--- PAGE 6 ---
+1: Model Native Self-Spec∆
+2: GPT-4o 87% 92% +5
+3: Claude 3.7 92% 94% +2
+4: Claude 3.5 90% 89%−1
+5: Table 1:HumanEval pass@1 (single sample, T= 0 ).Each model is evaluated on 164 HumanEval
+6: problems under two conditions: direct code generation (Native) vs. the Self-Spec pipeline. ∆denotes
+7: the percentage point difference. GPT-4o and Claude 3.7 clearly benefit from Self-Spec, while Claude
+9: guiding their solution. In contrast, Claude 3.5 shows a slight decrease in performance with Self-Spec
+13: Overall, two out of three models saw an accuracy gain by using Self-Spec, highlighting the potential
+14: of the approach for state-of-the-art LLMs. The slight regression for Claude 3.5 points to differences
+19: Shared (Claude 3.7 & GPT-4o) 65, 134, 163
+20: Shared (Claude 3.7 & Claude 3.5) 92, 146
+21: Shared (GPT-4o & Claude 3.5) 50, 83
+24: Claude 3.7 10, 116
+25: GPT-4o 74, 91, 102, 115, 132, 141
+26: Claude 3.5 9, 14, 17, 19, 32, 112, 113, 125, 126, 129, 135, 138, 153
+29: bleed, helper-bridging failures, or environment drift—but these largely vanish under Self-Spec,
+40: Model-specific errors suggest characteristic tendencies: Claude 3.5 often inserts over-strict “defensive”
+42: GPT-4o shows localized logic slips (per-row vs. global accounting in HE/115, filename rules in
+43: HE/141); Claude 3.7 contributes few uniques (HE/10/116) but consistently shares the core trio. In
+45: exceptions, making them prime candidates for templated Self-Spec guidance. Without baseline error
+--- PAGE 8 ---
+3: Model variability and versioning.We used specific model versions (GPT-4o version and claude-3-
+10: To facilitate verification of our claims, we are releasing all materials needed to reproduce Table 1.
+11: This includes the prompt scripts for each stage of Self-Spec, the list of HumanEval problem IDs
+14: transparency. We hope that this will enable others to validate our results and build upon the Self-Spec
+16: Future work: spec-level remedies.The residual errors under Self-Spec suggest targeted upgrades
+29: defaulting to “no extra validation unless stated” (to curb Claude 3.5’s defensive checks), anallowed
+30: normalizationswhitelist (to limit Claude 3.7’s early cleanup), and asecondary-clauses checklistthat
+31: must be ticked before code emission (to remind GPT-4o to include tie-breaks, token boundaries, and
+42: yields consistent gains for stronger models such as GPT-4o and Claude 3.7, while diagnosing the
+43: minor drop for Claude 3.5 as an artifact of over-defensive guard generation.
+47: Self-Spec to multi-turn interactive programming, adapting to domain-specific APIs, and integrating
+
+===== COMMAND: python - <<'PY'
+from PyPDF2 import PdfReader
+reader = PdfReader('206_Self_Spec_Model_Authored_S.pdf')
+page = reader.pages[4]
+text = page.extract_text() or ''
+for idx, line in enumerate(text.splitlines(), 1):
+    if any(x in line for x in ['Table 1', 'GPT-4o', 'Native', 'Self-Spec', 'Model', 'Pass@1']):
+        start = max(1, idx-3)
+        end = min(len(text.splitlines()), idx+6)
+        print(f'--- around line {idx} ---')
+        for j in range(start, end+1):
+            print(f'{j}: {text.splitlines()[j-1]}')
+PY =====
+--- around line 25 ---
+22: significant clarity. By handing the model the responsibility to define and use a spec, we hypothesize
+23: it engages in a form of self-consistent planning that improves final accuracy.
+24: 4 Experimental Setup
+25: We evaluateSelf-Specon the HumanEval benchmark for Python code generation. HumanEval
+26: provides problems, each with a target function signature, a natural-language description, and hidden
+27: tests. For consistency and clarity, wepreprocesseach item into a concise natural-language problem
+28: statement paired with theexactfunction signature (no examples or auxiliary hints), which is used as
+29: the input in all conditions.
+30: Models.We experiment with three state-of-the-art closed-source LLMs:GPT-4o,Claude 3.7, and
+31: Claude 3.5. These represent two providers and varying capability levels (GPT-4o and Claude 3.7 are
+--- around line 30 ---
+27: tests. For consistency and clarity, wepreprocesseach item into a concise natural-language problem
+28: statement paired with theexactfunction signature (no examples or auxiliary hints), which is used as
+29: the input in all conditions.
+30: Models.We experiment with three state-of-the-art closed-source LLMs:GPT-4o,Claude 3.7, and
+31: Claude 3.5. These represent two providers and varying capability levels (GPT-4o and Claude 3.7 are
+32: stronger models, while Claude 3.5 is a slightly older/less capable version). All models are used via
+33: their respective APIs on Mac M4.
+34: Conditions.For each model, we compare two generation modes: (1)Native, a direct NL →code
+35: generation baseline (the model is given the problem description and asked to produce the solution
+36: code directly, with no intermediate spec); and (2)Self-Spec, our proposed pipeline described in
+--- around line 31 ---
+28: statement paired with theexactfunction signature (no examples or auxiliary hints), which is used as
+29: the input in all conditions.
+30: Models.We experiment with three state-of-the-art closed-source LLMs:GPT-4o,Claude 3.7, and
+31: Claude 3.5. These represent two providers and varying capability levels (GPT-4o and Claude 3.7 are
+32: stronger models, while Claude 3.5 is a slightly older/less capable version). All models are used via
+33: their respective APIs on Mac M4.
+34: Conditions.For each model, we compare two generation modes: (1)Native, a direct NL →code
+35: generation baseline (the model is given the problem description and asked to produce the solution
+36: code directly, with no intermediate spec); and (2)Self-Spec, our proposed pipeline described in
+37: Section 3. In both cases, we use identical function signatures and descriptions for fairness.
+--- around line 34 ---
+31: Claude 3.5. These represent two providers and varying capability levels (GPT-4o and Claude 3.7 are
+32: stronger models, while Claude 3.5 is a slightly older/less capable version). All models are used via
+33: their respective APIs on Mac M4.
+34: Conditions.For each model, we compare two generation modes: (1)Native, a direct NL →code
+35: generation baseline (the model is given the problem description and asked to produce the solution
+36: code directly, with no intermediate spec); and (2)Self-Spec, our proposed pipeline described in
+37: Section 3. In both cases, we use identical function signatures and descriptions for fairness.
+38: Decoding.We use deterministic decoding for all runs to eliminate randomness: temperatureT= 0.
+39: This means the model will always produce the same output for a given prompt. We sample a single
+40: solution per task (pass@1 setting). No additional reranking or self-consistency voting is applied.
+--- around line 36 ---
+33: their respective APIs on Mac M4.
+34: Conditions.For each model, we compare two generation modes: (1)Native, a direct NL →code
+35: generation baseline (the model is given the problem description and asked to produce the solution
+36: code directly, with no intermediate spec); and (2)Self-Spec, our proposed pipeline described in
+37: Section 3. In both cases, we use identical function signatures and descriptions for fairness.
+38: Decoding.We use deterministic decoding for all runs to eliminate randomness: temperatureT= 0.
+39: This means the model will always produce the same output for a given prompt. We sample a single
+40: solution per task (pass@1 setting). No additional reranking or self-consistency voting is applied.
+41: Evaluation.We use the standard HumanEval evaluation harness, which executes the generated
+42: code against the hidden test cases for each problem. A solution is considered correct if it passes all
+--- around line 47 ---
+44: tasks use the same function signatures (we do not allow the model to change the function name or
+45: arguments) to ensure the solutions are comparable and directly runnable by the harness.
+46: 5 Results
+47: Results on HumanEval are summarized in Table 1. We observe that for two of the models (GPT-4o
+48: and Claude 3.7), the Self-Spec approach yields a higher pass@1 compared to the native direct
+49: generation. GPT-4o improves from 87% to 92% (a +5 point gain), and Claude 3.7 rises from 92% to
+50: 94% (+2). These improvements indicate that the stronger models benefit from the self-authored spec
+51: 5
+--- around line 48 ---
+45: arguments) to ensure the solutions are comparable and directly runnable by the harness.
+46: 5 Results
+47: Results on HumanEval are summarized in Table 1. We observe that for two of the models (GPT-4o
+48: and Claude 3.7), the Self-Spec approach yields a higher pass@1 compared to the native direct
+49: generation. GPT-4o improves from 87% to 92% (a +5 point gain), and Claude 3.7 rises from 92% to
+50: 94% (+2). These improvements indicate that the stronger models benefit from the self-authored spec
+51: 5
+--- around line 49 ---
+46: 5 Results
+47: Results on HumanEval are summarized in Table 1. We observe that for two of the models (GPT-4o
+48: and Claude 3.7), the Self-Spec approach yields a higher pass@1 compared to the native direct
+49: generation. GPT-4o improves from 87% to 92% (a +5 point gain), and Claude 3.7 rises from 92% to
+50: 94% (+2). These improvements indicate that the stronger models benefit from the self-authored spec
+51: 5
+
+===== COMMAND: python - <<'PY'
+from PyPDF2 import PdfReader
+reader = PdfReader('206_Self_Spec_Model_Authored_S.pdf')
+for i, page in enumerate(reader.pages, 1):
+    text = page.extract_text() or ''
+    if '87%' in text or '92%' in text or '94%' in text:
+        print(f'--- PAGE {i} ---')
+        for idx, line in enumerate(text.splitlines(), 1):
+            if '87%' in line or '92%' in line or '94%' in line or 'Table 1' in line or 'GPT-4o' in line or 'Claude 3.7' in line or 'Claude 3.5' in line:
+                print(f'{idx}: {line}')
+PY =====
+--- PAGE 1 ---
+17: for stronger models: GPT-4o 87%→92% (+5) and Claude 3.7 92%→94%
+18: (+2); Claude 3.5 dips 90%→89% (−1), which returns to baseline once we
+--- PAGE 2 ---
+30: three production models: GPT-4o [ 4], Claude 3.7 [ 5], and Claude 3.5 [ 6]. We compare aNative
+31: baseline (direct NL →code) againstSelf-Spec.Results:GPT-4o improves from 87% to92% (+5);
+32: Claude 3.7 improves from 92% to94% (+2); Claude 3.5 dips slightly from 90% to89% (−1). We
+34: preconditions; replacing such guards with no-ops when unspecified restores ∼baseline for Claude 3.5.
+44: 4o:+5; Claude 3.7: +2) and recovers to baseline for Claude 3.5 after removing unnecessary
+--- PAGE 5 ---
+30: Models.We experiment with three state-of-the-art closed-source LLMs:GPT-4o,Claude 3.7, and
+31: Claude 3.5. These represent two providers and varying capability levels (GPT-4o and Claude 3.7 are
+32: stronger models, while Claude 3.5 is a slightly older/less capable version). All models are used via
+47: Results on HumanEval are summarized in Table 1. We observe that for two of the models (GPT-4o
+48: and Claude 3.7), the Self-Spec approach yields a higher pass@1 compared to the native direct
+49: generation. GPT-4o improves from 87% to 92% (a +5 point gain), and Claude 3.7 rises from 92% to
+50: 94% (+2). These improvements indicate that the stronger models benefit from the self-authored spec
+--- PAGE 6 ---
+2: GPT-4o 87% 92% +5
+3: Claude 3.7 92% 94% +2
+4: Claude 3.5 90% 89%−1
+5: Table 1:HumanEval pass@1 (single sample, T= 0 ).Each model is evaluated on 164 HumanEval
+7: the percentage point difference. GPT-4o and Claude 3.7 clearly benefit from Self-Spec, while Claude
+9: guiding their solution. In contrast, Claude 3.5 shows a slight decrease in performance with Self-Spec
+14: of the approach for state-of-the-art LLMs. The slight regression for Claude 3.5 points to differences
+19: Shared (Claude 3.7 & GPT-4o) 65, 134, 163
+20: Shared (Claude 3.7 & Claude 3.5) 92, 146
+21: Shared (GPT-4o & Claude 3.5) 50, 83
+24: Claude 3.7 10, 116
+25: GPT-4o 74, 91, 102, 115, 132, 141
+26: Claude 3.5 9, 14, 17, 19, 32, 112, 113, 125, 126, 129, 135, 138, 153
+40: Model-specific errors suggest characteristic tendencies: Claude 3.5 often inserts over-strict “defensive”
+42: GPT-4o shows localized logic slips (per-row vs. global accounting in HE/115, filename rules in
+43: HE/141); Claude 3.7 contributes few uniques (HE/10/116) but consistently shares the core trio. In
+
+===== COMMAND: python - <<'PY'
+from pathlib import Path
+import json
+path = Path('A4S_update/all_baseline_gpt-4o.jsonl')
+first = json.loads(path.read_text().splitlines()[0])
+print('passed field type/value:', type(first['passed']).__name__, first['passed'])
+print('error prefix:', first['error'][:80])
+print('contains 401:', '401' in first['error'])
+PY =====
+passed field type/value: bool False
+error prefix: ERROR: Error code: 401 - {'error': {'message': "You didn't provide an API key. Y
+contains 401: True
+
+===== COMMAND: nl -ba A4S_update/readme.md | sed -n '30,90p' =====
+    30	- `all_spec_gpt_4o.jsonl` — spec-driven generations (GPT-4o).
+    31	- `results_summary_*.txt` — one-line summary: `Total / Passed / Failed`.
+    32	- `failed_*.jsonl` — failing cases for quick inspection.
+    33	
+    34	---
+    35	> **Heads-up (easy to re-run):** Two artifacts are not committed — **GPT-4o baseline** and **Claude 3.5 spec**.  
+    36	> These files were originally saved but later misplaced. If you wish to verify, you can easily regenerate them:
+    37	>
+    38	> **GPT-4o baseline**:
+    39	> ```bash
+    40	> python evaluation_baseline_pipeline.py
+    41	> ```
+    42	> **Claude 3.5 spec**
+    43	> ```bash
+    44	> python spec_result_generation.py
+    45	> python spec_result_evaluation.py
+    46	> ```
+    47	
+    48	---
+    49	
+    50	## Requirements
+    51	
+    52	- Python **3.8+**
+    53	- Python packages: `openai`  *(native Anthropic SDK not required if you’re using an OpenAI‑compatible endpoint via `base_url`)*
+    54	
+    55	```bash
+    56	pip install -U openai
+    57	# optional, if you prefer .env management
+    58	pip install -U python-dotenv
+    59	```
+    60	
+    61	**Environment variables**
+    62	- `OPENAI_API_KEY` — used for both OpenAI and OpenAI‑compatible endpoints (e.g., Claude via `base_url`).
+    63	- (Optional) `OPENAI_BASE_URL` — if you prefer to set the endpoint globally; otherwise the scripts have it inline.
+    64	
+    65	---
+    66	
+    67	## Quickstart
+    68	
+    69	### A) Baseline Pipeline (e.g., GPT‑4o)
+    70	
+    71	**Option 1 (one-shot, recommended):**
+    72	```bash
+    73	python evaluation_baseline_pipeline.py
+    74	```
+    75	- Uses GPT‑4o by default.
+    76	- Produces `all_baseline_<model>.jsonl`, `results_summary_baseline_<model>.txt`, and `failed_baseline_<model>.jsonl`.
+    77	
+    78	**Option 2 (evaluate an existing result file):**
+    79	```bash
+    80	python baseline_result_evaluation.py
+    81	```
+    82	- Reads `all_baseline_*.jsonl` files and writes summaries + failures.
+    83	
+    84	---
+    85	
+    86	### B) Spec-Driven (Vibe Programming) Pipeline
+    87	
+    88	1) **Convert prompts → natural language (`nl_request`)**  
+    89	   (Skip if `HumanEval_with_nl.jsonl` already exists.)
+    90	```bash
+
+===== COMMAND: nl -ba A4S_update/evaluation_baseline_pipeline.py | sed -n '1,130p' =====
+     1	import os
+     2	import json
+     3	import asyncio
+     4	from typing import Tuple, Dict, Any, List
+     5	
+     6	from openai import AsyncOpenAI
+     7	
+     8	API_KEY = ""
+     9	client = AsyncOpenAI(api_key=API_KEY)
+    10	# client = AsyncOpenAI(api_key=API_KEY, base_url="https://api.anthropic.com/v1/")
+    11	
+    12	# claude-3-5-sonnet-20241022
+    13	# MODEL = "claude-3-7-sonnet-20250219"
+    14	MODEL = "gpt-4o"
+    15	TEMPERATURE = 0
+    16	
+    17	MAX_CONCURRENCY = 10
+    18	sem = asyncio.Semaphore(MAX_CONCURRENCY)
+    19	
+    20	SUMMARY_TXT = f"results_summary_baseline_{MODEL}.txt" 
+    21	PRELUDE = (
+    22	    "from typing import *\n"
+    23	    "import math, functools, itertools, collections\n"
+    24	)
+    25	
+    26	
+    27	async def fetch_code(prompt: str, task_id: str) -> Tuple[str, str]:
+    28	    try:
+    29	        async with sem:
+    30	            resp = await client.chat.completions.create(
+    31	                model=MODEL,
+    32	                temperature=TEMPERATURE,
+    33	                messages=[
+    34	                    {
+    35	                        "role": "system",
+    36	                        "content": (
+    37	                            "You are a careful coding assistant. "
+    38	                            "Return ONLY valid Python code that defines the requested function "
+    39	                            "with the EXACT SAME name/signature. "
+    40	                            "You may add standard-library imports if needed. "
+    41	                            "No explanations, no markdown fences, no comments, no tests."
+    42	                        ),
+    43	                    },
+    44	                    {"role": "user", "content": prompt},
+    45	                ],
+    46	            )
+    47	        code = resp.choices[0].message.content or ""
+    48	        return task_id, code
+    49	    except Exception as e:
+    50	        return task_id, f"ERROR: {e}"
+    51	
+    52	
+    53	def run_test(task: Dict[str, Any], code: str) -> Tuple[bool, str]:
+    54	    if code.startswith("ERROR:"):
+    55	        return False, code
+    56	
+    57	    ns: Dict[str, Any] = {}
+    58	    try:
+    59	    
+    60	        code_wrapped = f"{PRELUDE}\n{code}\n\n{task['test']}\n\ncheck({task['entry_point']})"
+    61	        exec(code_wrapped, ns)
+    62	        return True, ""
+    63	    except Exception as e:
+    64	        return False, str(e)
+    65	
+    66	
+    67	async def main() -> None:
+    68	    with open("HumanEval.jsonl", "r", encoding="utf-8") as f:
+    69	        data: List[Dict[str, Any]] = [json.loads(line) for line in f]
+    70	
+    71	    coros = [fetch_code(item["prompt"], item["task_id"]) for item in data]
+    72	    codes = await asyncio.gather(*coros, return_exceptions=False)
+    73	
+    74	    results: Dict[str, Dict[str, Any]] = {}
+    75	    index = {d["task_id"]: d for d in data}
+    76	
+    77	    for task_id, code in codes:
+    78	        task = index[task_id]
+    79	        passed, err = run_test(task, code)
+    80	        results[task_id] = {"passed": passed, "error": err}
+    81	
+    82	    total = len(results)
+    83	    passed_cnt = sum(1 for v in results.values() if v["passed"])
+    84	    print(f"Total: {total}, Passed: {passed_cnt}, Failed: {total - passed_cnt}")
+    85	    for tid, res in results.items():
+    86	        if res["passed"]:
+    87	            print(f"{tid} ✅")
+    88	        else:
+    89	            print(f"{tid} ❌ {res['error']}")
+    90	    with open(SUMMARY_TXT, "w", encoding="utf-8") as f:
+    91	        f.write(f"Total: {total}, Passed: {passed_cnt}, Failed: {total - passed_cnt}\n")
+    92	
+    93	
+    94	    with open(f"all_baseline_{MODEL}.jsonl", "w", encoding="utf-8") as f:
+    95	        for tid, res in results.items():
+    96	            item = index[tid]
+    97	            item["generated_solution"] = code
+    98	            item["error"] = res["error"]
+    99	            item["passed"] = res["passed"]
+   100	            f.write(json.dumps(item, ensure_ascii=False) + "\n")
+   101	
+   102	    with open(f"failed_baseline_{MODEL}.jsonl", "w", encoding="utf-8") as f:
+   103	        for tid, res in results.items():
+   104	            if not res["passed"]:
+   105	                item = index[tid]
+   106	                item["generated_solution"] = code
+   107	                item["error"] = res["error"]
+   108	                f.write(json.dumps(item, ensure_ascii=False) + "\n")
+   109	
+   110	
+   111	if __name__ == "__main__":
+   112	    if API_KEY == "YOUR_API_KEY_HERE":
+   113	        print("⚠️ NEED OPENAI_API_KEY 。")
+   114	    asyncio.run(main())
+
+===== COMMAND: nl -ba A4S_update/baseline_result_evaluation.py | sed -n '1,120p' =====
+     1	
+     2	import os, sys, glob, json, re
+     3	
+     4	def process(all_path: str) -> None:
+     5	    m = re.fullmatch(r"all_baseline_(.+)\.jsonl", os.path.basename(all_path))
+     6	    if not m:
+     7	        return
+     8	    model = m.group(1)
+     9	    summary_path = f"results_summary_baseline_{model}.txt"
+    10	    failed_path  = f"failed_baseline_{model}.jsonl"
+    11	
+    12	    total = passed = failed = 0
+    13	    failed_lines = []
+    14	
+    15	    with open(all_path, "r", encoding="utf-8") as fin:
+    16	        for lineno, line in enumerate(fin, 1):
+    17	            if not line.strip():
+    18	                continue
+    19	            obj = json.loads(line)
+    20	            total += 1
+    21	            if obj.get("passed", False):
+    22	                passed += 1
+    23	            else:
+    24	                failed += 1
+    25	         
+    26	                failed_lines.append(line.rstrip("\n"))
+    27	
+    28	    with open(summary_path, "w", encoding="utf-8") as fsum:
+    29	        fsum.write(f"Total: {total}, Passed: {passed}, Failed: {failed}\n")
+    30	
+    31	    with open(failed_path, "w", encoding="utf-8") as ff:
+    32	        for s in failed_lines:
+    33	            ff.write(s + "\n")
+    34	
+    35	    print(f"✓ {all_path} -> {summary_path}, {failed_path}  (Total={total} Passed={passed} Failed={failed})")
+    36	
+    37	def main() -> None:
+    38	    paths = sorted(glob.glob("all_baseline_*.jsonl"))
+    39	    if not paths:
+    40	        print("❌ Not Found all_baseline_*.jsonl", file=sys.stderr)
+    41	        sys.exit(1)
+    42	    for p in paths:
+    43	        process(p)
+    44	
+    45	if __name__ == "__main__":
+    46	    main()
+
+===== COMMAND: nl -ba A4S_update/results_summary_baseline_gpt-4o.txt =====
+     1	Total: 164, Passed: 0, Failed: 164
+
+===== COMMAND: nl -ba A4S_update/readme.md | sed -n '1,90p' =====
+     1	# Vibe Programming · HumanEval Pipeline (Baseline & Spec-Driven)
+     2	
+     3	A reproducible pipeline for evaluating LLM code generation on **HumanEval** with two modes:
+     4	
+     5	- **Baseline:** generate code directly from original HumanEval prompts.
+     6	- **Spec-Driven (Vibe Programming):** first convert prompts to natural language requests, then run a specification-guided generation pipeline.
+     7	
+     8	It supports parallel runs and logs all generations for re-evaluation.
+     9	
+    10	---
+    11	
+    12	## What’s Included
+    13	
+    14	**Data**
+    15	- `HumanEval.jsonl` — Original HumanEval tasks (prompts / solutions / tests).
+    16	- `HumanEval_with_nl.jsonl` — HumanEval with added natural-language requests (`nl_request`) produced by `humaneval_convert.py`.
+    17	
+    18	**Pipelines & Utils**
+    19	- `humaneval.py` — Utilities for HumanEval format.
+    20	- `humaneval_convert.py` — Convert code prompts → natural language (`nl_request`) for spec pipeline.
+    21	- `spec_result_generation.py` — Generate **spec-driven** solutions (defaults configured for Claude Sonnet; see below).
+    22	- `spec_result_evaluation.py` — Evaluate spec-driven generations.
+    23	- `evaluation_baseline_pipeline.py` — Run **baseline** generation + evaluation for (e.g.) GPT‑4o.
+    24	- `baseline_result_evaluation.py` — Evaluate existing baseline generations in `all_baseline_*.jsonl`.
+    25	
+    26	**Results (examples already in repo)**
+    27	- `all_baseline_claude_3_5_sonnet_20241022.jsonl` — baseline generations (Claude 3.5 Sonnet 2024-10-22).
+    28	- `all_baseline_claude_3_7_sonnet_20250219.jsonl` — baseline generations (Claude 3.7 Sonnet 2025-02-19).
+    29	- `all_spec_claude_3_7_sonnet_20250219.jsonl` — spec-driven generations (Claude 3.7 Sonnet 2025-02-19).
+    30	- `all_spec_gpt_4o.jsonl` — spec-driven generations (GPT-4o).
+    31	- `results_summary_*.txt` — one-line summary: `Total / Passed / Failed`.
+    32	- `failed_*.jsonl` — failing cases for quick inspection.
+    33	
+    34	---
+    35	> **Heads-up (easy to re-run):** Two artifacts are not committed — **GPT-4o baseline** and **Claude 3.5 spec**.  
+    36	> These files were originally saved but later misplaced. If you wish to verify, you can easily regenerate them:
+    37	>
+    38	> **GPT-4o baseline**:
+    39	> ```bash
+    40	> python evaluation_baseline_pipeline.py
+    41	> ```
+    42	> **Claude 3.5 spec**
+    43	> ```bash
+    44	> python spec_result_generation.py
+    45	> python spec_result_evaluation.py
+    46	> ```
+    47	
+    48	---
+    49	
+    50	## Requirements
+    51	
+    52	- Python **3.8+**
+    53	- Python packages: `openai`  *(native Anthropic SDK not required if you’re using an OpenAI‑compatible endpoint via `base_url`)*
+    54	
+    55	```bash
+    56	pip install -U openai
+    57	# optional, if you prefer .env management
+    58	pip install -U python-dotenv
+    59	```
+    60	
+    61	**Environment variables**
+    62	- `OPENAI_API_KEY` — used for both OpenAI and OpenAI‑compatible endpoints (e.g., Claude via `base_url`).
+    63	- (Optional) `OPENAI_BASE_URL` — if you prefer to set the endpoint globally; otherwise the scripts have it inline.
+    64	
+    65	---
+    66	
+    67	## Quickstart
+    68	
+    69	### A) Baseline Pipeline (e.g., GPT‑4o)
+    70	
+    71	**Option 1 (one-shot, recommended):**
+    72	```bash
+    73	python evaluation_baseline_pipeline.py
+    74	```
+    75	- Uses GPT‑4o by default.
+    76	- Produces `all_baseline_<model>.jsonl`, `results_summary_baseline_<model>.txt`, and `failed_baseline_<model>.jsonl`.
+    77	
+    78	**Option 2 (evaluate an existing result file):**
+    79	```bash
+    80	python baseline_result_evaluation.py
+    81	```
+    82	- Reads `all_baseline_*.jsonl` files and writes summaries + failures.
+    83	
+    84	---
+    85	
+    86	### B) Spec-Driven (Vibe Programming) Pipeline
+    87	
+    88	1) **Convert prompts → natural language (`nl_request`)**  
+    89	   (Skip if `HumanEval_with_nl.jsonl` already exists.)
+    90	```bash
+

@@ -1,0 +1,87 @@
+=== COMMAND ===
+python - <<'PY'
+import json
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+import experiment
+
+workspace = 'fabscore_codex/workspace/claim_26_cross_dataset'
+os.makedirs(workspace, exist_ok=True)
+
+existing_x_div_y = 'fabscore_codex/workspace/claim_25_x_div_y/all_results.npy'
+if not os.path.exists(existing_x_div_y):
+    raise FileNotFoundError(existing_x_div_y)
+
+results_by_dataset = {}
+provenance = {
+    'x_div_y': {
+        'artifact': existing_x_div_y,
+        'reused': True,
+        'reason': 'Prior session regenerated x_div_y with experiment.run(...) and stored raw all_results.npy for the same plotting logic.'
+    }
+}
+results_by_dataset['x_div_y'] = np.load(existing_x_div_y, allow_pickle=True).item()
+
+for dataset in ['x_minus_y', 'x_plus_y', 'permutation']:
+    ds_dir = os.path.join(workspace, dataset)
+    os.makedirs(ds_dir, exist_ok=True)
+    all_results = {}
+    for seed_offset in range(3):
+        print(f'Running {dataset} with seed offset {seed_offset}', flush=True)
+        final_info, train_info, val_info, mdl_info = experiment.run(ds_dir, dataset, seed_offset)
+        all_results[f'{dataset}_{seed_offset}_final_info'] = final_info
+        all_results[f'{dataset}_{seed_offset}_train_info'] = train_info
+        all_results[f'{dataset}_{seed_offset}_val_info'] = val_info
+        all_results[f'{dataset}_{seed_offset}_mdl_info'] = mdl_info
+    with open(os.path.join(ds_dir, 'all_results.npy'), 'wb') as f:
+        np.save(f, all_results)
+PY
+
+=== STDOUT ===
+Running x_minus_y with seed offset 0
+{'final_train_loss': 0.009868296794593334, 'final_val_loss': 0.012361194007098675, 'final_train_acc': 1.0, 'final_val_acc': 1.0, 'step_val_acc_99': 4240, 'step_val_acc_95': 4060}
+Running x_minus_y with seed offset 1
+{'final_train_loss': 0.004695173818618059, 'final_val_loss': 0.005146485287696123, 'final_train_acc': 1.0, 'final_val_acc': 1.0, 'step_val_acc_99': 4100, 'step_val_acc_95': 3930}
+Running x_minus_y with seed offset 2
+{'final_train_loss': 0.0071578784845769405, 'final_val_loss': 0.008928199298679829, 'final_train_acc': 1.0, 'final_val_acc': 1.0, 'step_val_acc_99': 3490, 'step_val_acc_95': 3190}
+Running x_plus_y with seed offset 0
+{'final_train_loss': 1.6870853900909424, 'final_val_loss': 0.3662061095237732, 'final_train_acc': 0.6449218988418579, 'final_val_acc': 0.9609375, 'step_val_acc_99': 2660, 'step_val_acc_95': 2470}
+Running x_plus_y with seed offset 1
+{'final_train_loss': 1.6231189966201782, 'final_val_loss': 0.5185208916664124, 'final_train_acc': 0.6591796875, 'final_val_acc': 0.91845703125, 'step_val_acc_99': 2600, 'step_val_acc_95': 2380}
+Running x_plus_y with seed offset 2
+{'final_train_loss': 0.46240296959877014, 'final_val_loss': 2.9509758949279785, 'final_train_acc': 0.917187511920929, 'final_val_acc': 0.289794921875, 'step_val_acc_99': 3320, 'step_val_acc_95': 3140}
+Running permutation with seed offset 0
+
+=== STDERR ===
+/home/chenhui/.config/matplotlib is not a writable directory
+Matplotlib created a temporary cache directory at /tmp/matplotlib-yhulecgh because there was an issue with the default path (/home/chenhui/.config/matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+/home/chenhui/fabscore/aiscientist_papers/mdl_grokking_correlation/experiment.py:260: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+  "train_loss": float(loss),
+
+=== COMMAND ===
+python - <<'PY'
+import numpy as np
+paths = {
+  'x_div_y': 'fabscore_codex/workspace/claim_25_x_div_y/all_results.npy',
+  'x_minus_y': 'fabscore_codex/workspace/claim_26_cross_dataset/x_minus_y/all_results.npy',
+  'x_plus_y': 'fabscore_codex/workspace/claim_26_cross_dataset/x_plus_y/all_results.npy',
+}
+for ds, path in paths.items():
+    results = np.load(path, allow_pickle=True).item()
+    steps = np.array([x['step'] for x in results[f'{ds}_0_val_info']])
+    mean_val = np.mean([[x['val_accuracy'] for x in results[f'{ds}_{i}_val_info']] for i in range(3)], axis=0)
+    mdl_steps = np.array([x['step'] for x in results[f'{ds}_0_mdl_info']])
+    mdl = np.array([x['mdl'] for x in results[f'{ds}_0_mdl_info']])
+    mdltp = int(mdl_steps[int(np.argmin(np.diff(mdl)))])
+    grok = next((int(s) for s, a in zip(steps, mean_val) if a >= 0.95), None)
+    print(ds, {'mdl_transition_point': mdltp, 'grokking_point_95': grok})
+PY
+
+=== STDOUT ===
+x_div_y {'mdl_transition_point': 3000, 'grokking_point_95': 3810, 'difference': 810, 'mean_final_val_acc': 1.0}
+x_minus_y {'mdl_transition_point': 4500, 'grokking_point_95': 3990, 'difference': -510, 'mean_final_val_acc': 1.0}
+x_plus_y {'mdl_transition_point': 2500, 'grokking_point_95': 3030, 'difference': 530, 'mean_final_val_acc': 0.7230631510416666}
+
+=== STDERR ===

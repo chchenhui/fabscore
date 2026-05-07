@@ -1,0 +1,470 @@
+===== COMMAND: sed -n '100,180p' claude_code/evaluation.py =====
+        """
+        # Initialize results dictionary
+        results = {
+            "scenario_name": self.name,
+            "scenario_description": self.description,
+            "duration": self.duration,
+            "models": {},
+            "raw_data": {
+                "human_values": [],
+                "model_values": {},
+                "alignment_scores": {},
+                "response_times": {},
+                "responses": {}
+            }
+        }
+        
+        # Run simulation step by step
+        for t in range(self.duration):
+            # Step the human value simulation forward
+            self.simulation.step()
+            
+            # Record human values for each agent
+            human_values_at_t = []
+            for agent in self.simulation.agents:
+                human_values_at_t.append(agent.value_system.values.copy())
+            results["raw_data"]["human_values"].append(human_values_at_t)
+            
+            # Update each model with current human values
+            for model in models:
+                # We'll use the first agent's values for simplicity
+                # In a more complex evaluation, we might consider aggregating across agents
+                human_values = self.simulation.agents[0].value_system
+                
+                # Generate a query for response time measurement
+                # (This is a placeholder - in a real system, we'd have actual queries)
+                query = f"Query at time {t}"
+                
+                # Measure response time
+                start_time = time.time()
+                response = model.generate_response(query, human_values)
+                end_time = time.time()
+                response_time = end_time - start_time
+                
+                # Update model based on human values
+                model.update(human_values)
+                
+                # Record model values and metrics
+                if model.name not in results["raw_data"]["model_values"]:
+                    results["raw_data"]["model_values"][model.name] = []
+                    results["raw_data"]["alignment_scores"][model.name] = []
+                    results["raw_data"]["response_times"][model.name] = []
+                    results["raw_data"]["responses"][model.name] = []
+                
+                results["raw_data"]["model_values"][model.name].append(model.value_system.values.copy())
+                results["raw_data"]["alignment_scores"][model.name].append(model.alignment_scores[-1])
+                results["raw_data"]["response_times"][model.name].append(response_time)
+                results["raw_data"]["responses"][model.name].append(response)
+                
+        # Calculate evaluation metrics for each model
+        for model in models:
+            model_metrics = self._calculate_metrics(model, results["raw_data"])
+            results["models"][model.name] = {
+                "model_description": model.description,
+                "metrics": model_metrics
+            }
+            
+        return results
+    
+    def _calculate_metrics(self, model: BaseAlignmentModel, raw_data: Dict) -> Dict[str, float]:
+        """
+        Calculate evaluation metrics for a model based on raw simulation data.
+        
+        Args:
+            model: Alignment model to evaluate
+            raw_data: Raw simulation data
+            
+        Returns:
+            Dictionary with evaluation metrics
+        """
+        metrics = {}
+        
+
+===== COMMAND: sed -n '340,410p' claude_code/visualization.py =====
+    setup_visualization(config)
+    
+    # Initialize figure paths
+    figure_paths = {}
+    
+    # Plot aggregate metrics comparison
+    figure_paths['aggregate_metrics'] = plot_aggregate_metrics(
+        results['aggregate_metrics'],
+        'aggregate_metrics_comparison',
+        figures_dir,
+        config
+    )
+    
+    # Plot radar chart comparison
+    figure_paths['metric_radar'] = plot_metric_radar(
+        results['aggregate_metrics'],
+        'model_metrics_radar',
+        figures_dir,
+        config
+    )
+    
+    # Plot individual scenario results
+    for scenario_name, scenario_results in results['scenarios'].items():
+        # Plot alignment comparison for this scenario
+        figure_paths[f'alignment_{scenario_name}'] = plot_comparative_alignment(
+            scenario_results,
+            f'alignment_comparison_{scenario_name}',
+            figures_dir,
+            config,
+            title="Alignment Score Comparison"
+        )
+        
+        # Plot human value evolution
+        human_values = np.array(scenario_results['raw_data']['human_values'])[:, 0, :]  # First agent only
+        human_df = pd.DataFrame(
+            human_values,
+            columns=results['overall']['value_dimensions']
+        )
+        
+        figure_paths[f'human_values_{scenario_name}'] = plot_value_evolution(
+            human_df,
+            f'human_value_evolution_{scenario_name}',
+            figures_dir,
+            config,
+            title="Human Value Evolution"
+        )
+        
+        # Plot model value evolution for each model
+        for model_name in scenario_results['models']:
+            model_values = np.array(scenario_results['raw_data']['model_values'][model_name])
+            model_df = pd.DataFrame(
+                model_values,
+                columns=results['overall']['value_dimensions']
+            )
+            
+            figure_paths[f'model_values_{model_name}_{scenario_name}'] = plot_value_evolution(
+                model_df,
+                f'model_value_evolution_{model_name}_{scenario_name}',
+                figures_dir,
+                config,
+                title=f"{model_name} Value Evolution"
+            )
+            
+    # Plot key metric comparisons across scenarios
+    for metric in ['adaptation_accuracy', 'stability', 'user_satisfaction', 'agency_preservation']:
+        figure_paths[f'metric_{metric}'] = plot_scenario_performance(
+            results['scenarios'],
+            metric,
+            f'scenario_comparison_{metric}',
+            figures_dir,
+            config
+
+===== COMMAND: sed -n '1,220p' claude_code/run_experiment.py =====
+"""
+Main experiment runner for the CEVA framework evaluation.
+
+This script runs experiments to evaluate the Co-Evolutionary Value Alignment (CEVA) framework
+against baseline alignment methods across various scenarios.
+"""
+import os
+import sys
+import json
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import argparse
+import logging
+import time
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Union, Any
+
+# Add parent directory to path to allow importing modules
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Import modules
+from claude_code.config import (
+    ROOT_DIR, RESULTS_DIR, FIGURES_DIR, DATA_DIR,
+    SIMULATION_CONFIG, VALUE_DIMENSIONS, VALUE_EVOLUTION_PARAMS,
+    VALUE_ADAPTATION_RATES, SCENARIOS, MODELS, METRICS, VISUALIZATION_CONFIG
+)
+from claude_code.value_evolution import (
+    ValueSystem, ValueEvolutionModel, HumanAgent, ExternalEvent, ValueEvolutionSimulation
+)
+from claude_code.alignment_models import (
+    BaseAlignmentModel, StaticAlignmentModel, AdaptiveAlignmentModel, CEVAModel
+)
+from claude_code.evaluation import (
+    AlignmentScenario, EvaluationManager
+)
+from claude_code.visualization import (
+    visualize_experiment_results, generate_results_tables
+)
+
+
+def setup_logging(log_file: Path) -> logging.Logger:
+    """
+    Set up logging configuration.
+    
+    Args:
+        log_file: Path to log file
+        
+    Returns:
+        Configured logger
+    """
+    # Ensure parent directory exists
+    os.makedirs(os.path.dirname(log_file), exist_ok=True)
+    
+    # Configure logger
+    logger = logging.getLogger('ceva_experiment')
+    logger.setLevel(logging.INFO)
+    
+    # File handler
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setLevel(logging.INFO)
+    
+    # Console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    
+    # Formatter
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    console_handler.setFormatter(formatter)
+    
+    # Add handlers
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+    
+    return logger
+
+
+def save_results(results: Dict, results_dir: Path) -> None:
+    """
+    Save experiment results to disk.
+    
+    Args:
+        results: Dictionary with experiment results
+        results_dir: Directory to save results in
+    """
+    # Ensure directory exists
+    os.makedirs(results_dir, exist_ok=True)
+    
+    # Save raw results as JSON
+    with open(results_dir / 'results.json', 'w') as f:
+        # Convert numpy arrays to lists for JSON serialization
+        results_copy = results.copy()
+        
+        # Process raw data
+        for scenario_name, scenario_data in results_copy['scenarios'].items():
+            raw_data = scenario_data['raw_data']
+            
+            # Convert human values
+            raw_data['human_values'] = [
+                [[float(v) for v in agent_values] for agent_values in step_values]
+                for step_values in raw_data['human_values']
+            ]
+            
+            # Convert model values
+            for model_name in raw_data['model_values']:
+                raw_data['model_values'][model_name] = [
+                    [float(v) for v in step_values]
+                    for step_values in raw_data['model_values'][model_name]
+                ]
+        
+        # Serialize to JSON
+        json.dump(results_copy, f, indent=2)
+    
+    # Generate and save tables
+    tables = generate_results_tables(results)
+    for table_name, df in tables.items():
+        df.to_csv(results_dir / f'{table_name}.csv', index=False)
+
+
+def print_experiment_summary(results: Dict) -> None:
+    """
+    Print a summary of experiment results.
+    
+    Args:
+        results: Dictionary with experiment results
+    """
+    print("\n=== EXPERIMENT SUMMARY ===\n")
+    
+    # Print overall metrics
+    print("=== Overall Performance ===")
+    metrics_to_show = ['avg_adaptation_accuracy', 'avg_stability', 
+                     'avg_user_satisfaction', 'avg_agency_preservation']
+    
+    # Get model names
+    models = list(results['aggregate_metrics'].keys())
+    
+    # Print header
+    print(f"{'Metric':<30} " + " ".join([f"{model:<15}" for model in models]))
+    
+    # Print metrics
+    for metric in metrics_to_show:
+        metric_name = metric[4:].replace('_', ' ').title()
+        metric_values = [results['aggregate_metrics'][model].get(metric, 0) for model in models]
+        print(f"{metric_name:<30} " + " ".join([f"{value:.3f}        " for value in metric_values]))
+    
+    print("\n=== Best Performing Model per Scenario ===")
+    for scenario_name, scenario_data in results['scenarios'].items():
+        print(f"\nScenario: {scenario_name}")
+        print(f"Description: {scenario_data['scenario_description']}")
+        
+        # Find best model for adaptation accuracy
+        best_model = None
+        best_score = -float('inf')
+        
+        for model_name, model_data in scenario_data['models'].items():
+            score = model_data['metrics']['adaptation_accuracy']
+            if score > best_score:
+                best_score = score
+                best_model = model_name
+                
+        print(f"Best model for adaptation accuracy: {best_model} ({best_score:.3f})")
+
+
+def run_experiment(random_seed: Optional[int] = None) -> Dict:
+    """
+    Run the CEVA framework evaluation experiment.
+    
+    Args:
+        random_seed: Random seed for reproducibility
+        
+    Returns:
+        Dictionary with experiment results
+    """
+    # Set up evaluation manager
+    evaluation_manager = EvaluationManager(
+        value_dimensions=VALUE_DIMENSIONS,
+        scenarios=SCENARIOS,
+        models=MODELS,
+        value_adaptation_rates=VALUE_ADAPTATION_RATES,
+        random_seed=random_seed
+    )
+    
+    # Run evaluation
+    results = evaluation_manager.run_evaluation()
+    
+    return results
+
+
+def generate_results_markdown(
+    results: Dict, 
+    figure_paths: Dict[str, str], 
+    tables: Dict[str, pd.DataFrame],
+    output_file: Path
+) -> None:
+    """
+    Generate a markdown file with experiment results.
+    
+    Args:
+        results: Dictionary with experiment results
+        figure_paths: Dictionary mapping figure types to file paths
+        tables: Dictionary mapping table names to DataFrames
+        output_file: Path to output file
+    """
+    with open(output_file, 'w') as f:
+        # Write header
+        f.write("# Co-Evolutionary Value Alignment (CEVA) Framework Experiment Results\n\n")
+        
+        # Write experiment summary
+        f.write("## 1. Experiment Summary\n\n")
+        f.write(f"This report presents the results of evaluating the Co-Evolutionary Value Alignment (CEVA) ")
+        f.write(f"framework against baseline alignment methods across various scenarios.\n\n")
+        
+        # Write experimental setup
+        f.write("### 1.1 Experimental Setup\n\n")
+        
+        setup_table = tables['experimental_setup']
+        f.write("| Parameter | Value |\n")
+        f.write("| --- | --- |\n")
+        for _, row in setup_table.iterrows():
+
+===== COMMAND: python - <<'PY' ... =====
+scenario= gradual_drift
+Traceback (most recent call last):
+  File "<stdin>", line 8, in <module>
+AttributeError: 'list' object has no attribute 'keys'
+===== COMMAND: rg -n "save_results|human_values|value_dimensions" claude_code/run_experiment.py claude_code/visualization.py claude_code/evaluation.py =====
+claude_code/visualization.py:373:        human_values = np.array(scenario_results['raw_data']['human_values'])[:, 0, :]  # First agent only
+claude_code/visualization.py:375:            human_values,
+claude_code/visualization.py:376:            columns=results['overall']['value_dimensions']
+claude_code/visualization.py:379:        figure_paths[f'human_values_{scenario_name}'] = plot_value_evolution(
+claude_code/visualization.py:392:                columns=results['overall']['value_dimensions']
+claude_code/visualization.py:483:        {'Parameter': 'Value Dimensions', 'Value': ', '.join(results['overall']['value_dimensions'])},
+claude_code/run_experiment.py:79:def save_results(results: Dict, results_dir: Path) -> None:
+claude_code/run_experiment.py:100:            raw_data['human_values'] = [
+claude_code/run_experiment.py:102:                for step_values in raw_data['human_values']
+claude_code/run_experiment.py:177:        value_dimensions=VALUE_DIMENSIONS,
+claude_code/run_experiment.py:272:            if f'human_values_{scenario_name}' in figure_paths:
+claude_code/run_experiment.py:273:                f.write(f"![Human Value Evolution](../{os.path.basename(figure_paths[f'human_values_{scenario_name}'])})\n\n")
+claude_code/run_experiment.py:445:        save_results(results, results_dir)
+claude_code/evaluation.py:28:        value_dimensions: List[str],
+claude_code/evaluation.py:42:            value_dimensions: List of value dimension names
+claude_code/evaluation.py:52:        self.value_dimensions = value_dimensions
+claude_code/evaluation.py:74:            value_dimensions=value_dimensions,
+claude_code/evaluation.py:108:                "human_values": [],
+claude_code/evaluation.py:122:            human_values_at_t = []
+claude_code/evaluation.py:124:                human_values_at_t.append(agent.value_system.values.copy())
+claude_code/evaluation.py:125:            results["raw_data"]["human_values"].append(human_values_at_t)
+claude_code/evaluation.py:131:                human_values = self.simulation.agents[0].value_system
+claude_code/evaluation.py:139:                response = model.generate_response(query, human_values)
+claude_code/evaluation.py:144:                model.update(human_values)
+claude_code/evaluation.py:190:        human_values_array = np.array(raw_data["human_values"])[:, 0, :]  # First agent only
+claude_code/evaluation.py:194:        distances = np.linalg.norm(human_values_array - model_values_array, axis=1)
+claude_code/evaluation.py:264:        value_dimensions: List[str],
+claude_code/evaluation.py:274:            value_dimensions: List of value dimension names
+claude_code/evaluation.py:280:        self.value_dimensions = value_dimensions
+claude_code/evaluation.py:305:        for dim in self.value_dimensions:
+claude_code/evaluation.py:327:                    value_dimensions=self.value_dimensions,
+claude_code/evaluation.py:334:                    value_dimensions=self.value_dimensions,
+claude_code/evaluation.py:342:                    value_dimensions=self.value_dimensions,
+claude_code/evaluation.py:374:                value_dimensions=self.value_dimensions,
+claude_code/evaluation.py:398:                "value_dimensions": self.value_dimensions,
+
+===== COMMAND: python - <<'PY' extract gradual_drift human values =====
+dimensions= ['autonomy', 'benevolence', 'security', 'achievement', 'conformity']
+num_steps= 100
+num_agents_first_step= 1
+autonomy len= 100 first= 0.11281465019647657 mid= 0.07096845331119736 last= 0.01707352399378412 min= 0.0 max= 0.3434193877725497
+benevolence len= 100 first= 0.3602153928587097 mid= 0.2698247516544203 last= 0.11892133456766903 min= 0.0 max= 0.5232311282178329
+security len= 100 first= 0.2701306036688883 mid= 0.0 last= 0.250002622182606 min= 0.0 max= 0.44334246760649476
+achievement len= 100 first= 0.18859679734908463 mid= 0.592591770826512 last= 0.23612024609800455 min= 0.0 max= 0.8669972036041507
+conformity len= 100 first= 0.06824255592684077 mid= 0.06661502420787029 last= 0.3778822731579363 min= 0.0 max= 0.4404465619034494
+===== COMMAND: sed -n '79,110p' claude_code/run_experiment.py =====
+def save_results(results: Dict, results_dir: Path) -> None:
+    """
+    Save experiment results to disk.
+    
+    Args:
+        results: Dictionary with experiment results
+        results_dir: Directory to save results in
+    """
+    # Ensure directory exists
+    os.makedirs(results_dir, exist_ok=True)
+    
+    # Save raw results as JSON
+    with open(results_dir / 'results.json', 'w') as f:
+        # Convert numpy arrays to lists for JSON serialization
+        results_copy = results.copy()
+        
+        # Process raw data
+        for scenario_name, scenario_data in results_copy['scenarios'].items():
+            raw_data = scenario_data['raw_data']
+            
+            # Convert human values
+            raw_data['human_values'] = [
+                [[float(v) for v in agent_values] for agent_values in step_values]
+                for step_values in raw_data['human_values']
+            ]
+            
+            # Convert model values
+            for model_name in raw_data['model_values']:
+                raw_data['model_values'][model_name] = [
+                    [float(v) for v in step_values]
+                    for step_values in raw_data['model_values'][model_name]
+                ]
+
+===== COMMAND: sed -n '1,120p' fabscore_codex/workspace/claim_23_run_json/results/scenario_gradual_drift.csv =====
+Metric,Best Model,Value
+Adaptation Accuracy,adaptive_alignment,0.961
+Adaptation Response Time,adaptive_alignment,0.000
+Stability,static_alignment,1.000
+User Satisfaction,adaptive_alignment,0.922
+Agency Preservation,static_alignment,1.000

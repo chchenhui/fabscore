@@ -1,0 +1,12 @@
+## Session 2026-04-11
+- Session purpose: extraction
+- Paper/context inspected: `adaptive_dual_scale_denoising.pdf` for figure/table labels and the aligned source in `latex/template.tex` to recover the Results section text, table values, and figure captions in the local workspace.
+- JSON files created or updated in this session: `fabscore_codex/fs_extracted.json`
+- Next session should do: validate the extraction against any downstream fabscore schema checks and review whether the PDF rendering introduces any numbering or caption differences from the aligned source.
+
+## Session 2026-04-11 (analysis)
+- Session purpose: analysis
+- Files/context inspected: `latex/template.tex`, `plot.py`, `experiment.py`, `datasets.py`, `run_1.py`, `run_2.py`, `run_3.py`, `run_4.py`, `run_5.py`, `run_0/final_info.json`, `run_1/final_info.json`, `run_2/final_info.json`, `run_3/final_info.json`, `run_4/final_info.json`, `run_5/final_info.json`, `generated_images.png`, `fabscore_claude/workspace/temp_runs/run_0/all_results.pkl`, `fabscore_claude/workspace/temp_runs/run_1/all_results.pkl`, `fabscore_claude/workspace/temp_runs/run_2/all_results.pkl`, `fabscore_claude/workspace/temp_runs/run_3/all_results.pkl`, `fabscore_claude/workspace/temp_runs/run_4/all_results.pkl`, `fabscore_claude/workspace/temp_runs/run_5/all_results.pkl`, and the existing `fabscore_codex/progress.md`.
+- JSON files created or updated in this session: `fabscore_codex/fs_analysis.json`
+- Concise classification summary: classified 67 claims total; 24 as `static_verifiable` (adaptive-weighting and weight-analysis table rows), 13 as `insufficient_evidence` (all baseline table claims plus Figure 1, due to missing baseline implementation / broken figure provenance), and 30 as `obvious_hallucination` with 13 `experiment_fabrication` claims (all fixed-weighting table claims plus Figure 2 caption mismatch) and 17 `result_fabrication` claims (all improved-weight-network table claims plus the percentage/time statements that mis-map `run_4` results to claimed Run 5).
+- Recommended next step for the next session: if execution is allowed later, first reconstruct or locate the missing baseline implementation and repo-native `run_*/all_results.pkl` artifacts, then test whether Figure 1 can be regenerated from repository-native paths and whether any hidden baseline script exists outside the current root that produced `run_0/final_info.json`.

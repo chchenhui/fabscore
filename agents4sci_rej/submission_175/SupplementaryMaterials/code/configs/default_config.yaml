@@ -1,0 +1,116 @@
+# Default Configuration for Hierarchical Meta-Learning
+# Hierarchical Meta-Learning for Cancer Pathway Signatures
+
+# Data Configuration
+data:
+  normalization: "quantile"  # Options: quantile, standard, none
+  min_samples_per_cancer: 50
+  test_size: 0.2
+  val_size: 0.1
+  pathway_filter_threshold: 0.1
+  random_seed: 42
+
+# Model Architecture
+model:
+  # Pathway encoder
+  hidden_dims: [64, 128, 64]
+  feature_dim: 32
+  use_attention: true
+  dropout_rate: 0.1
+  
+  # Hierarchical structure
+  num_organ_classes: 9
+  num_histology_classes: 4
+  num_molecular_classes: 36
+
+# Meta-Learning Configuration
+meta_learning:
+  n_way: 5
+  k_shot: 5
+  n_query: 15
+  n_tasks_per_batch: 8
+  
+  # MAML parameters
+  meta_lr: 0.001
+  inner_lr: 0.01
+  inner_steps: 5
+  first_order: false
+  
+  # Hierarchical loss weights
+  hierarchy_weights: [1.0, 0.7, 0.5]  # [molecular, histology, organ]
+
+# Training Configuration
+training:
+  num_epochs: 100
+  tasks_per_epoch: 1000
+  val_frequency: 10
+  save_frequency: 20
+  early_stopping_patience: 20
+  
+  # Optimization
+  label_smoothing: 0.0
+  gradient_clip_norm: 1.0
+
+# Evaluation Configuration
+evaluation:
+  few_shot_scenarios: [1, 3, 5, 10]
+  query_sizes: [15, 20, 25]
+  n_evaluation_episodes: 200
+  transferability_episodes: 100
+
+# Baseline Comparison
+baselines:
+  sklearn_models:
+    - RandomForest
+    - SVM_RBF
+    - SVM_Linear
+    - LogisticRegression
+    - XGBoost
+    - LightGBM
+  
+  neural_networks:
+    - StandardNN
+    - HierarchicalNN
+    - PrototypicalNetworks
+  
+  epochs: 100
+
+# Analysis Configuration
+analysis:
+  pathway_importance:
+    methods: ["integrated_gradients", "permutation", "attention_weights"]
+    n_permutations: 10
+    integration_steps: 50
+  
+  statistical_tests:
+    alpha: 0.05
+    multiple_comparison_correction: "bonferroni"
+  
+  visualization:
+    top_pathways: 20
+    figure_format: "png"
+    dpi: 300
+
+# Logging and Output
+logging:
+  level: "INFO"
+  save_dir: "./checkpoints"
+  log_dir: "./logs"
+  results_dir: "./results"
+  
+  # Experiment tracking
+  use_wandb: true
+  wandb_project: "hierarchical-meta-learning"
+  use_tensorboard: true
+
+# Computational Resources
+compute:
+  device: "cuda"  # Options: cuda, cpu, auto
+  num_workers: 4
+  pin_memory: true
+  mixed_precision: false
+
+# Reproducibility
+reproducibility:
+  deterministic: true
+  benchmark: false

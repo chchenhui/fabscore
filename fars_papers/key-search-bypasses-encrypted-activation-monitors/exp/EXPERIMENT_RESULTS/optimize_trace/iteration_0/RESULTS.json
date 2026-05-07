@@ -1,0 +1,73 @@
+{
+  "experiment": "Optimized Key-Search Attack with High-Diversity Encryptor",
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "encryptor": {
+    "type": "high-diversity (margin=2.0, lambda2=0.5)",
+    "seed": 123,
+    "checkpoint": "seed_123_diverse/last_checkpoint.pt",
+    "kl_divergence": 0.0308,
+    "knn_asr_at_10": 0.5264,
+    "key_diversity_l2_mean": 1.0373,
+    "key_diversity_l2_std": 0.1879
+  },
+  "monitor_layer": 27,
+  "monitor_architecture": "MLP(3584->32->1)",
+  "training_config": {
+    "lr": 1e-4,
+    "weight_decay": 1.0,
+    "epochs": 5000,
+    "hidden_dim": 32,
+    "probe_seeds": [42, 123, 456]
+  },
+  "encrypted_monitor_k1": {
+    "auroc_mean": 1.0,
+    "per_seed": {
+      "42": {"auroc": 1.0, "tpr_at_fpr_1e3": 0.7667, "tpr_at_fpr_1e4": 0.4167},
+      "123": {"auroc": 1.0, "tpr_at_fpr_1e3": 0.8667, "tpr_at_fpr_1e4": 0.4667},
+      "456": {"auroc": 1.0, "tpr_at_fpr_1e3": 0.8667, "tpr_at_fpr_1e4": 0.5333}
+    },
+    "tpr_at_fpr_1e3_mean": 0.8333,
+    "tpr_at_fpr_1e4_mean": 0.4722
+  },
+  "key_search_attack": {
+    "K_values": [1, 2, 4, 8, 16, 32, 64, 128, 256, 512],
+    "tpr_at_fpr_1e3": {
+      "1": {"mean": 0.8486},
+      "2": {"mean": 0.8347},
+      "4": {"mean": 0.8139},
+      "8": {"mean": 0.7931},
+      "16": {"mean": 0.7500},
+      "32": {"mean": 0.6931},
+      "64": {"mean": 0.5986},
+      "128": {"mean": 0.4708},
+      "256": {"mean": 0.3333},
+      "512": {"mean": 0.1625}
+    },
+    "tpr_at_fpr_1e4": {
+      "1": {"mean": 0.5139},
+      "2": {"mean": 0.4792},
+      "4": {"mean": 0.4611},
+      "8": {"mean": 0.4306},
+      "16": {"mean": 0.3917},
+      "32": {"mean": 0.3611},
+      "64": {"mean": 0.3069},
+      "128": {"mean": 0.2444},
+      "256": {"mean": 0.1528},
+      "512": {"mean": 0.0597}
+    }
+  },
+  "tpr_drops": {
+    "k1_to_k32_fpr_1e3": 0.1556,
+    "k1_to_k64_fpr_1e3": 0.2500,
+    "k1_to_k128_fpr_1e3": 0.3778,
+    "k1_to_k256_fpr_1e3": 0.5153,
+    "k1_to_k512_fpr_1e3": 0.6861
+  },
+  "comparison_with_original": {
+    "original_k32_tpr_drop_fpr_1e3": 0.022,
+    "optimized_k32_tpr_drop_fpr_1e3": 0.156,
+    "original_k64_tpr_drop_fpr_1e3": 0.028,
+    "optimized_k64_tpr_drop_fpr_1e3": 0.250,
+    "improvement_factor_k64": 8.9
+  }
+}

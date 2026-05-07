@@ -1,0 +1,20 @@
+{
+  "optimize_index": 0,
+  "issues": [
+    {
+      "title": "Shift protocol mismatch between BF16 baseline and SinkCast (CRITICAL BUG)",
+      "description": "BF16 baseline used padding-based shift (prepend M pad tokens with attention_mask=0), while SinkCast used position_ids-only offset (no padding). This made the shift conditions non-equivalent, invalidating the comparison. Fixed by rewriting run_inference_sinkcast() in both ruler_shift_sinkcast.py and longbench_shift_sinkcast.py to use padding-based shift identical to the BF16 baseline."
+    },
+    {
+      "title": "SinkCast hook does not handle padded input correctly",
+      "description": "The hook calls flash_attn_func directly with causal=True, which doesn't handle HF's unpadding mechanism. When padding tokens are present, they must be filtered out before the flash call. Fixed by adding real_mask_ref parameter to _sinkcast_hooks, detecting real tokens via the mask, extracting only real tokens for Q/K/V before flash_attn_func, and reconstructing full-sequence output."
+    },
+    {
+      "title": "K=1 suboptimal for Llama (should be K=4)",
+      "description": "Microbenchmark optimization showed K=4 achieves 23.6% gap closure for Llama vs 10.2% for K=1. Ran Llama downstream eval with K=4 (kept Mistral at K=1 since K=1 is optimal there)."
+    }
+  ],
+  "experiment_result_path": "EXPERIMENT_RESULTS/optimize_trace/iteration_0/",
+  "success": false,
+  "summary": "Fixed the shift protocol mismatch bug (padding-based vs position-ids-only), added proper padding handling in hooks, and used K=4 for Llama. Results: Llama RULER avg improvement +0.01 (was +0.27), Llama LongBench -0.45 (was -0.19), Mistral RULER -2.85 (unchanged), Mistral LongBench -0.35 (unchanged). Overall avg improvement -0.91 (was -0.78). The optimization did not improve results because: (1) BF16 position-shift degradation on downstream tasks is already near zero, leaving no room for SinkCast to help; (2) the SinkCast hook changes the attention computation path (direct flash_attn_func vs HF pipeline), creating different d=0 baselines that confound the comparison; (3) the attention-level error correction at prefill does not persist through KV-cache-based autoregressive decoding."
+}

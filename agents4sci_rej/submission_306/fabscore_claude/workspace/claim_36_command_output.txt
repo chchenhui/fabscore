@@ -1,0 +1,29 @@
+========================================
+COMMAND: python3 - (BCR pipeline for P0AEE5, claim_36: k=3)
+========================================
+
+Attempt 1: Try v4 URL
+https://alphafold.ebi.ac.uk/files/AF-P0AEE5-F1-predicted_aligned_error_v4.json
+Result: HTTP Error 404: Not Found
+
+Attempt 2: API lookup revealed v6 URL
+https://alphafold.ebi.ac.uk/api/prediction/P0AEE5 → paeDocUrl: https://alphafold.ebi.ac.uk/files/AF-P0AEE5-F1-predicted_aligned_error_v6.json
+
+Attempt 3: Run BCR pipeline with v6 PAE data
+P0AEE5 length: 332
+k=2 blocks=[(0, 332)]
+k=2: bcr_q_ratio=nan, z=nan, p_perm=nan, hinge_len=0
+k=3 blocks=[(0, 56), (56, 332)]
+k=3: bcr_q_ratio=2.397895, z=25.510063, p_perm=0.119024, hinge_len=0
+
+Code selects k=3 (because k=2 gives p_perm=nan → key=(1,inf,...) > key=(0,0.119,...) for k=3)
+Paper claims k=3 for P0AEE5
+
+Notes:
+- AlphaFold PAE v4 data (used in paper) not available for P0AEE5; only v6 available
+- partition_k_spectral returns degenerate results with v6 data:
+  k=2 → only 1 block [(0, 332)] → cannot compute inter-block distance → nan
+  k=3 → only 2 blocks [(0, 56), (56, 332)] → effectively k=2 segmentation → hinge_len=0
+- Code technically selects k=3 (matching paper's k=3 claim), but only because k=2 is degenerate (nan)
+- p_perm=0.119024 >> 0.05; P0AEE5 would NOT qualify as a significant BCR hit or appear in Table 1
+- BCR formula discrepancy (log-ratio vs paper's simple ratio Eq.2) is the established systemic issue from prior sessions (claims 1-35)

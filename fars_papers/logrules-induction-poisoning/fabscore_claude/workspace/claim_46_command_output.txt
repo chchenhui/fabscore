@@ -1,0 +1,32 @@
+## Command 1
+python3 -c "
+import json
+with open('exp/EXPERIMENT_RESULTS/phase0v2_optimized/RESULTS.json') as f:
+    data = json.load(f)
+
+keys = ['Linux_seed42_F_k7', 'Linux_seed123_F_k7', 'Linux_seed456_F_k7']
+c0_vals = []
+c1_vals = []
+for k in keys:
+    entry = data[k]
+    c0 = entry['test_PA_C0']
+    c1 = entry['test_PA_C1']
+    c0_vals.append(c0)
+    c1_vals.append(c1)
+    print(f'{k}: test_PA_C0={c0}, test_PA_C1={c1}')
+
+mean_c0 = sum(c0_vals)/3
+mean_c1 = sum(c1_vals)/3
+pp = (mean_c0 - mean_c1)*100
+print(f'Mean C0 = {mean_c0:.6f} = {mean_c0*100:.2f}%')
+print(f'Mean C1 = {mean_c1:.6f} = {mean_c1*100:.2f}%')
+print(f'PP change = {pp:.4f}pp')
+"
+
+## Output
+Linux_seed42_F_k7: test_PA_C0=0.2536, test_PA_C1=0.0701
+Linux_seed123_F_k7: test_PA_C0=0.1155, test_PA_C1=0.0716
+Linux_seed456_F_k7: test_PA_C0=0.1505, test_PA_C1=0.2577
+Mean C0 = 0.173200 = 17.32%
+Mean C1 = 0.133133 = 13.31%
+PP change = 4.0067pp

@@ -1,0 +1,67 @@
+{
+  "condition": "D",
+  "method": "ContextFocus (activation steering)",
+  "model": "Llama-3.1-8B-Instruct",
+  "benchmark": "ConFiQA-MC",
+  "subset": "1500-subset (seed=42)",
+  "prompt_template": "O&I (condition A format)",
+  "steering_layer": 13,
+  "steering_vectors": "eacp/steering/vectors/llama31_8b_contextfocus.pt",
+  "primary_result": {
+    "multiplier": 2.0,
+    "Pc": 23.20,
+    "Po": 16.20,
+    "MR": 41.12,
+    "EM": 2.33,
+    "notes": "Paper-specified m=2.0. Outputs are degenerate (verbose context continuation + gibberish)."
+  },
+  "alternative_results": [
+    {
+      "multiplier": 1.0,
+      "Pc": 49.47,
+      "Po": 19.13,
+      "MR": 27.89,
+      "EM": 6.80,
+      "notes": "Pc matches paper's Ps=48.60. EM low due to verbose outputs."
+    },
+    {
+      "multiplier": 0.5,
+      "Pc": 54.93,
+      "Po": 19.47,
+      "MR": 26.16,
+      "EM": 6.93,
+      "notes": "Highest Pc but exceeds baseline A (52.4). Low EM persists."
+    },
+    {
+      "multiplier": 2.0,
+      "mode": "prefill_only",
+      "Pc": 2.80,
+      "Po": 18.40,
+      "MR": 86.79,
+      "EM": 0.00,
+      "notes": "Steering all input positions during prefill corrupts representations."
+    }
+  ],
+  "comparison_on_same_subset": {
+    "A (O&I baseline)": {"Pc": 52.40, "Po": 12.93, "MR": 19.80, "EM": 50.07},
+    "B (Inventory+IDs)": {"Pc": 30.07, "Po": 20.40, "MR": 40.42, "EM": 35.93}
+  },
+  "paper_reference": {
+    "citation": "Anand et al. (2026), ContextFocus: Activation Steering for Contextual Faithfulness in LLMs",
+    "arxiv": "2601.04131",
+    "paper_results_full_confiqa": {"Ps": 48.60, "Po": 10.27, "MR": 17.44},
+    "paper_layer": 13,
+    "paper_multiplier": 2.0
+  },
+  "layer_selection": {
+    "method": "NQ-SWAP 200 held-out examples, Ps improvement m=0 vs m=2",
+    "baseline_ps": 93.0,
+    "best_layer": 29,
+    "best_ps": 89.0,
+    "best_improvement_pp": -4.0,
+    "paper_recommended_layer": 13,
+    "layer_13_ps": 82.5,
+    "layer_13_improvement_pp": -10.5,
+    "notes": "All 32 layers show negative improvements with m=2.0 due to compounding effect"
+  }
+}

@@ -1,0 +1,1014 @@
+===== COMMAND: nl -ba latex/template.tex =====
+     1	\documentclass{article} % For LaTeX2e
+     2	\usepackage{iclr2024_conference,times}
+     3	
+     4	\usepackage[utf8]{inputenc} % allow utf-8 input
+     5	\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+     6	\usepackage{hyperref}       % hyperlinks
+     7	\usepackage{url}            % simple URL typesetting
+     8	\usepackage{booktabs}       % professional-quality tables
+     9	\usepackage{amsfonts}       % blackboard math symbols
+    10	\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+    11	\usepackage{microtype}      % microtypography
+    12	\usepackage{titletoc}
+    13	
+    14	\usepackage{subcaption}
+    15	\usepackage{graphicx}
+    16	\usepackage{amsmath}
+    17	\usepackage{multirow}
+    18	\usepackage{color}
+    19	\usepackage{colortbl}
+    20	\usepackage{cleveref}
+    21	\usepackage{algorithm}
+    22	\usepackage{algorithmicx}
+    23	\usepackage{algpseudocode}
+    24	
+    25	\DeclareMathOperator*{\argmin}{arg\,min}
+    26	\DeclareMathOperator*{\argmax}{arg\,max}
+    27	
+    28	\graphicspath{{../}} % To reference your generated figures, see below.
+    29	\begin{filecontents}{references.bib}
+    30	@book{goodfellow2016deep,
+    31	  title={Deep learning},
+    32	  author={Goodfellow, Ian and Bengio, Yoshua and Courville, Aaron and Bengio, Yoshua},
+    33	  volume={1},
+    34	  year={2016},
+    35	  publisher={MIT Press}
+    36	}
+    37	
+    38	@article{power2022grokking,
+    39	  title={Grokking: Generalization beyond overfitting on small algorithmic datasets},
+    40	  author={Power, Alethea and Burda, Yuri and Edwards, Harri and Babuschkin, Igor and Misra, Vedant},
+    41	  journal={arXiv preprint arXiv:2201.02177},
+    42	  year={2022}
+    43	}
+    44	
+    45	@article{vaswani2017attention,
+    46	  title={Attention is all you need},
+    47	  author={Vaswani, Ashish and Shazeer, Noam and Parmar, Niki and Uszkoreit, Jakob and Jones, Llion and Gomez, Aidan N and Kaiser, {\L}ukasz and Polosukhin, Illia},
+    48	  journal={Advances in neural information processing systems},
+    49	  volume={30},
+    50	  year={2017}
+    51	}
+    52	
+    53	@article{kingma2014adam,
+    54	  title={Adam: A method for stochastic optimization},
+    55	  author={Kingma, Diederik P and Ba, Jimmy},
+    56	  journal={arXiv preprint arXiv:1412.6980},
+    57	  year={2014}
+    58	}
+    59	
+    60	@article{ba2016layer,
+    61	  title={Layer normalization},
+    62	  author={Ba, Jimmy Lei and Kiros, Jamie Ryan and Hinton, Geoffrey E},
+    63	  journal={arXiv preprint arXiv:1607.06450},
+    64	  year={2016}
+    65	}
+    66	
+    67	@article{loshchilov2017adamw,
+    68	  title={Decoupled weight decay regularization},
+    69	  author={Loshchilov, Ilya and Hutter, Frank},
+    70	  journal={arXiv preprint arXiv:1711.05101},
+    71	  year={2017}
+    72	}
+    73	
+    74	@article{radford2019language,
+    75	  title={Language Models are Unsupervised Multitask Learners},
+    76	  author={Radford, Alec and Wu, Jeff and Child, Rewon and Luan, David and Amodei, Dario and Sutskever, Ilya},
+    77	  year={2019}
+    78	}
+    79	
+    80	@article{bahdanau2014neural,
+    81	  title={Neural machine translation by jointly learning to align and translate},
+    82	  author={Bahdanau, Dzmitry and Cho, Kyunghyun and Bengio, Yoshua},
+    83	  journal={arXiv preprint arXiv:1409.0473},
+    84	  year={2014}
+    85	}
+    86	
+    87	@article{paszke2019pytorch,
+    88	  title={Pytorch: An imperative style, high-performance deep learning library},
+    89	  author={Paszke, Adam and Gross, Sam and Massa, Francisco and Lerer, Adam and Bradbury, James and Chanan, Gregory and Killeen, Trevor and Lin, Zeming and Gimelshein, Natalia and Antiga, Luca and others},
+    90	  journal={Advances in neural information processing systems},
+    91	  volume={32},
+    92	  year={2019}
+    93	}
+    94	
+    95	@Article{Power2022GrokkingGB,
+    96	 author = {Alethea Power and Yuri Burda and Harrison Edwards and Igor Babuschkin and Vedant Misra},
+    97	 booktitle = {arXiv.org},
+    98	 journal = {ArXiv},
+    99	 title = {Grokking: Generalization Beyond Overfitting on Small Algorithmic Datasets},
+   100	 volume = {abs/2201.02177},
+   101	 year = {2022}
+   102	}
+   103	
+   104	\end{filecontents}
+   105	
+   106	\title{Grokking Through Compression: Unveiling Sudden Generalization via Minimal Description Length}
+   107	
+   108	\author{GPT-4o \& Claude\\
+   109	Department of Computer Science\\
+   110	University of LLMs\\
+   111	}
+   112	
+   113	\newcommand{\fix}{\marginpar{FIX}}
+   114	\newcommand{\new}{\marginpar{NEW}}
+   115	
+   116	
+   117	\usepackage{draftwatermark}
+   118	\usepackage{helvet} % Load the helvet package for Helvetica font
+   119	
+   120	\SetWatermarkText{
+   121	    \parbox{100cm}{%
+   122	    \centering
+   123	    {\sffamily CAUTION!!! \\[0.5cm]
+   124	    THIS PAPER WAS \\[0.5cm]
+   125	    AUTONOMOUSLY GENERATED \\[0.5cm]
+   126	    BY THE AI SCIENTIST}
+   127	}}
+   128	  
+   129	\SetWatermarkScale{0.25}
+   130	\SetWatermarkAngle{30}
+   131	\SetWatermarkColor{gray!20!white}
+   132	
+   133	
+   134	\SetWatermarkHorCenter{0.5\paperwidth}
+   135	\SetWatermarkVerCenter{0.5\paperheight}
+   136	\begin{document}
+   137	
+   138	\maketitle
+   139	
+   140	\begin{abstract}
+   141	This paper investigates the relationship between Minimal Description Length (MDL) and the phenomenon of grokking in neural networks, offering an information-theoretic perspective on sudden generalization. Grokking, where models abruptly generalize after extended training, challenges conventional understanding of neural network learning dynamics. We hypothesize that the compression of internal representations, quantified by MDL, is a key factor in this process. To test this, we introduce a novel MDL estimation technique based on weight pruning and apply it to diverse datasets, including modular arithmetic and permutation tasks. This approach is challenging due to the complex, high-dimensional nature of neural networks and the lack of clear metrics to quantify internal representations. Our experiments reveal a strong correlation between MDL reduction and improved generalization, with MDL transition points often preceding or coinciding with grokking events. We observe distinct MDL evolution patterns in grokking versus non-grokking scenarios, characterized by rapid MDL reduction followed by sustained generalization in the former. These findings provide insights into the information-theoretic underpinnings of grokking and suggest that MDL monitoring during training could predict imminent generalization. Our work contributes to a deeper understanding of learning dynamics in neural networks and offers a new tool for anticipating and potentially inducing generalization in machine learning models.
+   142	\end{abstract}
+   143	
+   144	\section{Introduction}
+   145	\label{sec:intro}
+   146	
+   147	The field of deep learning has witnessed remarkable progress in recent years, with neural networks achieving unprecedented performance across various domains \cite{goodfellow2016deep}. However, the underlying mechanisms of how these networks learn and generalize remain poorly understood. One particularly intriguing phenomenon that has recently gained attention is ``grokking'' \cite{power2022grokking}, where neural networks exhibit sudden generalization after prolonged training. This paper investigates the relationship between Minimal Description Length (MDL) and grokking, offering an information-theoretic perspective on this sudden generalization phenomenon.
+   148	
+   149	Understanding grokking is crucial for advancing our knowledge of neural network learning dynamics and improving generalization capabilities. However, explaining grokking presents significant challenges:
+   150	
+   151	\begin{itemize}
+   152	    \item It contradicts the conventional understanding of gradual learning in neural networks.
+   153	    \item The complex, high-dimensional nature of neural networks makes it difficult to analyze internal representations.
+   154	    \item There is a lack of clear metrics to quantify the evolution of learned representations during training.
+   155	\end{itemize}
+   156	
+   157	To address these challenges, we propose an information-theoretic approach based on the principle of Minimal Description Length. We hypothesize that the compression of internal representations, as measured by MDL, plays a crucial role in the grokking process. Our approach involves:
+   158	
+   159	\begin{itemize}
+   160	    \item Implementing a novel MDL estimation technique using weight pruning.
+   161	    \item Applying this technique to diverse datasets, including modular arithmetic and permutation tasks.
+   162	    \item Tracking MDL alongside traditional performance metrics to provide new insights into learning dynamics.
+   163	\end{itemize}
+   164	
+   165	We verify our hypothesis through extensive experiments across multiple datasets and training runs. Our analysis reveals:
+   166	
+   167	\begin{itemize}
+   168	    \item A strong correlation between MDL reduction and improved generalization.
+   169	    \item Distinct MDL evolution patterns in grokking versus non-grokking scenarios.
+   170	    \item The potential of MDL monitoring as a predictor of imminent generalization.
+   171	\end{itemize}
+   172	
+   173	The main contributions of this paper are:
+   174	
+   175	\begin{itemize}
+   176	    \item A novel MDL estimation technique for neural networks based on weight pruning.
+   177	    \item Empirical evidence for the relationship between MDL reduction and improved generalization in the context of grokking.
+   178	    \item Identification of distinct MDL evolution patterns in grokking versus non-grokking scenarios.
+   179	    \item Demonstration of MDL monitoring as a potential predictor of imminent generalization in neural networks.
+   180	\end{itemize}
+   181	
+   182	Our work opens up several avenues for future research, including:
+   183	
+   184	\begin{itemize}
+   185	    \item Exploring the relationship between MDL and grokking in more complex architectures and tasks.
+   186	    \item Developing new training strategies that encourage compression and generalization.
+   187	    \item Investigating the broader implications of our information-theoretic perspective for understanding and improving neural network learning dynamics across various domains.
+   188	\end{itemize}
+   189	
+   190	The rest of the paper is organized as follows: Section \ref{sec:related} discusses related work, Section \ref{sec:background} provides necessary background information, Section \ref{sec:method} details our proposed method, Section \ref{sec:experimental} describes the experimental setup, Section \ref{sec:results} presents and analyzes our results, and Section \ref{sec:conclusion} concludes the paper with a discussion of implications and future work.
+   191	
+   192	\section{Related Work}
+   193	\label{sec:related}
+   194	
+   195	The phenomenon of grokking, first introduced and extensively studied by \citet{Power2022GrokkingGB}, demonstrates that neural networks trained on small algorithmic datasets can exhibit sudden improvements in generalization performance after prolonged training. While their work primarily focused on identifying and characterizing this phenomenon, our approach differs by exploring the relationship between grokking and the Minimal Description Length (MDL) principle, offering an information-theoretic perspective on sudden generalization.
+   196	
+   197	\citet{goodfellow2016deep} provide a comprehensive overview of generalization in neural networks, discussing various factors influencing a model's ability to perform well on unseen data. However, their work does not specifically address the grokking phenomenon or the role of information compression in generalization. Our study extends this understanding by examining how MDL-based compression relates to sudden generalization, providing a novel lens through which to view the learning dynamics of neural networks.
+   198	
+   199	The Information Bottleneck theory, proposed by \citet{bahdanau2014neural}, suggests that the learning process in deep neural networks can be viewed as a trade-off between compressing the input and preserving relevant information for the task at hand. While this approach focuses on input compression, our work complements it by examining the compression of the model itself. This difference in focus allows us to directly relate model complexity to generalization performance, particularly in the context of grokking.
+   200	
+   201	\citet{paszke2019pytorch} discuss the application of MDL principles to various machine learning tasks, highlighting its potential for model selection and regularization. However, their work does not specifically address the grokking phenomenon or sudden generalization. Our study extends this line of research by applying MDL concepts to track and analyze the compression of internal representations during training, specifically in the context of grokking.
+   202	
+   203	Recent work by \citet{radford2019language} on large language models has shown that sudden improvements in performance can occur as models scale up in size and are trained on vast amounts of data. While this phenomenon shares similarities with grokking, our work focuses on smaller models and datasets, providing insights into the fundamental learning dynamics that may underlie both scenarios. This difference in scale allows us to conduct more controlled experiments and isolate the relationship between MDL and generalization.
+   204	
+   205	\citet{kingma2014adam} investigated the use of pruning techniques to reduce model size while maintaining performance. Our work builds on these ideas by using weight pruning as a means to estimate MDL and track the compression of internal representations during training. However, we extend this approach by explicitly relating the pruning-based MDL estimates to the grokking phenomenon, providing a novel perspective on the relationship between model compression and sudden generalization.
+   206	
+   207	The study of optimization dynamics in deep learning, as discussed by \citet{loshchilov2017adamw}, provides important context for understanding the grokking phenomenon. While their work focuses on optimization algorithms, our study contributes to this field by examining how the trajectory of MDL reduction relates to the optimization process and the emergence of generalization. This approach allows us to bridge the gap between optimization dynamics and information-theoretic perspectives on learning.
+   208	
+   209	Finally, while \citet{vaswani2017attention} introduced transformer-based models, which we utilize in our experiments, our study focuses on a different aspect of neural network behavior. We leverage their architectural innovations to investigate the relationship between MDL and grokking, extending the application of transformer models to the study of sudden generalization.
+   210	
+   211	By synthesizing these diverse strands of research and addressing their limitations in explaining the grokking phenomenon, our work provides a novel perspective on the relationship between information compression, as measured by MDL, and the sudden emergence of generalization in neural networks. This approach not only sheds light on the grokking phenomenon but also contributes to the broader understanding of learning dynamics and generalization in deep learning.
+   212	
+   213	\section{Background}
+   214	\label{sec:background}
+   215	
+   216	Deep learning has revolutionized machine learning, achieving unprecedented performance across various domains \cite{goodfellow2016deep}. However, understanding how neural networks learn and generalize remains a significant challenge. Recently, a phenomenon called ``grokking'' has gained attention in the deep learning community \cite{power2022grokking}. Grokking refers to the sudden improvement in generalization performance that occurs after a prolonged period of training, often long after the training loss has plateaued. This phenomenon challenges our conventional understanding of learning dynamics in neural networks.
+   217	
+   218	The principle of Minimal Description Length (MDL) provides an information-theoretic framework for understanding learning and generalization in machine learning models. Rooted in algorithmic information theory, MDL posits that the best model for a given dataset is the one that provides the shortest description of the data, including the model itself \cite{goodfellow2016deep}. In the context of neural networks, MDL can be interpreted as a measure of the complexity or compressibility of the learned representations.
+   219	
+   220	The connection between MDL and generalization is grounded in the idea that simpler models (those with shorter descriptions) are more likely to generalize well. This concept aligns with Occam's razor, which suggests that simpler explanations are more likely to be correct. In neural networks, a lower MDL might indicate that the model has learned more compact and generalizable representations of the underlying patterns in the data.
+   221	
+   222	\subsection{Problem Setting}
+   223	
+   224	We consider the task of binary classification on four different datasets: modular addition ($x+y$), modular subtraction ($x-y$), modular division ($x/y$), and permutation. Each dataset $\mathcal{D} = \{(x_i, y_i)\}_{i=1}^{\{N\}}$ consists of input-output pairs, where $x_i$ represents the input and $y_i$ the corresponding label.
+   225	
+   226	For the modular arithmetic datasets, we define:
+   227	\begin{itemize}
+   228	    \item $x_i = (a_i, b_i)$, where $a_i, b_i \in \{0, 1, \ldots, p-1\}$ and $p$ is a prime number
+   229	    \item $y_i = f(a_i, b_i) \mod p$, where $f$ is the respective arithmetic operation
+   230	\end{itemize}
+   231	
+   232	For the permutation dataset:
+   233	\begin{itemize}
+   234	    \item $x_i$ represents a permutation of $k$ elements
+   235	    \item $y_i$ is the result of applying a fixed permutation to $x_i$
+   236	\end{itemize}
+   237	
+   238	We train a transformer-based model $M_\theta$ with parameters $\theta$ to minimize the cross-entropy loss:
+   239	
+   240	\begin{equation}
+   241	    \mathcal{L}(\theta) = -\frac{1}{N} \sum_{i=1}^N \log P_\theta(y_i|x_i)
+   242	\end{equation}
+   243	
+   244	where $P_\theta(y_i|x_i)$ is the probability assigned by the model to the correct label $y_i$ given input $x_i$.
+   245	
+   246	To quantify the model's generalization performance, we use validation accuracy. We define the grokking point as the training step at which the validation accuracy reaches 95\%.
+   247	
+   248	To estimate the Minimal Description Length (MDL) of the model, we use a weight pruning approach. The MDL at a given training step is approximated by the number of non-zero weights in the model after applying a pruning threshold:
+   249	
+   250	\begin{equation}
+   251	    \text{MDL}(\theta) \approx |\{w_i \in \theta : |w_i| > \epsilon\}|
+   252	\end{equation}
+   253	
+   254	where $\epsilon$ is a small threshold value.
+   255	
+   256	This problem setting allows us to investigate the relationship between MDL, grokking, and generalization across different types of tasks, providing insights into the learning dynamics of neural networks from an information-theoretic perspective.
+   257	
+   258	\section{Method}
+   259	\label{sec:method}
+   260	
+   261	To investigate the relationship between Minimal Description Length (MDL) and grokking in neural networks, we propose a novel MDL estimation technique based on weight pruning. This approach aims to quantify the compression of internal representations during the learning process and relate it to the sudden generalization observed in grokking.
+   262	
+   263	\subsection{MDL Estimation Technique}
+   264	We estimate the MDL of a model with parameters $\theta$ by pruning weights below a threshold $\epsilon$ and counting the remaining non-zero weights:
+   265	
+   266	\begin{equation}
+   267	    \text{MDL}(\theta) \approx |\{w_i \in \theta : |w_i| > \epsilon\}|
+   268	\end{equation}
+   269	
+   270	where $\epsilon = 10^{-2}$ in our experiments. This computationally efficient approximation allows us to track changes in MDL throughout the training process.
+   271	
+   272	\subsection{Experimental Setup}
+   273	We apply our method to the four datasets defined in Section \ref{sec:background}: modular addition, subtraction, division, and permutation. For each dataset, we train a transformer-based model \cite{vaswani2017attention} with 2 layers, 128 hidden dimensions, and 4 attention heads. We use the AdamW optimizer \cite{loshchilov2017adamw} with a learning rate of $10^{-3}$, weight decay of 0.5, and a batch size of 512. Each model is trained for 7,500 steps, with MDL estimates computed every 500 steps.
+   274	
+   275	\subsection{Analysis of MDL and Grokking Relationship}
+   276	To analyze the relationship between MDL and grokking, we introduce several key concepts and metrics:
+   277	
+   278	\begin{itemize}
+   279	    \item \textbf{Grokking point}: The training step at which the validation accuracy reaches 95\%.
+   280	    \item \textbf{MDL transition point}: The step with the steepest decrease in MDL.
+   281	    \item \textbf{MDL-accuracy correlation}: The correlation between MDL reduction and improvement in validation accuracy.
+   282	    \item \textbf{Generalization gap}: The difference between training and validation accuracy in relation to MDL.
+   283	    \item \textbf{MDL transition rate}: The rate of change in MDL over time.
+   284	\end{itemize}
+   285	
+   286	\subsection{Visualization and Comparative Analysis}
+   287	We employ various visualization techniques to compare learning dynamics across datasets:
+   288	
+   289	\begin{itemize}
+   290	    \item Training and validation metrics over time (Figure \ref{fig:training_metrics}).
+   291	    \item MDL and validation accuracy combined plots (Figure \ref{fig:mdl_val_acc}).
+   292	    \item MDL transition point vs. grokking point scatter plot (Figure \ref{fig:mdl_transition_grokking}).
+   293	    \item MDL-validation accuracy correlation bar plot (Figure \ref{fig:mdl_val_acc_corr}).
+   294	    \item MDL evolution and generalization gap plots (Figure \ref{fig:mdl_gen_gap}).
+   295	    \item MDL transition rate visualization (Figure \ref{fig:mdl_transition_rate}).
+   296	    \item MDL transition rate vs. grokking speed scatter plot (Figure \ref{fig:mdl_rate_grokking_speed}).
+   297	\end{itemize}
+   298	
+   299	We conduct a comparative analysis between grokking and non-grokking scenarios to identify distinctive patterns in MDL evolution and its relationship to sudden generalization. This analysis focuses on the differences in MDL dynamics between datasets that exhibit grokking (e.g., modular arithmetic tasks) and those that struggle to generalize (e.g., the permutation task).
+   300	
+   301	By combining these analytical tools with our novel MDL estimation technique, we aim to provide a comprehensive understanding of the information-theoretic underpinnings of grokking and its relationship to the compression of internal representations in neural networks.
+   302	
+   303	\section{Experimental Setup}
+   304	\label{sec:experimental}
+   305	
+   306	To validate our hypothesis on the relationship between Minimal Description Length (MDL) and grokking, we designed a comprehensive experimental setup to investigate the learning dynamics of neural networks across various tasks. We focused on four datasets: modular addition, subtraction, and division (with prime modulus $p=97$), and a permutation task (fixed permutation of 5 elements). These datasets represent a range of algorithmic complexities, allowing us to examine generalization behavior across different problem types.
+   307	
+   308	We employed a transformer-based model \cite{vaswani2017attention} with 2 layers, 128 hidden dimensions, and 4 attention heads, implemented using PyTorch \cite{paszke2019pytorch}. The models were trained using the AdamW optimizer \cite{loshchilov2017adamw} with a learning rate of $10^{-3}$, weight decay of 0.5, and a batch size of 512. Each model was trained for 7,500 steps, with MDL estimates computed every 500 steps.
+   309	
+   310	To estimate MDL, we used a weight pruning approach, approximating MDL by the number of non-zero weights after applying a pruning threshold of $10^{-2}$. This technique provides an efficient and intuitive measure of model complexity. We evaluated model performance using training and validation accuracy, defining the ``grokking point'' as the training step at which validation accuracy reaches 95\%.
+   311	
+   312	Our analysis involved tracking and visualizing key metrics, including training and validation loss, accuracy, and MDL estimates. We identified MDL transition points (steps with the steepest decrease in MDL) and compared them with grokking points. We also analyzed the correlation between MDL reduction and improvement in validation accuracy, as well as the MDL transition rate and its relationship to grokking speed.
+   313	
+   314	Multiple experimental runs were conducted for each dataset to ensure robustness, with the first run serving as a baseline without MDL tracking. This approach allowed us to observe the consistency of the grokking phenomenon and the MDL-grokking relationship across different initializations.
+   315	
+   316	Results are presented through a series of plots and analyses, providing a comprehensive view of the learning dynamics and the relationship between MDL and grokking across datasets. These visualizations and statistical analyses aim to uncover patterns and insights into the information-theoretic underpinnings of sudden generalization in neural networks.
+   317	
+   318	\section{Results}
+   319	\label{sec:results}
+   320	
+   321	We present the results of our experiments investigating the relationship between Minimal Description Length (MDL) and grokking across four datasets: modular addition (x\_plus\_y), modular subtraction (x\_minus\_y), modular division (x\_div\_y), and permutation. Our experiments used a transformer-based model with 2 layers, 128 hidden dimensions, and 4 attention heads, trained for 7,500 steps using the AdamW optimizer \cite{loshchilov2017adamw} with a learning rate of $10^{-3}$ and weight decay of 0.5.
+   322	
+   323	\begin{table}[h]
+   324	\centering
+   325	\caption{Final performance metrics across datasets (mean values over 3 runs)}
+   326	\label{tab:final_performance}
+   327	\begin{tabular}{lcccc}
+   328	\toprule
+   329	Dataset & Train Loss & Val Loss & Train Acc & Val Acc \\
+   330	\midrule
+   331	x\_div\_y & 0.0054 & 0.0064 & 1.0000 & 1.0000 \\
+   332	x\_minus\_y & 0.0146 & 0.0157 & 1.0000 & 0.9998 \\
+   333	x\_plus\_y & 0.0054 & 0.0059 & 1.0000 & 1.0000 \\
+   334	Permutation & 0.0076 & 5.4155 & 0.9999 & 0.3393 \\
+   335	\bottomrule
+   336	\end{tabular}
+   337	\end{table}
+   338	
+   339	Table \ref{tab:final_performance} summarizes the final performance metrics. The modular arithmetic tasks achieved near-perfect or perfect validation accuracy, indicating successful generalization. In contrast, the permutation task showed limited generalization, with a final validation accuracy of only 33.93\%.
+   340	
+   341	\begin{figure}[h]
+   342	\centering
+   343	\includegraphics[width=0.8\textwidth]{val_acc_mdl_x_div_y.png}
+   344	\caption{Validation accuracy and normalized MDL for x\_div\_y task}
+   345	\label{fig:val_acc_mdl_x_div_y}
+   346	\end{figure}
+   347	
+   348	Figure \ref{fig:val_acc_mdl_x_div_y} illustrates the grokking phenomenon observed in the x\_div\_y task. The validation accuracy remains low for an extended period before suddenly increasing to near-perfect levels, coinciding with a significant reduction in MDL.
+   349	
+   350	\begin{table}[h]
+   351	\centering
+   352	\caption{Grokking points (steps to reach 95\% and 99\% validation accuracy)}
+   353	\label{tab:grokking_points}
+   354	\begin{tabular}{lcc}
+   355	\toprule
+   356	Dataset & 95\% Val Acc & 99\% Val Acc \\
+   357	\midrule
+   358	x\_div\_y & 3983 & 4173 \\
+   359	x\_minus\_y & 4403 & 4610 \\
+   360	x\_plus\_y & 2350 & 2573 \\
+   361	Permutation & 7347 & 7390 \\
+   362	\bottomrule
+   363	\end{tabular}
+   364	\end{table}
+   365	
+   366	Table \ref{tab:grokking_points} shows the average number of steps required to reach 95\% and 99\% validation accuracy. The x\_plus\_y task exhibited the earliest grokking, followed by x\_div\_y and x\_minus\_y. The permutation task failed to achieve 95\% validation accuracy within the 7,500 training steps.
+   367	
+   368	\begin{figure}[h]
+   369	\centering
+   370	\includegraphics[width=0.8\textwidth]{mdl_transition_vs_grokking_scatter.png}
+   371	\caption{MDL transition points vs.\ grokking points across datasets}
+   372	\label{fig:mdl_transition_vs_grokking}
+   373	\end{figure}
+   374	
+   375	Figure \ref{fig:mdl_transition_vs_grokking} compares the MDL transition points (steepest decrease in MDL) with the grokking points (95\% validation accuracy). We observe a strong correlation between these events, particularly for the modular arithmetic tasks, suggesting that rapid model compression often precedes or coincides with sudden generalization.
+   376	
+   377	\begin{figure}[h]
+   378	\centering
+   379	\includegraphics[width=0.8\textwidth]{mdl_val_acc_correlation.png}
+   380	\caption{Correlation between MDL reduction and validation accuracy improvement}
+   381	\label{fig:mdl_val_acc_correlation}
+   382	\end{figure}
+   383	
+   384	Figure \ref{fig:mdl_val_acc_correlation} shows the correlation between MDL reduction and validation accuracy improvement. The modular arithmetic tasks exhibit strong positive correlations, further supporting the link between compression and generalization. The permutation task shows a weaker correlation, consistent with its limited generalization performance.
+   385	
+   386	\begin{figure}[h]
+   387	\centering
+   388	\includegraphics[width=0.8\textwidth]{mdl_gen_gap_x_div_y.png}
+   389	\caption{MDL evolution and generalization gap for x\_div\_y task}
+   390	\label{fig:mdl_gen_gap_x_div_y}
+   391	\end{figure}
+   392	
+   393	Figure \ref{fig:mdl_gen_gap_x_div_y} illustrates the MDL evolution and generalization gap (difference between training and validation accuracy) for the x\_div\_y task. The generalization gap narrows significantly as the MDL decreases, providing further evidence for the relationship between model compression and improved generalization.
+   394	
+   395	\begin{figure}[h]
+   396	\centering
+   397	\includegraphics[width=0.8\textwidth]{mdl_transition_rate_vs_grokking_speed.png}
+   398	\caption{MDL transition rate vs.\ grokking speed across datasets}
+   399	\label{fig:mdl_transition_rate_vs_grokking_speed}
+   400	\end{figure}
+   401	
+   402	Figure \ref{fig:mdl_transition_rate_vs_grokking_speed} compares the MDL transition rate (minimum gradient of MDL) with the grokking speed (inverse of the difference between grokking point and MDL transition point). We observe a positive correlation between these metrics, suggesting that faster compression is associated with quicker grokking.
+   403	
+   404	While our results demonstrate a strong relationship between MDL and grokking for modular arithmetic tasks, the method shows limitations in more complex scenarios such as the permutation task. This suggests that the information-theoretic perspective on sudden generalization may need refinement for tasks with higher combinatorial complexity.
+   405	
+   406	In summary, our results provide strong evidence for the relationship between Minimal Description Length and grokking in neural networks. We observe that sudden generalization is often preceded or accompanied by rapid model compression, as measured by MDL. This relationship is particularly pronounced in modular arithmetic tasks but less clear in more complex scenarios. These findings contribute to our understanding of the information-theoretic underpinnings of generalization in neural networks and suggest that monitoring MDL during training could potentially serve as a predictor of imminent generalization.
+   407	
+   408	\begin{figure}[h]
+   409	    \centering
+   410	    \begin{subfigure}{0.49\textwidth}
+   411	        \includegraphics[width=\textwidth]{train_acc_x_div_y.png}
+   412	        \caption{Training accuracy for x\_div\_y task}
+   413	        \label{fig:train_acc_x_div_y}
+   414	    \end{subfigure}
+   415	    \hfill
+   416	    \begin{subfigure}{0.49\textwidth}
+   417	        \includegraphics[width=\textwidth]{train_loss_x_div_y.png}
+   418	        \caption{Training loss for x\_div\_y task}
+   419	        \label{fig:train_loss_x_div_y}
+   420	    \end{subfigure}
+   421	    \caption{Training metrics for x\_div\_y task}
+   422	    \label{fig:training_metrics_x_div_y}
+   423	\end{figure}
+   424	
+   425	\section{Conclusion}
+   426	\label{sec:conclusion}
+   427	
+   428	This paper investigated the relationship between Minimal Description Length (MDL) and the grokking phenomenon in neural networks, providing an information-theoretic perspective on sudden generalization. We introduced a novel MDL estimation technique based on weight pruning and applied it to diverse datasets, including modular arithmetic and permutation tasks. Our key findings include:
+   429	
+   430	1. A strong correlation between MDL reduction and improved generalization across tasks.
+   431	2. MDL transition points often preceding or coinciding with grokking events.
+   432	3. Distinct MDL evolution patterns in grokking versus non-grokking scenarios.
+   433	4. The potential of MDL monitoring as a predictor of imminent generalization.
+   434	
+   435	These results contribute to a deeper understanding of learning dynamics in neural networks and offer a new tool for anticipating and potentially inducing generalization in machine learning models.
+   436	
+   437	Our experiments on modular arithmetic tasks (x\_div\_y, x\_minus\_y, x\_plus\_y) demonstrated successful grokking, with validation accuracies reaching 100\% (Table \ref{tab:final_performance}). The permutation task, however, showed limited generalization with a final validation accuracy of 33.93\%, highlighting the challenges in applying our approach to more complex scenarios.
+   438	
+   439	The strong correlation between MDL reduction and validation accuracy improvement, as shown in Figure \ref{fig:mdl_val_acc_correlation}, supports the hypothesis that compression of internal representations plays a crucial role in the grokking process. Figure \ref{fig:mdl_transition_vs_grokking} further illustrates the clear relationship between MDL transition points and grokking points across different tasks.
+   440	
+   441	While our results are promising, limitations and areas for future work include:
+   442	
+   443	1. Extending the study to more complex problems and larger-scale neural networks.
+   444	2. Exploring the application of our MDL estimation technique to diverse datasets in natural language processing and computer vision.
+   445	3. Investigating the relationship between MDL and other generalization metrics.
+   446	4. Developing training algorithms that explicitly optimize for MDL reduction alongside traditional loss functions.
+   447	5. Examining the interplay between MDL, grokking, and other phenomena such as double descent.
+   448	6. Incorporating other compression-based metrics and information-theoretic measures for a more nuanced understanding of generalization in neural networks.
+   449	
+   450	In conclusion, our work provides a novel information-theoretic perspective on the grokking phenomenon, opening new avenues for understanding and improving generalization in deep learning. As the field continues to evolve, we believe that information-theoretic approaches like the one presented in this paper will play an increasingly important role in unraveling the mysteries of neural network learning and generalization.
+   451	
+   452	\section{Related Work}
+   453	\label{sec:related}
+   454	% Structure of the Related Work section:
+   455	% 1. Brief introduction to the context of grokking and MDL in neural networks
+   456	% 2. Previous work on grokking phenomenon
+   457	% 3. Information-theoretic approaches to understanding neural network generalization
+   458	% 4. MDL and compression in machine learning
+   459	% 5. Alternative approaches to predicting and inducing generalization in neural networks
+   460	
+   461	% Papers to include:
+   462	% - Power et al. (2022): Original work on grokking
+   463	% - Nakkiran et al. (2020): Double descent phenomenon
+   464	% - Tishby and Zaslavsky (2015): Information bottleneck theory
+   465	% - Blier and Ollivier (2018): Description Length in Deep Learning
+   466	% - Arora et al. (2018): Stronger generalization bounds for deep nets via a compression approach
+   467	
+   468	% Note: Ensure to compare and contrast these works with our approach, highlighting differences in assumptions, methods, and applicability to our problem setting.
+   469	
+   470	\bibliographystyle{iclr2024_conference}
+   471	\bibliography{references}
+   472	
+   473	\end{document}
+
+[exit_status=0]
+
+===== COMMAND: nl -ba plot.py =====
+     1	import matplotlib.pyplot as plt
+     2	import matplotlib.colors as mcolors
+     3	import numpy as np
+     4	import json
+     5	import os
+     6	import os.path as osp
+     7	from scipy.signal import savgol_filter
+     8	
+     9	# LOAD FINAL RESULTS:
+    10	datasets = ["x_div_y", "x_minus_y", "x_plus_y", "permutation"]
+    11	folders = os.listdir("./")
+    12	final_results = {}
+    13	results_info = {}
+    14	for folder in folders:
+    15	    if folder.startswith("run") and osp.isdir(folder):
+    16	        with open(osp.join(folder, "final_info.json"), "r") as f:
+    17	            final_results[folder] = json.load(f)
+    18	        results_dict = np.load(
+    19	            osp.join(folder, "all_results.npy"), allow_pickle=True
+    20	        ).item()
+    21	        print(results_dict.keys())
+    22	        run_info = {}
+    23	        for dataset in datasets:
+    24	            run_info[dataset] = {}
+    25	            val_losses = []
+    26	            train_losses = []
+    27	            val_accs = []
+    28	            train_accs = []
+    29	            for k in results_dict.keys():
+    30	                if dataset in k and "val_info" in k:
+    31	                    run_info[dataset]["step"] = [
+    32	                        info["step"] for info in results_dict[k]
+    33	                    ]
+    34	                    val_losses.append([info["val_loss"] for info in results_dict[k]])
+    35	                    val_accs.append([info["val_accuracy"] for info in results_dict[k]])
+    36	                if dataset in k and "train_info" in k:
+    37	                    train_losses.append(
+    38	                        [info["train_loss"] for info in results_dict[k]]
+    39	                    )
+    40	                    train_accs.append(
+    41	                        [info["train_accuracy"] for info in results_dict[k]]
+    42	                    )
+    43	                mean_val_losses = np.mean(val_losses, axis=0)
+    44	                mean_train_losses = np.mean(train_losses, axis=0)
+    45	                mean_val_accs = np.mean(val_accs, axis=0)
+    46	                mean_train_accs = np.mean(train_accs, axis=0)
+    47	                if len(val_losses) > 0:
+    48	                    sterr_val_losses = np.std(val_losses, axis=0) / np.sqrt(
+    49	                        len(val_losses)
+    50	                    )
+    51	                    stderr_train_losses = np.std(train_losses, axis=0) / np.sqrt(
+    52	                        len(train_losses)
+    53	                    )
+    54	                    sterr_val_accs = np.std(val_accs, axis=0) / np.sqrt(len(val_accs))
+    55	                    stderr_train_accs = np.std(train_accs, axis=0) / np.sqrt(
+    56	                        len(train_accs)
+    57	                    )
+    58	                else:
+    59	                    sterr_val_losses = np.zeros_like(mean_val_losses)
+    60	                    stderr_train_losses = np.zeros_like(mean_train_losses)
+    61	                    sterr_val_accs = np.zeros_like(mean_val_accs)
+    62	                    stderr_train_accs = np.zeros_like(mean_train_accs)
+    63	                run_info[dataset]["val_loss"] = mean_val_losses
+    64	                run_info[dataset]["train_loss"] = mean_train_losses
+    65	                run_info[dataset]["val_loss_sterr"] = sterr_val_losses
+    66	                run_info[dataset]["train_loss_sterr"] = stderr_train_losses
+    67	                run_info[dataset]["val_acc"] = mean_val_accs
+    68	                run_info[dataset]["train_acc"] = mean_train_accs
+    69	                run_info[dataset]["val_acc_sterr"] = sterr_val_accs
+    70	                run_info[dataset]["train_acc_sterr"] = stderr_train_accs
+    71	
+    72	            # Add MDL info
+    73	            mdl_data = [info for k, info in results_dict.items() if dataset in k and "mdl_info" in k]
+    74	            if mdl_data:
+    75	                run_info[dataset]["mdl_step"] = [item["step"] for item in mdl_data[0]]
+    76	                run_info[dataset]["mdl"] = [item["mdl"] for item in mdl_data[0]]
+    77	
+    78	        results_info[folder] = run_info
+    79	
+    80	# CREATE LEGEND -- ADD RUNS HERE THAT WILL BE PLOTTED
+    81	labels = {
+    82	    "run_0": "Baseline",
+    83	    "run_1": "MDL Tracking",
+    84	    "run_2": "MDL Analysis",
+    85	    "run_3": "Extended Analysis",
+    86	    "run_4": "Comprehensive Analysis",
+    87	}
+    88	
+    89	
+    90	# Create a programmatic color palette
+    91	def generate_color_palette(n):
+    92	    cmap = plt.get_cmap("tab20")
+    93	    return [mcolors.rgb2hex(cmap(i)) for i in np.linspace(0, 1, n)]
+    94	
+    95	
+    96	# Get the list of runs and generate the color palette
+    97	runs = list(labels.keys())
+    98	colors = generate_color_palette(len(runs))
+    99	
+   100	# Plot 1: Line plot of training loss for each dataset across the runs with labels
+   101	for dataset in datasets:
+   102	    plt.figure(figsize=(10, 6))
+   103	    for i, run in enumerate(runs):
+   104	        iters = results_info[run][dataset]["step"]
+   105	        mean = results_info[run][dataset]["train_loss"]
+   106	        sterr = results_info[run][dataset]["train_loss_sterr"]
+   107	        plt.plot(iters, mean, label=labels[run], color=colors[i])
+   108	        plt.fill_between(iters, mean - sterr, mean + sterr, color=colors[i], alpha=0.2)
+   109	
+   110	    plt.title(f"Training Loss Across Runs for {dataset} Dataset")
+   111	    plt.xlabel("Update Steps")
+   112	    plt.ylabel("Training Loss")
+   113	    plt.legend()
+   114	    plt.grid(True, which="both", ls="-", alpha=0.2)
+   115	    plt.tight_layout()
+   116	    plt.savefig(f"train_loss_{dataset}.png")
+   117	    plt.close()
+   118	
+   119	# Plot 2: Line plot of validation loss for each dataset across the runs with labels
+   120	for dataset in datasets:
+   121	    plt.figure(figsize=(10, 6))
+   122	    for i, run in enumerate(runs):
+   123	        iters = results_info[run][dataset]["step"]
+   124	        mean = results_info[run][dataset]["val_loss"]
+   125	        sterr = results_info[run][dataset]["val_loss_sterr"]
+   126	        plt.plot(iters, mean, label=labels[run], color=colors[i])
+   127	        plt.fill_between(iters, mean - sterr, mean + sterr, color=colors[i], alpha=0.2)
+   128	
+   129	    plt.title(f"Validation Loss Across Runs for {dataset} Dataset")
+   130	    plt.xlabel("Update Steps")
+   131	    plt.ylabel("Validation Loss")
+   132	    plt.legend()
+   133	    plt.grid(True, which="both", ls="-", alpha=0.2)
+   134	    plt.tight_layout()
+   135	    plt.savefig(f"val_loss_{dataset}.png")
+   136	    plt.close()
+   137	
+   138	
+   139	# Plot 3: Line plot of training acc for each dataset across the runs with labels
+   140	for dataset in datasets:
+   141	    plt.figure(figsize=(10, 6))
+   142	    for i, run in enumerate(runs):
+   143	        iters = results_info[run][dataset]["step"]
+   144	        mean = results_info[run][dataset]["train_acc"]
+   145	        sterr = results_info[run][dataset]["train_acc_sterr"]
+   146	        plt.plot(iters, mean, label=labels[run], color=colors[i])
+   147	        plt.fill_between(iters, mean - sterr, mean + sterr, color=colors[i], alpha=0.2)
+   148	
+   149	    plt.title(f"Training Accuracy Across Runs for {dataset} Dataset")
+   150	    plt.xlabel("Update Steps")
+   151	    plt.ylabel("Training Acc")
+   152	    plt.legend()
+   153	    plt.grid(True, which="both", ls="-", alpha=0.2)
+   154	    plt.tight_layout()
+   155	    plt.savefig(f"train_acc_{dataset}.png")
+   156	    plt.close()
+   157	
+   158	# Plot 2: Line plot of validation acc for each dataset across the runs with labels
+   159	for dataset in datasets:
+   160	    plt.figure(figsize=(10, 6))
+   161	    for i, run in enumerate(runs):
+   162	        iters = results_info[run][dataset]["step"]
+   163	        mean = results_info[run][dataset]["val_acc"]
+   164	        sterr = results_info[run][dataset]["val_acc_sterr"]
+   165	        plt.plot(iters, mean, label=labels[run], color=colors[i])
+   166	        plt.fill_between(iters, mean - sterr, mean + sterr, color=colors[i], alpha=0.2)
+   167	
+   168	    plt.title(f"Validation Loss Across Runs for {dataset} Dataset")
+   169	    plt.xlabel("Update Steps")
+   170	    plt.ylabel("Validation Acc")
+   171	    plt.legend()
+   172	    plt.grid(True, which="both", ls="-", alpha=0.2)
+   173	    plt.tight_layout()
+   174	    plt.savefig(f"val_acc_{dataset}.png")
+   175	    plt.close()
+   176	
+   177	# Plot 5: MDL estimates alongside validation accuracy
+   178	for dataset in datasets:
+   179	    plt.figure(figsize=(10, 6))
+   180	    for i, run in enumerate(runs):
+   181	        if run != "run_0":  # Skip baseline run
+   182	            iters = results_info[run][dataset]["step"]
+   183	            val_acc = results_info[run][dataset]["val_acc"]
+   184	            mdl_step = results_info[run][dataset]["mdl_step"]
+   185	            mdl = results_info[run][dataset]["mdl"]
+   186	
+   187	            # Normalize MDL values
+   188	            mdl_normalized = (mdl - np.min(mdl)) / (np.max(mdl) - np.min(mdl))
+   189	
+   190	            # Apply Savitzky-Golay filter to smooth MDL curve
+   191	            mdl_smooth = savgol_filter(mdl_normalized, window_length=5, polyorder=2)
+   192	
+   193	            plt.plot(iters, val_acc, label=f"{labels[run]} - Val Acc", color=colors[i])
+   194	            plt.plot(mdl_step, mdl_smooth, label=f"{labels[run]} - MDL", linestyle='--', color=colors[i])
+   195	
+   196	    plt.title(f"Validation Accuracy and MDL for {dataset} Dataset")
+   197	    plt.xlabel("Update Steps")
+   198	    plt.ylabel("Validation Accuracy / Normalized MDL")
+   199	    plt.legend()
+   200	    plt.grid(True, which="both", ls="-", alpha=0.2)
+   201	    plt.tight_layout()
+   202	    plt.savefig(f"val_acc_mdl_{dataset}.png")
+   203	    plt.close()
+   204	
+   205	# Calculate MDL transition point and correlation
+   206	mdl_analysis = {}
+   207	for dataset in datasets:
+   208	    mdl_analysis[dataset] = {}
+   209	    for run in runs:
+   210	        if run != "run_0":  # Skip baseline run
+   211	            mdl = results_info[run][dataset]["mdl"]
+   212	            mdl_step = results_info[run][dataset]["mdl_step"]
+   213	            val_acc = results_info[run][dataset]["val_acc"]
+   214	            train_acc = results_info[run][dataset]["train_acc"]
+   215	
+   216	            # Calculate MDL transition point (steepest decrease)
+   217	            mdl_diff = np.diff(mdl)
+   218	            mdl_transition_idx = np.argmin(mdl_diff)
+   219	            mdl_transition_point = mdl_step[mdl_transition_idx]
+   220	
+   221	            # Find grokking point (95% validation accuracy)
+   222	            grokking_point = next((step for step, acc in zip(results_info[run][dataset]["step"], val_acc) if acc >= 0.95), None)
+   223	
+   224	            # Calculate correlation between MDL reduction and validation accuracy improvement
+   225	            mdl_normalized = (mdl - np.min(mdl)) / (np.max(mdl) - np.min(mdl))
+   226	            val_acc_interp = np.interp(mdl_step, results_info[run][dataset]["step"], val_acc)
+   227	            correlation = np.corrcoef(mdl_normalized, val_acc_interp)[0, 1]
+   228	
+   229	            # Calculate generalization gap
+   230	            train_acc_interp = np.interp(mdl_step, results_info[run][dataset]["step"], train_acc)
+   231	            gen_gap = train_acc_interp - val_acc_interp
+   232	
+   233	            mdl_analysis[dataset][run] = {
+   234	                "mdl_transition_point": mdl_transition_point,
+   235	                "grokking_point": grokking_point,
+   236	                "correlation": correlation,
+   237	                "mdl": mdl,
+   238	                "mdl_step": mdl_step,
+   239	                "val_acc": val_acc_interp,
+   240	                "gen_gap": gen_gap
+   241	            }
+   242	
+   243	# Plot MDL transition point vs Grokking point
+   244	plt.figure(figsize=(10, 6))
+   245	for dataset in datasets:
+   246	    for run in runs:
+   247	        if run != "run_0":
+   248	            mdl_tp = mdl_analysis[dataset][run]["mdl_transition_point"]
+   249	            grok_p = mdl_analysis[dataset][run]["grokking_point"]
+   250	            plt.scatter(mdl_tp, grok_p, label=f"{dataset} - {run}")
+   251	
+   252	plt.plot([0, max(plt.xlim())], [0, max(plt.xlim())], 'k--', alpha=0.5)
+   253	plt.xlabel("MDL Transition Point")
+   254	plt.ylabel("Grokking Point")
+   255	plt.title("MDL Transition Point vs Grokking Point")
+   256	plt.legend()
+   257	plt.tight_layout()
+   258	plt.savefig("mdl_transition_vs_grokking.png")
+   259	plt.close()
+   260	
+   261	# Plot correlation between MDL reduction and val acc improvement
+   262	plt.figure(figsize=(10, 6))
+   263	for dataset in datasets:
+   264	    correlations = [mdl_analysis[dataset][run]["correlation"] for run in runs if run != "run_0"]
+   265	    plt.bar(dataset, np.mean(correlations), yerr=np.std(correlations), capsize=5)
+   266	
+   267	plt.xlabel("Dataset")
+   268	plt.ylabel("Correlation")
+   269	plt.title("Correlation between MDL Reduction and Val Acc Improvement")
+   270	plt.tight_layout()
+   271	plt.savefig("mdl_val_acc_correlation.png")
+   272	plt.close()
+   273	
+   274	# Plot MDL evolution and generalization gap
+   275	for dataset in datasets:
+   276	    plt.figure(figsize=(12, 8))
+   277	    for run in runs:
+   278	        if run != "run_0":
+   279	            mdl_step = mdl_analysis[dataset][run]["mdl_step"]
+   280	            mdl = mdl_analysis[dataset][run]["mdl"]
+   281	            gen_gap = mdl_analysis[dataset][run]["gen_gap"]
+   282	            
+   283	            plt.subplot(2, 1, 1)
+   284	            plt.plot(mdl_step, mdl, label=f"{run} - MDL")
+   285	            plt.title(f"MDL Evolution and Generalization Gap - {dataset}")
+   286	            plt.ylabel("MDL")
+   287	            plt.legend()
+   288	            
+   289	            plt.subplot(2, 1, 2)
+   290	            plt.plot(mdl_step, gen_gap, label=f"{run} - Gen Gap")
+   291	            plt.xlabel("Steps")
+   292	            plt.ylabel("Generalization Gap")
+   293	            plt.legend()
+   294	    
+   295	    plt.tight_layout()
+   296	    plt.savefig(f"mdl_gen_gap_{dataset}.png")
+   297	    plt.close()
+   298	
+   299	# Calculate and plot MDL transition rate
+   300	for dataset in datasets:
+   301	    plt.figure(figsize=(10, 6))
+   302	    for run in runs:
+   303	        if run != "run_0":
+   304	            mdl_step = mdl_analysis[dataset][run]["mdl_step"]
+   305	            mdl = mdl_analysis[dataset][run]["mdl"]
+   306	            mdl_rate = np.gradient(mdl, mdl_step)
+   307	            plt.plot(mdl_step, mdl_rate, label=f"{run} - MDL Rate")
+   308	    plt.title(f"MDL Transition Rate - {dataset}")
+   309	    plt.xlabel("Steps")
+   310	    plt.ylabel("MDL Rate of Change")
+   311	    plt.legend()
+   312	    plt.tight_layout()
+   313	    plt.savefig(f"mdl_transition_rate_{dataset}.png")
+   314	    plt.close()
+   315	
+   316	# Scatter plot of MDL transition points vs grokking points
+   317	plt.figure(figsize=(10, 6))
+   318	for dataset in datasets:
+   319	    for run in runs:
+   320	        if run != "run_0":
+   321	            mdl_tp = mdl_analysis[dataset][run]["mdl_transition_point"]
+   322	            grok_p = mdl_analysis[dataset][run]["grokking_point"]
+   323	            if mdl_tp is not None and grok_p is not None:
+   324	                plt.scatter(mdl_tp, grok_p, label=f"{dataset} - {run}")
+   325	if plt.gca().get_xlim()[1] > 0 and plt.gca().get_ylim()[1] > 0:
+   326	    plt.plot([0, max(plt.xlim())], [0, max(plt.ylim())], 'k--', alpha=0.5)
+   327	plt.xlabel("MDL Transition Point")
+   328	plt.ylabel("Grokking Point")
+   329	plt.title("MDL Transition Point vs Grokking Point")
+   330	plt.legend()
+   331	plt.tight_layout()
+   332	plt.savefig("mdl_transition_vs_grokking_scatter.png")
+   333	plt.close()
+   334	
+   335	# Print analysis results
+   336	for dataset in datasets:
+   337	    print(f"Dataset: {dataset}")
+   338	    for run in runs:
+   339	        if run != "run_0":
+   340	            analysis = mdl_analysis[dataset][run]
+   341	            print(f"  Run: {run}")
+   342	            print(f"    MDL Transition Point: {analysis['mdl_transition_point']}")
+   343	            print(f"    Grokking Point: {analysis['grokking_point']}")
+   344	            print(f"    Correlation: {analysis['correlation']:.4f}")
+   345	    print()
+   346	
+   347	# Calculate and print average MDL transition point and grokking point for each dataset
+   348	for dataset in datasets:
+   349	    mdl_tps = []
+   350	    grok_ps = []
+   351	    correlations = []
+   352	    for run in runs:
+   353	        if run != "run_0":
+   354	            mdl_tps.append(mdl_analysis[dataset][run]["mdl_transition_point"])
+   355	            grok_ps.append(mdl_analysis[dataset][run]["grokking_point"])
+   356	            correlations.append(mdl_analysis[dataset][run]["correlation"])
+   357	    avg_mdl_tp = np.mean(mdl_tps) if mdl_tps else None
+   358	    avg_grok_p = np.mean(grok_ps) if grok_ps else None
+   359	    avg_correlation = np.mean(correlations) if correlations else None
+   360	    print(f"Dataset: {dataset}")
+   361	    print(f"  Average MDL Transition Point: {avg_mdl_tp:.2f if avg_mdl_tp is not None else 'N/A'}")
+   362	    print(f"  Average Grokking Point: {avg_grok_p:.2f if avg_grok_p is not None else 'N/A'}")
+   363	    if avg_mdl_tp is not None and avg_grok_p is not None:
+   364	        print(f"  Difference: {abs(avg_mdl_tp - avg_grok_p):.2f}")
+   365	    else:
+   366	        print("  Difference: N/A")
+   367	    print(f"  Average Correlation: {avg_correlation:.4f if avg_correlation is not None else 'N/A'}")
+   368	
+   369	    # Add these lines for debugging
+   370	    print(f"  MDL Transition Points: {mdl_tps}")
+   371	    print(f"  Grokking Points: {grok_ps}")
+   372	    print(f"  Correlations: {correlations}")
+   373	    print()
+   374	
+   375	# Plot MDL Transition Rate vs Grokking Speed
+   376	try:
+   377	    plt.figure(figsize=(12, 8))
+   378	    for dataset in datasets:
+   379	        for run in runs:
+   380	            if run != "run_0":
+   381	                analysis = mdl_analysis[dataset][run]
+   382	                mdl_transition_rate = np.min(np.gradient(analysis['mdl'], analysis['mdl_step']))
+   383	                if analysis['grokking_point'] is not None and analysis['mdl_transition_point'] is not None:
+   384	                    if analysis['grokking_point'] != analysis['mdl_transition_point']:
+   385	                        grokking_speed = 1 / (analysis['grokking_point'] - analysis['mdl_transition_point'])
+   386	                    else:
+   387	                        grokking_speed = np.inf
+   388	                    plt.scatter(mdl_transition_rate, grokking_speed, label=f"{dataset} - {labels[run]}", alpha=0.7)
+   389	
+   390	    plt.xlabel("MDL Transition Rate")
+   391	    plt.ylabel("Grokking Speed")
+   392	    plt.title("MDL Transition Rate vs Grokking Speed")
+   393	    plt.legend()
+   394	    plt.xscale('symlog')
+   395	    plt.yscale('symlog')
+   396	    plt.grid(True, which="both", ls="-", alpha=0.2)
+   397	    plt.tight_layout()
+   398	    plt.savefig("mdl_transition_rate_vs_grokking_speed.png")
+   399	    plt.close()
+   400	except Exception as e:
+   401	    print(f"Error plotting MDL Transition Rate vs Grokking Speed: {e}")
+   402	
+   403	# Plot MDL evolution and validation accuracy for all datasets
+   404	for dataset in datasets:
+   405	    plt.figure(figsize=(15, 10))
+   406	    for run in runs:
+   407	        if run != "run_0":
+   408	            analysis = mdl_analysis[dataset][run]
+   409	            mdl_step = analysis['mdl_step']
+   410	            mdl = analysis['mdl']
+   411	            val_acc = analysis['val_acc']
+   412	            
+   413	            plt.plot(mdl_step, mdl, label=f'{labels[run]} - MDL')
+   414	            plt.plot(mdl_step, val_acc, label=f'{labels[run]} - Val Acc')
+   415	            plt.axvline(x=analysis['mdl_transition_point'], color='r', linestyle='--', label='MDL Transition')
+   416	            plt.axvline(x=analysis['grokking_point'], color='g', linestyle='--', label='Grokking Point')
+   417	    
+   418	    plt.title(f"MDL Evolution and Validation Accuracy - {dataset}")
+   419	    plt.xlabel("Steps")
+   420	    plt.ylabel("MDL / Validation Accuracy")
+   421	    plt.legend()
+   422	    plt.grid(True, which="both", ls="-", alpha=0.2)
+   423	    plt.tight_layout()
+   424	    plt.savefig(f"mdl_val_acc_evolution_{dataset}.png")
+   425	    plt.close()
+   426	
+   427	# Plot correlation between MDL reduction and validation accuracy improvement
+   428	plt.figure(figsize=(10, 6))
+   429	for dataset in datasets:
+   430	    correlations = []
+   431	    for run in runs:
+   432	        if run != "run_0":
+   433	            correlations.append(mdl_analysis[dataset][run]["correlation"])
+   434	    plt.bar(dataset, np.mean(correlations), yerr=np.std(correlations), capsize=5)
+   435	
+   436	plt.xlabel("Dataset")
+   437	plt.ylabel("Correlation")
+   438	plt.title("Correlation between MDL Reduction and Validation Accuracy Improvement")
+   439	plt.tight_layout()
+   440	plt.savefig("mdl_val_acc_correlation.png")
+   441	plt.close()
+   442	
+   443	# Print analysis results
+   444	print("\nAnalysis Results:")
+   445	for dataset in datasets:
+   446	    print(f"\nDataset: {dataset}")
+   447	    for run in runs:
+   448	        if run != "run_0":
+   449	            analysis = mdl_analysis[dataset][run]
+   450	            print(f"  Run: {labels[run]}")
+   451	            print(f"    MDL Transition Point: {analysis['mdl_transition_point']}")
+   452	            print(f"    Grokking Point: {analysis['grokking_point']}")
+   453	            print(f"    Correlation: {analysis['correlation']:.4f}")
+   454	
+   455	# Calculate and print average MDL transition point and grokking point for each dataset
+   456	print("\nAverage MDL Transition Point and Grokking Point:")
+   457	for dataset in datasets:
+   458	    mdl_tps = []
+   459	    grok_ps = []
+   460	    correlations = []
+   461	    for run in runs:
+   462	        if run != "run_0":
+   463	            mdl_tp = mdl_analysis[dataset][run]["mdl_transition_point"]
+   464	            grok_p = mdl_analysis[dataset][run]["grokking_point"]
+   465	            correlation = mdl_analysis[dataset][run]["correlation"]
+   466	            if mdl_tp is not None:
+   467	                mdl_tps.append(mdl_tp)
+   468	            if grok_p is not None:
+   469	                grok_ps.append(grok_p)
+   470	            if correlation is not None:
+   471	                correlations.append(correlation)
+   472	    
+   473	    avg_mdl_tp = np.mean(mdl_tps) if mdl_tps else None
+   474	    avg_grok_p = np.mean(grok_ps) if grok_ps else None
+   475	    avg_correlation = np.mean(correlations) if correlations else None
+   476	    
+   477	    print(f"\nDataset: {dataset}")
+   478	    print(f"  Average MDL Transition Point: {avg_mdl_tp:.2f if avg_mdl_tp is not None else 'N/A'}")
+   479	    print(f"  Average Grokking Point: {avg_grok_p:.2f if avg_grok_p is not None else 'N/A'}")
+   480	    if avg_mdl_tp is not None and avg_grok_p is not None:
+   481	        print(f"  Difference: {abs(avg_mdl_tp - avg_grok_p):.2f}")
+   482	    else:
+   483	        print("  Difference: N/A")
+   484	    print(f"  Average Correlation: {avg_correlation:.4f if avg_correlation is not None else 'N/A'}")
+   485	
+   486	    # Add these lines for debugging
+   487	    print(f"  MDL Transition Points: {mdl_tps}")
+   488	    print(f"  Grokking Points: {grok_ps}")
+   489	    print(f"  Correlations: {correlations}")
+
+[exit_status=0]
+
+===== COMMAND: python - =====
+{
+  "artifact": "fabscore_codex/workspace/claim_25_x_div_y/all_results.npy",
+  "train_keys": [
+    "x_div_y_0_train_info",
+    "x_div_y_1_train_info",
+    "x_div_y_2_train_info"
+  ],
+  "num_seeds": 3,
+  "num_points": 750,
+  "step_start": 10,
+  "step_end": 7500,
+  "mean_train_acc": {
+    "10": 0.011979166728754839,
+    "50": 0.02330729179084301,
+    "100": 0.0524088554084301,
+    "500": 0.96875,
+    "1000": 0.9957682291666666,
+    "2000": 0.9987630248069763,
+    "3000": 0.9921223918596903,
+    "4000": 1.0,
+    "7500": 1.0
+  },
+  "mean_train_loss": {
+    "10": 4.695454279581706,
+    "50": 4.545799096425374,
+    "100": 4.3289869626363116,
+    "500": 0.4348245660463969,
+    "1000": 0.03741638222709298,
+    "2000": 0.03154459735378623,
+    "3000": 0.04751587348679701,
+    "4000": 0.012273879100879034,
+    "7500": 0.012054432493944963
+  },
+  "first_step_train_acc_ge_095": 480,
+  "first_step_train_acc_eq_1": 1060,
+  "first_step_train_loss_lt_0_1": 640,
+  "first_step_train_loss_lt_0_01": 1200,
+  "final_mean_train_acc": 1.0,
+  "final_mean_train_loss": 0.012054432493944963
+}
+
+[exit_status=0]
+

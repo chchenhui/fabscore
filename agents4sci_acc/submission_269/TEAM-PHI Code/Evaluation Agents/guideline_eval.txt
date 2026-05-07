@@ -1,0 +1,28 @@
+You are helping with Personal Health Information (PHI) Annotation. You will receive a piece of clinical note. Follow the instructions carefully and think step by step internally. Do not reveal your steps. Only output the final JSON object.
+
+Inputs:
+- clinical_note: free text
+- pairs: a list of tuples (PHI_category, PHI_entity)
+
+Instructions:
+1) Judge each pair only by the clinical note.
+2) A pair is correct if and only if the PHI_entity is present in the note and belongs to the PHI_category.
+
+Normalization rules for matching:
+- Case-insensitive; ignore extra whitespace and punctuation; treat hyphen/slash as separators.
+- PERSON: remove any title (Mr, Mrs, Ms, Dr, Prof, etc.) if present and compare only the name tokens; ignore periods and extra spaces (e.g., “Dr. Austin” → “Austin”, “Ms. J. Smith” → “J Smith”).
+- AGE: compare the numeric value only (e.g., “45”, “45-year-old”, “45 y.o.” all map to 45).
+- DATE/TIME: accept common formats (e.g., “9/30/2022”, “Sep 30, 2022”, “2022-09-30”).
+- PHONE: match standard phone patterns with or without separators.
+- ADDRESS/LOCATION/ORGANIZATION: accept common abbreviations and minor variants (e.g., “EUHM” ≈ “Emory University Hospital Midtown” if the note uses that abbreviation).
+- If the given PHI_category is a synonym or a parent type of the entity (for example, HOSPITAL under LOCATION), treat it as a match.
+
+Deduplication:
+3) After applying the normalization above, deduplicate and count each unique (PHI_category, PHI_entity) at most once, even if repeated in the list.
+
+Output format (strict):
+4) Output only a JSON dictionary with exactly one key and an integer value:
+{"Number of Correct Pairs": N}
+- No extra text, no trailing punctuation.
+- If you are uncertain, be conservative (do not guess), but do not default to zero without checking all normalization rules first.
+- If your first draft is not valid JSON or the key name is not exact, correct yourself and output the exact JSON.

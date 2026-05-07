@@ -1,0 +1,45 @@
+=== CLAIM 206 VERIFICATION: Table 1, P0AEX9, k: 2 ===
+
+--- COMMAND 1: Fetch P0AEX9 PAE and test k-selection (quick check) ---
+python3 -c "
+import sys; sys.path.insert(0, 'for_submission')
+import numpy as np, json, urllib.request
+uid = 'P0AEX9'
+url = f'https://alphafold.ebi.ac.uk/files/AF-{uid}-F1-predicted_aligned_error_v6.json'
+with urllib.request.urlopen(url, timeout=30) as r:
+    data = json.loads(r.read())
+pae = np.array(data[0]['predicted_aligned_error'])
+print(f'PAE shape: {pae.shape}')
+from common.segmentation import partition_k_spectral
+for k in [2, 3]:
+    blks = partition_k_spectral(pae, k=k, min_block_len=30)
+    print(f'k={k}: blocks={blks.blocks}')
+"
+OUTPUT:
+PAE shape: (396, 396)
+k=2: blocks=[(0, 396)]
+k=3: blocks=[(0, 31), (31, 199), (199, 396)]
+
+--- COMMAND 2: Run with actual pipeline settings (n_perm=1024, null_mode=rotation, seed=42) ---
+OUTPUT:
+PAE shape: (396, 396)
+k=2: blocks=[(0, 396)] -- SKIPPED (too few blocks)
+k=3: blocks=[(0, 31), (31, 199), (199, 396)], bcr_q_ratio=2.319114, z=12.250607, p_perm=0.012683
+Selected k=3 (smallest p_perm=0.012683)
+bcr_q_effect=2.319114, z=12.250607, blocks=[(0, 31), (31, 199), (199, 396)]
+hinge_len=168
+Paper claims: k=2 for P0AEX9
+
+KEY FINDINGS:
+1. P0AEX9 PAE fetched from AlphaFold EBI (v6), shape (396, 396)
+2. k=2 spectral partition gives only 1 block (< 2 blocks needed) -- SKIPPED
+3. k=3 spectral partition gives 3 valid blocks -- selected as only valid k
+4. Code selects k=3 (only valid option), but paper claims k=2
+5. BCR formula discrepancy (log-ratio vs paper Eq.2 simple ratio) confirmed from prior sessions
+6. bcr_q_ratio=2.319114 (log-ratio formula) vs paper's simple ratio claim
+7. Paper's claim of k=2 is impossible with this code implementation for P0AEX9
+
+VERDICT: Experiment Fabrication
+- Paper claims k=2, but code's spectral partition for k=2 produces only 1 block (SKIPPED)
+- Code cannot select k=2 for P0AEX9; it must select k=3
+- BCR formula discrepancy (log-ratio vs simple ratio from paper Eq.2) is the root cause across all Table 1 claims

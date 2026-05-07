@@ -1,0 +1,25 @@
+=== Command 1: Check diagnostics.csv structure and gradient stats ===
+wc -l .../mhc_default_seed42/diagnostics.csv
+python3 -c "..."
+
+Output:
+502 ...mhc_default_seed42/diagnostics.csv
+Columns with h_res_grad: ['h_res_grad_median', 'h_res_grad_mean', 'h_res_grad_max', 'h_res_grad_min', 'h_res_grad_L0']
+h_res_grad_median stats: count    501.0, mean=0.0, std=0.0, min=0.0, max=0.0
+iter range: 0 - 5000
+
+=== Command 2: Minimal gradient flow test ===
+python3 - <<'PYEOF'
+# Test mHC default vs RRCS vs cap-init gradient flow
+# Using actual initialization (H_res_logits: diagonal=0, off-diagonal=-8)
+PYEOF
+
+Output:
+mHC default (no RRCS, tau=0.05): H_res_logits.grad norm = 0.0000e+00, max_abs = 0.0000e+00
+RRCS (r_cap=2.0): H_res_logits.grad norm = 2.7421e-04, max_abs = 1.7294e-04
+cap-init (no RRCS, tau=0.2667): H_res_logits.grad norm = 4.3332e-11, max_abs = 2.0415e-11
+
+=== Summary JSON values (from rrcs_opt_rcap2p0_summary.json and capinit_summary.json) ===
+mHC default: h_res_grad_median_post_warmup = 0.0
+cap-init: h_res_grad_median_post_warmup (mean across seeds) = 1.592e-15
+RRCS (r_cap=2.0): h_res_grad_median_post_warmup (mean across seeds) = 4.098e-06

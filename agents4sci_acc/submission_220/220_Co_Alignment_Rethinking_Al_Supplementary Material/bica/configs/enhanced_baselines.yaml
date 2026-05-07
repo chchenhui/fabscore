@@ -1,0 +1,239 @@
+# Enhanced Baselines for Co-Alignment vs Single Directional Alignment
+# 增强基线配置，专门用于证明双向对齐优于单向对齐
+
+experiment: enhanced_baselines
+
+# Core comparison: Co-Alignment vs Single Directional
+core_comparison:
+  
+  # 1. BiCA (Full Co-Alignment) - Our Method
+  bica_full:
+    experiment: bica_full_coalignment
+    description: "Complete bidirectional co-alignment with all components"
+    
+    env:
+      grid_size: 8
+      obstacle_rate: [0.2, 0.3]
+      max_steps: 60
+    
+    model:
+      bidirectional_adaptation: true
+      protocol_learning: true
+      representation_mapper: true
+      instructor_model: true
+      budget_constraints: true
+    
+    regularizers:
+      lambda_A: 0.02    # AI budget constraint
+      lambda_H: 0.01    # Human budget constraint  
+      beta_ib: 0.5      # Information bottleneck
+      mu_rep: 0.05      # Representation gap
+      kappa_teach: 0.02 # Teaching cost
+    
+    tags: ["coalignment", "bidirectional", "full_method"]
+
+  # 2. Traditional RLHF-style (Single Directional)
+  rlhf_style:
+    experiment: traditional_rlhf_single_directional
+    description: "Traditional single-directional alignment (AI adapts to human)"
+    
+    env:
+      grid_size: 8
+      obstacle_rate: [0.2, 0.3]
+      max_steps: 60
+    
+    model:
+      bidirectional_adaptation: false
+      protocol_learning: false      # No mutual protocol learning
+      representation_mapper: false  # No bidirectional representation alignment
+      instructor_model: false       # No adaptive teaching
+      budget_constraints: false     # No mutual budget constraints
+      
+      # Only AI adapts to human
+      ai_adapts_to_human: true
+      human_adapts_to_ai: false
+      fixed_human_policy: true
+    
+    regularizers:
+      lambda_A: 0.1     # Higher constraint on AI (forced adaptation)
+      lambda_H: 0.0     # No constraint on human
+      beta_ib: 0.0      # No protocol IB
+      mu_rep: 0.0       # No representation alignment
+      kappa_teach: 0.0  # No teaching
+    
+    tags: ["single_directional", "rlhf_style", "baseline"]
+
+  # 3. Human-to-AI Only (One Direction)
+  human_to_ai_only:
+    experiment: human_to_ai_single_direction
+    description: "Only human teaches AI, no reverse adaptation"
+    
+    model:
+      bidirectional_adaptation: false
+      protocol_learning: false
+      representation_mapper: false
+      instructor_model: true        # Keep teaching but only one-way
+      
+      human_teaches_ai: true
+      ai_teaches_human: false
+      
+    regularizers:
+      lambda_A: 0.05    # AI learns from human
+      lambda_H: 0.0     # Human doesn't adapt
+      kappa_teach: 0.02 # Teaching cost
+    
+    tags: ["human_to_ai", "single_direction", "baseline"]
+
+  # 4. AI-to-Human Only (Reverse Direction)  
+  ai_to_human_only:
+    experiment: ai_to_human_single_direction
+    description: "Only AI teaches human, no reverse adaptation"
+    
+    model:
+      bidirectional_adaptation: false
+      protocol_learning: false
+      representation_mapper: false
+      instructor_model: true
+      
+      human_teaches_ai: false
+      ai_teaches_human: true
+      
+    regularizers:
+      lambda_A: 0.0     # AI doesn't adapt
+      lambda_H: 0.05    # Human learns from AI
+      kappa_teach: 0.02 # Teaching cost
+    
+    tags: ["ai_to_human", "single_direction", "baseline"]
+
+# Ablation Studies for Co-Alignment Components
+ablation_studies:
+  
+  # Remove bidirectional protocol learning
+  no_protocol_coalignment:
+    base: bica_full
+    disable: ["protocol_learning"]
+    description: "Co-alignment without mutual protocol learning"
+    
+  # Remove bidirectional representation alignment
+  no_representation_coalignment:
+    base: bica_full
+    disable: ["representation_mapper"]
+    description: "Co-alignment without representation alignment"
+    
+  # Remove adaptive teaching
+  no_teaching_coalignment:
+    base: bica_full
+    disable: ["instructor_model"]
+    description: "Co-alignment without adaptive teaching"
+    
+  # Remove budget constraints
+  no_budget_coalignment:
+    base: bica_full
+    disable: ["budget_constraints"]
+    description: "Co-alignment without budget constraints"
+
+# Enhanced Evaluation Metrics
+evaluation_metrics:
+  
+  # Primary metrics for co-alignment vs single directional
+  primary:
+    - success_rate              # Task completion
+    - collision_rate            # Safety
+    - avg_steps                 # Efficiency  
+    - avg_tokens               # Communication cost
+    - bas_score                # Bidirectional Alignment Score
+    - ccm_score                # Cognitive Complementarity Metric
+  
+  # Co-alignment specific metrics
+  coalignment_specific:
+    - mutual_adaptation_rate    # How much both agents adapt
+    - protocol_convergence      # Communication protocol learning
+    - representation_alignment  # Internal representation similarity
+    - teaching_effectiveness    # Instructor intervention success
+    - knowledge_transfer_rate   # Bidirectional knowledge flow
+    
+  # Robustness metrics
+  robustness:
+    - ood_performance_drop      # Performance degradation OOD
+    - adaptation_speed          # How quickly agents adapt
+    - recovery_from_failure     # Error recovery capability
+    - communication_breakdown   # Robustness to comm failures
+
+# Statistical Analysis
+statistical_analysis:
+  
+  # Hypothesis testing
+  hypotheses:
+    h1: "BiCA (co-alignment) > RLHF-style (single directional) on success rate"
+    h2: "BiCA > single directional on OOD robustness"  
+    h3: "BiCA > single directional on communication efficiency"
+    h4: "BiCA shows better mutual adaptation than single directional"
+  
+  # Statistical tests
+  tests:
+    - paired_t_test            # For paired comparisons
+    - mann_whitney_u           # Non-parametric alternative
+    - bootstrap_confidence     # Confidence intervals
+    - effect_size_cohens_d     # Effect size measurement
+    - bonferroni_correction    # Multiple comparison correction
+  
+  # Significance levels
+  alpha: 0.05
+  confidence_level: 0.95
+  num_bootstrap_samples: 1000
+  num_seeds: 10
+  
+# Experimental Protocol
+protocol:
+  
+  # Training
+  training:
+    episodes_per_seed: 2000
+    batch_size: 32
+    learning_rate: 3e-4
+    
+  # Evaluation
+  evaluation:
+    episodes_per_evaluation: 500
+    evaluation_frequency: 100
+    
+    # Environments
+    environments:
+      - in_distribution
+      - ood_high_obstacles      # Stress test
+      - ood_sensor_noise        # Robustness test
+      - ood_communication_delay # Communication test
+      - ood_mixed_objectives    # Adaptation test
+
+# Visualization and Reporting
+visualization:
+  
+  plots:
+    - success_rate_comparison   # Bar chart with error bars
+    - learning_curves          # Training progression
+    - bas_radar_chart          # Multi-dimensional comparison
+    - ood_robustness_heatmap   # Performance across conditions
+    - adaptation_dynamics      # How agents change over time
+    
+  tables:
+    - statistical_significance # p-values and effect sizes
+    - performance_summary      # Mean ± std for all metrics
+    - ablation_results        # Component contribution analysis
+
+# Expected Results (Hypotheses)
+expected_outcomes:
+  
+  performance:
+    - "BiCA should outperform single directional by 15-25% on success rate"
+    - "BiCA should show 30-40% better OOD robustness"
+    - "BiCA should require 20-30% fewer communication tokens"
+  
+  adaptation:
+    - "BiCA should show mutual adaptation in both agents"
+    - "Single directional should show adaptation in only one agent"
+    - "BiCA should converge faster to optimal collaboration"
+  
+  robustness:
+    - "BiCA should maintain performance better under distribution shift"
+    - "BiCA should recover from failures more quickly"
+    - "BiCA should be more resilient to communication breakdowns"

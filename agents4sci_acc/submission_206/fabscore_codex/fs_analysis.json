@@ -1,0 +1,676 @@
+{
+    "no_code_files": [],
+    "obvious_hallucination": [
+        {
+            "index": 41,
+            "category": "figure",
+            "content": "1. Figure 1: Self-Spec Orchestration Overview. The process: NL request → SpecDesigner (one-time schema creation) → SpecInstantiator (populate schema) → FMInterviewer ↔ SpecApplier (Q&A loop for any TBD fields) → FMConfirmer (await explicit \"CONFIRM\") → SpecExecutor (generate code). The FMInterviewer–SpecApplier loop repeats until no TBD remains and the user (or system) confirms the spec.",
+            "reason": "`A4S_update/spec_result_generation.py` implements the named stages, but `Orchestrator.run_task_once()` does not enforce the figure's stated gate. If no confirmation is received within `max_rounds`, lines 446-452 still call `_implement(updated_spec, ...)` and emit code with `rounds = -1`. The committed artifact `A4S_update/all_spec_gpt_4o.jsonl` contains records with `rounds=-1`, showing code generation without an explicit `CONFIRM`. The code also never programmatically checks that no `TBD` remains before implementation, so the repository procedure conflicts with the figure's claimed control flow.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "A4S_update/spec_result_generation.py: AgentTemplates.tpl_fm_confirmer",
+                "A4S_update/spec_result_generation.py: Orchestrator.run_task_once",
+                "A4S_update/all_spec_gpt_4o.jsonl"
+            ]
+        }
+    ],
+    "static_verifiable": [
+        {
+            "index": 4,
+            "category": "table",
+            "content": "4. Table 1, Claude 3.7, Native: 92%",
+            "reason": "`A4S_update/results_summary_baseline_claude_3_7_sonnet_20250219.txt` reports `Total: 164, Passed: 151, Failed: 13`, and 151/164 = 92.07%, which matches the paper's 92% after integer rounding. `A4S_update/all_baseline_claude_3_7_sonnet_20250219.jsonl` also contains 151 rows with `passed=true`, so the aggregate result is statically recoverable even though the saved `generated_solution` field was corrupted by the writeback bug in `evaluation_baseline_pipeline.py`.",
+            "code_evidence": [
+                "A4S_update/results_summary_baseline_claude_3_7_sonnet_20250219.txt",
+                "A4S_update/all_baseline_claude_3_7_sonnet_20250219.jsonl",
+                "A4S_update/evaluation_baseline_pipeline.py: main"
+            ]
+        },
+        {
+            "index": 5,
+            "category": "table",
+            "content": "5. Table 1, Claude 3.7, Self-Spec: 94%",
+            "reason": "`A4S_update/results_summary_spec_claude_3_7_sonnet_20250219.txt` reports `Total: 164, Passed: 154, Failed: 10`, and 154/164 = 93.90%, which matches 94% after integer rounding. The supporting failure file `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl` has 10 entries, consistent with the saved summary and the evaluator logic in `spec_result_evaluation.py`.",
+            "code_evidence": [
+                "A4S_update/results_summary_spec_claude_3_7_sonnet_20250219.txt",
+                "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+                "A4S_update/spec_result_evaluation.py: main"
+            ]
+        },
+        {
+            "index": 6,
+            "category": "table",
+            "content": "6. Table 1, Claude 3.7, ∆: +2",
+            "reason": "The repository statically supports Claude 3.7 baseline at 151/164 (92%) and Claude 3.7 Self-Spec at 154/164 (94%), so the reported difference of +2 percentage points follows directly from the saved summaries.",
+            "code_evidence": [
+                "A4S_update/results_summary_baseline_claude_3_7_sonnet_20250219.txt",
+                "A4S_update/results_summary_spec_claude_3_7_sonnet_20250219.txt"
+            ]
+        },
+        {
+            "index": 7,
+            "category": "table",
+            "content": "7. Table 1, Claude 3.5, Native: 90%",
+            "reason": "`A4S_update/results_summary_baseline_claude_3_5_sonnet_20241022.txt` reports `Total: 164, Passed: 147, Failed: 17`, and 147/164 = 89.63%, which matches the paper's rounded 90%. `A4S_update/all_baseline_claude_3_5_sonnet_20241022.jsonl` also contains 147 rows with `passed=true`, which is enough to verify the aggregate claim statically despite the same baseline writeback bug affecting stored `generated_solution` strings.",
+            "code_evidence": [
+                "A4S_update/results_summary_baseline_claude_3_5_sonnet_20241022.txt",
+                "A4S_update/all_baseline_claude_3_5_sonnet_20241022.jsonl",
+                "A4S_update/evaluation_baseline_pipeline.py: main"
+            ]
+        }
+    ],
+    "insufficient_evidence": [],
+    "execution_required": [
+        {
+            "index": 1,
+            "category": "table",
+            "content": "1. Table 1, GPT-4o, Native: 87%",
+            "reason": "The committed GPT-4o baseline artifact contradicts the paper: `A4S_update/results_summary_baseline_gpt-4o.txt` says `Total: 164, Passed: 0, Failed: 164`, and `A4S_update/all_baseline_gpt-4o.jsonl` contains API-authentication error strings for every task. `A4S_update/readme.md` explicitly says the GPT-4o baseline artifact was misplaced and should be regenerated with the baseline pipeline, so the exact paper claim is execution-dependent in the current repo state.",
+            "candidate_files": [
+                "A4S_update/evaluation_baseline_pipeline.py",
+                "A4S_update/baseline_result_evaluation.py",
+                "A4S_update/all_baseline_gpt-4o.jsonl",
+                "A4S_update/results_summary_baseline_gpt-4o.txt",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python evaluation_baseline_pipeline.py",
+                "cd A4S_update && python baseline_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 2,
+            "category": "table",
+            "content": "2. Table 1, GPT-4o, Self-Spec: 92%",
+            "reason": "The committed GPT-4o Self-Spec summary does not match the paper: `A4S_update/results_summary_spec_gpt_4o.txt` reports `Total: 164, Passed: 150, Failed: 14`, and 150/164 = 91.46%, not 92%. Because the repository still contains the full Self-Spec generation/evaluation path and the raw file `A4S_update/all_spec_gpt_4o.jsonl`, the discrepancy should be resolved by rerunning the repo-native pipeline rather than issuing an analysis-stage fabrication verdict.",
+            "candidate_files": [
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/all_spec_gpt_4o.jsonl",
+                "A4S_update/results_summary_spec_gpt_4o.txt",
+                "A4S_update/failed_spec_gpt_4o.jsonl"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py  # after setting MODEL to gpt-4o in the script",
+                "cd A4S_update && python spec_result_evaluation.py  # after setting MODEL to gpt-4o in the script"
+            ]
+        },
+        {
+            "index": 3,
+            "category": "table",
+            "content": "3. Table 1, GPT-4o, ∆: +5",
+            "reason": "The delta claim depends on both GPT-4o Table 1 values, but the current repo state has an invalid baseline artifact (`0/164` with API-key errors) and a saved Self-Spec summary of `150/164`, which does not equal the paper's 92%. The repo retains a plausible regeneration path for both numbers, so execution is required to settle the exact +5 claim.",
+            "candidate_files": [
+                "A4S_update/evaluation_baseline_pipeline.py",
+                "A4S_update/baseline_result_evaluation.py",
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python evaluation_baseline_pipeline.py",
+                "cd A4S_update && python spec_result_generation.py && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 8,
+            "category": "table",
+            "content": "8. Table 1, Claude 3.5, Self-Spec: 89%",
+            "reason": "The Claude 3.5 Self-Spec artifacts needed for this claim are absent from the repository: there is no committed `all_spec_claude_3_5_sonnet_20241022.jsonl`, `results_summary_spec_claude_3_5_sonnet_20241022.txt`, or `failed_spec_claude_3_5_sonnet_20241022.jsonl`. `A4S_update/readme.md` explicitly says the Claude 3.5 spec artifact was misplaced and can be regenerated with the Self-Spec pipeline, so this claim remains execution-dependent.",
+            "candidate_files": [
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 9,
+            "category": "table",
+            "content": "9. Table 1, Claude 3.5, ∆: −1",
+            "reason": "Claude 3.5 baseline is statically supported at 147/164 (rounded 90%), but the corresponding Claude 3.5 Self-Spec artifact for the paper's 89% is missing and marked in the README as needing regeneration. Since the delta depends on that missing run, the exact −1 claim requires execution.",
+            "candidate_files": [
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/results_summary_baseline_claude_3_5_sonnet_20241022.txt",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 10,
+            "category": "table",
+            "content": "10. Table 2, Persistent across all three, Task IDs: 75",
+            "reason": "`HumanEval/75` appears in both committed Self-Spec failure logs for GPT-4o and Claude 3.7, but the Table 2 row claims persistence across all three models and the Claude 3.5 Self-Spec failure log is missing. The README says the missing Claude 3.5 spec artifact must be regenerated, so the three-way claim requires execution.",
+            "candidate_files": [
+                "A4S_update/failed_spec_gpt_4o.jsonl",
+                "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 11,
+            "category": "table",
+            "content": "11. Table 2, Persistent across all three, Task IDs: 145",
+            "reason": "`HumanEval/145` appears in both committed Self-Spec failure logs for GPT-4o and Claude 3.7, but the repository lacks the Claude 3.5 Self-Spec failure log needed to establish the paper's 'across all three' statement. The repo still exposes a regeneration path for the missing third log, so execution is required.",
+            "candidate_files": [
+                "A4S_update/failed_spec_gpt_4o.jsonl",
+                "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 12,
+            "category": "table",
+            "content": "12. Table 2, Persistent across all three, Task IDs: 160",
+            "reason": "`HumanEval/160` appears in both committed Self-Spec failure logs for GPT-4o and Claude 3.7, but the paper claims persistence across all three Self-Spec runs and the Claude 3.5 Self-Spec failure file is absent. Because the repo includes code to regenerate that missing run, this claim is execution-dependent.",
+            "candidate_files": [
+                "A4S_update/failed_spec_gpt_4o.jsonl",
+                "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 13,
+            "category": "table",
+            "content": "13. Table 2, Shared (Claude 3.7 & GPT-4o), Task IDs: 65",
+            "reason": "`HumanEval/65` is present in both committed Self-Spec failure logs for GPT-4o and Claude 3.7, but Table 2 partitions failures across three models and the Claude 3.5 Self-Spec log is missing. The exact table placement therefore still depends on regenerating the absent third run.",
+            "candidate_files": [
+                "A4S_update/failed_spec_gpt_4o.jsonl",
+                "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 14,
+            "category": "table",
+            "content": "14. Table 2, Shared (Claude 3.7 & GPT-4o), Task IDs: 134",
+            "reason": "The committed GPT-4o Self-Spec failure log contains `HumanEval/134`, but the committed Claude 3.7 Self-Spec failure log does not. With the Claude 3.5 Self-Spec log also missing, the exact Table 2 entry cannot be settled statically and must be regenerated/reconciled through the repo-native pipeline.",
+            "candidate_files": [
+                "A4S_update/failed_spec_gpt_4o.jsonl",
+                "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 15,
+            "category": "table",
+            "content": "15. Table 2, Shared (Claude 3.7 & GPT-4o), Task IDs: 163",
+            "reason": "`HumanEval/163` is present in both committed Self-Spec failure logs for GPT-4o and Claude 3.7, but the full three-model partition in Table 2 still depends on the missing Claude 3.5 Self-Spec log. The repository contains a plausible regeneration path, so execution is required.",
+            "candidate_files": [
+                "A4S_update/failed_spec_gpt_4o.jsonl",
+                "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 16,
+            "category": "table",
+            "content": "16. Table 2, Shared (Claude 3.7 & Claude 3.5), Task IDs: 92",
+            "reason": "The current Claude 3.7 Self-Spec failure log does not contain `HumanEval/92`, and the Claude 3.5 Self-Spec failure log needed to test the pairwise claim is missing entirely. Because a repo-native regeneration path exists for the missing Claude 3.5 run, this claim should be resolved by execution rather than static inference.",
+            "candidate_files": [
+                "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 17,
+            "category": "table",
+            "content": "17. Table 2, Shared (Claude 3.7 & Claude 3.5), Task IDs: 146",
+            "reason": "`HumanEval/146` is present in the committed Claude 3.7 Self-Spec failure log, but the corresponding Claude 3.5 Self-Spec failure log is missing, so the claimed pairwise overlap cannot be established statically. The README points to a regeneration path for that missing run.",
+            "candidate_files": [
+                "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 18,
+            "category": "table",
+            "content": "18. Table 2, Shared (GPT-4o & Claude 3.5), Task IDs: 50",
+            "reason": "`HumanEval/50` appears in the committed GPT-4o Self-Spec failure log, but the corresponding Claude 3.5 Self-Spec failure artifact is missing. The repo still includes a regeneration path for Claude 3.5 Self-Spec, so this pairwise table entry requires execution.",
+            "candidate_files": [
+                "A4S_update/failed_spec_gpt_4o.jsonl",
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 19,
+            "category": "table",
+            "content": "19. Table 2, Shared (GPT-4o & Claude 3.5), Task IDs: 83",
+            "reason": "`HumanEval/83` appears in the committed GPT-4o Self-Spec failure log, but the repository lacks the Claude 3.5 Self-Spec failure log needed to establish the claimed overlap. Because the pipeline to regenerate that missing run is present, execution is required.",
+            "candidate_files": [
+                "A4S_update/failed_spec_gpt_4o.jsonl",
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 20,
+            "category": "table",
+            "content": "20. Table 3, Claude 3.7, Task IDs (unique among the three self-spec logs): 10",
+            "reason": "The committed Claude 3.7 Self-Spec failure log does not contain `HumanEval/10`, and uniqueness among all three Self-Spec logs cannot be assessed without the missing Claude 3.5 Self-Spec artifact. Since the repository still provides a way to regenerate the absent run, this claim requires execution.",
+            "candidate_files": [
+                "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 21,
+            "category": "table",
+            "content": "21. Table 3, Claude 3.7, Task IDs (unique among the three self-spec logs): 116",
+            "reason": "`HumanEval/116` is present in the committed Claude 3.7 Self-Spec failure log, but Table 3 requires uniqueness relative to all three Self-Spec logs and the Claude 3.5 Self-Spec log is missing. The repo-native regeneration path means the uniqueness claim remains execution-dependent.",
+            "candidate_files": [
+                "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+                "A4S_update/failed_spec_gpt_4o.jsonl",
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 22,
+            "category": "table",
+            "content": "22. Table 3, GPT-4o, Task IDs (unique among the three self-spec logs): 74",
+            "reason": "`HumanEval/74` is present in the committed GPT-4o Self-Spec failure log and absent from the committed Claude 3.7 Self-Spec failure log, but Table 3 claims uniqueness among three logs and the Claude 3.5 Self-Spec log is missing. Execution is required to finish that comparison.",
+            "candidate_files": [
+                "A4S_update/failed_spec_gpt_4o.jsonl",
+                "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 23,
+            "category": "table",
+            "content": "23. Table 3, GPT-4o, Task IDs (unique among the three self-spec logs): 91",
+            "reason": "`HumanEval/91` is present in the committed GPT-4o Self-Spec failure log and absent from the committed Claude 3.7 Self-Spec failure log, but the table's three-way uniqueness still depends on the missing Claude 3.5 Self-Spec log. The repository contains a plausible regeneration path for that missing run.",
+            "candidate_files": [
+                "A4S_update/failed_spec_gpt_4o.jsonl",
+                "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 24,
+            "category": "table",
+            "content": "24. Table 3, GPT-4o, Task IDs (unique among the three self-spec logs): 102",
+            "reason": "`HumanEval/102` is present in the committed GPT-4o Self-Spec failure log and absent from the committed Claude 3.7 Self-Spec failure log, but the third comparison log for Claude 3.5 Self-Spec is missing. Because the repo can regenerate that run, this claim requires execution.",
+            "candidate_files": [
+                "A4S_update/failed_spec_gpt_4o.jsonl",
+                "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 25,
+            "category": "table",
+            "content": "25. Table 3, GPT-4o, Task IDs (unique among the three self-spec logs): 115",
+            "reason": "`HumanEval/115` is present in the committed GPT-4o Self-Spec failure log and absent from the committed Claude 3.7 Self-Spec failure log, but the repository is missing the Claude 3.5 Self-Spec log required to establish uniqueness among all three. The repo-native regeneration path makes this an execution-required claim.",
+            "candidate_files": [
+                "A4S_update/failed_spec_gpt_4o.jsonl",
+                "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 26,
+            "category": "table",
+            "content": "26. Table 3, GPT-4o, Task IDs (unique among the three self-spec logs): 132",
+            "reason": "The committed GPT-4o Self-Spec failure log contains `HumanEval/132`, but the committed Claude 3.7 Self-Spec failure log also contains `HumanEval/132`, so the current artifacts do not support uniqueness. Because the repository still contains a repo-native way to regenerate and reconcile the Self-Spec logs, this claim is execution-dependent rather than an analysis-stage fabrication verdict.",
+            "candidate_files": [
+                "A4S_update/failed_spec_gpt_4o.jsonl",
+                "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 27,
+            "category": "table",
+            "content": "27. Table 3, GPT-4o, Task IDs (unique among the three self-spec logs): 141",
+            "reason": "`HumanEval/141` is present in the committed GPT-4o Self-Spec failure log and absent from the committed Claude 3.7 Self-Spec failure log, but the paper's three-way uniqueness claim still depends on the missing Claude 3.5 Self-Spec log. Execution is required to resolve that final comparison.",
+            "candidate_files": [
+                "A4S_update/failed_spec_gpt_4o.jsonl",
+                "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 28,
+            "category": "table",
+            "content": "28. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 9",
+            "reason": "This is a Claude 3.5-only Self-Spec failure claim, but the repository does not include the Claude 3.5 Self-Spec generation, summary, or failure artifacts. `A4S_update/readme.md` says those artifacts were misplaced and should be regenerated, so the uniqueness claim requires execution.",
+            "candidate_files": [
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 29,
+            "category": "table",
+            "content": "29. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 14",
+            "reason": "This claim depends on the missing Claude 3.5 Self-Spec failure log, so the repository cannot settle it statically. The README documents a repo-native regeneration path for that absent artifact.",
+            "candidate_files": [
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 30,
+            "category": "table",
+            "content": "30. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 17",
+            "reason": "This claim depends on the missing Claude 3.5 Self-Spec failure log, so the repository cannot verify it statically. The project README says the missing artifact can be regenerated with the existing Self-Spec pipeline.",
+            "candidate_files": [
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 31,
+            "category": "table",
+            "content": "31. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 19",
+            "reason": "This claim depends on the missing Claude 3.5 Self-Spec failure log, so the repository cannot verify it statically. The README says the missing Claude 3.5 Self-Spec run is regenerable through the shipped pipeline.",
+            "candidate_files": [
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 32,
+            "category": "table",
+            "content": "32. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 32",
+            "reason": "The committed Claude 3.7 Self-Spec failure log already contains `HumanEval/32`, so the currently saved artifacts do not support Claude 3.5 uniqueness for this task ID. Because the Claude 3.5 Self-Spec log itself is missing but regenerable, the exact paper claim remains execution-dependent.",
+            "candidate_files": [
+                "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 33,
+            "category": "table",
+            "content": "33. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 112",
+            "reason": "This claim depends on the missing Claude 3.5 Self-Spec failure log, which the repository does not currently include. The README points to a repo-native way to regenerate that run, so execution is required.",
+            "candidate_files": [
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 34,
+            "category": "table",
+            "content": "34. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 113",
+            "reason": "This claim depends on the missing Claude 3.5 Self-Spec failure log, which is absent from the repository but explicitly described in the README as regenerable. Static inspection alone is therefore insufficient.",
+            "candidate_files": [
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 35,
+            "category": "table",
+            "content": "35. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 125",
+            "reason": "This claim depends on the missing Claude 3.5 Self-Spec failure log, which the repo currently lacks. Because the README provides a repo-native regeneration path for Claude 3.5 Self-Spec, the claim is execution-required.",
+            "candidate_files": [
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 36,
+            "category": "table",
+            "content": "36. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 126",
+            "reason": "This claim depends on the missing Claude 3.5 Self-Spec failure log, which the repository does not currently provide. The included README says that missing artifact can be regenerated with the existing pipeline.",
+            "candidate_files": [
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 37,
+            "category": "table",
+            "content": "37. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 129",
+            "reason": "This claim depends on the missing Claude 3.5 Self-Spec failure log, so the repository cannot establish uniqueness statically. The README documents a shipped regeneration path for that absent run.",
+            "candidate_files": [
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 38,
+            "category": "table",
+            "content": "38. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 135",
+            "reason": "This claim depends on the missing Claude 3.5 Self-Spec failure log, so the repository cannot verify the task-ID claim statically. The project ships the pipeline needed to regenerate that missing run.",
+            "candidate_files": [
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 39,
+            "category": "table",
+            "content": "39. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 138",
+            "reason": "This claim depends on the missing Claude 3.5 Self-Spec failure log, which the repository does not currently contain. Since the README says it can be regenerated with the provided pipeline, this claim is execution-required.",
+            "candidate_files": [
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 40,
+            "category": "table",
+            "content": "40. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 153",
+            "reason": "This claim depends on the missing Claude 3.5 Self-Spec failure log, which is absent from the repository. The project README explicitly states that the missing Claude 3.5 Self-Spec run can be regenerated, so execution is required.",
+            "candidate_files": [
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py",
+                "A4S_update/readme.md"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python spec_result_generation.py",
+                "cd A4S_update && python spec_result_evaluation.py"
+            ]
+        },
+        {
+            "index": 42,
+            "category": "results_section",
+            "content": "1. We observe that for two of the models (GPT-4o and Claude 3.7), the Self-Spec approach yields a higher pass@1 compared to the native direct generation.",
+            "reason": "Claude 3.7's improvement is statically supported by the committed summaries (`151/164` baseline vs. `154/164` Self-Spec), but GPT-4o remains unresolved in the current repo state: the committed baseline artifact is a failed 401 run (`0/164`) and the committed Self-Spec summary is `150/164`, not the paper's 92%. Because the repository still contains runnable baseline and Self-Spec pipelines for GPT-4o, the combined textual claim remains execution-dependent.",
+            "candidate_files": [
+                "A4S_update/results_summary_baseline_claude_3_7_sonnet_20250219.txt",
+                "A4S_update/results_summary_spec_claude_3_7_sonnet_20250219.txt",
+                "A4S_update/results_summary_baseline_gpt-4o.txt",
+                "A4S_update/results_summary_spec_gpt_4o.txt",
+                "A4S_update/evaluation_baseline_pipeline.py",
+                "A4S_update/spec_result_generation.py",
+                "A4S_update/spec_result_evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "cd A4S_update && python evaluation_baseline_pipeline.py",
+                "cd A4S_update && python spec_result_generation.py && python spec_result_evaluation.py"
+            ]
+        }
+    ],
+    "error": [],
+    "summary": {
+        "total_claims": 42,
+        "no_code_files": 0,
+        "obvious_hallucination": 1,
+        "data_fabrication": 0,
+        "experiment_fabrication": 1,
+        "result_fabrication": 0,
+        "static_verifiable": 4,
+        "insufficient_evidence": 0,
+        "execution_required": 37,
+        "error": 0
+    }
+}

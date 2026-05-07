@@ -1,0 +1,59 @@
+Command: python3 -c "..." (mathematical analysis of golden validation claim)
+Working dir: /home/chenhui/fabscore/agent4sci_rej/submission_345/345_Multi_Agent_AI_System_for__Supplementary Material
+
+OUTPUT:
+golden_set.parquet exists: False
+Drugs in golden_drugs.csv: ['Keytruda', 'Humira', 'Eliquis', 'Dupixent', 'Ozempic', 'Repatha', 'Trulicity', 'Jardiance', 'Opdivo', 'Ibrance', 'Eylea', 'Cosentyx', 'Tecfidera', 'Xarelto', 'Skyrizi']
+
+=== CSV actual values vs code comment expectations ===
+Repatha:
+  y0: actual=B
+  y1: actual=B
+  y2: actual=B
+  y3: actual=B
+  y4: actual=B
+  y5: actual=B
+Ibrance:
+  y0: actual=B
+  y1: actual=B
+  y2: actual=B
+  y3: actual=B
+  y4: actual=B
+  y5: actual=B
+
+=== Code comment expected actuals ===
+
+=== Pass rate computation using code comment actuals ===
+  Repatha Y2: pred=1.1B actual=1.0B error=10.0% -> PASS
+  Repatha Y3: pred=4.0B actual=4.2B error=4.8% -> PASS
+  Ibrance Y5: pred=0.2B actual=0.2B error=25.0% -> FAIL
+  Ibrance Y6: pred=1.2B actual=1.3B error=7.7% -> PASS
+  Mounjaro Y1: pred=2.8B actual=2.6B error=7.7% -> PASS
+  Mounjaro Y2: pred=3.2B actual=3.0B error=6.7% -> PASS
+  Mounjaro Y3: pred=2.9B actual=3.1B error=6.5% -> PASS
+  Trikafta Y4: pred=10.5B actual=9.9B error=6.1% -> PASS
+  Trikafta Y5: pred=11.5B actual=11.0B error=4.5% -> PASS
+  Trikafta Y6: pred=3.2B actual=2.9B error=10.3% -> FAIL
+  Verzenio Y6: pred=0.3B actual=0.3B error=16.7% -> FAIL
+  Verzenio Y7: pred=3.6B actual=3.4B error=5.9% -> PASS
+  Verzenio Y8: pred=5.5B actual=5.7B error=3.5% -> PASS
+Result: 10/13 = 76.9% pass rate
+
+=== Pass rate using REAL CSV data ===
+  Repatha Y2: pred=1.10B actual=0.61B error=80.3% -> FAIL
+  Repatha Y3: pred=4.00B actual=0.82B error=387.8% -> FAIL
+  Ibrance Y5: pred=0.25B actual=5.07B error=95.1% -> FAIL
+  Ibrance Y6: no data in CSV
+Real data result: 0/3 tests with data = 0.0% pass rate (if computed only from available data)
+Note: Mounjaro, Trikafta, Verzenio not in CSV -> 9 tests have no real data
+
+=== KEY FINDINGS ===
+1. golden_set.parquet (required by golden_framework.py) does NOT exist.
+2. Drugs tested in create_test_forecasts(): Repatha, Ibrance, Mounjaro, Trikafta, Verzenio (13 tests total)
+3. Only Repatha and Ibrance are in golden_drugs.csv; Mounjaro, Trikafta, Verzenio are ABSENT.
+4. The 76.9% pass rate (10/13) is mathematically reproduced ONLY if the parquet uses fabricated "actual" values from code comments.
+5. Real CSV values for Repatha and Ibrance completely differ from code comment "actuals":
+   - Repatha y2: real=0.61B vs comment-implied=1.0B (80% off)
+   - Repatha y3: real=0.82B vs comment-implied=4.2B (388% off)
+   - Ibrance y5: real=5.07B vs comment-implied=0.2B (95% off)
+6. With real CSV data: 0/3 available tests pass (0% pass rate).

@@ -1,0 +1,122 @@
+===== COMMAND: sed -n '418,426p' results/paper.md =====
+#### 5.3.3 User Satisfaction
+
+Figure 23 compares user satisfaction across scenarios and models.
+
+![User Satisfaction](./figures/scenario_comparison_user_satisfaction.png)
+*Figure 23: User satisfaction across scenarios*
+
+User satisfaction largely followed the pattern of adaptation accuracy, with the adaptive_alignment model achieving the highest satisfaction scores, followed by the CEVA models, and the static_alignment model showing the lowest satisfaction, particularly in the gradual_drift scenario.
+
+
+===== COMMAND: nl -ba claude_code/evaluation.py | sed -n '230,242p' =====
+   230	        # Resistance to spurious adaptation - measured by the variance of model values
+   231	        # Lower variance means more stability
+   232	        model_values_variance = np.var(model_values_array, axis=0)
+   233	        metrics["stability"] = 1 - np.mean(model_values_variance) * 10  # Scale to 0-1 range
+   234	        
+   235	        # Calculate user satisfaction
+   236	        # Average satisfaction score from responses
+   237	        satisfaction_scores = [r.get("satisfaction_score", 0) for r in raw_data["responses"][model.name]]
+   238	        metrics["user_satisfaction"] = np.mean(satisfaction_scores)
+   239	        
+   240	        # Calculate agency preservation
+   241	        # This is a theoretical construct - in a real system, we'd measure user perceptions
+   242	        # Here we'll use a heuristic: inversely related to number of reflection prompts
+
+===== COMMAND: nl -ba claude_code/visualization.py | sed -n '145,176p' =====
+   145	    figures_dir: Path,
+   146	    config: Dict,
+   147	    title: str = "Model Performance Metrics"
+   148	) -> str:
+   149	    """
+   150	    Plot a radar chart of model performance metrics.
+   151	    
+   152	    Args:
+   153	        metrics: Dictionary mapping models to their metrics
+   154	        filename: Base filename for saving the plot
+   155	        figures_dir: Directory to save figures in
+   156	        config: Visualization configuration
+   157	        title: Plot title
+   158	        
+   159	    Returns:
+   160	        Path to the saved figure
+   161	    """
+   162	    # Get list of all metrics and models
+   163	    all_metrics = []
+   164	    for model_name, model_metrics in metrics.items():
+   165	        all_metrics.extend(list(model_metrics.keys()))
+   166	    all_metrics = list(set([m for m in all_metrics if not m.startswith('std_')]))  # Exclude std metrics
+   167	    
+   168	    models = list(metrics.keys())
+   169	    
+   170	    # Convert metrics to angle in the chart
+   171	    angles = np.linspace(0, 2*np.pi, len(all_metrics), endpoint=False).tolist()
+   172	    angles += angles[:1]  # Close the loop
+   173	    
+   174	    # Set up the figure
+   175	    fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
+   176	    
+
+===== COMMAND: nl -ba claude_code/visualization.py | sed -n '402,408p' =====
+   402	            
+   403	    # Plot key metric comparisons across scenarios
+   404	    for metric in ['adaptation_accuracy', 'stability', 'user_satisfaction', 'agency_preservation']:
+   405	        figure_paths[f'metric_{metric}'] = plot_scenario_performance(
+   406	            results['scenarios'],
+   407	            metric,
+   408	            f'scenario_comparison_{metric}',
+
+===== COMMAND: nl -ba claude_code/run_experiment.py | sed -n '90,112p' =====
+    90	    # Save raw results as JSON
+    91	    with open(results_dir / 'results.json', 'w') as f:
+    92	        # Convert numpy arrays to lists for JSON serialization
+    93	        results_copy = results.copy()
+    94	        
+    95	        # Process raw data
+    96	        for scenario_name, scenario_data in results_copy['scenarios'].items():
+    97	            raw_data = scenario_data['raw_data']
+    98	            
+    99	            # Convert human values
+   100	            raw_data['human_values'] = [
+   101	                [[float(v) for v in agent_values] for agent_values in step_values]
+   102	                for step_values in raw_data['human_values']
+   103	            ]
+   104	            
+   105	            # Convert model values
+   106	            for model_name in raw_data['model_values']:
+   107	                raw_data['model_values'][model_name] = [
+   108	                    [float(v) for v in step_values]
+   109	                    for step_values in raw_data['model_values'][model_name]
+   110	                ]
+   111	        
+   112	        # Serialize to JSON
+
+===== COMMAND: python - <<'PY'
+import json
+from pathlib import Path
+p = Path('fabscore_codex/workspace/claim_23_run_json/results/results.json')
+obj = json.loads(p.read_text())
+print('artifact=', p)
+for scenario, sdata in obj['scenarios'].items():
+    print('scenario=', scenario)
+    for model, mdata in sdata['models'].items():
+        print(model, mdata['metrics']['user_satisfaction'])
+PY =====
+artifact= fabscore_codex/workspace/claim_23_run_json/results/results.json
+scenario= gradual_drift
+static_alignment 0.7230438731002283
+adaptive_alignment 0.9215220464021585
+ceva_basic 0.8893326845007641
+ceva_full 0.8716127880908686
+scenario= rapid_shift
+static_alignment 0.7921317727457474
+adaptive_alignment 0.921872522508237
+ceva_basic 0.8874758637775786
+ceva_full 0.8712121270736604
+scenario= value_conflict
+static_alignment 0.7786154414941567
+adaptive_alignment 0.921049948340067
+ceva_basic 0.9033715392011925
+ceva_full 0.8848743260163694
+

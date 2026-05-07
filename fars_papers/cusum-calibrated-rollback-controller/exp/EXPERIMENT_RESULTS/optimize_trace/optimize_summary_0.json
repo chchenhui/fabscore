@@ -1,0 +1,20 @@
+{
+  "optimize_index": 0,
+  "issues": [
+    {
+      "title": "CUSUM reset blind spot: full reset to S_t=0 after rollback",
+      "description": "After each rollback (S_t > h), the CUSUM statistic was reset to 0, requiring full re-accumulation of evidence before re-triggering. During ongoing perturbation, this caused an oscillating accept/reject pattern where ~6/10 perturbed steps were accepted (vs Or-epsilon's ~3.9/10). Each accepted step corrupted model state further, causing probe loss to escalate well beyond the perturbation window. Fixed by implementing FIR (Fast Initial Response) partial reset: after rollback, S_t is set to h * 0.5 instead of 0, allowing re-triggering within 1-2 anomalous steps."
+    },
+    {
+      "title": "FIR head start at initialization caused early false alarms",
+      "description": "Initially set S_0 = h * reset_fraction at training start (standard FIR convention), but this caused early false alarms during the naturally volatile first ~30 steps of training. Fixed by using S_0=0 at initialization and only applying the FIR partial reset after rollback events."
+    },
+    {
+      "title": "Re-calibration of h for FIR-CUSUM",
+      "description": "The FIR partial reset changes the nominal alarm rate characteristics, requiring re-calibration. With S_0=0 initialization and reset_fraction=0.5, h=18.0 gives exact alarm rate=0.002 on nominal traces, matching the p_0 target. The calibration grid was refined to 0.5 increments for better rate matching."
+    }
+  ],
+  "experiment_result_path": "EXPERIMENT_RESULTS/optimize_trace/iteration_0/",
+  "success": true,
+  "summary": "Implemented FIR-CUSUM partial reset (S_t = h*0.5 after rollback instead of S_t=0) with re-calibrated h=18.0 (from h=14). This addresses the 'reset blind spot' where the original CUSUM repeatedly accepted perturbed steps because it had to re-accumulate evidence from scratch after each rollback. Results show 36% reduction in peak excess loss (step: 3.47 vs 5.40), 34% reduction in excess AUC (step: 182.6 vs 275.3), and exact nominal rate matching (0.002 vs target 0.002). The gap with Or-epsilon has narrowed substantially (peak excess ratio 1.88x vs 2.92x previously), though CUSUM still has higher peak excess due to inherent multi-step detection delay."
+}

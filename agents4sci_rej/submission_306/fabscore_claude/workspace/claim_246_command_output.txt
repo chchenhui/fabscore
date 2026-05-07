@@ -1,0 +1,40 @@
+=== CLAIM 246 VERIFICATION: Table 1, P16528, k: 2 ===
+
+--- COMMAND 1: Load P16528 and check k selection with n_perm=1024, null_mode=rotation ---
+python3 -c "
+import sys; sys.path.insert(0, 'for_submission')
+from common.afdb import load_entry
+from common.metrics import bcr_q_ratio
+from common.segmentation import partition_k_spectral
+
+entry = load_entry('P16528')
+print(f'P16528: length={entry.length}')
+for kk in [2, 3]:
+    blks = partition_k_spectral(entry.pae, k=kk, min_block_len=10)
+    print(f'k={kk}: blocks={blks.blocks}')
+    result = bcr_q_ratio(entry.pae, blks, n_perm=1024, null_mode='rotation', sym_mode='mean', return_p=True)
+    bratio, zratio, p_perm = result
+    print(f'  bcr_q_ratio={bratio:.6f}, z={zratio:.6f}, p_perm={p_perm:.6f}')
+    if kk == 3:
+        bl_sorted = sorted(blks.blocks, key=lambda x: x[0])
+        if len(bl_sorted) >= 3:
+            _, (hs, he), _ = bl_sorted[:3]
+            hinge_len = max(0, he - hs)
+            print(f'  hinge_len={hinge_len}')
+print('Done')
+"
+
+OUTPUT:
+P16528: length=274
+k=2: blocks=[(0, 99), (99, 274)]
+  bcr_q_ratio=2.061423, z=5.056106, p_perm=0.077073
+k=3: blocks=[(0, 100), (100, 151), (151, 274)]
+  bcr_q_ratio=2.197225, z=0.821146, p_perm=0.053659
+  hinge_len=51
+Done
+
+--- KEY FINDINGS ---
+1. k-selection key = (0, p_perm, -z): k=3 has (0, 0.053659, -0.821146), k=2 has (0, 0.077073, -5.056106)
+2. k=3 selected by code (p_perm=0.053659 < 0.077073) — paper claims k=2 → MISMATCH
+3. BCR formula discrepancy (log-ratio vs paper Eq.2 simple ratio) applies systemically (established in prior sessions)
+4. Code selects k=3 for P16528, contradicting the paper's Table 1 claim of k=2

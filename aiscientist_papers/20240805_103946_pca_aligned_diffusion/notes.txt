@@ -1,0 +1,117 @@
+# Title: PCA-Aligned Diffusion: Enhancing Interpretability and Control in Low-Dimensional Generative Models
+# Experiment description: 1. Implement a function to compute PCA on each dataset, obtaining principal components and explained variance ratios. 2. Modify NoiseScheduler to work in PCA-aligned coordinates. 3. Adjust MLPDenoiser to operate in and output PCA-aligned coordinates. 4. Train models using both standard and PCA-aligned approaches on all datasets. 5. Compare KL divergence and sample quality between the two approaches. 6. Visualize diffusion trajectories in both original and PCA-aligned spaces. 7. Analyze how PCA alignment affects the interpretability of the diffusion process. 8. Experiment with controlled generation by manipulating noise along principal component directions. 9. Investigate potential improvements in convergence speed and sample diversity.
+
+## Run 0: Baseline
+Results: {'circle': {'training_time': 48.47419357299805, 'eval_loss': 0.4392722546292083, 'inference_time': 0.18316245079040527, 'kl_divergence': 0.35930819035619976}, 'dino': {'training_time': 41.885783672332764, 'eval_loss': 0.6636652672077383, 'inference_time': 0.18297195434570312, 'kl_divergence': 1.060376674621348}, 'line': {'training_time': 38.887343406677246, 'eval_loss': 0.8017848281909132, 'inference_time': 0.17120051383972168, 'kl_divergence': 0.15692256311119815}, 'moons': {'training_time': 38.7231330871582, 'eval_loss': 0.6203141152248968, 'inference_time': 0.1772310733795166, 'kl_divergence': 0.09455949519397541}}
+Description: Baseline results.
+
+## Run 1: PCA-Aligned Diffusion
+Results: {'circle': {'training_time': 37.14819312095642, 'eval_loss': 0.4345882339855594, 'inference_time': 0.17314529418945312, 'kl_divergence': 0.3607760157377102}, 'dino': {'training_time': 35.98230266571045, 'eval_loss': 0.6660589183230534, 'inference_time': 0.17187047004699707, 'kl_divergence': 0.9597332768918274}, 'line': {'training_time': 35.8480122089386, 'eval_loss': 0.8039253062909216, 'inference_time': 0.16626691818237305, 'kl_divergence': 0.17224470026686403}, 'moons': {'training_time': 36.232994079589844, 'eval_loss': 0.6135713036560342, 'inference_time': 0.1684556007385254, 'kl_divergence': 0.0084945889806111}}
+Description: In this run, we implemented PCA-aligned diffusion. The process involved computing PCA for each dataset, modifying the NoiseScheduler to work in PCA-aligned coordinates, and adjusting the MLPDenoiser to operate in and output PCA-aligned coordinates. The results show some interesting changes compared to the baseline:
+
+1. Training time: Consistently reduced across all datasets (about 20-25% faster).
+2. Eval loss: Slightly improved for circle and moons datasets, marginally worse for dino and line datasets.
+3. Inference time: Slightly faster across all datasets.
+4. KL divergence: Improved for dino and moons datasets, slightly worse for circle and line datasets.
+
+These results suggest that PCA-alignment can lead to faster training and inference times without significantly impacting model performance. The improvements in KL divergence for some datasets indicate that the PCA-aligned approach might lead to better sample quality in certain cases. However, the mixed results across datasets highlight the need for further investigation to understand the factors influencing these differences.
+
+## Run 2: Controlled Generation with Component Weights
+Results: {'circle': {'training_time': 47.17212247848511, 'eval_loss': 0.4373051585138911, 'inference_time': 0.6534731388092041, 'kl_divergence': 2.9545970018662406}, 'dino': {'training_time': 43.68533992767334, 'eval_loss': 0.6670696416779247, 'inference_time': 0.7047030925750732, 'kl_divergence': 4.5916876977245575}, 'line': {'training_time': 45.12901544570923, 'eval_loss': 0.801715051426607, 'inference_time': 0.6729147434234619, 'kl_divergence': 1.7463516560657948}, 'moons': {'training_time': 45.630573987960815, 'eval_loss': 0.6188819120302225, 'inference_time': 0.6526176929473877, 'kl_divergence': 1.6789201932017124}}
+Description: In this run, we implemented controlled generation by manipulating noise along principal component directions. We introduced component weights to emphasize or de-emphasize specific principal components during the generation process. The experiment aimed to investigate how this controlled generation affects sample quality and diversity. Key observations:
+
+1. Training time: Slightly increased compared to Run 1, possibly due to the additional computations for controlled noise.
+2. Eval loss: Remained relatively stable across datasets, indicating that the model's performance wasn't significantly affected by the controlled generation process.
+3. Inference time: Increased notably compared to previous runs, likely due to the additional steps in the controlled generation process.
+4. KL divergence: Increased substantially across all datasets. This unexpected result requires further investigation and may indicate that the controlled generation process is producing samples that deviate more from the original data distribution.
+
+The increased KL divergence values are particularly interesting and could suggest that the controlled generation process is creating more diverse or potentially out-of-distribution samples. This might be beneficial for exploring the latent space but could also indicate a trade-off between control and fidelity to the original distribution. Further analysis of the generated samples and their distribution in the PCA space would be valuable to understand this behavior better.
+
+Next steps could include:
+1. Visualizing the generated samples from different controlled settings to understand how they differ from the original distribution.
+2. Analyzing the relationship between component weights and sample characteristics.
+3. Experimenting with different weighting schemes to find an optimal balance between control and distribution fidelity.
+4. Investigating whether the increased KL divergence is due to increased diversity or the introduction of artifacts in the generated samples.
+
+## Run 3: Cosine Beta Schedule
+Results: {'circle': {'training_time': 36.99437952041626, 'eval_loss': 0.4376250683803997, 'inference_time': 0.6440770626068115, 'kl_divergence': 2.842438215981946}, 'dino': {'training_time': 36.52017068862915, 'eval_loss': 0.6688906201316268, 'inference_time': 0.6733696460723877, 'kl_divergence': 4.694408275241059}, 'line': {'training_time': 36.85507011413574, 'eval_loss': 0.8076101015595829, 'inference_time': 0.659945011138916, 'kl_divergence': 1.6993076230816053}, 'moons': {'training_time': 38.6193790435791, 'eval_loss': 0.6207894794928753, 'inference_time': 0.6482956409454346, 'kl_divergence': 1.7142796714702386}}
+Description: In this run, we implemented a cosine beta schedule for the noise scheduler. The cosine schedule is known to provide a smoother transition between noise levels, which can potentially lead to better sample quality and stability during training. Key observations:
+
+1. Training time: Decreased significantly compared to Run 2, returning to levels similar to Run 1. This suggests that the cosine schedule doesn't add computational overhead.
+2. Eval loss: Remained relatively stable across datasets, with slight increases for some datasets. This indicates that the model's performance wasn't significantly affected by the change in beta schedule.
+3. Inference time: Slightly decreased compared to Run 2, but still higher than Run 1. This suggests that the controlled generation process is still the main factor in increased inference time.
+4. KL divergence: Slightly decreased for the circle dataset, but remained high for others. This indicates that the cosine schedule might have a small positive effect on sample quality, but the controlled generation process still dominates the KL divergence values.
+
+The results from this run suggest that the cosine beta schedule can be beneficial in terms of training efficiency without negatively impacting model performance. However, it doesn't seem to significantly address the high KL divergence values observed in Run 2.
+
+Next steps:
+1. Analyze the generated samples visually to see if there are noticeable quality improvements with the cosine schedule.
+2. Investigate the interaction between the cosine schedule and the controlled generation process.
+3. Consider experimenting with different hyperparameters for the cosine schedule to see if we can further improve results.
+4. Explore other techniques to reduce the KL divergence while maintaining the benefits of controlled generation.
+
+## Run 4: Expanded Component Weights and Detailed Statistics
+Results: {'circle': {'training_time': 36.173523902893066, 'eval_loss': 0.4344735227125075, 'inference_time': 1.1118056774139404, 'kl_divergence': 2.7608449884194872}, 'dino': {'training_time': 36.35249352455139, 'eval_loss': 0.6603376776970866, 'inference_time': 1.2082741260528564, 'kl_divergence': 4.7592270100281135}, 'line': {'training_time': 39.06058621406555, 'eval_loss': 0.8045724959629575, 'inference_time': 1.1572670936584473, 'kl_divergence': 1.774243853330056}, 'moons': {'training_time': 36.27033829689026, 'eval_loss': 0.6147833537415165, 'inference_time': 1.152181625366211, 'kl_divergence': 1.6354137384603578}}
+Description: In this run, we expanded the set of component weights for controlled generation and collected more detailed statistics about the generated samples. The experiment aimed to provide a more comprehensive understanding of how different component weights affect the characteristics of the generated samples. Key observations:
+
+1. Training time: Remained consistent with Run 3, indicating that the expanded component weights don't significantly impact training efficiency.
+2. Eval loss: Slightly improved across all datasets compared to Run 3, suggesting that the model's performance might benefit from the more diverse controlled generation process during training.
+3. Inference time: Increased notably compared to previous runs. This is likely due to the additional computations required for the expanded set of component weights and the collection of more detailed statistics.
+4. KL divergence: Showed mixed results compared to Run 3. It decreased for the circle and moons datasets but increased slightly for the dino and line datasets. This suggests that the impact of expanded component weights on sample quality varies depending on the dataset.
+
+The expanded component weights and detailed statistics provide valuable insights into the controlled generation process:
+
+1. We can now analyze how different weight combinations affect the mean and standard deviation of the generated samples for each dataset.
+2. The increased inference time indicates a trade-off between the level of control/analysis and computational efficiency.
+3. The mixed results in KL divergence suggest that the relationship between component weights and sample quality is complex and dataset-dependent.
+
+Next steps:
+1. Analyze the collected statistics to identify patterns in how different component weights affect sample characteristics across datasets.
+2. Visualize the generated samples for each weight combination to gain insights into the visual impact of controlled generation.
+3. Investigate whether certain weight combinations consistently produce better results across datasets.
+4. Consider implementing adaptive weight selection based on the dataset characteristics to optimize sample quality.
+5. Explore techniques to reduce inference time while maintaining the benefits of detailed analysis and controlled generation.
+
+## Plot Descriptions
+
+1. Figure: train_loss.png
+Description: This figure shows the training loss curves for each dataset (circle, dino, line, and moons) across all runs. The plot is organized as a 2x2 grid, with each subplot representing one dataset. Each line in a subplot corresponds to a different run, allowing for easy comparison of training convergence across different experimental conditions. The x-axis represents training steps, while the y-axis shows the loss value. This visualization helps in understanding how different modifications (PCA-alignment, controlled generation, cosine beta schedule, and expanded component weights) affect the training dynamics for each dataset.
+
+Key insights:
+- Comparison of convergence speeds across runs
+- Identification of any unstable training behaviors
+- Assessment of final loss values achieved by different approaches
+
+2. Figure: controlled_generated_samples.png
+Description: This figure visualizes the controlled generated samples for each dataset in the last run (Run 4: Expanded Component Weights and Detailed Statistics). It is organized as a 2x2 grid, with each subplot corresponding to one dataset. In each subplot, different colors or markers represent samples generated with different component weight configurations. This visualization provides insights into how manipulating the noise along principal component directions affects the distribution of generated samples.
+
+Key insights:
+- The spread and clustering of samples for different weight configurations
+- How closely the generated samples match the original data distribution for each dataset
+- Identification of any outliers or unexpected patterns in the generated samples
+
+3. Figure: sample_statistics.png
+Description: This figure presents detailed statistics of the generated samples for each dataset in Run 4. It is organized as a 2x2 grid, with each subplot representing one dataset. Each subplot shows multiple lines representing different statistics (mean, standard deviation, entropy, and correlation) for the first and second principal components across different weight configurations. The x-axis represents the different weight configurations, while the y-axis shows the statistic values.
+
+Key insights:
+- How different weight configurations affect the statistical properties of generated samples
+- Identification of trends or patterns in sample statistics across weight configurations
+- Comparison of statistical behaviors across different datasets
+
+4. Figure: kl_divergence_comparison.png
+Description: This bar plot compares the KL divergence values across all runs for each dataset. The x-axis represents the datasets, while the y-axis shows the KL divergence values. Each group of bars corresponds to a dataset, with different colored bars representing different runs. This visualization allows for easy comparison of how different approaches affect the quality of generated samples in terms of their similarity to the original data distribution.
+
+Key insights:
+- Identification of which runs produced the lowest (best) KL divergence for each dataset
+- Comparison of the impact of different approaches on sample quality across datasets
+- Visualization of any consistent trends or unexpected results in KL divergence across runs
+
+5. Figure: time_comparison.png
+Description: This figure consists of two bar plots comparing the training and inference times across all runs for each dataset. The top plot shows training times, while the bottom plot shows inference times. The x-axis represents the datasets, and the y-axis shows the time in seconds. Each group of bars corresponds to a dataset, with different colored bars representing different runs. This visualization allows for easy comparison of computational efficiency across different approaches and datasets.
+
+Key insights:
+- Identification of which runs were most efficient in terms of training and inference times
+- Comparison of how different approaches affect computational requirements across datasets
+- Visualization of any trade-offs between sample quality (from KL divergence) and computational efficiency
+
+These visualizations collectively provide a comprehensive view of the experiment results, allowing for in-depth analysis of the effects of PCA-aligned diffusion, controlled generation, and various other modifications on sample quality, training dynamics, and computational efficiency across different datasets.

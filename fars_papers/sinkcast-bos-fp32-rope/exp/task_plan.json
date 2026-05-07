@@ -1,0 +1,90 @@
+[
+  {
+    "index": 0,
+    "category": "Environment Configuration",
+    "title": "Dependencies Installation and Project Structure Initialization",
+    "description": "Set up the development environment for SinkCast inference-time experiments. The project requires PyTorch with CUDA support, FlashAttention-2 (for BF16 attention with softmax_lse access), Hugging Face Transformers (for loading Llama-3.1-8B and Mistral-7B-v0.3), and evaluation frameworks for RULER and LongBench benchmarks. Since SinkCast is an inference-only method (no training), the environment focuses on efficient model loading and evaluation rather than training infrastructure.",
+    "status": "completed",
+    "summary": "Environment set up with Python 3.12.12, PyTorch 2.9.1+cu129, FlashAttention 2.8.1, Transformers 4.57.6 on A100-SXM4-80GB. Installed rouge-score, jieba, seaborn. Cloned RULER (rulerv1-ns branch) and LongBench repos. Downloaded RULER auxiliary data (Paul Graham essays, SQuAD, HotpotQA). Created sinkcast/ package with core/, benchmarks/, baselines/, models/, scripts/, configs/, outputs/, results/ directories. Implemented model loader (sinkcast/models/loader.py) supporting Llama-3.1-8B and Mistral-7B-v0.3. Verified GPU environment via TrainService: FlashAttention with softmax_lse return confirmed working."
+  },
+  {
+    "index": 1,
+    "category": "Baseline Experiment",
+    "title": "BF16 FlashAttention Shift Microbenchmark on Llama-3.1-8B and Mistral-7B-v0.3",
+    "description": "Measure how standard BF16 FlashAttention breaks RoPE shift-invariance on both Llama-3.1-8B and Mistral-7B-v0.3. This establishes the baseline shift-error magnitude that SinkCast aims to correct. Two key metrics are computed: (1) per-key attention-logit difference D_logit(j) to characterize where shift-error concentrates (especially whether j=0 dominates), and (2) output-logit drift (max/mean absolute difference in final next-token logits under position shifts) to quantify end-to-end impact. The experiment uses identical token sequences evaluated at different global position offsets.\n\nReference: \"FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning\" | https://github.com/Dao-AILab/flash-attention",
+    "status": "completed",
+    "summary": "Ran BF16 FlashAttention shift microbenchmark on both models. Key findings: (1) D_logit(0) does NOT dominate raw pre-softmax logit shift-error -- j0_fraction is ~5% for Llama and ~8% for Mistral among sampled keys {0,1,2,8,64}. D_logit(0) is actually the smallest. (2) Output-logit drift is measurable: Llama max_drift 1.1-7.4, mean_drift 0.04-0.08; Mistral max_drift 0.3-6.4, mean_drift 0.02. (3) Drift increases with shift magnitude and sequence length. (4) Mistral shows lower overall shift-error than Llama. Note: Wang et al.'s j=0 dominance is about post-softmax attention weights, not raw logits. Results saved to sinkcast/results/microbench/bf16_flash/ and EXPERIMENT_RESULTS/bf16_flash_microbench/."
+  },
+  {
+    "index": 2,
+    "category": "Baseline Experiment",
+    "title": "FP32 Attention Oracle Shift Microbenchmark on Llama-3.1-8B and Mistral-7B-v0.3",
+    "description": "Run the shift microbenchmark using full FP32 attention (no BF16 anywhere in the attention computation) to establish the oracle upper bound. FP32 attention should exhibit near-zero shift-induced drift, confirming that the observed BF16 drift is caused by precision rather than model architecture. This is run only at short sequence lengths (T ≤ 2048) due to the prohibitive memory cost of FP32 full attention without FlashAttention.\n\nReference: \"When Precision Meets Position: BFloat16 Breaks Length Generalization in Even Simple Transformers\" | https://github.com/haonan3/AnchorContext",
+    "status": "completed",
+    "summary": "FP32 oracle shift microbenchmark completed for Llama-3.1-8B and Mistral-7B-v0.3 at T=512/1024/2048. FP32 output-logit drift is 440x-6750x smaller than BF16 drift across all configurations, confirming that BF16 precision (not model architecture) causes shift-induced drift. Llama avg max_drift ratio=1697x, Mistral avg max_drift ratio=3179x. Results saved to sinkcast/results/microbench/fp32_oracle/ and EXPERIMENT_RESULTS/fp32_oracle_microbench/."
+  },
+  {
+    "index": 3,
+    "category": "Main Experiment",
+    "title": "SinkCast (K=1) Shift Microbenchmark on Llama-3.1-8B and Mistral-7B-v0.3",
+    "description": "Implement the SinkCast correction algorithm and evaluate it on the shift microbenchmark. SinkCast keeps BF16 FlashAttention as the fast path, then recomputes only the sink-key logit (j=0) in FP32 and applies an exact closed-form output correction using FlashAttention's row-wise softmax_lse. The correction formula for one query row i is: (1) compute BF16 sink probability p_i0 = exp(a_i0 - lse_i), (2) compute log-normalizer without sink: logZ_minus = lse_i + log1p(-p_i0), (3) recompute sink logit in FP32: a'_i0 = FP32_dot(q_i, k_0) / sqrt(d), (4) new log-normalizer: lse'_i = logaddexp(logZ_minus, a'_i0), (5) corrected output: o'_i = scale_i * (o_i - p_i0 * v_0) + p'_i0 * v_0, where scale_i = exp(lse_i - lse'_i) and p'_i0 = exp(a'_i0 - lse'_i). This experiment measures whether SinkCast closes the BF16→FP32 gap in shift-induced drift.\n\nThe FlashAttention-2 library (https://github.com/Dao-AILab/flash-attention) is used as the foundation: its `flash_attn_func` with `return_attn_probs=True` returns (output, softmax_lse, S_dmask), providing the softmax_lse needed for the correction. The Hugging Face Transformers RoPE implementation (`LlamaRotaryEmbedding`) serves as reference for FP32 RoPE recomputation.",
+    "status": "completed",
+    "summary": "SinkCast K=1 correction implemented and evaluated on shift microbenchmark for both models. Core modules: core/rope_utils.py (FP32 RoPE recomputation), core/sinkcast.py (closed-form output correction), benchmarks/sinkcast_microbench.py (hooked forward pass with flash_attn_func return_attn_probs=True). Results: Mistral-7B-v0.3 shows avg 36.3% max_drift gap closure (best: 63.4% at s=1024, d=(0,16)). Llama-3.1-8B shows avg 10.2% max_drift gap closure (best: 46.0% at s=2048, d=(0,256)), with mixed results at shorter sequences and degradation at s=4096. Mean drift is consistently similar or slightly improved for both models. The modest gap closure confirms that sink-key BF16 error is one of many error sources. Results saved to sinkcast/results/microbench/sinkcast_k1/, comparison.json, and EXPERIMENT_RESULTS/sinkcast_k1_microbench/."
+  },
+  {
+    "index": 4,
+    "category": "Optimization",
+    "title": "Optimize: SinkCast (K=1) Shift Microbenchmark on Llama-3.1-8B and Mistral-7B-v0.3",
+    "description": "Optimize the main experiment 'SinkCast (K=1) Shift Microbenchmark on Llama-3.1-8B and Mistral-7B-v0.3' to improve results.",
+    "status": "completed",
+    "summary": "Optimization succeeded after 1/2 iterations.\n  - Step 0: success, issues: [Missing causal mask in correction formula for K>1, k_raw indexing bug: always used index 0 for all sink keys, K=1 only corrects ~5-8% of total D_logit error]\nDetails: EXPERIMENT_RESULTS/optimize_trace/"
+  },
+  {
+    "index": 5,
+    "category": "Baseline Experiment",
+    "title": "BF16 FlashAttention on RULER-Position-Shift and LongBench-Position-Shift",
+    "description": "Evaluate standard BF16 FlashAttention on downstream benchmarks under position-shift conditions to measure the accuracy degradation caused by BF16 RoPE shift-invariance breakdown. This establishes the downstream baseline: how much accuracy is lost when the same model processes identical content at different position offsets.\n\nFor RULER, a subset of tasks is used (NIAH single/multi-key, Variable Tracing, QA) at sequence lengths 4K and 8K. For LongBench, a representative subset of English tasks is selected (NarrativeQA, HotpotQA, GovReport, TREC, PassageRetrieval-en). Each benchmark is evaluated twice: once at the default position offset (Δ=0) and once with a large shift (M=4096 masked prefix tokens with attention_mask=0, position_ids starting at M for real tokens). The accuracy drop between the two evaluations quantifies the shift-induced degradation.\n\nReference: \"RULER: What's the Real Context Size of Your Long-Context Language Models?\" | https://github.com/NVIDIA/RULER\nReference: \"LongBench: A Bilingual, Multitask Benchmark for Long Context Understanding\" | https://github.com/THUDM/LongBench",
+    "status": "completed",
+    "summary": "Experiment run. BF16 FlashAttention downstream position-shift baseline on Llama-3.1-8B and Mistral-7B-v0.3. RULER (4 tasks, seq 4K/8K) and LongBench (5 tasks) evaluated at delta=0 and delta=M=4096. Key finding: position-shift drop is minimal (<1 pt avg) on both models across all tasks. Llama RULER avg drop: -0.2/+0.4 (4K/8K), LongBench avg drop: -0.4. Mistral RULER avg drop: -0.9/-1.1, LongBench avg drop: 0.0. The downstream signal of BF16 shift-error is much weaker than the microbenchmark signal."
+  },
+  {
+    "index": 6,
+    "category": "Main Experiment",
+    "title": "SinkCast (K=1) on RULER-Position-Shift and LongBench-Position-Shift",
+    "description": "Evaluate SinkCast (K=1) on the same downstream benchmarks (RULER-position-shift and LongBench-position-shift) to measure whether the correction reduces the accuracy degradation under position shifts. This reuses the SinkCast-augmented model forward pass implemented in the previous Main Experiment and the evaluation scripts from the downstream baseline. The key question is whether closing the shift-error gap at the attention level translates to measurable accuracy improvements on real tasks.",
+    "status": "completed",
+    "summary": "SinkCast K=1 downstream evaluation completed on both Llama-3.1-8B and Mistral-7B-v0.3. RULER (4 tasks, seq 4K/8K, 50 samples/task) and LongBench (5 tasks, 200 samples/task) evaluated at delta=0 and delta=M=4096 with SinkCast correction. Key findings: (1) SinkCast does not consistently reduce downstream accuracy drop because the BF16 baseline already shows minimal position-shift degradation (<1pt avg). (2) SinkCast alters d=0 absolute accuracy on RULER tasks significantly (e.g. Llama QA: 9.75->48.97) due to FP32 sink-logit recasting changing generation paths. (3) LongBench d=0 accuracy is well-preserved (|d0_diff| < 0.5pt). (4) Average improvement: Llama RULER +0.27, Llama LongBench -0.19, Mistral RULER -2.85, Mistral LongBench -0.35. The attention-level error correction does not translate to measurable downstream task improvements when the baseline degradation is already minimal. Results saved to results/downstream/sinkcast_k1/ and comparison.json."
+  },
+  {
+    "index": 7,
+    "category": "Optimization",
+    "title": "Optimize: SinkCast (K=1) on RULER-Position-Shift and LongBench-Position-Shift",
+    "description": "Optimize the main experiment 'SinkCast (K=1) on RULER-Position-Shift and LongBench-Position-Shift' to improve results.",
+    "status": "completed",
+    "summary": "Optimization not succeeded after 2/2 iterations.\n  - Step 0: not improved, issues: [Shift protocol mismatch between BF16 baseline and SinkCast (CRITICAL BUG), SinkCast hook does not handle padded input correctly, K=1 suboptimal for Llama (should be K=4)]\n  - Step 1: not improved, issues: [SinkCast hook replaces HF's entire attention path, causing d=0 divergence, Duplicate hook code in ruler and longbench scripts]\nDetails: EXPERIMENT_RESULTS/optimize_trace/"
+  },
+  {
+    "index": 8,
+    "category": "Effectiveness Evaluation",
+    "title": "SinkCast Effectiveness Evaluation Against Success Criteria",
+    "description": "Evaluate whether SinkCast (K=1) achieves the three-part success criteria defined for this research. The evaluation synthesizes results from all Baseline Experiments and Main Experiments (microbenchmark and downstream) to determine: (1) whether the localization premise holds (D_logit(0) dominates shift-error), (2) whether SinkCast closes ≥80% of the BF16→FP32 gap on the microbenchmark, and (3) whether SinkCast reduces shift-induced accuracy drop by ≥2 points on at least one downstream benchmark. The evaluation covers both Llama-3.1-8B and Mistral-7B-v0.3.",
+    "status": "completed",
+    "summary": "Verdict: bad. All three success criteria fail due to fundamental limitations. (1) Localization premise refuted: D_logit(0) accounts for only 4.9% (Llama) and 8.2% (Mistral) of total shift-error, far below the 50% threshold. (2) Microbenchmark gap closure peaks at 36.3% (Mistral K=1) and 23.6% (Llama K=4), well below 80% target. Even correcting all keys achieves only ~26.5%. (3) Downstream improvement averages -0.91 points; BF16 shift-degradation is already near zero. Two optimization iterations confirmed these are structural limitations. Reports: EXPERIMENT_RESULTS/effectiveness_evaluation_report.md and effectiveness_evaluation_result.json."
+  },
+  {
+    "index": 9,
+    "category": "Analysis Experiment",
+    "title": "Ablation Study: SinkCast Variants (K=4, No-Correction Control, BOS-Position-Clamp)",
+    "description": "Ablation study comparing three SinkCast variants against the main K=1 method on the shift microbenchmark. This analysis addresses three questions: (1) Does recomputing more sink keys (K=4) further improve correction, suggesting shift-error is not fully localized to j=0? (2) Does the output correction step matter, or is simply recomputing the sink logit without adjusting the output sufficient (no-correction control)? (3) Does a simpler 'anchor-only' hack — clamping the BOS token's position to 0 regardless of shift while shifting all other tokens — achieve comparable results without FP32 recomputation? The ablation is run on one model (Llama-3.1-8B) for efficiency, as this is a short paper.",
+    "status": "pending",
+    "summary": ""
+  },
+  {
+    "index": 10,
+    "category": "Analysis Experiment",
+    "title": "SinkCast Overhead and Latency Analysis",
+    "description": "Measure the computational overhead of SinkCast correction relative to standard BF16 FlashAttention to validate the 'negligible overhead' claim. The analysis profiles wall-clock time, peak GPU memory, and per-layer correction latency for SinkCast (K=1) compared to BF16 FlashAttention. Since SinkCast adds a small FP32 dot-product recomputation and a scalar output correction per head per layer, the overhead should scale as O(num_layers × num_heads × seq_len × d_head) for the single sink key, which is negligible compared to the O(num_layers × num_heads × seq_len² × d_head) cost of full attention.",
+    "status": "pending",
+    "summary": ""
+  }
+]

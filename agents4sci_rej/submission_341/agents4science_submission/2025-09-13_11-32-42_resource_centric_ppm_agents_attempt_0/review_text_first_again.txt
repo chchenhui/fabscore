@@ -1,0 +1,48 @@
+{
+    "Summary": "The paper argues that standard case-centric predictive process monitoring (PPM) with sequence models (e.g., LSTMs) fails to capture concurrency and competition for shared resources. It proposes a resource-centric alternative: learn simple per-resource multinomial dispatch policies from XES logs, embed them in a lightweight discrete-event simulator, and use Monte Carlo rollouts from a global prefix to predict next events, suffixes, remaining time, and resource-level workloads. The paper describes preprocessing (lifecycle normalization, duration pairing), per-resource policy features (previous activity, time-of-day bins, per-activity queue counts and oldest waits), a log-normal duration model, the simulation loop, and aggregation into predictions. As a baseline, it implements a 1-layer LSTM for next-activity prediction with time features, evaluates it on BPI 2012, BPI 2017, and Road Traffic (chronological splits), and reports high top-3 accuracy (0.987\u20130.994) and moderate top-1 accuracy (0.757\u20130.833). The simulator-based approach is not evaluated end-to-end; issues with duration pairing and policy calibration are cited.",
+    "Strengths": [
+        "Clear motivation for resource-aware PPM under concurrency; the proposal focuses on interpretable, per-resource decision policies coupled with a simulator.",
+        "The engineering of the baseline pipeline (chronological splits, robust preprocessing, reproducibility) is described in detail and yields strong, consistent LSTM baselines.",
+        "Transparent discussion of practical pitfalls (partial lifecycles, skewed resource-activity counts) during simulator development.",
+        "Modular design hints at possible hybridization (sequence model proposals plus simulation for capacity consistency)."
+    ],
+    "Weaknesses": [
+        "The primary proposed method (resource-centric simulator with learned policies) is not evaluated end-to-end; no results are presented for next-event, suffix, remaining time, or resource forecasts. This makes the central claims unsubstantiated.",
+        "Related work is severely undercited and incomplete for PPM: there is no engagement with prior resource-aware PPM, simulation-based prediction, queuing-based models, or hybrid DL-simulation approaches. Only a general deep learning text is cited.",
+        "Key modeling choices are plausible but unvalidated: duration estimation under partial lifecycles, queue alignment from prefixes, policy back-off and regularization under class imbalance, and sensitivity to rollout count N.",
+        "No comparisons to strong case-centric baselines beyond a minimal LSTM (e.g., Transformers, time-aware LSTMs) or to existing PPM baselines on common metrics (suffix similarity, remaining time MAE).",
+        "No ablations or sensitivity analyses for the proposed simulator (e.g., effect of policy features, FIFO vs other queue disciplines, duration model misspecification).",
+        "Scope mismatch: the paper reads as a position/blueprint with an unrelated baseline, rather than a complete empirical study supporting the resource-centric approach.",
+        "Limited discussion of scalability (number of resources, activities, queue sizes) and computational overhead for Monte Carlo rollouts in real-time monitoring."
+    ],
+    "Originality": 2,
+    "Quality": 1,
+    "Clarity": 3,
+    "Significance": 2,
+    "Questions": [
+        "When will the end-to-end evaluation of the simulator be available? Which exact metrics will you report for next-activity, suffix similarity, remaining time, and resource workload, and on which datasets?",
+        "How do you handle duration estimation when only complete transitions are present? The supplement mentions inter-completion gaps for repeated activities\u2014how reliable is this, and how do you avoid bias from overlapping instances?",
+        "How do you reconstruct the global ready sets and queues from partial prefixes under concurrency? What invariants ensure correct alignment between the observed prefix state and the simulator initial state?",
+        "What prior work on resource-aware PPM and simulation-based prediction do you compare against? Please situate your approach relative to existing DES-based operational forecasting and resource dispatch learning in BPM.",
+        "How sensitive are predictions to the rollout count N and the randomness in policy sampling and duration draws? Do confidence intervals stabilize with N=30 across datasets?",
+        "How do you address extreme class imbalance for resource-activity pairs beyond back-off to a pooled model? Did you consider hierarchical/multilevel models or shared embeddings across resources?",
+        "What is the computational cost of the simulator per monitored case (or per global tick) and latency for real-time PPM under typical log sizes (e.g., BPI-scale)?",
+        "How robust are the FIFO assumptions and the chosen policy features (queue counts, oldest wait) across domains with explicit priorities or SLAs? Can the policy include case attributes without losing locality/interpretablity?",
+        "Can you provide even a small-scale pilot evaluation (e.g., on a subset or synthetic log with complete lifecycles) to demonstrate end-to-end viability and compare to the baseline?"
+    ],
+    "Limitations": [
+        "No empirical validation of the proposed resource-centric method; conclusions about benefits under concurrency are speculative.",
+        "Assumes availability and quality of resource labels and lifecycle transitions; duration estimation is fragile under partial lifecycles and may bias simulation.",
+        "Policy learning relies on limited local features and skewed data; back-off to a global model may erase meaningful heterogeneity across resources.",
+        "Monte Carlo simulation introduces variance and computational overhead; scalability and real-time applicability are not quantified.",
+        "Potential domain shift across logs (dispatching rules, staffing) is not addressed; learned policies may not transfer temporally or across settings.",
+        "Risk of gaming or misinterpretation in decision support: scenario analysis based on miscalibrated duration or dispatch policies could lead to harmful operational changes if taken at face value."
+    ],
+    "Ethical Concerns": false,
+    "Soundness": 2,
+    "Presentation": 3,
+    "Contribution": 2,
+    "Overall": 3,
+    "Confidence": 4,
+    "Decision": "Reject"
+}

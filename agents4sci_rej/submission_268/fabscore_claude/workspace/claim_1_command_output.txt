@@ -1,0 +1,36 @@
+Train size: 800, Test size: 200
+LR Accuracy: 0.5450000000
+LR Accuracy (3 dp): 0.545
+Paper claims: 0.830
+Match: False
+Train size: 800, Test size: 200
+LR Accuracy: 0.5450000000
+LR Accuracy (3 dp): 0.545
+Paper claims: 0.830
+Match: False
+
+=== COMMAND 1 ===
+python3 -c "
+from dataset import SyntheticFairnessDataset; from model import ModelFactory; from sklearn.metrics import accuracy_score
+dataset = SyntheticFairnessDataset(n_samples=1000, bias_strength=0.3, random_state=42)
+X_train, X_test, y_train, y_test, s_train, s_test, scaler = dataset.get_train_test_split(test_size=0.2)
+models = ModelFactory.create_baseline_models()
+lr = models['LogisticRegression']
+lr.fit(X_train, y_train)
+y_pred = lr.predict(X_test)
+acc = accuracy_score(y_test, y_pred)
+print(f'LR Accuracy: {acc:.10f}')
+print(f'Paper claims: 0.830')
+"
+
+=== RESULT ===
+LR Accuracy: 0.5450000000
+LR Accuracy (3 dp): 0.545
+Paper claims: 0.830
+Match: False
+
+=== CONCLUSION ===
+The claim of LR Accuracy = 0.830 is not reproducible. Fresh execution using identical code path
+(SyntheticFairnessDataset, n_samples=1000, bias_strength=0.3, random_state=42, get_train_test_split,
+ModelFactory.create_baseline_models) gives 0.545. The pre-existing model_comparison.csv shows 0.8299 
+but this value appears to be fabricated.

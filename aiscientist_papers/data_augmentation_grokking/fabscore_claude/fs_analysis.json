@@ -1,0 +1,304 @@
+{
+    "no_code_files": [],
+    "obvious_hallucination": [
+        {
+            "index": 1,
+            "category": "table",
+            "content": "1. Table 1, Baseline, Addition: 2363",
+            "reason": "experiment.py (run_0/Baseline) has built-in augmentation in ModSumDataset.fetch_example: independent 20% reversal AND 20% negation. The paper calls this the 'Baseline' with no augmentation, but the code clearly applies augmentation during data sampling. The number 2363 matches run_0/final_info.json x_plus_y step_val_acc_99_mean=2363.33, so the result is real but produced under a misrepresented experimental condition.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "experiment.py:73-82 (ModSumDataset.fetch_example with if rand<0.2: reverse, if rand<0.2: negate)",
+                "run_0/final_info.json"
+            ]
+        },
+        {
+            "index": 2,
+            "category": "table",
+            "content": "2. Table 1, Baseline, Subtraction: 4720",
+            "reason": "experiment.py (run_0/Baseline) has built-in augmentation in ModSubtractDataset.fetch_example: if rand<0.2 reversal elif rand<0.4 negation. The paper calls this 'Baseline' (no augmentation) but the code applies augmentation. The number 4720 matches run_0/final_info.json x_minus_y step_val_acc_99_mean=4720.0, so the result is real but under misrepresented conditions.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "experiment.py:98-108 (ModSubtractDataset.fetch_example with if/elif augmentation)",
+                "run_0/final_info.json"
+            ]
+        },
+        {
+            "index": 3,
+            "category": "table",
+            "content": "3. Table 1, Baseline, Division: 4200",
+            "reason": "experiment.py (run_0/Baseline) has built-in augmentation in ModDivisonDataset.fetch_example: 20% negation. The paper calls this 'Baseline' (no augmentation) but the code applies negation augmentation. The number 4200 matches run_0/final_info.json x_div_y step_val_acc_99_mean=4200.0, but produced under a misrepresented condition.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "experiment.py:127-134 (ModDivisonDataset.fetch_example with if rand<0.2: negate)",
+                "run_0/final_info.json"
+            ]
+        },
+        {
+            "index": 5,
+            "category": "table",
+            "content": "5. Table 1, Reversal, Subtraction: 5160",
+            "reason": "run_1.py (Reversal run) does NOT override ModSubtractDataset.fetch_example — it uses the base class AbstractDataset.fetch_example which has zero augmentation. The paper implies 'Reversal' augmentation was applied to subtraction, but the code applies no augmentation to subtraction at all in run_1. The result (5160 > baseline 4720) is consistent with having less augmentation than baseline (run_0 had 20% reversal/negation for subtraction), not with adding reversal.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_1.py:83-103 (ModSubtractDataset has no fetch_example override, inherits base class)",
+                "run_1/final_info.json"
+            ]
+        },
+        {
+            "index": 6,
+            "category": "table",
+            "content": "6. Table 1, Reversal, Division: 4500",
+            "reason": "run_1.py (Reversal run) does NOT override ModDivisonDataset.fetch_example — it uses the base class AbstractDataset.fetch_example which has zero augmentation. The paper implies 'Reversal' augmentation was applied to division, but the code applies no augmentation to division in run_1. The baseline (run_0) had 20% negation for division, so run_1's 4500 steps (slightly worse than baseline 4200) reflects removed augmentation rather than added reversal.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_1.py:94-103 (ModDivisonDataset has no fetch_example override, inherits base class)",
+                "run_1/final_info.json"
+            ]
+        },
+        {
+            "index": 7,
+            "category": "table",
+            "content": "7. Table 1, Negation, Addition: 1000",
+            "reason": "run_2.py (Negation run) ModSumDataset.fetch_example applies: if rand<0.3 then 50% chance reversal else 50% chance negation. This is a MIXED reversal+negation augmentation (each at 15% effective probability), not pure negation as the paper implies under 'Negation' row for addition. The paper states this as 'negation augmentation' but the code actually applies mixed reversal and negation for the addition operation.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_2.py:73-83 (ModSumDataset.fetch_example with if rand<0.3: 50%reversal or 50%negation)",
+                "run_2/final_info.json"
+            ]
+        },
+        {
+            "index": 14,
+            "category": "table",
+            "content": "14. Table 1, Combined (30%), Subtraction: 1367",
+            "reason": "run_4.py (Combined 30% run) ModSubtractDataset.fetch_example uses: if rand<0.15 reversal elif rand<0.30 negation — identical code to run_3.py (Combined 15% run) for subtraction. The paper implies 'Combined (30%)' has higher augmentation intensity than 'Combined (15%)', but for subtraction, both runs use exactly the same 15% per-type exclusive probability. The augmentation label '30%' conflicts with the actual per-type probability of 15% in the code.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_4.py:98-108 (ModSubtractDataset: if rand<0.15 reversal elif rand<0.30 negation — same as run_3)",
+                "run_3.py:99-109 (identical code for ModSubtractDataset)",
+                "run_4/final_info.json"
+            ]
+        },
+        {
+            "index": 15,
+            "category": "table",
+            "content": "15. Table 1, Combined (30%), Division: 1877",
+            "reason": "run_4.py (Combined 30% run) ModDivisonDataset.fetch_example applies 30% negation only — identical to run_3.py (Combined 15%) and run_2.py (Negation). The paper implies 'Combined (30%)' is a distinct higher-intensity condition from 'Combined (15%)', but for division, both combined runs (and the Negation run) apply the identical 30% negation code. The different reported step count (1877 vs 1767 for Combined 15%) is due to random seed variation, not a different augmentation setup.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_4.py:117-135 (ModDivisonDataset: if rand<0.3 negate — same as run_3.py and run_2.py)",
+                "run_3.py:118-138 (identical code)",
+                "run_2.py:112-132 (identical code)",
+                "run_4/final_info.json"
+            ]
+        }
+    ],
+    "static_verifiable": [
+        {
+            "index": 4,
+            "category": "table",
+            "content": "4. Table 1, Reversal, Addition: 1993",
+            "reason": "run_1.py ModSumDataset.fetch_example applies 30% reversal only for addition. This is consistent with the paper's 'Reversal' augmentation for addition. The number 1993 matches run_1/final_info.json x_plus_y step_val_acc_99_mean=1993.33 (rounds to 1993).",
+            "code_evidence": [
+                "run_1.py:73-80 (ModSumDataset.fetch_example: if rand<0.3 reverse)",
+                "run_1/final_info.json (x_plus_y.means.step_val_acc_99_mean = 1993.33)"
+            ]
+        },
+        {
+            "index": 8,
+            "category": "table",
+            "content": "8. Table 1, Negation, Subtraction: 1343",
+            "reason": "run_2.py ModSubtractDataset.fetch_example applies pure 30% negation for subtraction, consistent with 'Negation augmentation' for subtraction. The number 1343 matches run_2/final_info.json x_minus_y step_val_acc_99_mean=1343.33 (rounds to 1343).",
+            "code_evidence": [
+                "run_2.py:99-109 (ModSubtractDataset.fetch_example: if rand<0.3 negate only)",
+                "run_2/final_info.json (x_minus_y.means.step_val_acc_99_mean = 1343.33)"
+            ]
+        },
+        {
+            "index": 9,
+            "category": "table",
+            "content": "9. Table 1, Negation, Division: 1443",
+            "reason": "run_2.py ModDivisonDataset.fetch_example applies pure 30% negation for division, consistent with 'Negation augmentation' for division. The number 1443 matches run_2/final_info.json x_div_y step_val_acc_99_mean=1443.33 (rounds to 1443).",
+            "code_evidence": [
+                "run_2.py:112-132 (ModDivisonDataset.fetch_example: if rand<0.3 negate only)",
+                "run_2/final_info.json (x_div_y.means.step_val_acc_99_mean = 1443.33)"
+            ]
+        },
+        {
+            "index": 10,
+            "category": "table",
+            "content": "10. Table 1, Combined (15%), Addition: 920",
+            "reason": "run_3.py ModSumDataset.fetch_example uses exclusive if/elif: 15% reversal, elif <0.30 negation (15% each per type). Consistent with 'Combined (15%)' for addition. The number 920 matches run_3/final_info.json x_plus_y step_val_acc_99_mean=920.0.",
+            "code_evidence": [
+                "run_3.py:73-83 (ModSumDataset: if rand<0.15 reverse elif rand<0.30 negate)",
+                "run_3/final_info.json (x_plus_y.means.step_val_acc_99_mean = 920.0)"
+            ]
+        },
+        {
+            "index": 11,
+            "category": "table",
+            "content": "11. Table 1, Combined (15%), Subtraction: 1057",
+            "reason": "run_3.py ModSubtractDataset.fetch_example uses exclusive if/elif: 15% reversal, elif <0.30 negation (15% each per type). Consistent with 'Combined (15%)' for subtraction. The number 1057 matches run_3/final_info.json x_minus_y step_val_acc_99_mean=1056.67 (rounds to 1057).",
+            "code_evidence": [
+                "run_3.py:99-109 (ModSubtractDataset: if rand<0.15 reverse elif rand<0.30 negate)",
+                "run_3/final_info.json (x_minus_y.means.step_val_acc_99_mean = 1056.67)"
+            ]
+        },
+        {
+            "index": 12,
+            "category": "table",
+            "content": "12. Table 1, Combined (15%), Division: 1767",
+            "reason": "run_3.py ModDivisonDataset.fetch_example applies 30% negation for division. Division semantically only supports negation (not reversal in the same way), so applying only negation for the 'Combined' division condition is a consistent design choice. The number 1767 matches run_3/final_info.json x_div_y step_val_acc_99_mean=1766.67 (rounds to 1767).",
+            "code_evidence": [
+                "run_3.py:118-138 (ModDivisonDataset: if rand<0.3 negate)",
+                "run_3/final_info.json (x_div_y.means.step_val_acc_99_mean = 1766.67)"
+            ]
+        },
+        {
+            "index": 13,
+            "category": "table",
+            "content": "13. Table 1, Combined (30%), Addition: 793",
+            "reason": "run_4.py ModSumDataset.fetch_example applies INDEPENDENT 30% reversal + 30% negation (both can apply simultaneously). This is consistent with 'Combined (30%)' for addition, where both augmentations are applied at 30% each independently. The number 793 matches run_4/final_info.json x_plus_y step_val_acc_99_mean=793.33 (rounds to 793).",
+            "code_evidence": [
+                "run_4.py:73-82 (ModSumDataset: if rand<0.3 reverse; if rand<0.3 negate — independent)",
+                "run_4/final_info.json (x_plus_y.means.step_val_acc_99_mean = 793.33)"
+            ]
+        },
+        {
+            "index": 20,
+            "category": "results_section",
+            "content": "1. the combined augmentation strategy with 15% probability reduced this to just 920 steps, representing a 61% reduction in training time to achieve high generalization performance.",
+            "reason": "Both values are directly confirmed from JSON data: baseline Addition = 2363 (run_0/final_info.json x_plus_y step_val_acc_99_mean=2363.33), Combined(15%) Addition = 920 (run_3/final_info.json x_plus_y step_val_acc_99_mean=920.0). Percentage calculation: (2363-920)/2363 = 61.1% ≈ 61%. The arithmetic is correct and the underlying data is real.",
+            "code_evidence": [
+                "run_0/final_info.json (x_plus_y.means.step_val_acc_99_mean = 2363.33)",
+                "run_3/final_info.json (x_plus_y.means.step_val_acc_99_mean = 920.0)"
+            ]
+        },
+        {
+            "index": 21,
+            "category": "results_section",
+            "content": "2. the negation augmentation alone reduced this to 1343 steps, a 72% reduction.",
+            "reason": "For subtraction, run_2.py correctly implements pure negation (30% probability), consistent with 'negation augmentation alone.' Values confirmed: baseline Subtraction = 4720 (run_0/final_info.json), Negation Subtraction = 1343 (run_2/final_info.json x_minus_y step_val_acc_99_mean=1343.33). Percentage calculation: (4720-1343)/4720 = 71.5% ≈ 72%. Arithmetic is correct.",
+            "code_evidence": [
+                "run_0/final_info.json (x_minus_y.means.step_val_acc_99_mean = 4720.0)",
+                "run_2/final_info.json (x_minus_y.means.step_val_acc_99_mean = 1343.33)",
+                "run_2.py:99-109 (ModSubtractDataset pure 30% negation)"
+            ]
+        },
+        {
+            "index": 22,
+            "category": "results_section",
+            "content": "3. negation augmentation alone reduced this to 1443 steps, a 66% reduction.",
+            "reason": "For division, run_2.py correctly implements pure negation (30% probability), consistent with 'negation augmentation alone.' Values confirmed: baseline Division = 4200 (run_0/final_info.json), Negation Division = 1443 (run_2/final_info.json x_div_y step_val_acc_99_mean=1443.33). Percentage calculation: (4200-1443)/4200 = 65.6% ≈ 66%. Arithmetic is correct.",
+            "code_evidence": [
+                "run_0/final_info.json (x_div_y.means.step_val_acc_99_mean = 4200.0)",
+                "run_2/final_info.json (x_div_y.means.step_val_acc_99_mean = 1443.33)",
+                "run_2.py:112-132 (ModDivisonDataset pure 30% negation)"
+            ]
+        }
+    ],
+    "insufficient_evidence": [],
+    "execution_required": [
+        {
+            "index": 16,
+            "category": "figure",
+            "content": "1. Figure 1: Validation accuracy over training steps for division operation under different augmentation strategies.",
+            "reason": "No .npy files exist in the repository (confirmed by glob search). plot.py requires all_results.npy from each run directory to generate training curve figures. The experiment scripts (experiment.py, run_1.py through run_4.py) each save all_results.npy containing per-step train/val metrics when executed. The code path for regeneration exists but execution is required to produce the missing artifact before the figure can be verified.",
+            "candidate_files": [
+                "experiment.py",
+                "run_1.py",
+                "run_2.py",
+                "run_3.py",
+                "run_4.py",
+                "plot.py"
+            ],
+            "suggested_entrypoints": [
+                "python experiment.py --out_dir run_0",
+                "python run_1.py --out_dir run_1",
+                "python run_2.py --out_dir run_2",
+                "python run_3.py --out_dir run_3",
+                "python run_4.py --out_dir run_4",
+                "python plot.py"
+            ]
+        },
+        {
+            "index": 17,
+            "category": "figure",
+            "content": "2. Figure 2: Validation accuracy over training steps for addition operation under different augmentation strategies.",
+            "reason": "Same as Figure 1. No all_results.npy files exist. plot.py requires these files from all run directories to generate training curve figures. The training scripts can regenerate these per-step metric files.",
+            "candidate_files": [
+                "experiment.py",
+                "run_1.py",
+                "run_2.py",
+                "run_3.py",
+                "run_4.py",
+                "plot.py"
+            ],
+            "suggested_entrypoints": [
+                "python experiment.py --out_dir run_0",
+                "python run_1.py --out_dir run_1",
+                "python run_2.py --out_dir run_2",
+                "python run_3.py --out_dir run_3",
+                "python run_4.py --out_dir run_4",
+                "python plot.py"
+            ]
+        },
+        {
+            "index": 18,
+            "category": "figure",
+            "content": "3. Figure 3: Validation accuracy over training steps for subtraction operation under different augmentation strategies.",
+            "reason": "Same as Figures 1 and 2. No all_results.npy files exist. The training scripts can regenerate the per-step data needed by plot.py to generate the figure.",
+            "candidate_files": [
+                "experiment.py",
+                "run_1.py",
+                "run_2.py",
+                "run_3.py",
+                "run_4.py",
+                "plot.py"
+            ],
+            "suggested_entrypoints": [
+                "python experiment.py --out_dir run_0",
+                "python run_1.py --out_dir run_1",
+                "python run_2.py --out_dir run_2",
+                "python run_3.py --out_dir run_3",
+                "python run_4.py --out_dir run_4",
+                "python plot.py"
+            ]
+        },
+        {
+            "index": 19,
+            "category": "figure",
+            "content": "4. Figure 5: Training dynamics for division operation under different augmentation strategies.",
+            "reason": "Same as other figures. No all_results.npy files exist. The training scripts can regenerate the per-step data needed by plot.py to generate the training dynamics figure.",
+            "candidate_files": [
+                "experiment.py",
+                "run_1.py",
+                "run_2.py",
+                "run_3.py",
+                "run_4.py",
+                "plot.py"
+            ],
+            "suggested_entrypoints": [
+                "python experiment.py --out_dir run_0",
+                "python run_1.py --out_dir run_1",
+                "python run_2.py --out_dir run_2",
+                "python run_3.py --out_dir run_3",
+                "python run_4.py --out_dir run_4",
+                "python plot.py"
+            ]
+        }
+    ],
+    "error": [],
+    "summary": {
+        "total_claims": 22,
+        "no_code_files": 0,
+        "obvious_hallucination": 8,
+        "data_fabrication": 0,
+        "experiment_fabrication": 8,
+        "result_fabrication": 0,
+        "static_verifiable": 10,
+        "insufficient_evidence": 0,
+        "execution_required": 4,
+        "error": 0
+    }
+}

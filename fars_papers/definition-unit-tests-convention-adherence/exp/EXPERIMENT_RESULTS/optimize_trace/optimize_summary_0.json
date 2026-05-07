@@ -1,0 +1,16 @@
+{
+  "optimize_index": 0,
+  "issues": [
+    {
+      "title": "Incomplete answer extraction from truncated outputs",
+      "description": "Llama-3.1-8B frequently gets stuck in repetitive reasoning loops, hitting the 2048-token limit without producing a \\boxed{} answer. The original scoring only looked for \\boxed{} format, scoring these items as wrong despite the model often computing the correct answer earlier in the output. Fixed by adding extract_answer_robust() with fallback heuristics: 'the answer is X' pattern extraction, last Yes/No for asymptotics/completeness families, and last numeric value for convolution. Applied to original outputs without needing to re-run inference."
+    },
+    {
+      "title": "Generation-time fixes explored but rejected",
+      "description": "Tested three generation-time interventions to reduce repetition loops: (1) repetition_penalty=1.2 + concise prompts -> C dropped from 77% to 74%; (2) repetition_penalty=1.1 + original prompts -> C dropped to 75.3%, C-B gap narrowed to +9.3pp; (3) frequency_penalty=0.3 -> C=72.3%, across-the-board degradation. All approaches either degraded absolute accuracy or narrowed the critical C-B gap. Concluded that generation parameter changes are counterproductive for this model/task."
+    }
+  ],
+  "experiment_result_path": "EXPERIMENT_RESULTS/optimize_trace/iteration_0/",
+  "success": true,
+  "summary": "Improved Llama-3.1-8B-Instruct results by adding robust answer extraction with family-aware heuristic fallbacks for items missing \\boxed{} answers. All conditions improved uniformly: A 53.3%->56.7%, B 54.0%->58.7%, C 77.0%->81.3%. The C-B gap remains +22.7pp (CI [+16.0%, +29.3%], statistically significant), confirming the DUT method works. Generation-time fixes (repetition_penalty, frequency_penalty) were tested but all degraded results."
+}

@@ -1,0 +1,32 @@
+== Command 1 ==
+python3 -c "import numpy as np; data = np.load('logs/0-run/experiment_results/experiment_7b1f855ebccc4df58e5a7f7e69167e93_proc_1522608/experiment_data.npy', allow_pickle=True).item(); exp = data['no_logic_supervision']['mnist']; gt = exp.get('ground_truth'); preds = exp.get('predictions'); print('Keys:', list(exp.keys())); print('ground_truth type:', type(gt), 'shape/len:', len(gt) if gt is not None else None); print('predictions type:', type(preds), 'shape/len:', len(preds) if preds is not None else None); import numpy as np; gt_arr = np.array(gt); pred_arr = np.array(preds); print('ground_truth unique values:', np.unique(gt_arr)); print('predictions unique values:', np.unique(pred_arr))"
+
+Output:
+Keys: ['metrics', 'losses', 'predictions', 'ground_truth', 'epochs']
+ground_truth type: <class 'numpy.ndarray'> shape/len: 480
+predictions type: <class 'numpy.ndarray'> shape/len: 480
+ground_truth unique values: [0. 1.]
+predictions unique values: [0. 1.]
+
+== Command 2 ==
+python3 -c "import numpy as np; data = np.load(...); tp/tn/fp/fn counts"
+
+Output:
+ground_truth unique values: [0. 1.]
+predictions unique values: [0. 1.]
+ground_truth length: 480
+TP=146, TN=203, FP=86, FN=45
+
+== Plotting code analysis ==
+plotting_code.py (lines 53-79) generates:
+- plt.scatter(gt, preds, alpha=0.2) — a SCATTER PLOT, not a confusion matrix
+- axes labeled "Ground Truth" vs "Model Prediction"
+- xticks and yticks at [0, 1]
+- Title: "MNIST - Val: Ground Truth vs Prediction (No Logic Supervision, Last Epoch)"
+- Output file: mnist_no_logic_val_gt_vs_pred.png (scatter plot)
+
+Paper description (Appendix E, Figure 6 caption):
+"Confusion matrices showing ground truth vs. predictions without logical consistency enforcement."
+Section heading: "E Confusion Matrices Without Logical Supervision"
+
+CONFLICT: Paper calls Figure 6(a) a "confusion matrix" but plotting code generates a scatter plot.

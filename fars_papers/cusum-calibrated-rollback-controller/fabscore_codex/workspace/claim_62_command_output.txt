@@ -1,0 +1,112 @@
+$ nl -ba exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json | sed -n "1,120p"
+     1	{
+     2	  "experiment": "FIR-CUSUM-epsilon on ResNet-18/CIFAR-10",
+     3	  "controller": "cusum_epsilon_fir",
+     4	  "calibration": {
+     5	    "h": 18.0,
+     6	    "k": 0.5,
+     7	    "reset_fraction": 0.5,
+     8	    "mu_0": -0.04125521912250121,
+     9	    "sigma_0": 0.2260490837544573,
+    10	    "alpha": 0.1,
+    11	    "p0_target": 0.002,
+    12	    "calibration_alarm_rate": 0.002,
+    13	    "s0_initialization": 0.0,
+    14	    "s_reset_value": 9.0
+    15	  },
+    16	  "metrics": {
+    17	    "step": {
+    18	      "peak_excess_loss": {"mean": 3.471, "std": 0.808},
+    19	      "excess_auc": {"mean": 182.566, "std": 83.207},
+    20	      "false_rollbacks_outside_window": {"mean": 37.0, "std": 37.994},
+    21	      "detection_delay": {"mean": -18.25, "std": 44.422},
+    22	      "y_pre": {"mean": 1.462, "std": 0.259}
+    23	    },
+    24	    "ramp": {
+    25	      "peak_excess_loss": {"mean": 3.651, "std": 0.750},
+    26	      "excess_auc": {"mean": 211.950, "std": 68.585},
+    27	      "false_rollbacks_outside_window": {"mean": 67.35, "std": 44.135},
+    28	      "detection_delay": {"mean": -22.05, "std": 47.748},
+    29	      "y_pre": {"mean": 1.442, "std": 0.233}
+    30	    },
+    31	    "nominal": {
+    32	      "nominal_rollback_fraction": {"mean": 0.002, "std": 0.003},
+    33	      "y_pre": {"mean": 1.384, "std": 0.275}
+    34	    }
+    35	  },
+    36	  "rate_matching": {
+    37	    "cusum_nominal_rate": 0.002,
+    38	    "or_epsilon_nominal_rate": 0.0016,
+    39	    "p0_target": 0.002,
+    40	    "cusum_vs_p0_relative_error": 0.0,
+    41	    "or_vs_p0_relative_error": 0.20,
+    42	    "cusum_vs_or_relative_difference": 0.25,
+    43	    "cusum_vs_p0_pass": true,
+    44	    "or_vs_p0_pass": true,
+    45	    "cross_controller_pass": false
+    46	  },
+    47	  "improvement_vs_original": {
+    48	    "peak_excess_step_pct_change": -35.7,
+    49	    "peak_excess_ramp_pct_change": -35.0,
+    50	    "excess_auc_step_pct_change": -33.7,
+    51	    "excess_auc_ramp_pct_change": -21.9
+    52	  },
+    53	  "num_seeds": 20,
+    54	  "num_steps": 250,
+    55	  "conditions": ["step", "ramp", "nominal"]
+    56	}
+
+$ nl -ba exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md | sed -n "1,120p"
+     1	# FIR-CUSUM Optimization Report (Iteration 0)
+     2	
+     3	## Experiment Overview
+     4	
+     5	Optimized the CUSUM-epsilon controller by replacing the full reset (S_t=0) after rollback with a Fast Initial Response (FIR) partial reset (S_t = h * reset_fraction). This addresses the "reset blind spot" where the original CUSUM repeatedly accepted perturbed/corrupted steps because it had to re-accumulate evidence from scratch after each rollback.
+     6	
+     7	## Issue Diagnosed
+     8	
+     9	**Reset Blind Spot (Critical)**: After each rollback triggered by S_t > h, the original implementation reset S_t to 0. During ongoing perturbation, the CUSUM needed ~3 steps to climb back from 0 to h=14 before re-triggering. This caused an oscillating accept/reject pattern where ~6/10 perturbed steps were accepted (vs Or-epsilon's ~3.9/10). Each accepted perturbed step corrupted the model state further, causing escalating probe loss that persisted long after the perturbation window ended.
+    10	
+    11	## Fix Applied
+    12	
+    13	1. **FIR partial reset**: After rollback, set S_t = h * 0.5 instead of 0. This retains evidence of recent instability so the CUSUM re-triggers within 1-2 anomalous steps.
+    14	2. **S_0 = 0 at initialization**: The FIR head start is only applied after rollback, not at training start, to avoid early false alarms during the naturally volatile early training phase.
+    15	3. **Re-calibrated h**: With FIR reset in the calibration simulation, h=18.0 gives exact alarm rate=0.002 matching the target p_0.
+    16	
+    17	## Setup
+    18	
+    19	- Same model/data/perturbation as main experiment (ResNet-18/CIFAR-10)
+    20	- CUSUMController with h=18.0, k=0.5, reset_fraction=0.5, alpha=0.1
+    21	- mu_0=-0.0413, sigma_0=0.2260 (unchanged from calibration)
+    22	- 20 seeds x 3 conditions (step, ramp, nominal)
+    23	
+    24	## Key Results
+    25	
+    26	| Metric | Old CUSUM (h=14, S_t=0) | FIR-CUSUM (h=18, S_t=h/2) | Or-epsilon | Improvement |
+    27	|--------|------------------------|---------------------------|------------|-------------|
+    28	| Peak Excess (step) | 5.40 +/- 1.72 | 3.47 +/- 0.81 | 1.85 +/- 0.92 | -36% |
+    29	| Peak Excess (ramp) | 5.62 +/- 1.03 | 3.65 +/- 0.75 | 2.06 +/- 0.70 | -35% |
+    30	| Excess AUC (step) | 275.26 +/- 144.39 | 182.57 +/- 83.21 | 124.08 +/- 65.77 | -34% |
+    31	| Excess AUC (ramp) | 271.37 +/- 109.07 | 211.95 +/- 68.58 | 114.60 +/- 51.35 | -22% |
+    32	| Nominal rate | 0.0022 | 0.0020 | 0.0016 | exact match |
+    33	| False rollbacks (step) | 25.9 | 37.0 | 87.5 | +43% |
+    34	| False rollbacks (ramp) | 26.7 | 67.4 | 86.5 | +152% |
+    35	
+    36	## Rate Matching
+    37	
+    38	| Check | Value | Threshold | Status |
+    39	|-------|-------|-----------|--------|
+    40	| FIR-CUSUM vs p_0 | 0.0% relative error | 20% | PASS |
+    41	| Or vs p_0 | 20.0% relative error | 20% | PASS |
+    42	| FIR-CUSUM vs Or | 25.0% relative diff | 20% | MARGINAL FAIL |
+    43	
+    44	## Key Observations
+    45	
+    46	1. FIR partial reset substantially reduces peak excess loss (36% for step, 35% for ramp) by preventing the oscillating accept/reject pattern during perturbation.
+    47	2. Excess AUC also improves (34% for step, 22% for ramp), reflecting faster recovery after perturbation.
+    48	3. Nominal rollback rate exactly matches p_0=0.002, validating the calibration with S_0=0 initialization.
+    49	4. False rollbacks outside the perturbation window increase (37 vs 26 for step), because the FIR reset makes the CUSUM more aggressive after any rollback. However, the count remains well below Or-epsilon's 87.5.
+    50	5. The CUSUM still has higher peak excess and AUC than Or-epsilon, due to the inherent ~2-3 step detection delay of the sequential test vs Or-epsilon's single-step threshold.
+
+$ python - <<"PY"
+{'step_fir_peak': 3.471, 'ramp_fir_peak': 3.651, 'step_pct_saved': -35.7, 'ramp_pct_saved': -35.0, 'step_orig_implied': 5.3981337480559874, 'ramp_orig_implied': 5.616923076923077, 'step_pct_recomputed': -35.699999999999996, 'ramp_pct_recomputed': -35.0}

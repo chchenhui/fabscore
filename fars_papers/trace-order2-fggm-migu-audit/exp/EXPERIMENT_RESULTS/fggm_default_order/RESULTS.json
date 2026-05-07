@@ -1,0 +1,62 @@
+{
+  "experiment": "FGGM (Fisher-Guided Gradient Masking) on TRACE Default Order",
+  "model": "Qwen2-1.5B",
+  "seed": 42,
+  "task_order": ["C-STANCE", "FOMC", "MeetingBank", "Py150", "ScienceQA", "NumGLUE-cm", "NumGLUE-ds", "20Minuten"],
+  "per_task_epochs": [5, 3, 7, 5, 3, 5, 5, 7],
+  "hyperparameters": {
+    "optimizer": "AdamW",
+    "lr": 1e-5,
+    "lr_schedule": "constant_with_warmup",
+    "weight_decay": 0,
+    "batch_size": 128,
+    "per_device_batch_size": 16,
+    "num_gpus": 8,
+    "precision": "bf16",
+    "deepspeed_stage": 2,
+    "gradient_checkpointing": true,
+    "fggm_alpha": 0.7,
+    "fggm_updated_fraction": 0.3,
+    "fggm_frozen_fraction": 0.7
+  },
+  "metrics": {
+    "TRACE_OP": 45.84,
+    "TRACE_OP_published": 46.00,
+    "TRACE_OP_diff": -0.16,
+    "TRACE_OP_tolerance": 2.0,
+    "validation": "PASS",
+    "BWT": -8.52,
+    "OP_T_final_row_avg": 45.84,
+    "diagonal_avg": 53.33
+  },
+  "OP_per_step": [50.60, 53.84, 46.12, 49.91, 56.56, 49.91, 47.61, 45.84],
+  "diagonal_scores": {
+    "C-STANCE": 50.60,
+    "FOMC": 59.48,
+    "MeetingBank": 39.30,
+    "Py150": 59.80,
+    "ScienceQA": 84.45,
+    "NumGLUE-cm": 35.80,
+    "NumGLUE-ds": 57.23,
+    "20Minuten": 39.70
+  },
+  "performance_matrix": {
+    "0": {"C-STANCE": 50.60},
+    "1": {"C-STANCE": 48.20, "FOMC": 59.48},
+    "2": {"C-STANCE": 47.65, "FOMC": 51.41, "MeetingBank": 39.30},
+    "3": {"C-STANCE": 47.15, "FOMC": 57.66, "MeetingBank": 35.02, "Py150": 59.80},
+    "4": {"C-STANCE": 48.55, "FOMC": 58.27, "MeetingBank": 35.31, "Py150": 56.20, "ScienceQA": 84.45},
+    "5": {"C-STANCE": 47.00, "FOMC": 45.36, "MeetingBank": 37.85, "Py150": 58.27, "ScienceQA": 75.20, "NumGLUE-cm": 35.80},
+    "6": {"C-STANCE": 48.10, "FOMC": 38.51, "MeetingBank": 37.31, "Py150": 58.63, "ScienceQA": 71.30, "NumGLUE-cm": 22.22, "NumGLUE-ds": 57.23},
+    "7": {"C-STANCE": 49.35, "FOMC": 49.80, "MeetingBank": 35.75, "Py150": 57.38, "ScienceQA": 72.20, "NumGLUE-cm": 23.46, "NumGLUE-ds": 39.08, "20Minuten": 39.70}
+  },
+  "general_ability": "Not evaluated (skipped for consistency with SFT/MIGU baselines)",
+  "mask_stats": {
+    "updated_fraction_per_task": 0.30,
+    "frozen_fraction_per_task": 0.70,
+    "aggregated_param_count": 941952,
+    "masks_saved": "audit/results/fggm_default_seed42_v7/masks/task_{1-7}.pt"
+  },
+  "checkpoints": "audit/results/fggm_default_seed42_v7/checkpoints/{0-7}/",
+  "notes": "TRACE-OP=45.84 is within +-2.0 of published 46.00. FGGM implementation uses diagonal FIM with Input-dimension Aggregation for weight matrices, alpha=0.7 quantile threshold (30% updated/70% frozen). Fisher computed via model_engine.backward() without step() to avoid model/optimizer state modification. BWT=-8.52 shows strong forgetting mitigation vs SFT BWT=-34.25."
+}

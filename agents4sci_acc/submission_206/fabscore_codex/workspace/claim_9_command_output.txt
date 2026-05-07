@@ -1,0 +1,112 @@
+===== COMMAND =====
+python3 - <<'INNER'
+from pathlib import Path
+import json
+from PyPDF2 import PdfReader
+root = Path('.')
+print('== PAPER CONTEXT ==')
+reader = PdfReader(str(root / '206_Self_Spec_Model_Authored_S.pdf'))
+text = '\n'.join(page.extract_text() or '' for page in reader.pages)
+for needle in [
+    'Table 1 shows average pass@1 results over 164 HumanEval tasks.',
+    'Claude 3.5 Sonnet',
+    'Claude 3.7 Sonnet',
+    'GPT-4o'
+]:
+    idx = text.find(needle)
+    if idx != -1:
+        start = max(0, idx - 220)
+        end = min(len(text), idx + 420)
+        print(f'--- snippet for: {needle} ---')
+        print(text[start:end].replace('\r', ' '))
+        print()
+
+print('== BASELINE SUMMARY ==')
+summary = (root / 'A4S_update/results_summary_baseline_claude_3_5_sonnet_20241022.txt').read_text(encoding='utf-8')
+print(summary.strip())
+
+print('== BASELINE COUNTS FROM JSONL ==')
+all_lines = (root / 'A4S_update/all_baseline_claude_3_5_sonnet_20241022.jsonl').read_text(encoding='utf-8').strip().splitlines()
+failed_lines = (root / 'A4S_update/failed_baseline_claude_3_5_sonnet_20241022.jsonl').read_text(encoding='utf-8').strip().splitlines()
+print({'total_records': len(all_lines), 'failed_records': len(failed_lines), 'passed_records': len(all_lines) - len(failed_lines)})
+print({'baseline_percent': (len(all_lines) - len(failed_lines)) / len(all_lines) * 100})
+
+print('== SELF-SPEC ARTIFACT PRESENCE ==')
+for rel in [
+    'A4S_update/all_spec_claude_3_5_sonnet_20241022.jsonl',
+    'A4S_update/results_summary_spec_claude_3_5_sonnet_20241022.txt',
+    'A4S_update/failed_spec_claude_3_5_sonnet_20241022.jsonl',
+    'fabscore_codex/workspace/claim_8_command_output.txt',
+]:
+    p = root / rel
+    print(rel, p.exists(), p.stat().st_size if p.exists() else None)
+
+print('== README SNIPPETS ==')
+readme = (root / 'A4S_update/readme.md').read_text(encoding='utf-8')
+for needle in [
+    'Heads-up (easy to re-run)',
+    'claude 3.5 spec generation',
+    'Just set your API key and run:',
+    'spec_result_generation.py'
+]:
+    idx = readme.lower().find(needle.lower())
+    if idx != -1:
+        start = max(0, idx - 180)
+        end = min(len(readme), idx + 320)
+        print(f'--- snippet for: {needle} ---')
+        print(readme[start:end])
+        print()
+INNER
+===== STDOUT =====
+== PAPER CONTEXT ==
+--- snippet for: GPT-4o ---
+spec better aligns with a model’s internal
+representational bias, reducing docstring drift and format/edge-case mistakes. On
+HumanEval (pass@1, single sample), SELF-SPECimproves over direct NL →code
+for stronger models: GPT-4o 87%→92% (+5) and Claude 3.7 92%→94%
+(+2); Claude 3.5 dips 90%→89% (−1), which returns to baseline once we
+remove over-defensive guards in generated code(e.g., replacing raise /assert
+with no-ops when unspecified). To our knowledge, this is the first systematic
+study that lets an LLM design its own spec language for coding. The method
+is simple (no finetuning), model-agnostic (each model chooses its spec shape)
+
+== BASELINE SUMMARY ==
+Total: 164, Passed: 147, Failed: 17
+== BASELINE COUNTS FROM JSONL ==
+{'total_records': 164, 'failed_records': 17, 'passed_records': 147}
+{'baseline_percent': 89.63414634146342}
+== SELF-SPEC ARTIFACT PRESENCE ==
+A4S_update/all_spec_claude_3_5_sonnet_20241022.jsonl False None
+A4S_update/results_summary_spec_claude_3_5_sonnet_20241022.txt False None
+A4S_update/failed_spec_claude_3_5_sonnet_20241022.jsonl False None
+fabscore_codex/workspace/claim_8_command_output.txt True 1450
+== README SNIPPETS ==
+--- snippet for: Heads-up (easy to re-run) ---
+onl` — spec-driven generations (GPT-4o).
+- `results_summary_*.txt` — one-line summary: `Total / Passed / Failed`.
+- `failed_*.jsonl` — failing cases for quick inspection.
+
+---
+> **Heads-up (easy to re-run):** Two artifacts are not committed — **GPT-4o baseline** and **Claude 3.5 spec**.  
+> These files were originally saved but later misplaced. If you wish to verify, you can easily regenerate them:
+>
+> **GPT-4o baseline**:
+> ```bash
+> python evaluation_baseline_pipeline.py
+> ```
+> **Claude 3.5 s
+
+--- snippet for: spec_result_generation.py ---
+.
+
+**Pipelines & Utils**
+- `humaneval.py` — Utilities for HumanEval format.
+- `humaneval_convert.py` — Convert code prompts → natural language (`nl_request`) for spec pipeline.
+- `spec_result_generation.py` — Generate **spec-driven** solutions (defaults configured for Claude Sonnet; see below).
+- `spec_result_evaluation.py` — Evaluate spec-driven generations.
+- `evaluation_baseline_pipeline.py` — Run **baseline** generation + evaluation for (e.g.) GPT‑4o.
+- `baseline_result_evaluation.py` — Eval
+
+===== STDERR =====
+===== EXIT CODE: 0 =====
+

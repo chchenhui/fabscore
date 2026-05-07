@@ -1,0 +1,307 @@
+===== COMMAND: python - <<'PY'
+from pypdf import PdfReader
+reader = PdfReader('paper.pdf')
+for i, page in enumerate(reader.pages, start=1):
+    text = page.extract_text() or ''
+    if 'Table 3' in text or 'Peak (Ramp)' in text or 'FIR-CUSUM' in text:
+        print(f'--- page {i} ---')
+        for line in text.splitlines():
+            if 'Table 3' in line or 'Peak (Ramp)' in line or 'FIR-CUSUM' in line or 'Original CUSUM' in line:
+                print(line)
+PY =====
+--- page 6 ---
+Table 3: Impact of FIR partial reset on CUSUM-ϵperformance. FIR reduces peak excess by 35–36%
+Method Peak (Step)↓Peak (Ramp)↓AUC (Step)↓AUC (Ramp)↓∆% vs Original
+Original CUSUM (h=14,St=0) 5.40±1.725.62±1.03275.3±144.4271.4±109.1—
+FIR-CUSUM (h=18,St=h/2) 3.47±0.813.65±0.75182.6±83.2212.0±68.6-36% / -35% / -34% / -22%
+Table 3 shows the impact of FIR partial reset. The original CUSUM resetSt to 0 after each rollback,
+
+===== COMMAND: nl -ba exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json | sed -n '1,120p' =====
+     1	{
+     2	  "experiment": "FIR-CUSUM-epsilon on ResNet-18/CIFAR-10",
+     3	  "controller": "cusum_epsilon_fir",
+     4	  "calibration": {
+     5	    "h": 18.0,
+     6	    "k": 0.5,
+     7	    "reset_fraction": 0.5,
+     8	    "mu_0": -0.04125521912250121,
+     9	    "sigma_0": 0.2260490837544573,
+    10	    "alpha": 0.1,
+    11	    "p0_target": 0.002,
+    12	    "calibration_alarm_rate": 0.002,
+    13	    "s0_initialization": 0.0,
+    14	    "s_reset_value": 9.0
+    15	  },
+    16	  "metrics": {
+    17	    "step": {
+    18	      "peak_excess_loss": {"mean": 3.471, "std": 0.808},
+    19	      "excess_auc": {"mean": 182.566, "std": 83.207},
+    20	      "false_rollbacks_outside_window": {"mean": 37.0, "std": 37.994},
+    21	      "detection_delay": {"mean": -18.25, "std": 44.422},
+    22	      "y_pre": {"mean": 1.462, "std": 0.259}
+    23	    },
+    24	    "ramp": {
+    25	      "peak_excess_loss": {"mean": 3.651, "std": 0.750},
+    26	      "excess_auc": {"mean": 211.950, "std": 68.585},
+    27	      "false_rollbacks_outside_window": {"mean": 67.35, "std": 44.135},
+    28	      "detection_delay": {"mean": -22.05, "std": 47.748},
+    29	      "y_pre": {"mean": 1.442, "std": 0.233}
+    30	    },
+    31	    "nominal": {
+    32	      "nominal_rollback_fraction": {"mean": 0.002, "std": 0.003},
+    33	      "y_pre": {"mean": 1.384, "std": 0.275}
+    34	    }
+    35	  },
+    36	  "rate_matching": {
+    37	    "cusum_nominal_rate": 0.002,
+    38	    "or_epsilon_nominal_rate": 0.0016,
+    39	    "p0_target": 0.002,
+    40	    "cusum_vs_p0_relative_error": 0.0,
+    41	    "or_vs_p0_relative_error": 0.20,
+    42	    "cusum_vs_or_relative_difference": 0.25,
+    43	    "cusum_vs_p0_pass": true,
+    44	    "or_vs_p0_pass": true,
+    45	    "cross_controller_pass": false
+    46	  },
+    47	  "improvement_vs_original": {
+    48	    "peak_excess_step_pct_change": -35.7,
+    49	    "peak_excess_ramp_pct_change": -35.0,
+    50	    "excess_auc_step_pct_change": -33.7,
+    51	    "excess_auc_ramp_pct_change": -21.9
+    52	  },
+    53	  "num_seeds": 20,
+    54	  "num_steps": 250,
+    55	  "conditions": ["step", "ramp", "nominal"]
+    56	}
+
+===== COMMAND: nl -ba exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md | sed -n '24,34p' =====
+    24	## Key Results
+    25	
+    26	| Metric | Old CUSUM (h=14, S_t=0) | FIR-CUSUM (h=18, S_t=h/2) | Or-epsilon | Improvement |
+    27	|--------|------------------------|---------------------------|------------|-------------|
+    28	| Peak Excess (step) | 5.40 +/- 1.72 | 3.47 +/- 0.81 | 1.85 +/- 0.92 | -36% |
+    29	| Peak Excess (ramp) | 5.62 +/- 1.03 | 3.65 +/- 0.75 | 2.06 +/- 0.70 | -35% |
+    30	| Excess AUC (step) | 275.26 +/- 144.39 | 182.57 +/- 83.21 | 124.08 +/- 65.77 | -34% |
+    31	| Excess AUC (ramp) | 271.37 +/- 109.07 | 211.95 +/- 68.58 | 114.60 +/- 51.35 | -22% |
+    32	| Nominal rate | 0.0022 | 0.0020 | 0.0016 | exact match |
+    33	| False rollbacks (step) | 25.9 | 37.0 | 87.5 | +43% |
+    34	| False rollbacks (ramp) | 26.7 | 67.4 | 86.5 | +152% |
+
+===== COMMAND: nl -ba exp/task_plan.json | sed -n '28,35p' =====
+    28	    "category": "Main Experiment",
+    29	    "title": "CUSUM-epsilon on ResNet-18 / CIFAR-10",
+    30	    "description": "Implement and evaluate the proposed CUSUM-epsilon rollback controller on ResNet-18/CIFAR-10. CUSUM-epsilon replaces the one-step innovation threshold in Or-epsilon with a one-sided CUSUM sequential test that accumulates evidence of sustained upward drift in standardized innovations. The CUSUM statistic is: S_t = max(0, S_{t-1} + r_t - k), where r_t = (nu_t - mu_0) / (sigma_0 + 1e-8) is the standardized innovation. Rollback is triggered when S_t > h, after which S_t is reset to 0. The reference value k=0.5 is pre-committed (targeting detection of roughly >=1 sigma sustained shifts). The threshold h is calibrated on nominal training runs by grid search over h in {2, 3, 4, 5, 6, 7, 8} to match the same target rollback rate p_0 = 0.2% per step as Or-epsilon.\n\nThis item reuses all shared infrastructure from previous items (data loading, probe set, model, perturbation, training loop, metrics) and the calibration statistics (mu_0, sigma_0) computed in the Or-epsilon calibration step. Only the CUSUM controller implementation and its h-calibration are new.",
+    31	    "status": "completed",
+    32	    "summary": "Implemented CUSUMController (one-sided CUSUM sequential test, S_t = max(0, S_{t-1} + r_t - k), rollback when S_t > h). Extended calibration to find h: original grid {2,...,8} all yielded rates >0.007, so extended to {2,...,20}; selected h=14 with exact alarm rate=0.002 matching p_0. Extended train_loop.py to log CUSUM-specific fields (r_t, S_t) to WandB. Ran 60 experiments (20 seeds x 3 conditions) via TrainService with 4 GPUs. Results: step perturbation peak_excess=5.40+/-1.72, excess_AUC=275.26+/-144.39; ramp perturbation peak_excess=5.62+/-1.03, excess_AUC=271.37+/-109.07. Nominal rollback fraction=0.0022 (10% rel. error from p_0=0.002, PASS). CUSUM-epsilon reduces peak excess by ~68-75% vs no-controller but is worse than Or-epsilon (~2.9x higher peak excess). However, CUSUM-epsilon has ~70% fewer false rollbacks outside perturbation window (26 vs 87). Cross-controller rate matching: 27.3% relative difference (marginal fail at 20% threshold). All results in cusum_controller/results/cusum_epsilon/ and EXPERIMENT_RESULTS/cusum_epsilon/."
+    33	  },
+    34	  {
+    35	    "index": 4,
+
+===== COMMAND: python - <<'PY'
+import json
+from pathlib import Path
+p = Path('exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json')
+obj = json.loads(p.read_text())
+fir = obj['metrics']['ramp']['peak_excess_loss']['mean']
+delta = obj['improvement_vs_original']['peak_excess_ramp_pct_change']
+orig = fir / (1 + delta/100)
+recalc = (fir - orig) / orig * 100
+print(f'fir_ramp_peak={fir}')
+print(f'saved_pct_change={delta}')
+print(f'implied_original_ramp_peak={orig:.12f}')
+print(f'recomputed_pct_change={recalc:.12f}')
+PY =====
+fir_ramp_peak=3.651
+saved_pct_change=-35.0
+implied_original_ramp_peak=5.616923076923
+recomputed_pct_change=-35.000000000000
+
+===== COMMAND: nl -ba exp/cusum_controller/scripts/run_cusum_epsilon.py | sed -n '120,190p' =====
+   120	    for perturb_type in perturb_types:
+   121	        for seed in seeds:
+   122	            gpu_id = len(tasks) % num_gpus
+   123	            tasks.append((gpu_id, seed, perturb_type, h, mu_0, sigma_0, alpha, k,
+   124	                          reset_fraction, args.data_root, wandb_project, results_base))
+   125	
+   126	    print(f"Total experiments: {len(tasks)}")
+   127	
+   128	    mp.set_start_method("spawn", force=True)
+   129	    result_queue = mp.Queue()
+   130	
+   131	    if num_gpus > 1 and len(tasks) > 1:
+   132	        batch_size = num_gpus
+   133	        for i in range(0, len(tasks), batch_size):
+   134	            batch = tasks[i:i + batch_size]
+   135	            batch = [(j % num_gpus, t[1], t[2], t[3], t[4], t[5], t[6], t[7],
+   136	                       t[8], t[9], t[10], t[11]) for j, t in enumerate(batch)]
+   137	            print(f"\nBatch {i // batch_size + 1}/{(len(tasks) + batch_size - 1) // batch_size}: "
+   138	                  f"{len(batch)} experiments")
+   139	            run_batch(batch, result_queue)
+   140	    else:
+   141	        for t in tasks:
+   142	            run_one_experiment(*t, result_queue)
+   143	
+   144	    all_results_list = []
+   145	    while not result_queue.empty():
+   146	        all_results_list.append(result_queue.get())
+   147	
+   148	    all_metrics = {}
+   149	    for perturb_type in perturb_types:
+   150	        all_metrics[perturb_type] = []
+   151	    for r in all_results_list:
+   152	        if r["error"] is None:
+   153	            all_metrics[r["perturb_type"]].append(r["metrics"])
+   154	        else:
+   155	            print(f"ERROR: seed={r['seed']} perturb={r['perturb_type']}: {r['error']}")
+   156	
+   157	    summary = {}
+   158	    for perturb_type in perturb_types:
+   159	        agg = aggregate_across_seeds(all_metrics[perturb_type])
+   160	        summary[perturb_type] = agg
+   161	        print(f"\n{'='*60}")
+   162	        print(f"Aggregated metrics for {perturb_type} (CUSUM-epsilon):")
+   163	        for mk, v in agg.items():
+   164	            if v["mean"] is not None:
+   165	                print(f"  {mk}: {v['mean']:.4f} +/- {v['std']:.4f} (n={v['count']})")
+   166	            else:
+   167	                print(f"  {mk}: None (n={v['count']})")
+   168	
+   169	    summary_path = os.path.join(results_base, "metrics_summary.json")
+   170	    serializable = {}
+   171	    for pt, agg in summary.items():
+   172	        serializable[pt] = {}
+   173	        for mk, v in agg.items():
+   174	            serializable[pt][mk] = {"mean": v["mean"], "std": v["std"], "count": v["count"]}
+   175	    with open(summary_path, "w") as f:
+   176	        json.dump(serializable, f, indent=2)
+   177	
+   178	    per_seed_path = os.path.join(results_base, "per_seed_metrics.json")
+   179	    per_seed_data = {}
+   180	    for pt in perturb_types:
+   181	        per_seed_data[pt] = all_metrics[pt]
+   182	    with open(per_seed_path, "w") as f:
+   183	        json.dump(per_seed_data, f, indent=2)
+   184	
+   185	    print(f"\nResults saved to {results_base}")
+   186	    print("Done!")
+   187	
+   188	
+   189	if __name__ == "__main__":
+   190	    main()
+
+===== COMMAND: sed -n '1,160p' fabscore_codex/workspace/claim_36_command_output.txt =====
+
+Traceback (most recent call last):
+  File "/Users/dongfujiang/WorkSpace/fabscore/fars_papers/cusum-calibrated-rollback-controller/exp/cusum_controller/calibration/calibrate.py", line 182, in <module>
+    main()
+    ~~~~^^
+  File "/Users/dongfujiang/WorkSpace/fabscore/fars_papers/cusum-calibrated-rollback-controller/exp/cusum_controller/calibration/calibrate.py", line 169, in main
+    calibrate_cusum_h(
+    ~~~~~~~~~~~~~~~~~^
+        traces_dir=args.traces_dir,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+        reset_fraction=args.reset_fraction,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/dongfujiang/WorkSpace/fabscore/fars_papers/cusum-calibrated-rollback-controller/exp/cusum_controller/calibration/calibrate.py", line 81, in calibrate_cusum_h
+    probe_losses = np.load(path)
+  File "/Users/dongfujiang/WorkSpace/fabscore/.venv/lib/python3.13/site-packages/numpy/lib/_npyio_impl.py", line 454, in load
+    fid = stack.enter_context(open(os.fspath(file), "rb"))
+                              ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/dongfujiang/WorkSpace/fabscore/fars_papers/cusum-calibrated-rollback-controller/exp/cusum_controller/results/no_controller/nominal_probe_traces/seed0.npy'
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.13/3.13.12_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/urllib/request.py", line 1319, in do_open
+    h.request(req.get_method(), req.selector, req.data, headers,
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+              encode_chunked=req.has_header('Transfer-encoding'))
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.12_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py", line 1358, in request
+    self._send_request(method, url, body, headers, encode_chunked)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.12_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py", line 1404, in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.12_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py", line 1353, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.12_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py", line 1113, in _send_output
+    self.send(msg)
+    ~~~~~~~~~^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.12_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py", line 1057, in send
+    self.connect()
+    ~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.12_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py", line 1492, in connect
+    super().connect()
+    ~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.12_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py", line 1023, in connect
+    self.sock = self._create_connection(
+                ~~~~~~~~~~~~~~~~~~~~~~~^
+        (self.host,self.port), self.timeout, self.source_address)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.12_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/socket.py", line 840, in create_connection
+    for res in getaddrinfo(host, port, 0, SOCK_STREAM):
+               ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.12_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/socket.py", line 977, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<stdin>", line 24, in <module>
+  File "/Users/dongfujiang/WorkSpace/fabscore/fars_papers/cusum-calibrated-rollback-controller/exp/cusum_controller/training/train_loop.py", line 42, in run_single
+    train_dataset, test_dataset = get_datasets(data_root=data_root)
+                                  ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dongfujiang/WorkSpace/fabscore/fars_papers/cusum-calibrated-rollback-controller/exp/cusum_controller/data/cifar10.py", line 20, in get_datasets
+    train_dataset = torchvision.datasets.CIFAR10(
+        root=data_root, train=True, download=True, transform=transform
+    )
+  File "/Users/dongfujiang/WorkSpace/fabscore/.venv/lib/python3.13/site-packages/torchvision/datasets/cifar.py", line 66, in __init__
+    self.download()
+    ~~~~~~~~~~~~~^^
+  File "/Users/dongfujiang/WorkSpace/fabscore/.venv/lib/python3.13/site-packages/torchvision/datasets/cifar.py", line 139, in download
+    download_and_extract_archive(self.url, self.root, filename=self.filename, md5=self.tgz_md5)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dongfujiang/WorkSpace/fabscore/.venv/lib/python3.13/site-packages/torchvision/datasets/utils.py", line 388, in download_and_extract_archive
+    download_url(url, download_root, filename, md5)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dongfujiang/WorkSpace/fabscore/.venv/lib/python3.13/site-packages/torchvision/datasets/utils.py", line 118, in download_url
+    url = _get_redirect_url(url, max_hops=max_redirect_hops)
+  File "/Users/dongfujiang/WorkSpace/fabscore/.venv/lib/python3.13/site-packages/torchvision/datasets/utils.py", line 63, in _get_redirect_url
+    with urllib.request.urlopen(urllib.request.Request(url, headers=headers)) as response:
+         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.12_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/urllib/request.py", line 189, in urlopen
+    return opener.open(url, data, timeout)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.12_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/urllib/request.py", line 489, in open
+    response = self._open(req, data)
+  File "/opt/homebrew/Cellar/python@3.13/3.13.12_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/urllib/request.py", line 506, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+                              '_open', req)
+  File "/opt/homebrew/Cellar/python@3.13/3.13.12_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/urllib/request.py", line 466, in _call_chain
+    result = func(*args)
+  File "/opt/homebrew/Cellar/python@3.13/3.13.12_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/urllib/request.py", line 1367, in https_open
+    return self.do_open(http.client.HTTPSConnection, req,
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                        context=self._context)
+                        ^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.12_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/urllib/request.py", line 1322, in do_open
+    raise URLError(err)
+urllib.error.URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>
+===== COMMAND: inspect original-CUSUM blockers =====
+cwd= /Users/dongfujiang/WorkSpace/fabscore/fars_papers/cusum-calibrated-rollback-controller
+nominal_probe_traces exists: False
+data exists: False
+calibration params exists: True
+saved mu_0= -0.04125521912250121
+saved sigma_0= 0.2260490837544573
+saved cusum_h= 18.0
+saved reset_fraction= 0.5
+
+===== COMMAND: python exp/cusum_controller/calibration/calibrate.py --mode cusum --reset_fraction 0 =====
+
+===== COMMAND: minimal original-CUSUM step run (seed=0, cpu, use_wandb=False) =====
+

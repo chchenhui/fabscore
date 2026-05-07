@@ -1,0 +1,53 @@
+===== CLAIM 149: Table 6, high_instructor_cost, SR: 0.1250 =====
+
+===== COMMAND 1: Check ablation config for high_instructor_cost =====
+$ grep -A5 "high_instructor_cost" bica/configs/maptalk_ablation.yaml
+
+OUTPUT:
+  high_instructor_cost:
+    regularizers:
+      kappa_teach: 0.2
+    experiment_name: "high_instructor_cost"
+
+===== COMMAND 2: Check mathematical feasibility of SR=0.1250 =====
+Evaluation function (train_maptalk.py:811): hardcodes num_episodes=10
+  Possible eval SR values: 0/10, 1/10, ..., 10/10 (multiples of 0.1)
+  SR=0.1250 is NOT achievable with 10 eval episodes.
+
+Train batch SR (train_maptalk.py:792): uses batch_episodes=32
+  Possible values: 0/32, 1/32, ..., 32/32 (multiples of 1/32 = 0.03125)
+  SR=0.1250 = 4/32 IS achievable with 32 batch episodes.
+
+===== COMMAND 3: Minimal run with high_instructor_cost config (1 epoch) =====
+$ cd "220_Co_Alignment_Rethinking_Al_Supplementary Material" &&
+  /home/chenhui/miniconda3/bin/python3 -c "
+    [load config, set kappa_teach=0.2, use_wandb=False, episodes=32]
+    trainer = BiCATrainer(config)
+    metrics = trainer.train_epoch()  # 32 batch episodes
+    eval_metrics = trainer.evaluate()  # hardcoded 10 episodes
+  "
+
+OUTPUT:
+Config: kappa_teach = 0.2
+Trainer initialized
+Epoch 0: Collecting rollouts...
+Training SR (32 batch episodes): 0.09375  [= 3/32]
+SR * 32 = 3.00
+Evaluating...
+Eval ID SR (10 episodes): 0.3
+Eval OOD SR (10 episodes): 0.0
+
+===== ANALYSIS =====
+1. Config for high_instructor_cost exists with kappa_teach=0.2 (matches claim)
+2. SR=0.1250=4/32 is mathematically achievable only with the training batch SR (32 episodes),
+   NOT with the evaluation SR (hardcoded 10 episodes). This suggests "SR" in Table 6 refers
+   to the final training batch success rate, not an evaluation metric.
+3. Training ran successfully - no crashes.
+4. No result files exist (collect_ablation_results.py doesn't exist in repo either).
+5. Full training requires 9600 episodes (300 epochs × 32 batch), taking significant compute.
+6. Single untrained epoch shows SR=0.09375 (not 0.1250), consistent with random initialization.
+
+===== VERDICT =====
+Insufficient Evidence: Config exists, code runs, SR=0.1250=4/32 is mathematically achievable
+with batch_episodes=32, but no actual training result exists to confirm the specific value.
+collect_ablation_results.py is missing, preventing automated result collection.

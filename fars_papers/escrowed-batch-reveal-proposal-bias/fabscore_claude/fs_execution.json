@@ -1,0 +1,51 @@
+{
+    "tables": [
+        {
+            "claim_index": 8,
+            "claim": "8. Table 1, SoftWait, p vs. HardGate: 0.38",
+            "verdict": "Result Fabrication",
+            "explanation": "Execution stage: The repository's statistical_tests.py implements only a one-sided two-proportion z-test for secondary comparisons (SoftWait vs HardGate), yielding p=0.178762 (stored in statistical_test_results.json). No test actually implemented in the repository produces p=0.38: two-sided z-test gives 0.3575, Fisher exact two-sided gives 0.4453. Only Boschloo's exact test (not implemented in the repository) gives 0.3762, which rounds to 0.38. The paper's reported p=0.38 is not reproducible from the repository's own code, which gives p≈0.36 (two-sided z-test) at best.",
+            "evidence": "SoftWait: 19/30 (rate=0.633), HardGate: 33/45 (rate=0.733). Repository z-test one-sided p=0.178762 (matches stored statistical_test_results.json). Z-test two-sided p=0.357524. Fisher exact two-sided p=0.445328. Boschloo exact two-sided p=0.376193 (rounds to 0.38 but not implemented in repo). Paper claims p=0.38. | Code: exp/multi-agent-marketplace/experiments/ebr/analysis/statistical_tests.py:122-126 (secondary comparisons, one-sided z-test only)",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "exp/multi-agent-marketplace/experiments/ebr/analysis/statistical_tests.py:122-126 (secondary comparisons, one-sided z-test only)"
+                ],
+                "commands_executed": [
+                    "python3 -c 'from scipy import stats; table=[[19,11],[33,12]]; stats.fisher_exact(table, alternative=\"two-sided\") -> p=0.4453; stats.boschloo_exact(table, alternative=\"two-sided\") -> p=0.3762; z-test two-sided -> p=0.3575'"
+                ]
+            }
+        },
+        {
+            "claim_index": 12,
+            "claim": "12. Table 1, Inference-Time Scaling, p vs. HardGate: 0.38",
+            "verdict": "Result Fabrication",
+            "explanation": "Execution stage: ITS has the same counts (19/30 vs HardGate 33/45) as SoftWait, so the ITS vs HardGate comparison yields identical p-values. The repository's statistical_tests.py implements only a one-sided two-proportion z-test for secondary comparisons, giving p=0.178762 (stored). The two-sided z-test gives p≈0.357, not 0.38. The only method yielding p≈0.38 is Boschloo's exact test (p=0.376), which is not implemented or referenced anywhere in the repository. The paper's claimed p=0.38 is not reproducible from the repository's implemented statistical tests.",
+            "evidence": "ITS RESULTS.json confirms 19/30 earliest arrival (identical to SoftWait). Reused claim_8_command_output.txt: z-test two-sided p=0.357524, Fisher exact two-sided p=0.445328, Boschloo exact two-sided p=0.376193. Repository statistical_test_results.json stores one-sided z-test p=0.178762. | Code: exp/multi-agent-marketplace/experiments/ebr/analysis/statistical_tests.py (z-test only); exp/multi-agent-marketplace/experiments/ebr/analysis/statistical_test_results.json (p_value_one_sided: 0.178762)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "exp/multi-agent-marketplace/experiments/ebr/analysis/statistical_tests.py (z-test only)",
+                    "exp/multi-agent-marketplace/experiments/ebr/analysis/statistical_test_results.json (p_value_one_sided: 0.178762)"
+                ],
+                "commands_executed": [
+                    "None (reused artifacts from Session 3 — identical data: ITS 19/30 same as SoftWait 19/30, same HardGate 33/45)"
+                ]
+            }
+        }
+    ],
+    "figures": [],
+    "results_section": [],
+    "summary": {
+        "total": 2,
+        "verified": 0,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 2,
+        "no_code_files": 0,
+        "insufficient_evidence": 0,
+        "error": 0
+    }
+}

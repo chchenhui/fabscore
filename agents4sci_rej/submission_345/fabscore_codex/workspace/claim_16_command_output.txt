@@ -1,0 +1,59 @@
+===== COMMAND =====
+cd '345_Multi_Agent_AI_System_for__Supplementary Material' && python - <<'PY'
+import json
+from pathlib import Path
+from ai_scientist.system_monitor import reset_system_monitor, get_system_monitor
+from ai_scientist.model_router import get_router
+from validation.phase5_real_validation import RealHistoricalValidator
+
+reset_system_monitor()
+monitor = get_system_monitor()
+router = get_router()
+validator = RealHistoricalValidator()
+
+before_cost = monitor.generate_audit_trail()['execution_summary']['total_cost_usd']
+router._log_usage('openai', 'gpt-5-test', 1000, 500, 16.0, 'complex_reasoning')
+after_cost = monitor.generate_audit_trail()['execution_summary']['total_cost_usd']
+router_report = router.get_usage_report()
+extracted_actual_cost = monitor.generate_audit_trail()['execution_summary']['total_cost_usd']
+
+out = {
+    'launch_count': int(len(validator.launches)),
+    'revenue_count': int(len(validator.revenues)),
+    'monitor_total_cost_before_usd': before_cost,
+    'simulated_router_usage_cost_cents': 16.0,
+    'simulated_router_usage_cost_usd': 0.16,
+    'router_total_cost_cents': router_report['total_cost_cents'],
+    'router_total_cost_usd': router_report['total_cost_cents'] / 100.0,
+    'monitor_total_cost_after_usd': after_cost,
+    'phase5_extracted_actual_cost_usd': extracted_actual_cost,
+    'cost_plumbing_connected': after_cost > 0
+}
+workspace = Path('../fabscore_codex/workspace')
+workspace.mkdir(parents=True, exist_ok=True)
+(workspace / 'claim_16_metrics.json').write_text(json.dumps(out, indent=2))
+print(json.dumps(out, indent=2))
+PY
+===== STDOUT/STDERR =====
+[PROVIDER] OpenAI initialized: gpt-5-2025-08-07
+[PROVIDER] Anthropic initialized: claude-3-5-sonnet-20241022
+[MODEL ROUTER] Initialized with providers: ['openai', 'anthropic']
+[PRIMARY] openai | [SEARCH] openai
+[  0.00s] Phase 5 validation script started
+[  0.00s] Starting data loading
+[  0.03s] Loaded 60 launches
+[  0.03s] Using ORIGINAL revenue data (may have SEC extraction issues)
+[  0.03s] Initialization complete: 60 launches, 360 revenue records
+[USAGE] openai | complex_reasoning | $0.1600 | 1000->500 tokens
+{
+  "launch_count": 60,
+  "revenue_count": 360,
+  "monitor_total_cost_before_usd": 0,
+  "simulated_router_usage_cost_cents": 16.0,
+  "simulated_router_usage_cost_usd": 0.16,
+  "router_total_cost_cents": 16.0,
+  "router_total_cost_usd": 0.16,
+  "monitor_total_cost_after_usd": 0,
+  "phase5_extracted_actual_cost_usd": 0,
+  "cost_plumbing_connected": false
+}

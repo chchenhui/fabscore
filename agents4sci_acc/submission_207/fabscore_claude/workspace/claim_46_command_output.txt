@@ -1,0 +1,33 @@
+===== COMMAND =====
+python3 -c "
+import PyPDF2
+with open('207_Diverse_Inference_for_Solv.pdf', 'rb') as f:
+    reader = PyPDF2.PdfReader(f)
+    # Page 7 and 8 (0-indexed: 6-7)
+    for i in [6, 7]:
+        print(f'\n=== PAGE {i+1} ===')
+        print(reader.pages[i].extract_text())
+" 2>&1 | grep -A2 "aa4ec2a5"
+
+===== OUTPUT =====
+aa4ec2a5 ✓ × × × × ×(128) ×(100) ×(368) ×(588) ×(100) ✓(161) ×(462)
+ac0c5833 × × × × × ×(187) ×(143) ×(561) ×(861) ×(63) ×(206) ×(363)
+b457fec5 ✓ × × × × ×(229) ×(105) ×(369) ×(442) ×(88) ✓(145) ×(343)
+
+KEY FINDINGS:
+- Task aa4ec2a5 row in Table 1: "aa4ec2a5 ✓ × × × × ×(128) ×(100) ×(368) ×(588) ×(100) ✓(161) ×(462)"
+- Columns: max | cs | o1h | v3 | r1 | MCTS | BoN | MoA | SC | PS | BARC | MARC
+- max=✓ (ensemble/diversity succeeds), BARC=✓(161) also succeeds
+- o3h fails on aa4ec2a5 (task is in Table 1 which has title "Ablation experiments on difficult ARC problems on which o3 high compute fails on")
+
+ADDITIONAL EVIDENCE (from claim_44_command_output.txt, page 6 text):
+- "Figure 5: ARC task aa4ec2a5 on which o3 high compute fails and another model or method succeeds."
+
+NOTEBOOK OUTPUT (from visualize_arc_problems.ipynb):
+- "Loaded 8 problems: ['a8610ef7', 'b4a43f3b', '79fb03f4', '52fd389e', '891232d6', 'aa4ec2a5', 'a3f84088', '8719f442']"
+- "Problem: aa4ec2a5"
+- "Saved visualization: arc_visualizations/aa4ec2a5.png"
+
+DATA FILES:
+- selected_challenges.json: task aa4ec2a5 present at line 15136
+- selected_solutions.json: task aa4ec2a5 present at line 2786

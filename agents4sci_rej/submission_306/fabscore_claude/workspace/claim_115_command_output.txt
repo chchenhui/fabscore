@@ -1,0 +1,59 @@
+================================================================================
+COMMAND: python3 - (check P0C066 k=3 block partition and hinge_len computation)
+================================================================================
+P0C066 length=359
+k=3 blocks: [(0, 43), (43, 189), (189, 359)]
+Number of blocks: 3
+Sorted blocks: s1=0,e1=43; s2=43,e2=189; s3=189,e3=359
+hinge_len (central block = he - hs) = 146
+hinge_len (gaps between blocks) = 0
+
+k=2 blocks: [(0, 359)]
+k=2 num blocks: 1
+
+================================================================================
+COMMAND: python3 - (check initial bipartition and k=2/k=3 with various min_block_len values)
+================================================================================
+P0C066 length=359
+PAE matrix shape: (359, 359)
+PAE min/max: 0.000 / 31.000
+
+Initial bipartition: [(0, 43), (43, 359)]
+k=2, min_block_len=0: [(0, 357), (357, 359)] -> lengths [357, 2]
+k=2, min_block_len=10: [(0, 359)] -> lengths [359]
+k=2, min_block_len=20: [(0, 359)] -> lengths [359]
+k=2, min_block_len=30: [(0, 359)] -> lengths [359]
+k=3, min_block_len=0: [(0, 43), (43, 356), (356, 359)] -> lengths [43, 313, 3]
+  -> hinge_len (central block) = 313
+k=3, min_block_len=10: [(0, 252), (252, 359)] -> lengths [252, 107]
+k=3, min_block_len=20: [(0, 43), (43, 359)] -> lengths [43, 316]
+k=3, min_block_len=30: [(0, 43), (43, 190), (190, 359)] -> lengths [43, 147, 169]
+  -> hinge_len (central block) = 147
+
+================================================================================
+COMMAND: python3 - (stochastic check: 60 runs of k=3, min_block_len=30 for P0C066)
+================================================================================
+P0C066 length=359
+
+Multiple k=3 runs (min_block_len=30):
+  run 0: blocks=[(0, 43), (43, 189), (189, 359)], hinge_len=146
+  run 1: blocks=[(0, 252), (252, 359)], hinge_len=None
+  run 2: blocks=[(0, 43), (43, 189), (189, 359)], hinge_len=146
+  run 3: blocks=[(0, 252), (252, 359)], hinge_len=None
+  run 4: blocks=[(0, 43), (43, 189), (189, 359)], hinge_len=146
+  run 5: blocks=[(0, 42), (42, 359)], hinge_len=None
+  run 6: blocks=[(0, 252), (252, 359)], hinge_len=None
+  run 7: blocks=[(0, 252), (252, 359)], hinge_len=None
+  run 8: blocks=[(0, 42), (42, 359)], hinge_len=None
+  run 9: blocks=[(0, 42), (42, 359)], hinge_len=None
+
+Running 50 more times to check for hinge_len=210:
+hinge_len values: min=0, max=147, values=[0, 103, 104, 146, 147]
+
+Notes:
+- Paper claims P0C066 hinge_len=210
+- Code (k=3, min_block_len=30, n=60 stochastic runs): max hinge_len=147, values in {0, 103, 104, 146, 147}
+- hinge_len is computed as central block length: he - hs for middle block in k=3 partition
+- Code defined in for_submission/bcrparts/__main__.py lines 207-212
+- The spectral partition uses stochastic eigsh (scipy.sparse.linalg) with random initial vectors
+- Even across many runs, 210 is never achieved; max is 147

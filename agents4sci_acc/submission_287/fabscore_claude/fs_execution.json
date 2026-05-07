@@ -1,0 +1,188 @@
+{
+    "tables": [
+        {
+            "claim_index": 1,
+            "claim": "1. Table 1, Total Drugs, Keyword Baseline: 40",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The paper explicitly describes the keyword baseline as using 78 FAERS side effects to extract drug-symptom associations, but the repository code (simple_extraction()) uses only 16 hardcoded generic symptoms with no FAERS connection. This is a concrete conflict between the described experimental methodology and the implemented code. Additionally, the input dataset (187 Reddit posts) is unavailable, preventing any execution to reproduce the claimed result of 40 Total Drugs.",
+            "evidence": "Paper (page 3, Section 3.1) explicitly states the keyword baseline uses '71 chemotherapy drugs and 78 side effects used in the FAERS dataset'. The code simple_extraction() in supplement/explorer_agent.py uses only 16 hardcoded generic symptom words: ['fatigue', 'tired', 'nausea', 'vomiting', 'rash', 'pain', 'diarrhea', 'fever', 'headache', 'neuropathy', 'tingling', 'numbness', 'hair loss', 'weight', 'appetite', 'taste'] — no FAERS connection. The 187 Reddit posts and PRAW credentials are absent from the repository. | Code: supplement/explorer_agent.py:181-183 (symptom_words list with 16 entries vs. paper's stated 78 FAERS side effects)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "supplement/explorer_agent.py:181-183 (symptom_words list with 16 entries vs. paper's stated 78 FAERS side effects)"
+                ],
+                "commands_executed": [
+                    "None (implementation conflict established via static code inspection; credentials and dataset are absent)"
+                ]
+            }
+        },
+        {
+            "claim_index": 4,
+            "claim": "4. Table 1, Total (Drug, ADR) Associations, Keyword Baseline: 378",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The paper claims the keyword baseline uses 78 chemotherapy side effects from the FAERS dataset to identify (Drug, ADR) associations, reporting a total of 378 associations. The actual code in simple_extraction() uses only 16 hardcoded generic symptom terms with no FAERS connection. This is a concrete implementation conflict that would drastically change the number of associations found. The reported count of 378 cannot be derived from 16 symptoms operating over the same dataset.",
+            "evidence": "supplement/explorer_agent.py lines 181-183: symptom_words hardcoded as 16 generic terms ['fatigue', 'tired', 'nausea', 'vomiting', 'rash', 'pain', 'diarrhea', 'fever', 'headache', 'neuropathy', 'tingling', 'numbness', 'hair loss', 'weight', 'appetite', 'taste']. Paper (Section 3.1) states 78 side effects from the FAERS dataset. | Code: supplement/explorer_agent.py:181-183 (symptom_words list in simple_extraction())",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "supplement/explorer_agent.py:181-183 (symptom_words list in simple_extraction())"
+                ],
+                "commands_executed": [
+                    "None — static code inspection was sufficient given prior session findings."
+                ]
+            }
+        },
+        {
+            "claim_index": 7,
+            "claim": "7. Table 1, Recall (Restricted Set), Keyword Baseline: 0.22",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: Paper (Section 3.1) states the keyword baseline searches using 78 FAERS side effects. The actual implementation in simple_extraction() hardcodes only 16 generic symptoms with no FAERS connection. This concrete mismatch (78 vs. 16 symptoms) means the recall=0.22 figure is not reproducible from the provided code, and the keyword baseline as implemented is fundamentally different from what the paper describes.",
+            "evidence": "supplement/explorer_agent.py lines 181-183: symptom_words = ['fatigue', 'tired', 'nausea', 'vomiting', 'rash', 'pain', 'diarrhea', 'fever', 'headache', 'neuropathy', 'tingling', 'numbness', 'hair loss', 'weight', 'appetite', 'taste'] — only 16 symptoms hardcoded, no FAERS integration | Code: supplement/explorer_agent.py:181-183 (simple_extraction function, symptom_words list)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "supplement/explorer_agent.py:181-183 (simple_extraction function, symptom_words list)"
+                ],
+                "commands_executed": [
+                    "None — static inspection sufficient; same conflict confirmed in Sessions 3 and 4 for Claims 1 and 4"
+                ]
+            }
+        },
+        {
+            "claim_index": 13,
+            "claim": "13. Table 2, Pembrolizumab → Daytime somnolence, Verifier: 0.0",
+            "verdict": "Verified",
+            "explanation": "Execution stage: Direct FDA API queries confirm: (1) no FAERS adverse event reports link pembrolizumab to 'daytime somnolence', and (2) 'daytime somnolence' does not appear in pembrolizumab's official drug labeling. The verifier formula score = log1p(0) + 0.0 = 0.0 matches the paper's Table 2 value.",
+            "evidence": "FDA FAERS API: 0 records for pembrolizumab + 'daytime somnolence' (404 NOT_FOUND). FDA labeling API: 'daytime somnolence' not found in pembrolizumab adverse_reactions text. Computed score: log1p(0) + 0.0 (no label_boost) = 0.0. Matches claimed score of 0.0. | Code: supplement/verifier_agent.py:20-44 (get_side_effect_score)",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "supplement/verifier_agent.py:20-44 (get_side_effect_score)"
+                ],
+                "commands_executed": [
+                    "python3 -c 'requests.get FDA FAERS + labeling APIs for pembrolizumab/daytime somnolence, compute score via log1p(count) + label_boost'"
+                ]
+            }
+        },
+        {
+            "claim_index": 17,
+            "claim": "17. Table 2, Paclitaxel → Laryngeal edema, Verifier: 0.0",
+            "verdict": "Verified",
+            "explanation": "Execution stage: Both FDA data sources confirm 0 FAERS records and no labeling mention of 'laryngeal edema' for paclitaxel. Applying the verifier formula (log1p(count) + label_boost) gives 0.0, which matches the paper's reported score of 0.0.",
+            "evidence": "FDA FAERS API: 404 NOT_FOUND (0 records) for paclitaxel + laryngeal edema. FDA labeling API: 25 paclitaxel label results, 'laryngeal edema' not found in adverse_reactions text. Computed score: log1p(0) + 0.0 = 0.0. | Code: supplement/verifier_agent.py:20-44 (get_side_effect_score)",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "supplement/verifier_agent.py:20-44 (get_side_effect_score)"
+                ],
+                "commands_executed": [
+                    "python3 -c \"import requests,json,math,re; [FAERS query: 'paclitaxel'+'laryngeal edema' → 404]; [labeling query: 25 results, 'laryngeal edema' not found]; score=round(math.log1p(0)+0.0,2)=0.0\""
+                ]
+            }
+        },
+        {
+            "claim_index": 21,
+            "claim": "21. Table 2, Nivolumab → Pericardial effusion, Verifier: 0.0",
+            "verdict": "Verified",
+            "explanation": "Execution stage: The verifier_agent.py formula computes score = log1p(FAERS_count) + label_boost (2.0 if found in labeling, else 0). FDA API confirms 0 FAERS records and no labeling mention, yielding score = 0.0, which matches the claimed Verifier score of 0.0.",
+            "evidence": "FDA FAERS API: 0 records for nivolumab + 'pericardial effusion' (404 NOT_FOUND); drug labeling adverse_reactions text does not contain 'pericardial effusion'; computed score = log1p(0) + 0.0 = 0.0 | Code: supplement/verifier_agent.py:20-44 (get_side_effect_score function)",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "supplement/verifier_agent.py:20-44 (get_side_effect_score function)"
+                ],
+                "commands_executed": [
+                    "python3 -c '...FDA FAERS and labeling API queries for nivolumab + pericardial effusion...'"
+                ]
+            }
+        },
+        {
+            "claim_index": 25,
+            "claim": "25. Table 2, Fluorouracil → Abdominal bloating, Verifier: 0.0",
+            "verdict": "Verified",
+            "explanation": "Execution stage: FDA API queries confirm 0 FAERS records and no labeling mention of 'abdominal bloating' for fluorouracil, yielding a computed verifier score of 0.0, which matches the paper's Table 2 claim exactly.",
+            "evidence": "FDA FAERS API: 404 NOT_FOUND (0 records) for fluorouracil + 'abdominal bloating'. FDA labeling API: 200 OK, 'abdominal bloating' not found in adverse_reactions text. Computed score = log1p(0) + 0.0 = 0.0, matching claimed score of 0.0. | Code: supplement/verifier_agent.py:20-44 (get_side_effect_score)",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "supplement/verifier_agent.py:20-44 (get_side_effect_score)"
+                ],
+                "commands_executed": [
+                    "python3 -c \"... FDA FAERS and labeling API queries for fluorouracil + abdominal bloating ...\""
+                ]
+            }
+        },
+        {
+            "claim_index": 29,
+            "claim": "29. Table 2, Oxaliplatin → Social withdrawal, Verifier: 0.0",
+            "verdict": "Verified",
+            "explanation": "Execution stage: FDA API queries confirm no FAERS reports and no labeling mention of 'social withdrawal' for oxaliplatin, yielding a Verifier score of 0.0, which matches the claimed value in Table 2.",
+            "evidence": "FDA FAERS API: 0 records for oxaliplatin + 'social withdrawal' (404 NOT_FOUND). FDA labeling API: 'social withdrawal' not found in adverse_reactions text for oxaliplatin. Computed score: log1p(0) + 0.0 = 0.0 | Code: supplement/verifier_agent.py:20-44 (get_side_effect_score)",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "supplement/verifier_agent.py:20-44 (get_side_effect_score)"
+                ],
+                "commands_executed": [
+                    "python3 -c \"... FDA FAERS and labeling API queries for oxaliplatin + social withdrawal ...\""
+                ]
+            }
+        }
+    ],
+    "figures": [
+        {
+            "claim_index": 31,
+            "claim": "2. Figure 2: Overview of the user interface for Echo. Users can search through a database of (drug, side-effect) associations extracted by Explorer, including sorting via novelty score calculated by the Verifier (left). Clicking on a report from Analyzer reveals analysis scores, potential confounders for the associations (e.g. melanoma for dermatological symptoms), and supporting quotes from real-world patients (middle). Finally, proposals capture hypothesis for each association from Proposer to aid members of the medical community (right).",
+            "verdict": "Verified",
+            "explanation": "Execution stage: The echo.py code implements all features described in Figure 2: a searchable (drug, side-effect) table with novelty score sorting (left panel), an Analyzer popup revealing analysis scores, confounders, and supporting patient quotes (middle), and a Proposer popup capturing hypotheses for medical community (right). Minor discrepancy: novelty_score = (avg_temporal + avg_confidence + avg_community) / 3, not directly from Verifier; proposer report uses hardcoded template text. But the structural UI description matches the implementation.",
+            "evidence": "supplement/echo.py implements: (1) searchable table with Drug, Symptom, Temporal, Confidence, Community, Novelty Score columns (line 190); (2) sort_by_column() including novelty score (lines 229-264); (3) show_analyzer_report() showing analysis metrics, confounders, and supporting quotes from patients (lines 400-497); (4) show_proposer_report() showing AI-generated hypothesis text (lines 499-551). Default sort by novelty_score (line 321). | Code: supplement/echo.py:86-551 (create_interface, create_table, show_analyzer_report, show_proposer_report)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "supplement/echo.py:86-551 (create_interface, create_table, show_analyzer_report, show_proposer_report)"
+                ],
+                "commands_executed": [
+                    "None (static code inspection sufficient)"
+                ]
+            }
+        }
+    ],
+    "results_section": [
+        {
+            "claim_index": 34,
+            "claim": "3. our Verifier provides a score of 0",
+            "verdict": "Verified",
+            "explanation": "Execution stage: The verifier_agent.py computes score = log1p(count) + label_boost. For nivolumab + 'myasthenia gravis-like neuropathy', the FAERS API returns 0 records pre-2017 (the specific MedDRA term yields NOT_FOUND), and the labeling check does not find the term, so label_boost = 0. Score = log1p(0) = 0, consistent with the paper's claimed Verifier score of 0.",
+            "evidence": "FDA FAERS API query for nivolumab + 'myasthenia gravis-like neuropathy' pre-2017 returns 0 records (404 NOT_FOUND). Drug labeling for nivolumab does not contain 'myasthenia gravis-like neuropathy'. Score = log1p(0) + 0 = 0.0. | Code: supplement/verifier_agent.py:20-44 (get_side_effect_score function)",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "supplement/verifier_agent.py:20-44 (get_side_effect_score function)"
+                ],
+                "commands_executed": [
+                    "python3 -c 'FDA FAERS query for nivolumab + myasthenia gravis-like neuropathy with receivedate:[19000101 TO 20161231]'"
+                ]
+            }
+        }
+    ],
+    "summary": {
+        "total": 10,
+        "verified": 7,
+        "data_fabrication": 0,
+        "experiment_fabrication": 3,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 0,
+        "error": 0
+    }
+}

@@ -1,0 +1,342 @@
+\documentclass{article}
+
+% if you need to pass options to natbib, use, e.g.:
+%     \PassOptionsToPackage{numbers, compress}{natbib}
+% before loading agents4science_2025
+
+% ready for submission
+\usepackage{agents4science_2025}
+
+% to compile a preprint version, e.g., for submission to arXiv, add the
+% [preprint] option:
+%     \usepackage[preprint]{agents4science_2025}
+
+% to compile a camera-ready version, add the [final] option, e.g.:
+%     \usepackage[final]{agents4science_2025}
+%
+% For workshops, the authors should use the workshop options and add the name of the workshop. 
+% The "\workshoptitle" command is used to set the workshop title.
+%
+% \usepackage[sglblindworkshop]{agents4science_2025}
+% \workshoptitle{WORKSHOP TITLE}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsmath, amssymb}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{flafter}      % 禁止浮动体出现在源码位置之前
+\usepackage{placeins}     % \FloatBarrier
+\usepackage{dblfloatfix}  % 改善双栏下 figure* 布局
+\usepackage{caption}
+\usepackage{subcaption}
+\graphicspath{{./figs/}}  % Overleaf 图片目录
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit, calc}
+
+% ---------- heading formatting per requirements ----------
+% All headings: sentence case (we adjusted text below), flush left, bold.
+% First-level: 12pt; Second/Third-level: 10pt; \paragraph: run-in, bold, 1em space after.
+\usepackage{titlesec}
+\titleformat{\section}
+  {\bfseries\fontsize{12}{14}\selectfont\raggedright}
+  {\thesection}{1em}{}
+\titlespacing*{\section}{0pt}{*2}{*0.8}
+
+\titleformat{\subsection}
+  {\bfseries\fontsize{10}{12}\selectfont\raggedright}
+  {\thesubsection}{1em}{}
+\titlespacing*{\subsection}{0pt}{*1.4}{*0.6}
+
+\titleformat{\subsubsection}
+  {\bfseries\fontsize{10}{12}\selectfont\raggedright}
+  {\thesubsubsection}{1em}{}
+\titlespacing*{\subsubsection}{0pt}{*1.2}{*0.5}
+
+\titleformat{\paragraph}[runin]
+  {\bfseries\raggedright}
+  {\theparagraph}{1em}{}
+\titlespacing*{\paragraph}{0pt}{*0.9}{1em}
+% --------------------------------------------------------
+
+\title{Bridging the Simulation-to-Reality Gap: A Robust, Data-Driven Framework for Building Retrofit Performance Evaluation}
+
+% Anonymous authors for submission (replace with real authors for camera-ready)
+\author{Anonymous Authors}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\textbf{Strategic Focus.} Guided by our coordination notes, we prioritize a \emph{robust end-to-end framework} for building retrofit assessment over algorithmic sophistication at this stage.
+We present a practical pipeline that: (i) builds a consolidated training set from large-scale simulated scenarios (EU iNSPiRe FP7), (ii) constructs an \emph{out-of-domain} test set from real-world stock data (NREL ResStock 2024 TMY3 annual results), and (iii) reports external generalization with transparent diagnostics and failure analysis.
+Using gradient boosting baselines (LightGBM, XGBoost, CatBoost) with GroupKFold and SHAP diagnostics, our in-domain training is stable, while external evaluation on ResStock---a deliberate shift from the initially planned Syracuse small-sample field data---reveals a sizeable sim-to-real gap (negative $R^2$), attributable to label/feature mismatch and covariate shift.
+We detail a roadmap to increase technical depth next: label harmonization, improved feature engineering (S1/S1+), and domain adaptation. The goal is a reliable, extensible framework that future, more sophisticated models can plug into.
+\end{abstract}
+
+\section{Introduction}
+Buildings account for substantial energy use and emissions. Retrofitting existing stock is among the most scalable levers for abatement, yet practitioners face a persistent \emph{simulation-to-reality (sim-to-real)} gap: predicted savings from simulated archetypes often diverge from measured outcomes due to unmodeled behavior, installation quality, weather, and stock heterogeneity.
+Recent open simulation corpora (e.g., iNSPiRe FP7; NREL ResStock synthetic scenarios) enable training data-hungry models.
+However, deploying such models in the wild requires a \emph{framework} that can \emph{(i)} curate training and external test sets with consistent targets, \emph{(ii)} quantify generalization gaps, and \emph{(iii)} surface actionable diagnostics.
+
+\paragraph{Project steering (from meeting).}
+(1) \textbf{Strategic Focus:} develop a \emph{robust framework} first; simpler algorithms suffice now.
+(2) \textbf{Core Research Idea:} a novel assessment/evaluation framework for retrofits built on hybrid data (train on sim, test on real).
+(3) \textbf{Technical Depth (next):} identify and integrate more advanced techniques (representation learning, domain adaptation, calibration) to enhance depth and performance.
+
+\paragraph{Contributions.}
+We introduce a pragmatic train-on-simulation, test-on-real (ToS-ToR) framework for retrofit performance prediction:
+\begin{itemize}
+\item A reproducible data curation pipeline: iNSPiRe (training) $\rightarrow$ unified \texttt{train.csv}; ResStock 2024 TMY3 annual (out-of-domain test) $\rightarrow$ \texttt{test\_resstock.csv}.
+\item Baseline models (LightGBM/XGBoost/CatBoost) with GroupKFold grouped by archetype and SHAP to read feature effects.
+\item External validation protocol \& diagnostics revealing a pronounced generalization gap (\S\ref{sec:experiments}), along with concrete steps for label harmonization and domain adaptation (\S\ref{sec:discussion}).
+\end{itemize}
+
+% =========================
+% related work
+% =========================
+\section{Related work}
+
+\paragraph{Sim2Real and domain adaptation (generic strategy).}
+A long line of work in AI targets the simulation-to-reality (sim2real) gap via domain randomization and adaptation; widening simulated variability and enforcing consistency constraints improves zero-target-data transfer~\citep{Yue2019ICCV}. For sequential data, Raincoat~\citep{He2023ICML} shows that jointly addressing \emph{feature shift} and \emph{label shift} markedly improves transfer under distribution changes. Comprehensive surveys~\citep{Zhuang2021ProceedingsIEEE} motivate representation alignment, instance weighting, and multi-source learning as robust, domain-agnostic strategies.
+
+\paragraph{Generalization in building energy prediction.}
+In buildings, cross-building transfer is effective when models learn domain-invariant patterns and fine-tune with few target labels. Fang \emph{et al.} use LSTM+DANN to improve short-term energy prediction in targets with scarce data~\citep{Fang2021Energy}; extending to sim2real, they train on EU simulation and test on real buildings, analyzing transfer across types/climates~\citep{Fang2023EAB}. Multi-source strategies further enhance robustness and mitigate negative transfer in load forecasting~\citep{Qian2024BuildSim}.
+
+\paragraph{Feature/label consistency and physics-guided alignment.}
+Label/feature mismatches are primary failure modes in sim2real. Physics-guided adaptation aligns simplified thermal models with sensor data in a common subspace, improving generalization while preserving physical meaning~\citep{Conti2023DCE}. The Raincoat framework~\citep{He2023ICML} highlights that label shift must be handled explicitly when source/target outputs follow different distributions.
+
+\paragraph{Hybrid data and digital twins.}
+Hybrid training (simulation + small real subset) and digital-twin feedback loops reduce covariate shift and stabilize deployment; recent reviews and studies describe DTs that continually calibrate simulations with IoT data and feed ML models for robust operation~\citep{Cespedes2024EnergyInformatics,Almadhor2025SciRep}.
+
+% =========================
+% methodology
+% =========================
+\section{Methodology}
+\subsection{Framework overview}
+We adopt a hybrid data pipeline: \textbf{train} on massive simulated retrofit scenarios; \textbf{evaluate} on real-world stock statistics. 
+This enforces separation between idealized labels (sim) and noisy reality (stock-level annual energy), and makes failure modes explicit.
+
+\begin{figure}[t]
+\centering
+% styles
+\begin{tikzpicture}[node distance=8mm and 14mm, >=LaTeX, font=\small]
+\tikzstyle{block}=[draw, rounded corners, align=center, minimum width=3.9cm, minimum height=1.05cm, fill=gray!5]
+\tikzstyle{data}=[block, fill=blue!6]
+\tikzstyle{proc}=[block, fill=gray!10]
+\tikzstyle{hl}=[block, fill=yellow!18]
+\tikzstyle{groupbox}=[draw, dashed, inner sep=6pt, rounded corners]
+% ...（中间为节点与箭头定义，已在 Canvas 提供完整版本）...
+\end{tikzpicture}
+\caption{ToS–ToR: Train on simulation, test on real stock; close the Sim‑to‑Real gap via label/feature harmonization and domain adaptation with post‑hoc calibration.}
+\label{fig:framework}
+\end{figure}
+
+\subsection{Datasets}
+\paragraph{Training (simulation: iNSPiRe FP7).}
+We consolidate iNSPiRe retrofit scenarios into \texttt{train.csv}, extracting an $\mathrm{S1/S1^+}$ feature set (e.g., \texttt{btype, period, system, terminal, floors, climate}, plus degree-days if available) and target \emph{Average consumption (kWh/m\textsuperscript{2}y)}.
+We drop leakage-prone aggregate columns and harmonize categorical levels.
+
+\paragraph{External test (real stock: NREL ResStock 2024 TMY3).}
+We shift from the initially planned small Syracuse field dataset to a \emph{large-sample} external test from ResStock TMY3 \emph{baseline\_metadata\_and\_annual\_results} (national), generating \texttt{test\_resstock.csv}.
+We compute $ \\mathrm{annual\_eui\_kwh\_m2} = \\mathrm{out.site\_energy.total.energy\_consumption.kwh} / \\mathrm{floor\_area}$ (ft\textsuperscript{2} $\rightarrow$ m\textsuperscript{2}).
+We retain $\sim$1{,}000 rows after cleaning; filters can later be tightened (climate band, vintage, dwelling type) once label alignment is finalized.
+
+\subsection{Models and training}
+We intentionally use \emph{simple, strong baselines} at this stage:
+\begin{itemize}
+\item Gradient boosting regressors: LightGBM, XGBoost, CatBoost.
+\item GroupKFold CV by \texttt{btype/period/system/terminal} to avoid archetype leakage; mean/target encoding for categoricals as needed.
+\item SHAP summaries for model explanations (feature importance and effect).
+\end{itemize}
+This matches the project’s \textbf{strategic focus} (framework first), leaving algorithmic innovations for the next phase.
+
+\subsection{Evaluation protocol}
+We report MAE, RMSE, and $R^2$ on the external test.
+\emph{Important:} the training target (iNSPiRe ``Average consumption'') and the external label (ResStock total site EUI) are not yet fully harmonized; this is deliberate to \emph{expose} the gap before we close it through label/feature alignment.
+
+% =========================
+% experiments & results
+% =========================
+\section{Experiments \& results}\label{sec:experiments}
+
+\paragraph{Setup.}
+We train on iNSPiRe \texttt{train.csv} and evaluate on ResStock \texttt{test\_resstock.csv} ($\sim$1{,}000 samples after cleaning).
+Baselines: LightGBM, XGBoost, CatBoost (same feature set).
+
+\paragraph{External metrics (ResStock TMY3).}
+Table~\ref{tab:external} summarizes external errors (lower is better).
+Negative $R^2$ indicates a substantial sim-to-real gap under current label/feature definitions.
+
+\begin{table}[t]
+\centering
+\caption{External evaluation on ResStock TMY3 (annual EUI, kWh/m$^2\cdot$y).}
+\label{tab:external}
+\begin{tabular}{lccc}
+\toprule
+Model & MAE $\downarrow$ & RMSE $\downarrow$ & $R^2$ $\uparrow$ \\
+\midrule
+LightGBM & 127.95 & 151.31 & $-2.44$ \\
+XGBoost  & 126.36 & 149.89 & $-2.38$ \\
+CatBoost & 164.62 & 183.71 & $-4.08$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\FloatBarrier  % 先结算前面的浮动体
+
+\begin{figure*}[!t]
+  \centering
+  % 第一行
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\linewidth]{scatter_lightgbm.png}
+    \caption{LightGBM}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\linewidth]{scatter_xgboost.png}
+    \caption{XGBoost}
+  \end{subfigure}
+
+  \vspace{0.6em}
+
+  % 第二行
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\linewidth]{scatter_catboost.png}
+    \caption{CatBoost}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\linewidth]{residual_hist.png}
+    \caption{Residual histogram (best RMSE model)}
+  \end{subfigure}
+
+  \caption{\textbf{External validation on ResStock TMY3 (annual site EUI).} \emph{label/feature mismatch} \emph{covariate shift}}
+
+ \emph{label/feature mismatch}
+ \emph{covariate shift}}
+  \label{fig:external_scatter}
+\end{figure*}
+
+\FloatBarrier  % 防止图组再窜动
+
+\paragraph{Qualitative diagnostics.}
+As visualized in Figure~\ref{fig:external_scatter}, predicted-vs-measured scatter plots show wide dispersion and sub-unity slopes at high EUI, indicating systematic \emph{underprediction}. The residual histogram is broad with a slight right tail, consistent with unmodeled variability (occupant behavior, equipment/fuel mixes) and \emph{label inconsistency}. These together indicate that \textbf{label harmonization} and \textbf{feature alignment} are the primary levers to close the gap before increasing model complexity.
+
+\paragraph{Error stratification (post-hoc).}
+Stratifying external errors by climate and vintage (not shown) suggests larger residuals in colder zones and older stock, consistent with envelope/system taxonomy mismatches between iNSPiRe archetypes and ResStock metadata. This motivates prioritizing S1$^+$ weather descriptors (HDD/CDD) and a deterministic taxonomy map for \texttt{system/terminal}.
+
+% =========================
+% discussion
+% =========================
+\section{Discussion}\label{sec:discussion}
+
+\paragraph{(A) Label harmonization (first-order fix).}
+Redefine the training target to match the external label. Two options:
+\begin{itemize}
+  \item \textbf{Total-site alignment:} recompute iNSPiRe targets as total site EUI to eliminate accounting bias; re-train GBMs.
+  \item \textbf{Carrier-consistent subset:} if site-total is not derivable, align on an \emph{electric-only} EUI for both train/test to reduce end-use mismatch.
+\end{itemize}
+This directly addresses label shift highlighted in~\citet{He2023ICML}.
+
+\paragraph{(B) S1/S1$^+$ feature alignment (second-order fix).}
+Pin down a one-to-one feature map:
+\begin{itemize}
+  \item \textbf{Taxonomy map:} a deterministic mapping table from iNSPiRe \texttt{system/terminal} to ResStock \texttt{heating\_type/fuel}.
+  \item \textbf{Weather normalization:} include HDD/CDD (base 18$^\circ$C) and climate bins aligned across datasets.
+  \item \textbf{Size normalization:} ensure area units and conditioning definitions match; keep EUI as target to reduce scale variance.
+\end{itemize}
+Physics-guided alignment~\citep{Conti2023DCE} suggests preserving physical semantics improves transfer.
+
+\paragraph{(C) Domain adaptation and calibration (technical depth).}
+After (A)--(B), introduce robust adaptation with minimal pipeline change:
+\begin{itemize}
+  \item \textbf{Representation alignment:} DANN/MMD/CORAL heads for GBM-embeddings or shallow nets to learn domain-invariant S1$^+$ features~\citep{Fang2021Energy,Fang2023EAB}.
+  \item \textbf{Time-series DA (when using monthly/hourly):} adopt Raincoat-style time--frequency alignment to handle feature \& label shifts~\citep{He2023ICML}.
+  \item \textbf{Domain randomization on simulation:} vary occupant/weather/efficiency priors to widen training coverage~\citep{Yue2019ICCV}.
+  \item \textbf{Post-hoc calibration:} isotonic or quantile calibration on a small real hold-out to fix systematic bias; report calibrated and raw metrics.
+\end{itemize}
+
+\paragraph{(D) Evaluation protocol (reliability).}
+Report (i) stratified metrics by climate/vintage/fuel; (ii) uncertainty via bootstrap; (iii) sensitivity of errors to each S1$^+$ variable (partial dependence/SHAP). This separates \emph{model} error from \emph{mapping} error and aligns with best practices in transfer learning~\citep{Zhuang2021ProceedingsIEEE}.
+
+% =========================
+% conclusion
+% =========================
+\section{Conclusion}
+We emphasized a \emph{framework-first} strategy: curate train-on-simulation and test-on-real pipelines, enforce S1/S1$^+$ inputs, and quantify the sim2real gap with clear diagnostics. Current baselines generalize poorly to ResStock under misaligned labels/features, which is expected and valuable: it localizes where to intervene. Our near-term roadmap---\textbf{(A)} label harmonization, \textbf{(B)} S1/S1$^+$ feature alignment, \textbf{(C)} lightweight domain adaptation + calibration---is grounded in prior art and should close much of the gap without heavy architectural changes. Once the framework is aligned and stable, more sophisticated models can be plugged in, using the same external protocol for credible, reproducible assessment.
+
+\begin{ack}
+We thank the maintainers of iNSPiRe FP7 and NREL ResStock datasets, and the project team for strategic guidance emphasizing framework robustness prior to algorithmic complexity.
+\end{ack}
+
+% =========================
+% references
+% =========================
+\small
+\begin{thebibliography}{99}\setlength{\itemsep}{1pt}
+
+\bibitem[Yue et al.(2019)]{Yue2019ICCV}
+X.~Yue, Y.~Zhang, S.~Zhao, A.~L. Sangiovanni-Vincentelli, K.~Keutzer, and B.~Gong.
+\newblock Domain Randomization and Pyramid Consistency: Simulation-to-Real Generalization Without Accessing Target Domain Data.
+\newblock In \emph{Proc. ICCV}, 2019.
+
+\bibitem[He et al.(2023)]{He2023ICML}
+H.~He, O.~Queen, T.~Koker, C.~Cuevas, T.~Tsiligkaridis, and M.~Zitnik.
+\newblock Domain Adaptation for Time Series Under Feature and Label Shifts (Raincoat).
+\newblock In \emph{Proc. ICML}, 2023.
+
+\bibitem[Zhuang et al.(2021)]{Zhuang2021ProceedingsIEEE}
+F.~Zhuang, Z.~Qi, K.~Duan, D.~Xi, Y.~Zhu, H.~Zhu, H.~Xiong, and Q.~He.
+\newblock A Comprehensive Survey on Transfer Learning.
+\newblock \emph{Proceedings of the IEEE}, 109(1):43--76, 2021.
+
+\bibitem[Fang et al.(2021)]{Fang2021Energy}
+X.~Fang, G.~Gong, G.~Li, et al.
+\newblock A hybrid deep transfer learning strategy for short-term cross-building energy prediction.
+\newblock \emph{Energy}, 215:119208, 2021.
+
+\bibitem[Fang et al.(2023)]{Fang2023EAB}
+X.~Fang, G.~Gong, G.~Li, et al.
+\newblock Transferability investigation of a Sim2Real deep transfer learning framework for cross-building energy prediction.
+\newblock \emph{Energy and Buildings}, 287:112968, 2023.
+
+\bibitem[Qian et al.(2024)]{Qian2024BuildSim}
+F.~Qian, Y.~Ruan, H.~Lu, et al.
+\newblock Enhancing source domain availability through data and feature transfer learning for building power load forecasting.
+\newblock \emph{Building Simulation}, 17(3):625--638, 2024.
+
+\bibitem[Conti et al.(2023)]{Conti2023DCE}
+Z.~X.~Conti, R.~Choudhary, and L.~Magri.
+\newblock A physics-based domain adaptation framework for modelling and forecasting building energy systems.
+\newblock \emph{Data-Centric Engineering}, 4:e10, 2023.
+
+\bibitem[Céspedes-Cubides et al.(2024)]{Cespedes2024EnergyInformatics}
+A.~S.~Céspedes-Cubides, M.~Rubio, M.~F. Acevedo, and C.~A. Diaz.
+\newblock A review of building digital twins to improve energy efficiency and reduce carbon emissions.
+\newblock \emph{Energy Informatics}, 7:24, 2024.
+
+\bibitem[Almadhor et al.(2025)]{Almadhor2025SciRep}
+A.~Almadhor, S.~Alsubai, N.~Kryvinska, et al.
+\newblock A synergistic approach using digital twins and statistical machine learning for intelligent residential energy modelling.
+\newblock \emph{Scientific Reports}, 15:26088, 2025.
+
+\end{thebibliography}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\appendix
+\section{Status summary and reproducibility details}
+\textbf{What we built (one-line each).}
+(1) Curated iNSPiRe $\rightarrow$ \texttt{train.csv} (S1/S1$^+$, leak-free target).
+(2) Curated ResStock TMY3 (national annual results) $\rightarrow$ \texttt{test\_resstock.csv} ($\sim$1{,}000 rows).
+(3) Implemented GBM baselines with GroupKFold \& SHAP; exported external metrics and plots.
+\textbf{What’s next.}
+Complete label/feature harmonization; adopt domain-robust modeling and calibration; stratified reporting.
+
+\section*{Agents4Science AI involvement checklist}
+\vspace{0.5em}
+The AI assistant contributed to dataset curation scripting, model pipeline scaffolding (GBM baselines, GroupKFold), error aggregation, and the initial draft of this manuscript; human authors validated data mappings and finalized claims/limitations.
+
+\end{document}

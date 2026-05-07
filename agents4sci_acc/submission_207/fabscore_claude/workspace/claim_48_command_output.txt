@@ -1,0 +1,37 @@
+===== COMMAND =====
+python3 -c "
+import PyPDF2
+with open('207_Diverse_Inference_for_Solv.pdf', 'rb') as f:
+    reader = PyPDF2.PdfReader(f)
+    total_pages = len(reader.pages)
+    print(f'Total pages: {total_pages}')
+    # Pages 7-8 (0-indexed: 6-7), full content looking for Table 2 and 8719f442
+    for i in [6, 7]:
+        print(f'\n=== PAGE {i+1} (full) ===')
+        text = reader.pages[i].extract_text()
+        print(text)
+" 2>&1 | head -200
+
+===== OUTPUT =====
+Total pages: 15
+
+=== PAGE 7 (full) ===
+Table 1: Ablation experiments on difficult ARC problems on which o3 high compute fails on.
+[...Table 1 data...]
+
+Table 2: Ablation experiments on difficult ARC problems that defeat 948 humans.
+Task ID max g1.5 g2.0 c3.5-ha c3-ha c-son dsv3 dsr1 o1-prev o1mini o1low o1med o1high o3low o3high BARC MARC
+31d5ba1a ✓ × × × × × × ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓
+79fb03f4  × × × × × × × × × × × × × × × × ×
+8719f442  ✓ × × × × × × × × × × × × ✓ ✓ × ×
+a8610ef7  ✓ × × × × × × × × × × × × × ✓ ✓ ×
+b4a43f3b  ✓ × × × × × × × × × × × × ✓ ✓ × ×
+
+===== KEY FINDINGS =====
+1. Task 8719f442 is in Table 2 ("Ablation experiments on difficult ARC problems that defeat 948 humans") ✓
+2. Table 2 row for 8719f442: max=✓, o3low=✓, o3high=✓; all other models ×
+3. A model (o3low, o3high) succeeds on task 8719f442 ✓
+4. 948 humans fail (it's in the "defeat 948 humans" table) ✓
+5. Figure 7 caption on PDF page 6: "ARC task 8719f442 on which 948 humans fail and a model or method succeeds." ✓
+6. Task 8719f442 IS in selected_challenges.json (confirmed from Session 42 notebook output: "Loaded 8 problems: ['a8610ef7', 'b4a43f3b', '79fb03f4', '52fd389e', '891232d6', 'aa4ec2a5', 'a3f84088', '8719f442']") ✓
+7. Notebook visualize_arc_problems.ipynb was executed and generated "arc_visualizations/8719f442.png" ✓

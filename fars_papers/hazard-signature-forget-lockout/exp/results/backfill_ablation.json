@@ -1,0 +1,67 @@
+{
+  "ablation": "Backfill Buffer Ablation: B(delta=6) vs B(delta=0) vs C",
+  "date": "2026-03-01",
+  "description": "Ablation study isolating the contribution of the backfill buffer in retrieval-time denylist filtering (Condition B). B(delta=0) retrieves exactly top-k=3 candidates and drops tombstoned items without replacement, causing slot wasting. Comparison with B(delta=6) and Condition C (commit-time lockout).",
+
+  "comparison_table": {
+    "columns": ["variant", "prp_at_3", "benign_recall_at_3", "avg_results_per_eval_query", "avg_results_per_benign_query"],
+    "rows": [
+      {
+        "variant": "B (delta=6, fuzzy, with backfill)",
+        "prp_at_3": 0.0,
+        "benign_recall_at_3": 0.97,
+        "avg_results_per_eval_query": 1.0,
+        "avg_results_per_benign_query": 2.87
+      },
+      {
+        "variant": "B (delta=0, fuzzy, no backfill)",
+        "prp_at_3": 0.0,
+        "benign_recall_at_3": 0.97,
+        "avg_results_per_eval_query": 0.1667,
+        "avg_results_per_benign_query": 2.42
+      },
+      {
+        "variant": "C (commit-time tombstone, fuzzy)",
+        "prp_at_3": 0.0,
+        "benign_recall_at_3": 1.0,
+        "avg_results_per_eval_query": 3.0,
+        "avg_results_per_benign_query": 3.0
+      }
+    ]
+  },
+
+  "analysis": {
+    "q1_slot_wasting_degradation": {
+      "question": "How much does slot wasting degrade Benign Recall@3 when backfill is removed?",
+      "finding": "Benign Recall@3 is identical at 0.97 for both B(delta=6) and B(delta=0). This is because Benign Recall@3 measures whether the ground-truth benign record appears in the top-3 results — and for benign self-queries, the target record typically ranks #1 (highest similarity) and is not tombstoned, so it survives filtering regardless of backfill. However, slot wasting severely degrades retrieval utility: avg results per benign query drops from 2.87 (delta=6) to 2.42 (delta=0), meaning 19% of benign retrieval slots are wasted. For adversarial eval queries, the impact is catastrophic: avg results per query drops from 1.0 to 0.17 (94% of slots empty). The backfill buffer recovers 5x more results for eval queries (1.0 vs 0.17 avg) but still far below the k=3 capacity.",
+      "benign_recall_drop": 0.0,
+      "avg_benign_results_drop": 0.45,
+      "avg_eval_results_drop": 0.83
+    },
+    "q2_condition_c_avoidance": {
+      "question": "Does Condition C avoid slot wasting by keeping the index clean?",
+      "finding": "Yes. Condition C achieves perfect retrieval utility: avg 3.0 results per query for both eval and benign queries, with Benign Recall@3=1.0. Because poisoned content never enters the index, there is nothing to filter at retrieval time, so every query gets exactly k=3 results. This is a fundamental structural advantage over any retrieval-time filtering approach.",
+      "c_avg_results_per_query": 3.0,
+      "c_benign_recall": 1.0,
+      "b6_avg_eval_results": 1.0,
+      "b0_avg_eval_results": 0.1667
+    },
+    "q3_backfill_sufficiency": {
+      "question": "Is the backfill buffer sufficient to close the gap, or does index pollution still cause measurable utility loss even with backfill?",
+      "finding": "The backfill buffer (delta=6) substantially mitigates slot wasting but does NOT close the gap to Condition C. With backfill, B(delta=6) recovers 2.87/3.0 avg benign results (vs 2.42 without) and 1.0/3.0 avg eval results (vs 0.17 without). However, Condition C achieves 3.0/3.0 for both. The residual gap is caused by index pollution: when the index contains poisoned content, many of the top-(k+delta) candidates may be poisoned, and even a generous backfill buffer cannot always find enough passing candidates. For eval queries (which are adversarially similar to poisoned content), 34/36 candidates were filtered even with only 3 fetched (delta=0), and 95/108 with 9 fetched (delta=6). This shows that index pollution causes systemic retrieval degradation that backfill can only partially address.",
+      "gap_b6_to_c_eval": 2.0,
+      "gap_b0_to_c_eval": 2.83,
+      "gap_b6_to_c_benign": 0.13,
+      "gap_b0_to_c_benign": 0.58,
+      "conclusion": "Backfill is a useful mitigation but not a solution. Index pollution from paraphrased re-injections fundamentally degrades retrieval quality. Commit-time lockout (Condition C) eliminates this problem entirely by preventing poisoned content from entering the index."
+    }
+  },
+
+  "key_insight": "The ablation reveals that the backfill buffer addresses a symptom (empty retrieval slots) rather than the root cause (index pollution). Even with delta=6, Condition B returns only 1.0/3.0 avg results for eval queries vs C's perfect 3.0/3.0. Benign Recall@3 is unchanged by backfill (both 0.97) because the recall metric only checks if the ground-truth record is present — it does not penalize empty slots. The avg-results-per-query metric exposes the true utility cost: B(delta=6) wastes 67% of eval query slots and 4% of benign query slots, while C wastes none.",
+
+  "source_data": {
+    "b_delta_6": "hst/outputs/condition_b_optimized_results.json",
+    "b_delta_0": "hst/outputs/ablation_b_no_backfill_results.json",
+    "c_fuzzy": "hst/outputs/condition_c_optimized_results.json"
+  }
+}

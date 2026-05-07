@@ -1,0 +1,55 @@
+{
+    "tables": [],
+    "figures": [
+        {
+            "claim_index": 33,
+            "claim": "1. Figure 1: Generated samples from our multi-scale grid-based noise adaptation model for circle, dino, line, and moons datasets across different experimental configurations.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The repository can regenerate fresh raw plotting data for runs 1-5, and plot.py can emit a non-baseline generated-samples figure from those fresh artifacts. But the exact paper Figure 1 cannot be fully regenerated because the repository has no baseline raw plotting artifact or baseline generator for run_0/all_results.pkl, and plot.py’s later metrics section is also incompatible with the saved final_info.json schema. That leaves strong partial evidence, but not enough to verify the full figure exactly as published.",
+            "evidence": "Fresh non-baseline raw plotting inputs were regenerated at fabscore_codex/workspace/claim_33_run_2_fresh/all_results.pkl, fabscore_codex/workspace/claim_33_run_4_fresh/all_results.pkl, and fabscore_codex/workspace/claim_33_run_5_fresh/all_results.pkl; each contains circle/dino/line/moons entries with images shape (10000, 2) and train_losses length 10000. Prior fresh artifacts fabscore_claude/workspace/run_1_fresh/all_results.pkl and fabscore_claude/workspace/run_3_fresh/all_results.pkl provide the same for runs 1 and 3. In fabscore_codex/workspace/claim_33_plot_env_full, running plot.py with fresh runs 1-5 plus baseline metadata fails with FileNotFoundError: run_0/all_results.pkl. In fabscore_codex/workspace/claim_33_plot_env_no_baseline, plot.py emits a fresh generated_images.png but then crashes later with KeyError: 'eval_loss'. | Code: latex/template.tex:191-197; plot.py:26-30,79-110; run_2.py:321-330; run_4.py:339-348; run_5.py:339-348",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "latex/template.tex:191-197",
+                    "plot.py:26-30,79-110",
+                    "run_2.py:321-330",
+                    "run_4.py:339-348",
+                    "run_5.py:339-348"
+                ],
+                "commands_executed": [
+                    "python run_2.py --out_dir fabscore_codex/workspace/claim_33_run_2_fresh; python run_4.py --out_dir fabscore_codex/workspace/claim_33_run_4_fresh; python run_5.py --out_dir fabscore_codex/workspace/claim_33_run_5_fresh; cd fabscore_codex/workspace/claim_33_plot_env_full && MPLBACKEND=Agg python plot.py; cd fabscore_codex/workspace/claim_33_plot_env_no_baseline && MPLBACKEND=Agg python plot.py"
+                ]
+            }
+        },
+        {
+            "claim_index": 35,
+            "claim": "3. Figure 3: Training loss over time for each dataset (circle, dino, line, and moons) across all runs.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The repository has enough fresh raw data to regenerate and inspect Figure 3 for runs 1-5, but the paper and LaTeX source describe the figure as covering all runs/model configurations, and `plot.py` is written to include `run_0` as the Baseline. Because the baseline plotting input `run_0/all_results.pkl` is missing and the prior repo-native `plot.py` run fails on that exact file, the exact Figure 3 cannot be fully regenerated or verified from repository-native raw inputs.",
+            "evidence": "Reused fresh raw plotting inputs from prior execution: `fabscore_claude/workspace/run_1_fresh/all_results.pkl`, `fabscore_codex/workspace/claim_33_run_2_fresh/all_results.pkl`, `fabscore_claude/workspace/run_3_fresh/all_results.pkl`, `fabscore_codex/workspace/claim_33_run_4_fresh/all_results.pkl`, and `fabscore_codex/workspace/claim_33_run_5_fresh/all_results.pkl`; each contains `train_losses` of length 10000 for `circle`, `dino`, `line`, and `moons`. Reused fresh plot artifact `fabscore_codex/workspace/claim_33_plot_env_no_baseline/train_loss.png`. Prior logged plot attempt in `fabscore_codex/workspace/claim_33_command_output.txt` shows full all-run plotting failed with `FileNotFoundError: 'run_0/all_results.pkl'`, and current-session checks confirmed `fabscore_codex/workspace/claim_33_plot_env_full/run_0/all_results.pkl` does not exist. | Code: `plot.py:26-31` loads `final_info.json` and requires `all_results.pkl` for every `run*` folder; `plot.py:39-46` defines labels including `run_0` as `Baseline`; `plot.py:60-76` generates and saves `train_loss.png`; `plot.py:107-110` later crashes in the metrics section on top-level `eval_loss` access. Caption context: `latex/template.tex:425-430`.",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "`plot.py:26-31` loads `final_info.json` and requires `all_results.pkl` for every `run*` folder",
+                    "`plot.py:39-46` defines labels including `run_0` as `Baseline`",
+                    "`plot.py:60-76` generates and saves `train_loss.png`",
+                    "`plot.py:107-110` later crashes in the metrics section on top-level `eval_loss` access. Caption context: `latex/template.tex:425-430`."
+                ],
+                "commands_executed": []
+            }
+        }
+    ],
+    "results_section": [],
+    "summary": {
+        "total": 2,
+        "verified": 0,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 2,
+        "error": 0
+    }
+}

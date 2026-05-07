@@ -1,0 +1,342 @@
+=== COMMAND: nl -ba latex/template.tex | sed -n '440,470p' ===
+   440	The x\_minus\_y task (modular subtraction) revealed interesting differences in the learning dynamics. As illustrated in Figure \ref{fig:loss_x_minus_y}, Orthogonal initialization showed the best performance, achieving the lowest final training and validation losses. However, Xavier initialization demonstrated the fastest convergence, reaching 99\% validation accuracy in 2347 steps, compared to 4720 steps for the baseline.
+   441	
+   442	% Analysis of x_div_y task
+   443	\begin{figure}[h]
+   444	    \centering
+   445	    \begin{subfigure}{0.49\textwidth}
+   446	        \includegraphics[width=\textwidth]{train_acc_x_div_y.png}
+   447	        \caption{Training Accuracy}
+   448	        \label{fig:train_acc_x_div_y}
+   449	    \end{subfigure}
+   450	    \hfill
+   451	    \begin{subfigure}{0.49\textwidth}
+   452	        \includegraphics[width=\textwidth]{val_acc_x_div_y.png}
+   453	        \caption{Validation Accuracy}
+   454	        \label{fig:val_acc_x_div_y}
+   455	    \end{subfigure}
+   456	    \caption{Training and Validation Accuracy for x\_div\_y task across different initialization methods}
+   457	    \label{fig:acc_x_div_y}
+   458	\end{figure}
+   459	
+   460	The x\_div\_y task (modular division) proved to be the most challenging among the arithmetic operations. As shown in Figure \ref{fig:acc_x_div_y}, all initialization methods struggled to achieve high accuracy initially, but Xavier and He initializations eventually outperformed the others. Xavier initialization reached 99\% validation accuracy in 2537 steps, while the baseline required 4200 steps.
+   461	
+   462	% Analysis of permutation task
+   463	\begin{figure}[h]
+   464	    \centering
+   465	    \begin{subfigure}{0.49\textwidth}
+   466	        \includegraphics[width=\textwidth]{train_loss_permutation.png}
+   467	        \caption{Training Loss}
+   468	        \label{fig:train_loss_permutation}
+   469	    \end{subfigure}
+   470	    \hfill
+
+=== END COMMAND ===
+
+=== COMMAND: nl -ba plot.py | sed -n '1,180p' ===
+     1	import matplotlib.pyplot as plt
+     2	import matplotlib.colors as mcolors
+     3	import numpy as np
+     4	import json
+     5	import os
+     6	import os.path as osp
+     7	
+     8	# LOAD FINAL RESULTS:
+     9	datasets = ["x_div_y", "x_minus_y", "x_plus_y", "permutation"]
+    10	folders = os.listdir("./")
+    11	final_results = {}
+    12	results_info = {}
+    13	for folder in folders:
+    14	    if folder.startswith("run") and osp.isdir(folder):
+    15	        with open(osp.join(folder, "final_info.json"), "r") as f:
+    16	            final_results[folder] = json.load(f)
+    17	        results_dict = np.load(
+    18	            osp.join(folder, "all_results.npy"), allow_pickle=True
+    19	        ).item()
+    20	        print(results_dict.keys())
+    21	        run_info = {}
+    22	        for dataset in datasets:
+    23	            run_info[dataset] = {}
+    24	            val_losses = []
+    25	            train_losses = []
+    26	            val_accs = []
+    27	            train_accs = []
+    28	            for k in results_dict.keys():
+    29	                if dataset in k and "val_info" in k:
+    30	                    run_info[dataset]["step"] = [
+    31	                        info["step"] for info in results_dict[k]
+    32	                    ]
+    33	                    val_losses.append([info["val_loss"] for info in results_dict[k]])
+    34	                    val_accs.append([info["val_accuracy"] for info in results_dict[k]])
+    35	                if dataset in k and "train_info" in k:
+    36	                    train_losses.append(
+    37	                        [info["train_loss"] for info in results_dict[k]]
+    38	                    )
+    39	                    train_accs.append(
+    40	                        [info["train_accuracy"] for info in results_dict[k]]
+    41	                    )
+    42	                mean_val_losses = np.mean(val_losses, axis=0)
+    43	                mean_train_losses = np.mean(train_losses, axis=0)
+    44	                mean_val_accs = np.mean(val_accs, axis=0)
+    45	                mean_train_accs = np.mean(train_accs, axis=0)
+    46	                if len(val_losses) > 0:
+    47	                    sterr_val_losses = np.std(val_losses, axis=0) / np.sqrt(
+    48	                        len(val_losses)
+    49	                    )
+    50	                    stderr_train_losses = np.std(train_losses, axis=0) / np.sqrt(
+    51	                        len(train_losses)
+    52	                    )
+    53	                    sterr_val_accs = np.std(val_accs, axis=0) / np.sqrt(len(val_accs))
+    54	                    stderr_train_accs = np.std(train_accs, axis=0) / np.sqrt(
+    55	                        len(train_accs)
+    56	                    )
+    57	                else:
+    58	                    sterr_val_losses = np.zeros_like(mean_val_losses)
+    59	                    stderr_train_losses = np.zeros_like(mean_train_losses)
+    60	                    sterr_val_accs = np.zeros_like(mean_val_accs)
+    61	                    stderr_train_accs = np.zeros_like(mean_train_accs)
+    62	                run_info[dataset]["val_loss"] = mean_val_losses
+    63	                run_info[dataset]["train_loss"] = mean_train_losses
+    64	                run_info[dataset]["val_loss_sterr"] = sterr_val_losses
+    65	                run_info[dataset]["train_loss_sterr"] = stderr_train_losses
+    66	                run_info[dataset]["val_acc"] = mean_val_accs
+    67	                run_info[dataset]["train_acc"] = mean_train_accs
+    68	                run_info[dataset]["val_acc_sterr"] = sterr_val_accs
+    69	                run_info[dataset]["train_acc_sterr"] = stderr_train_accs
+    70	        results_info[folder] = run_info
+    71	
+    72	# CREATE LEGEND -- ADD RUNS HERE THAT WILL BE PLOTTED
+    73	labels = {
+    74	    "run_0": "Baseline",
+    75	    "run_1": "Xavier (Glorot)",
+    76	    "run_2": "He",
+    77	    "run_3": "Orthogonal",
+    78	    "run_4": "Kaiming Normal",
+    79	    "run_5": "Uniform",
+    80	}
+    81	
+    82	
+    83	# Create a programmatic color palette
+    84	def generate_color_palette(n):
+    85	    cmap = plt.get_cmap("tab20")
+    86	    return [mcolors.rgb2hex(cmap(i)) for i in np.linspace(0, 1, n)]
+    87	
+    88	
+    89	# Get the list of runs and generate the color palette
+    90	runs = list(labels.keys())
+    91	colors = generate_color_palette(len(runs))
+    92	
+    93	# Plot 1: Line plot of training loss for each dataset across the runs with labels
+    94	for dataset in datasets:
+    95	    plt.figure(figsize=(10, 6))
+    96	    for i, run in enumerate(runs):
+    97	        iters = results_info[run][dataset]["step"]
+    98	        mean = results_info[run][dataset]["train_loss"]
+    99	        sterr = results_info[run][dataset]["train_loss_sterr"]
+   100	        plt.plot(iters, mean, label=labels[run], color=colors[i])
+   101	        plt.fill_between(iters, mean - sterr, mean + sterr, color=colors[i], alpha=0.2)
+   102	
+   103	    plt.title(f"Training Loss Across Runs for {dataset} Dataset")
+   104	    plt.xlabel("Update Steps")
+   105	    plt.ylabel("Training Loss")
+   106	    plt.legend()
+   107	    plt.grid(True, which="both", ls="-", alpha=0.2)
+   108	    plt.tight_layout()
+   109	    plt.savefig(f"train_loss_{dataset}.png")
+   110	    plt.close()
+   111	
+   112	# Plot 2: Line plot of validation loss for each dataset across the runs with labels
+   113	for dataset in datasets:
+   114	    plt.figure(figsize=(10, 6))
+   115	    for i, run in enumerate(runs):
+   116	        iters = results_info[run][dataset]["step"]
+   117	        mean = results_info[run][dataset]["val_loss"]
+   118	        sterr = results_info[run][dataset]["val_loss_sterr"]
+   119	        plt.plot(iters, mean, label=labels[run], color=colors[i])
+   120	        plt.fill_between(iters, mean - sterr, mean + sterr, color=colors[i], alpha=0.2)
+   121	
+   122	    plt.title(f"Validation Loss Across Runs for {dataset} Dataset")
+   123	    plt.xlabel("Update Steps")
+   124	    plt.ylabel("Validation Loss")
+   125	    plt.legend()
+   126	    plt.grid(True, which="both", ls="-", alpha=0.2)
+   127	    plt.tight_layout()
+   128	    plt.savefig(f"val_loss_{dataset}.png")
+   129	    plt.close()
+   130	
+   131	
+   132	# Plot 3: Line plot of training acc for each dataset across the runs with labels
+   133	for dataset in datasets:
+   134	    plt.figure(figsize=(10, 6))
+   135	    for i, run in enumerate(runs):
+   136	        iters = results_info[run][dataset]["step"]
+   137	        mean = results_info[run][dataset]["train_acc"]
+   138	        sterr = results_info[run][dataset]["train_acc_sterr"]
+   139	        plt.plot(iters, mean, label=labels[run], color=colors[i])
+   140	        plt.fill_between(iters, mean - sterr, mean + sterr, color=colors[i], alpha=0.2)
+   141	
+   142	    plt.title(f"Training Accuracy Across Runs for {dataset} Dataset")
+   143	    plt.xlabel("Update Steps")
+   144	    plt.ylabel("Training Acc")
+   145	    plt.legend()
+   146	    plt.grid(True, which="both", ls="-", alpha=0.2)
+   147	    plt.tight_layout()
+   148	    plt.savefig(f"train_acc_{dataset}.png")
+   149	    plt.close()
+   150	
+   151	# Plot 2: Line plot of validation acc for each dataset across the runs with labels
+   152	for dataset in datasets:
+   153	    plt.figure(figsize=(10, 6))
+   154	    for i, run in enumerate(runs):
+   155	        iters = results_info[run][dataset]["step"]
+   156	        mean = results_info[run][dataset]["val_acc"]
+   157	        sterr = results_info[run][dataset]["val_acc_sterr"]
+   158	        plt.plot(iters, mean, label=labels[run], color=colors[i])
+   159	        plt.fill_between(iters, mean - sterr, mean + sterr, color=colors[i], alpha=0.2)
+   160	
+   161	    plt.title(f"Validation Loss Across Runs for {dataset} Dataset")
+   162	    plt.xlabel("Update Steps")
+   163	    plt.ylabel("Validation Acc")
+   164	    plt.legend()
+   165	    plt.grid(True, which="both", ls="-", alpha=0.2)
+   166	    plt.tight_layout()
+   167	    plt.savefig(f"val_acc_{dataset}.png")
+   168	    plt.close()
+   169	
+   170	# Plot 5: Summary plot comparing all initialization methods across datasets
+   171	def plot_summary(final_results, labels, datasets):
+   172	    metrics = ['final_train_acc_mean', 'final_val_acc_mean', 'step_val_acc_99_mean']
+   173	    fig, axs = plt.subplots(len(metrics), 1, figsize=(12, 5*len(metrics)), sharex=True)
+   174	    
+   175	    x = np.arange(len(datasets))
+   176	    width = 0.15
+   177	    n_runs = len(labels)
+   178	    
+   179	    for i, metric in enumerate(metrics):
+   180	        for j, (run, label) in enumerate(labels.items()):
+
+=== END COMMAND ===
+
+=== COMMAND: nl -ba experiment.py | sed -n '392,432p' ===
+   392	if __name__ == "__main__":
+   393	    num_seeds = {
+   394	        "x_div_y": 3,
+   395	        "x_plus_y": 3,
+   396	        "x_minus_y": 3,
+   397	        "permutation": 3,
+   398	    }
+   399	
+   400	    out_dir = args.out_dir
+   401	    all_results = {}
+   402	    final_infos = {}
+   403	    for dataset in ["x_div_y", "x_minus_y", "x_plus_y", "permutation"]:
+   404	        final_info_list = []
+   405	        for seed_offset in range(num_seeds[dataset]):
+   406	            print(f"Running {dataset} with seed offset {seed_offset}")
+   407	            final_info, train_info, val_info = run(args.out_dir, dataset, seed_offset)
+   408	            all_results[f"{dataset}_{seed_offset}_final_info"] = final_info
+   409	            all_results[f"{dataset}_{seed_offset}_train_info"] = train_info
+   410	            all_results[f"{dataset}_{seed_offset}_val_info"] = val_info
+   411	            final_info_list.append(final_info)
+   412	        final_info_dict = {
+   413	            k: [d[k] for d in final_info_list] for k in final_info_list[0].keys()
+   414	        }
+   415	        means = {f"{k}_mean": np.mean(v) for k, v in final_info_dict.items()}
+   416	        stderrs = {
+   417	            f"{k}_stderr": np.std(v) / len(v) for k, v in final_info_dict.items()
+   418	        }
+   419	        final_infos[dataset] = {
+   420	            "means": means,
+   421	            "stderrs": stderrs,
+   422	            "final_info_dict": final_info_dict,
+   423	        }
+   424	
+   425	    with open(os.path.join(out_dir, "final_info.json"), "w") as f:
+   426	        json.dump(final_infos, f)
+   427	
+   428	    with open(os.path.join(out_dir, "all_results.npy"), "wb") as f:
+   429	        np.save(f, all_results)
+
+=== END COMMAND ===
+
+=== COMMAND: find . -name 'all_results.npy' -o -name '*x_div_y*' | sort ===
+./fabscore_claude/workspace/train_acc_x_div_y_claim23.png
+./fabscore_claude/workspace/val_acc_x_div_y_claim23.png
+./run_0/final_info_x_div_y_0.json
+./run_0/final_info_x_div_y_1.json
+./run_0/final_info_x_div_y_2.json
+./run_1/final_info_x_div_y_0.json
+./run_1/final_info_x_div_y_1.json
+./run_1/final_info_x_div_y_2.json
+./run_2/final_info_x_div_y_0.json
+./run_2/final_info_x_div_y_1.json
+./run_2/final_info_x_div_y_2.json
+./run_3/final_info_x_div_y_0.json
+./run_3/final_info_x_div_y_1.json
+./run_3/final_info_x_div_y_2.json
+./run_4/final_info_x_div_y_0.json
+./run_4/final_info_x_div_y_1.json
+./run_4/final_info_x_div_y_2.json
+./run_5/final_info_x_div_y_0.json
+./run_5/final_info_x_div_y_1.json
+./run_5/final_info_x_div_y_2.json
+./train_acc_x_div_y.png
+./train_loss_x_div_y.png
+./val_acc_x_div_y.png
+./val_loss_x_div_y.png
+
+=== END COMMAND ===
+
+=== COMMAND: for d in run_0 run_1 run_2 run_3 run_4 run_5; do echo "== \ =="; ls "\"; done ===
+bash: -c: line 1: unexpected EOF while looking for matching `"'
+bash: -c: line 2: syntax error: unexpected end of file
+
+=== END COMMAND ===
+
+=== COMMAND: python - <<'PY'
+import json
+for run in ['run_0','run_1','run_2','run_3','run_4','run_5']:
+    with open(f'{run}/final_info.json') as f:
+        info = json.load(f)
+    means = info['x_div_y']['means']
+    print(run, sorted(means.keys()))
+    print(run, {k: means[k] for k in ['final_train_acc_mean','final_val_acc_mean','step_val_acc_99_mean']})
+PY ===
+run_0 ['final_train_acc_mean', 'final_train_loss_mean', 'final_val_acc_mean', 'final_val_loss_mean', 'step_val_acc_99_mean']
+run_0 {'final_train_acc_mean': 1.0, 'final_val_acc_mean': 1.0, 'step_val_acc_99_mean': 4200.0}
+run_1 ['final_train_acc_mean', 'final_train_loss_mean', 'final_val_acc_mean', 'final_val_loss_mean', 'step_val_acc_99_mean']
+run_1 {'final_train_acc_mean': 1.0, 'final_val_acc_mean': 1.0, 'step_val_acc_99_mean': 2536.6666666666665}
+run_2 ['final_train_acc_mean', 'final_train_loss_mean', 'final_val_acc_mean', 'final_val_loss_mean', 'step_val_acc_99_mean']
+run_2 {'final_train_acc_mean': 1.0, 'final_val_acc_mean': 1.0, 'step_val_acc_99_mean': 3463.3333333333335}
+run_3 ['final_train_acc_mean', 'final_train_loss_mean', 'final_val_acc_mean', 'final_val_loss_mean', 'step_val_acc_99_mean']
+run_3 {'final_train_acc_mean': 0.8575520912806193, 'final_val_acc_mean': 0.9386393229166666, 'step_val_acc_99_mean': 1643.3333333333333}
+run_4 ['final_train_acc_mean', 'final_train_loss_mean', 'final_val_acc_mean', 'final_val_loss_mean', 'step_val_acc_99_mean']
+run_4 {'final_train_acc_mean': 1.0, 'final_val_acc_mean': 1.0, 'step_val_acc_99_mean': 3070.0}
+run_5 ['final_train_acc_mean', 'final_train_loss_mean', 'final_val_acc_mean', 'final_val_loss_mean', 'step_val_acc_99_mean']
+run_5 {'final_train_acc_mean': 0.999804695447286, 'final_val_acc_mean': 0.9995930989583334, 'step_val_acc_99_mean': 1683.3333333333333}
+
+=== END COMMAND ===
+
+=== COMMAND: rg -n 'FileNotFoundError|all_results.npy|python plot.py|python run_5.py' fabscore_codex/workspace/claim_21_command_output.txt ===
+20:            osp.join(folder, "all_results.npy"), allow_pickle=True
+1016:run_5.py:428:    with open(os.path.join(out_dir, "all_results.npy"), "wb") as f:
+1054:run_4.py:428:    with open(os.path.join(out_dir, "all_results.npy"), "wb") as f:
+1092:run_3.py:428:    with open(os.path.join(out_dir, "all_results.npy"), "wb") as f:
+1130:run_2.py:428:    with open(os.path.join(out_dir, "all_results.npy"), "wb") as f:
+1168:run_1.py:426:    with open(os.path.join(out_dir, "all_results.npy"), "wb") as f:
+1206:experiment.py:428:    with open(os.path.join(out_dir, "all_results.npy"), "wb") as f:
+1447:    with open(os.path.join(out_dir, "all_results.npy"), "wb") as f:
+1558:=== COMMAND: python plot.py ===
+1566:        osp.join(folder, "all_results.npy"), allow_pickle=True
+1573:FileNotFoundError: [Errno 2] No such file or directory: 'run_5/all_results.npy'
+1678:=== COMMAND: python plot.py ===
+1686:        osp.join(folder, "all_results.npy"), allow_pickle=True
+1693:FileNotFoundError: [Errno 2] No such file or directory: 'run_5/all_results.npy'
+1708:=== COMMAND: /usr/bin/time -p python run_5.py --out_dir fabscore_codex/workspace/claim21_run_5 ===
+1718:=== COMMAND: python plot.py ===
+1726:        osp.join(folder, "all_results.npy"), allow_pickle=True
+1733:FileNotFoundError: [Errno 2] No such file or directory: 'run_5/all_results.npy'
+1748:=== COMMAND: /usr/bin/time -p python run_5.py --out_dir fabscore_codex/workspace/claim21_run_5 ===
+
+=== END COMMAND ===
+

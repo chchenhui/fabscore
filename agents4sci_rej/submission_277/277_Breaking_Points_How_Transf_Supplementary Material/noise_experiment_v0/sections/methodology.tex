@@ -1,0 +1,74 @@
+\section{Methodology}
+\label{sec:methodology}
+
+\subsection{Model Selection}
+
+We evaluate five encoder-only transformer architectures selected for architectural diversity and widespread adoption:
+
+\begin{itemize}
+\item \textbf{BERT-base} \cite{devlin2019bert}: 12 layers, 768 hidden dimensions, 110M parameters. Bidirectional attention with masked language modeling pretraining.
+\item \textbf{RoBERTa-base} \cite{liu2019roberta}: Identical architecture to BERT but with dynamic masking, larger batches (8K), and no next-sentence prediction.
+\item \textbf{ALBERT-base} \cite{lan2020albert}: 12 layers with parameter sharing, 12M parameters. Factorized embeddings reduce memory footprint.
+\item \textbf{DistilBERT} \cite{sanh2019distilbert}: 6 layers, 66M parameters. Knowledge distillation from BERT maintaining 97\% performance.
+\item \textbf{ELECTRA-small} \cite{clark2020electra}: 12 layers, 14M parameters. Discriminative pretraining detecting replaced tokens.
+\end{itemize}
+
+\subsection{Noise Perturbation Types}
+
+We apply five noise types at intensities $p \in \{0.05, 0.10, 0.15, 0.20, 0.25\}$:
+
+\textbf{Character Swap:} Adjacent characters transposed with probability $p$:
+\begin{equation}
+t' = \text{swap}(t, i, i+1) \text{ if } U(0,1) < p
+\end{equation}
+
+\textbf{Word Dropout:} Tokens removed with probability $p$:
+\begin{equation}
+X' = [x_i | U(0,1) > p, i \in \{1, ..., n\}]
+\end{equation}
+
+\textbf{Semantic Substitution:} Words replaced with synonyms:
+\begin{equation}
+x'_i = \arg\max_{x_j \in \text{Syn}(x_i)} \text{sim}(x_i, x_j) \text{ if } U(0,1) < p
+\end{equation}
+
+\textbf{Syntactic Shuffling:} Word order permuted within constituents identified by dependency parsing.
+
+\textbf{Attention Masking:} Attention weights zeroed with probability $p$.
+
+\subsection{Layer-wise Analysis}
+
+For model $M$ with $L$ layers, we extract representations $h^{(l)}$ at each layer $l \in \{0, ..., L-1\}$. Given clean input $X$ and perturbed input $X'$, we compute:
+
+\textbf{Representation Divergence:}
+\begin{equation}
+D^{(l)} = \frac{1}{n} \sum_{i=1}^n \| h_i^{(l)}(X) - h_i^{(l)}(X') \|_2
+\end{equation}
+
+\textbf{Layer Robustness Score:}
+\begin{equation}
+R^{(l)} = \frac{\cos(h^{(l)}(X), h^{(l)}(X'))}{1 + \alpha \cdot \text{KL}(p^{(l)}(X)||p^{(l)}(X'))}
+\end{equation}
+where $\cos(\cdot,\cdot)$ is cosine similarity, KL is Kullback-Leibler divergence, and $\alpha=0.1$.
+
+\textbf{Transition Detection:}
+\begin{equation}
+\Delta R^{(l)} = R^{(l+1)} - R^{(l)}
+\end{equation}
+Layers with $|\Delta R^{(l)}| > \tau=0.15$ identified as transitions.
+
+\subsection{Statistical Analysis}
+
+Experiments use 2,000 samples from GLUE \cite{wang2018glue} and SQuAD 2.0 \cite{rajpurkar2018squad}. Each configuration evaluated with 5 random seeds.
+
+\textbf{Model Comparison:} One-way ANOVA with post-hoc Tukey HSD tests.
+
+\textbf{Layer Analysis:} Friedman test for non-uniform distributions, Wilcoxon signed-rank for pairwise comparisons.
+
+\textbf{Effect Size:} Cohen's $d = (\mu_1 - \mu_2)/\sigma_{\text{pooled}}$, with $|d| > 0.8$ considered practically significant.
+
+\textbf{Cross-Model Correlation:} Spearman's $\rho$ for layer-wise vulnerability profiles.
+
+\textbf{Multiple Comparisons:} Bonferroni correction with bootstrap confidence intervals (10,000 iterations, BCa method).
+
+All statistical tests use significance level $\alpha = 0.001$ to account for multiple comparisons across 60 experimental conditions.

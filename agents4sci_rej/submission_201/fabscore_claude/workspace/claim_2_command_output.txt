@@ -1,0 +1,21 @@
+## Command 1: Inspect top-level keys in experiment_data.npy
+python -c "import numpy as np; d=np.load('logs/0-run/experiment_results/experiment_5d63515e2e1a419abdebbeac6bebe10c_proc_1514333/experiment_data.npy', allow_pickle=True).item(); print('Keys:', list(d.keys()))"
+
+OUTPUT:
+Keys: ['mnist', 'fashion_mnist', 'svhn']
+
+---
+
+## Command 2: Extract per-dataset validation accuracy
+python -c "
+import numpy as np
+d = np.load('logs/0-run/experiment_results/experiment_5d63515e2e1a419abdebbeac6bebe10c_proc_1514333/experiment_data.npy', allow_pickle=True).item()
+for ds in ['mnist','fashion_mnist','svhn']:
+    val_acc = d[ds]['metrics']['val_acc']
+    print(f'{ds}: last_val_acc={val_acc[-1]:.4f}, all_val_acc={[round(v,4) for v in val_acc]}')
+"
+
+OUTPUT:
+mnist: last_val_acc=0.6933, all_val_acc=[0.6633, 0.6633, 0.6722, 0.6867, 0.6867, 0.6867, 0.6867, 0.6867, 0.6867, 0.6933]
+fashion_mnist: last_val_acc=0.6900, all_val_acc=[0.63, 0.63, 0.63, 0.6267, 0.7089, 0.7111, 0.6756, 0.6878, 0.6778, 0.69]
+svhn: last_val_acc=0.6567, all_val_acc=[0.6533, 0.6567, 0.6567, 0.6567, 0.6567, 0.6567, 0.6567, 0.6567, 0.6567, 0.6567]

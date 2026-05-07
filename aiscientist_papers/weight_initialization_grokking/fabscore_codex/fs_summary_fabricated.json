@@ -1,0 +1,571 @@
+{
+  "tables": [
+    {
+      "claim_index": 1,
+      "claim": "1. Table 1, PyTorch default, x_plus_y: 2363 ± 215",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The paper presents this as a 95% confidence interval for the PyTorch-default condition, but the available baseline code path forcibly reinitializes Linear and Embedding weights with `uniform_(-0.1, 0.1)` rather than using a true PyTorch default, and the summary code only computes `np.std(v) / len(v)` under a `stderrs` key instead of a 95% confidence interval. The saved `run_0/final_info.json` artifact contains the mean `step_val_acc_99_mean=2363.333...`, so the reported statistic is tied to an experiment/aggregation procedure that the repository does not implement.",
+      "evidence": "latex/template.tex:483-499; latex/template.tex:264; experiment.py:204-212; experiment.py:313; experiment.py:416-418; run_0/final_info.json:1; plot.py:73-79",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex:483-499",
+          "latex/template.tex:264",
+          "experiment.py:204-212",
+          "experiment.py:313",
+          "experiment.py:416-418",
+          "run_0/final_info.json:1",
+          "plot.py:73-79"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 2,
+      "claim": "2. Table 1, PyTorch default, x_minus_y: 4720 ± 312",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The table labels this as a 95% confidence interval for the PyTorch-default baseline, but the repository baseline path is a custom uniform reinitialization and the summary code computes `stderrs` as `np.std(v) / len(v)` rather than a confidence interval. `run_0/final_info.json` stores the mean `step_val_acc_99_mean=4720.0`, so the experiment label/statistic in the paper is not the one implemented by the code.",
+      "evidence": "latex/template.tex:483-499; latex/template.tex:264; experiment.py:204-212; experiment.py:313; experiment.py:416-418; run_0/final_info.json:1; plot.py:73-79",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex:483-499",
+          "latex/template.tex:264",
+          "experiment.py:204-212",
+          "experiment.py:313",
+          "experiment.py:416-418",
+          "run_0/final_info.json:1",
+          "plot.py:73-79"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 3,
+      "claim": "3. Table 1, PyTorch default, x_div_y: 4200 ± 287",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: This claim depends on a baseline described as PyTorch default and on a reported 95% confidence interval, but the code path for the baseline uses `uniform_(-0.1, 0.1)` and the aggregation code writes `stderrs = np.std(v) / len(v)` instead of any confidence interval computation. The artifact `run_0/final_info.json` does contain `step_val_acc_99_mean=4200.0`, so the mismatch is experiment-side rather than a missing artifact.",
+      "evidence": "latex/template.tex:483-499; latex/template.tex:264; experiment.py:204-212; experiment.py:313; experiment.py:416-418; run_0/final_info.json:1; plot.py:73-79",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex:483-499",
+          "latex/template.tex:264",
+          "experiment.py:204-212",
+          "experiment.py:313",
+          "experiment.py:416-418",
+          "run_0/final_info.json:1",
+          "plot.py:73-79"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 4,
+      "claim": "4. Table 1, PyTorch default, permutation: 7500 ± 0",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Even though `run_0/final_info.json` contains `step_val_acc_99_mean=7500.0`, the paper still frames this entry as a PyTorch-default 95% confidence interval. The repository baseline path is a custom uniform reinitialization rather than an actual PyTorch default, and the metric aggregation code computes `stderrs` as `np.std(v) / len(v)` instead of a 95% confidence interval. The claim therefore conflicts with the implemented experimental procedure.",
+      "evidence": "latex/template.tex:483-499; latex/template.tex:264; experiment.py:204-212; experiment.py:313; experiment.py:416-418; run_0/final_info.json:1; plot.py:73-79",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex:483-499",
+          "latex/template.tex:264",
+          "experiment.py:204-212",
+          "experiment.py:313",
+          "experiment.py:416-418",
+          "run_0/final_info.json:1",
+          "plot.py:73-79"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 5,
+      "claim": "5. Table 1, Xavier, x_plus_y: 863 ± 98",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The repository has a Xavier run and `run_1/final_info.json` contains the matching mean `step_val_acc_99_mean=863.333...`, but the paper claims Table 1 reports 95% confidence intervals while the code only computes `stderrs = np.std(v) / len(v)` and never implements a confidence-interval calculation. The paper also states Python, NumPy, and PyTorch seeds are all set, but the run script only calls `torch.manual_seed`, so the implemented procedure does not match the paper's experimental description.",
+      "evidence": "latex/template.tex:385-388; latex/template.tex:483-499; run_1.py:204; run_1.py:311; run_1.py:414-415; run_1/final_info.json:1",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex:385-388",
+          "latex/template.tex:483-499",
+          "run_1.py:204",
+          "run_1.py:311",
+          "run_1.py:414-415",
+          "run_1/final_info.json:1"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 6,
+      "claim": "6. Table 1, Xavier, x_minus_y: 2347 ± 178",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The stored artifact `run_1/final_info.json` supports the mean `step_val_acc_99_mean=2346.666...`, but Table 1 is explicitly described as 95% confidence intervals and the code never computes those intervals, only `stderrs = np.std(v) / len(v)`. The paper's implementation description also claims Python/NumPy/PyTorch seeding, while the run script sets only `torch.manual_seed`, so the experiment protocol behind the claim conflicts with the repository.",
+      "evidence": "latex/template.tex:385-388; latex/template.tex:483-499; run_1.py:204; run_1.py:311; run_1.py:414-415; run_1/final_info.json:1",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex:385-388",
+          "latex/template.tex:483-499",
+          "run_1.py:204",
+          "run_1.py:311",
+          "run_1.py:414-415",
+          "run_1/final_info.json:1"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 7,
+      "claim": "7. Table 1, Xavier, x_div_y: 2537 ± 203",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The repository artifact `run_1/final_info.json` contains the mean `step_val_acc_99_mean=2536.666...`, but the paper's table is labeled as 95% confidence intervals even though the run script only saves `stderrs = np.std(v) / len(v)` and does not implement confidence-interval computation. The paper's seeding description is also stronger than the code path, which sets only `torch.manual_seed`.",
+      "evidence": "latex/template.tex:385-388; latex/template.tex:483-499; run_1.py:204; run_1.py:311; run_1.py:414-415; run_1/final_info.json:1",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex:385-388",
+          "latex/template.tex:483-499",
+          "run_1.py:204",
+          "run_1.py:311",
+          "run_1.py:414-415",
+          "run_1/final_info.json:1"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 8,
+      "claim": "8. Table 1, Xavier, permutation: 5067 ± 342",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The mean aligns with `run_1/final_info.json` (`step_val_acc_99_mean=5066.666...`), but the paper presents this entry as a 95% confidence interval and the available code never computes one, instead writing `stderrs = np.std(v) / len(v)`. Because the implemented metric/statistical procedure does not match the paper, the claim is contradicted at the experiment-procedure level.",
+      "evidence": "latex/template.tex:385-388; latex/template.tex:483-499; run_1.py:204; run_1.py:311; run_1.py:414-415; run_1/final_info.json:1",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex:385-388",
+          "latex/template.tex:483-499",
+          "run_1.py:204",
+          "run_1.py:311",
+          "run_1.py:414-415",
+          "run_1/final_info.json:1"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 9,
+      "claim": "9. Table 1, He, x_plus_y: 2137 ± 187",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The repository contains a He/Kaiming-uniform run and `run_2/final_info.json` records the mean `step_val_acc_99_mean=2136.666...`, but Table 1 is framed as 95% confidence intervals while the script only computes `stderrs = np.std(v) / len(v)`. The run script also seeds only PyTorch, not Python and NumPy as stated in the paper, so the implemented protocol does not match the reported one.",
+      "evidence": "latex/template.tex:385-388; latex/template.tex:483-499; run_2.py:204; run_2.py:313; run_2.py:416-417; run_2/final_info.json:1",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex:385-388",
+          "latex/template.tex:483-499",
+          "run_2.py:204",
+          "run_2.py:313",
+          "run_2.py:416-417",
+          "run_2/final_info.json:1"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 10,
+      "claim": "10. Table 1, He, x_minus_y: 3640 ± 256",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The artifact `run_2/final_info.json` supports the mean `step_val_acc_99_mean=3640.0`, but the paper reports a 95% confidence interval even though the repository's summary code only saves `stderrs = np.std(v) / len(v)` and never computes a confidence interval. The paper's stated seeding procedure is also not implemented in the run script.",
+      "evidence": "latex/template.tex:385-388; latex/template.tex:483-499; run_2.py:204; run_2.py:313; run_2.py:416-417; run_2/final_info.json:1",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex:385-388",
+          "latex/template.tex:483-499",
+          "run_2.py:204",
+          "run_2.py:313",
+          "run_2.py:416-417",
+          "run_2/final_info.json:1"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 11,
+      "claim": "11. Table 1, He, x_div_y: 3463 ± 231",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The mean value is traceable to `run_2/final_info.json` (`step_val_acc_99_mean=3463.333...`), but the paper's statistic is a 95% confidence interval and the code path only computes `stderrs = np.std(v) / len(v)`. Because the reported metric procedure is not implemented, the claim is contradicted by static inspection of the experiment code.",
+      "evidence": "latex/template.tex:385-388; latex/template.tex:483-499; run_2.py:204; run_2.py:313; run_2.py:416-417; run_2/final_info.json:1",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex:385-388",
+          "latex/template.tex:483-499",
+          "run_2.py:204",
+          "run_2.py:313",
+          "run_2.py:416-417",
+          "run_2/final_info.json:1"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 12,
+      "claim": "12. Table 1, He, permutation: 6460 ± 389",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The stored mean in `run_2/final_info.json` is `step_val_acc_99_mean=6460.0`, but Table 1 claims a 95% confidence interval and the repository never computes one, only `stderrs = np.std(v) / len(v)`. The paper's description of seed control also exceeds what the code does, so the experiment procedure does not support the reported claim.",
+      "evidence": "latex/template.tex:385-388; latex/template.tex:483-499; run_2.py:204; run_2.py:313; run_2.py:416-417; run_2/final_info.json:1",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex:385-388",
+          "latex/template.tex:483-499",
+          "run_2.py:204",
+          "run_2.py:313",
+          "run_2.py:416-417",
+          "run_2/final_info.json:1"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 13,
+      "claim": "13. Table 1, Orthogonal, x_plus_y: 837 ± 89",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The repository artifact `run_3/final_info.json` contains the matching mean `step_val_acc_99_mean=836.666...`, but Table 1 is explicitly presented as 95% confidence intervals and the code only computes `stderrs = np.std(v) / len(v)`. The run script also seeds only PyTorch even though the paper states Python/NumPy/PyTorch seeds are all set, so the implemented experiment differs from the reported one.",
+      "evidence": "latex/template.tex:385-388; latex/template.tex:483-499; run_3.py:204; run_3.py:313; run_3.py:416-417; run_3/final_info.json:1",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex:385-388",
+          "latex/template.tex:483-499",
+          "run_3.py:204",
+          "run_3.py:313",
+          "run_3.py:416-417",
+          "run_3/final_info.json:1"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 14,
+      "claim": "14. Table 1, Orthogonal, x_minus_y: 1993 ± 165",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The mean aligns with `run_3/final_info.json` (`step_val_acc_99_mean=1993.333...`), but the paper claims a 95% confidence interval whereas the repository summary code only computes `stderrs = np.std(v) / len(v)`. This is a direct experiment-side mismatch between the paper's stated statistic and the implemented aggregation procedure.",
+      "evidence": "latex/template.tex:385-388; latex/template.tex:483-499; run_3.py:204; run_3.py:313; run_3.py:416-417; run_3/final_info.json:1",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex:385-388",
+          "latex/template.tex:483-499",
+          "run_3.py:204",
+          "run_3.py:313",
+          "run_3.py:416-417",
+          "run_3/final_info.json:1"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 15,
+      "claim": "15. Table 1, Orthogonal, x_div_y: 1643 ± 143",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The saved run artifact contains the mean `step_val_acc_99_mean=1643.333...`, but Table 1 is labeled as 95% confidence intervals and the code never computes them, only `stderrs = np.std(v) / len(v)`. The run script also does not implement the full seeding procedure described in the paper, so the experimental protocol is inconsistent with the claim.",
+      "evidence": "latex/template.tex:385-388; latex/template.tex:483-499; run_3.py:204; run_3.py:313; run_3.py:416-417; run_3/final_info.json:1",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex:385-388",
+          "latex/template.tex:483-499",
+          "run_3.py:204",
+          "run_3.py:313",
+          "run_3.py:416-417",
+          "run_3/final_info.json:1"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 16,
+      "claim": "16. Table 1, Orthogonal, permutation: 4543 ± 298",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The mean maps to `run_3/final_info.json` (`step_val_acc_99_mean=4543.333...`), but the paper reports a 95% confidence interval while the repository only computes `stderrs = np.std(v) / len(v)` and does not implement any confidence-interval calculation. This is a concrete experiment/metric conflict visible from static inspection.",
+      "evidence": "latex/template.tex:385-388; latex/template.tex:483-499; run_3.py:204; run_3.py:313; run_3.py:416-417; run_3/final_info.json:1",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex:385-388",
+          "latex/template.tex:483-499",
+          "run_3.py:204",
+          "run_3.py:313",
+          "run_3.py:416-417",
+          "run_3/final_info.json:1"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 17,
+      "claim": "17. Table 1, Kaiming Normal, x_plus_y: 1967 ± 176",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The repository artifact `run_4/final_info.json` supports the mean `step_val_acc_99_mean=1966.666...`, but Table 1 is stated to contain 95% confidence intervals and the implemented aggregation only computes `stderrs = np.std(v) / len(v)`. The code also seeds only PyTorch, not Python and NumPy as the paper claims, so the experimental procedure does not match the paper.",
+      "evidence": "latex/template.tex:385-388; latex/template.tex:483-499; run_4.py:204; run_4.py:313; run_4.py:416-417; run_4/final_info.json:1",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex:385-388",
+          "latex/template.tex:483-499",
+          "run_4.py:204",
+          "run_4.py:313",
+          "run_4.py:416-417",
+          "run_4/final_info.json:1"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 18,
+      "claim": "18. Table 1, Kaiming Normal, x_minus_y: 3547 ± 243",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The mean is traceable to `run_4/final_info.json` (`step_val_acc_99_mean=3546.666...`), but the table's statistic is reported as a 95% confidence interval even though the code only computes `stderrs = np.std(v) / len(v)` and never implements a CI calculation. That is a direct conflict between the reported metric procedure and the repository.",
+      "evidence": "latex/template.tex:385-388; latex/template.tex:483-499; run_4.py:204; run_4.py:313; run_4.py:416-417; run_4/final_info.json:1",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex:385-388",
+          "latex/template.tex:483-499",
+          "run_4.py:204",
+          "run_4.py:313",
+          "run_4.py:416-417",
+          "run_4/final_info.json:1"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 19,
+      "claim": "19. Table 1, Kaiming Normal, x_div_y: 3070 ± 219",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The stored mean in `run_4/final_info.json` is `step_val_acc_99_mean=3070.0`, but the paper labels the accompanying statistic as a 95% confidence interval while the code only saves `stderrs = np.std(v) / len(v)`. Static inspection therefore shows the reported experimental summary procedure is not what the repository implements.",
+      "evidence": "latex/template.tex:385-388; latex/template.tex:483-499; run_4.py:204; run_4.py:313; run_4.py:416-417; run_4/final_info.json:1",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex:385-388",
+          "latex/template.tex:483-499",
+          "run_4.py:204",
+          "run_4.py:313",
+          "run_4.py:416-417",
+          "run_4/final_info.json:1"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 20,
+      "claim": "20. Table 1, Kaiming Normal, permutation: 6297 ± 376",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The run artifact contains the matching mean `step_val_acc_99_mean=6296.666...`, but Table 1 claims a 95% confidence interval and the repository only computes `stderrs = np.std(v) / len(v)` rather than any CI. Because the metric aggregation procedure described in the paper is not implemented by the code, this claim is contradicted at the experiment-procedure level.",
+      "evidence": "latex/template.tex:385-388; latex/template.tex:483-499; run_4.py:204; run_4.py:313; run_4.py:416-417; run_4/final_info.json:1",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex:385-388",
+          "latex/template.tex:483-499",
+          "run_4.py:204",
+          "run_4.py:313",
+          "run_4.py:416-417",
+          "run_4/final_info.json:1"
+        ],
+        "commands_executed": []
+      }
+    }
+  ],
+  "figures": [],
+  "results_section": [],
+  "summary": {
+    "total": 24,
+    "verified": 0,
+    "data_fabrication": 0,
+    "experiment_fabrication": 20,
+    "result_fabrication": 0,
+    "no_code_files": 0,
+    "insufficient_evidence": 4
+  },
+  "analysis_summary": {
+    "total_claims": 24,
+    "no_code_files": 0,
+    "obvious_hallucination": 20,
+    "data_fabrication": 0,
+    "experiment_fabrication": 20,
+    "result_fabrication": 0,
+    "static_verifiable": 0,
+    "insufficient_evidence": 0,
+    "execution_required": 4,
+    "error": 0
+  },
+  "execution_summary": {
+    "total": 4,
+    "verified": 0,
+    "data_fabrication": 0,
+    "experiment_fabrication": 0,
+    "result_fabrication": 0,
+    "no_code_files": 0,
+    "insufficient_evidence": 4,
+    "error": 0
+  },
+  "final_assessment": {
+    "fab_score": 0.0,
+    "total_claims": 24,
+    "verified": 0,
+    "data_fabrication": 0,
+    "experiment_fabrication": 20,
+    "result_fabrication": 0,
+    "no_code_files": 0,
+    "insufficient_evidence": 4,
+    "static_code_analysis_breakdown": {
+      "verified": 0,
+      "no_code_files": 0,
+      "data_fabrication": 0,
+      "experiment_fabrication": 20,
+      "result_fabrication": 0,
+      "insufficient_evidence": 0
+    },
+    "execution_artifact_analysis_breakdown": {
+      "verified": 0,
+      "no_code_files": 0,
+      "data_fabrication": 0,
+      "experiment_fabrication": 0,
+      "result_fabrication": 0,
+      "insufficient_evidence": 4
+    },
+    "code_execution_breakdown": {
+      "verified": 0,
+      "no_code_files": 0,
+      "data_fabrication": 0,
+      "experiment_fabrication": 0,
+      "result_fabrication": 0,
+      "insufficient_evidence": 0
+    }
+  },
+  "filtered_summary": {
+    "total_claims": 20,
+    "tables": 20,
+    "figures": 0,
+    "results_section": 0,
+    "verdict_breakdown": {
+      "Verified": 0,
+      "Data Fabrication": 0,
+      "Experiment Fabrication": 20,
+      "Result Fabrication": 0,
+      "No Code Files": 0,
+      "Insufficient Evidence": 0,
+      "Error": 0,
+      "Other": 0
+    }
+  }
+}

@@ -1,0 +1,38 @@
+=== CLAIM 181 VERIFICATION: Table 1, P02925, k: 3 ===
+
+--- COMMAND 1: Fetch AlphaFold PAE for P02925 ---
+python3 (fetch v4 and v6 PAE endpoints)
+OUTPUT:
+v4 status: 404
+v6 status: 200
+P02925 length=296, source=v6
+
+--- COMMAND 2: Run partition_k_spectral for k=2,3,4 ---
+python3 (partition_k_spectral check)
+OUTPUT:
+k=2: blocks=[(0, 82), (82, 296)], num_blocks=2
+k=3: blocks=[(0, 82), (82, 259), (259, 296)], num_blocks=3
+k=4: blocks=[(0, 82), (82, 168), (168, 259), (259, 296)], num_blocks=4
+
+--- COMMAND 3: Run BCR with n_perm=1024, null_mode=rotation, seed=0 (rng) ---
+python3 (bcr_q_ratio for k=2,3)
+OUTPUT:
+P02925 length=296
+k=2: blocks=[(0, 82), (82, 296)], bcr_q_ratio=2.151762, z=5.785838, p_perm=0.007805
+  hinge_len=0 (k=2)
+k=3: blocks=[(0, 82), (82, 259), (259, 296)], bcr_q_ratio=2.151762, z=9.337617, p_perm=0.070244
+  hinge_len=177 (central block: 82 to 259)
+
+CODE SELECTS k=2 (p_perm=0.007805 < 0.070244 for k=3)
+PAPER CLAIMS k=3 for P02925 -- MISMATCH
+
+KEY FINDINGS:
+1. AlphaFold PAE for P02925 fetched from v6 endpoint, length=296
+2. k=2 gives p_perm=0.007805 → code selects k=2
+3. k=3 gives p_perm=0.070244 → not selected by code
+4. Paper claims k=3 for P02925 — concrete mismatch
+5. Same BCR formula saturation as seen in P75820 (claim_1):
+   - Both k=2 and k=3 have identical stat=2.151762 (log-ratio formula caps at log(10)=2.302...)
+   - Formula: log((Q75_inter+eps)/(Q25_intra+eps)) in code, but paper Eq.2 shows simple ratio Q75_inter/(Q25_intra+eps)
+6. hinge_len for k=3 would be 177 (central block 82 to 259), not verified against paper value
+7. BCR formula discrepancy (log-ratio vs simple ratio) is the established root cause across all prior sessions

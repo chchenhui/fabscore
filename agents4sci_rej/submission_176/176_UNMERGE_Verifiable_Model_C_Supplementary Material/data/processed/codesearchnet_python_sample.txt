@@ -1,0 +1,166 @@
+Dataset Sample
+==================================================
+
+Example 1:
+------------------------------
+Message 1 (system):
+You are an expert Python developer. Write Python functions with clear documentation and summaries.
+
+Message 2 (user):
+Write a Python function named 'CosmosClient.DeleteStoredProcedure' that Deletes a stored procedure.
+
+        :param str sproc_link:
+            The link to the stored procedure.
+        :param dict options:
+            The request options for the request.
+
+        :return:
+            The deleted Stored Procedure.
+        :rtype:
+            dict
+
+Message 3 (assistant):
+def DeleteStoredProcedure(self, sproc_link, options=None):
+        """Deletes a stored procedure.
+
+        :param str sproc_link:
+            The link to the stored procedure.
+        :param dict options:
+            The request options for the request.
+
+        :return:
+            The deleted Stored Procedure.
+        :rtype:
+            dict
+
+        """
+        if options is None:
+            options = {}
+
+        path = base.GetPathFromLink(sproc_link)
+        sproc_id = base.GetResourceIdOrFullNameFromLink(sproc_link)
+        return self.DeleteResource(path,
+                                   'sprocs',
+                                   sproc_id,
+                                   None,
+                                   options)
+
+
+==================================================
+
+Example 2:
+------------------------------
+Message 1 (system):
+You are an expert Python developer. Write Python functions with clear documentation and summaries.
+
+Message 2 (user):
+Write a Python function named 'unbunchify' that Recursively converts a Bunch into a dictionary.
+        
+        >>> b = Bunch(foo=Bunch(lol=True), hello=42, ponies='are pretty!')
+        >>> unbunchify(b)
+        {'ponies': 'are pretty!', 'foo': {'lol': True}, 'hello': 42}
+        
+        unbunchify will handle intermediary dicts, lists and tuples (as well as
+        their subclasses), but ymmv on custom datatypes.
+        
+        >>> b = Bunch(foo=['bar', Bunch(lol=True)], hello=42, 
+        ...         ponies=('are pretty!', Bunch(lies='are trouble!')))
+        >>> unbunchify(b) #doctest: +NORMALIZE_WHITESPACE
+        {'ponies': ('are pretty!', {'lies': 'are trouble!'}), 
+         'foo': ['bar', {'lol': True}], 'hello': 42}
+        
+        nb. As dicts are not hashable, they cannot be nested in sets/frozensets.
+
+Message 3 (assistant):
+def unbunchify(x):
+    """ Recursively converts a Bunch into a dictionary.
+        
+        >>> b = Bunch(foo=Bunch(lol=True), hello=42, ponies='are pretty!')
+        >>> unbunchify(b)
+        {'ponies': 'are pretty!', 'foo': {'lol': True}, 'hello': 42}
+        
+        unbunchify will handle intermediary dicts, lists and tuples (as well as
+        their subclasses), but ymmv on custom datatypes.
+        
+        >>> b = Bunch(foo=['bar', Bunch(lol=True)], hello=42, 
+        ...         ponies=('are pretty!', Bunch(lies='are trouble!')))
+        >>> unbunchify(b) #doctest: +NORMALIZE_WHITESPACE
+        {'ponies': ('are pretty!', {'lies': 'are trouble!'}), 
+         'foo': ['bar', {'lol': True}], 'hello': 42}
+        
+        nb. As dicts are not hashable, they cannot be nested in sets/frozensets.
+    """
+    if isinstance(x, dict):
+        return dict( (k, unbunchify(v)) for k,v in iteritems(x) )
+    elif isinstance(x, (list, tuple)):
+        return type(x)( unbunchify(v) for v in x )
+    else:
+        return x
+
+
+==================================================
+
+Example 3:
+------------------------------
+Message 1 (system):
+You are an expert Python developer. Write Python functions with clear documentation and summaries.
+
+Message 2 (user):
+Write a Python function named 'get_log_likelihood' that Get the LL of a combined set of clusters, ignoring time series offsets.
+    
+    Get the log likelihood of a cluster without worrying about the fact
+    different time series are offset. We're using it here really for those
+    cases in which we only have one cluster to get the loglikelihood of.
+    
+    arguments:
+    inputs -- the 'X's in a list, one item per cluster
+    data -- the 'Y's in a list, one item per cluster
+    clust -- list of clusters to use
+    
+    returns a tuple:
+    log likelihood and the offset (which is always zero for this model)
+
+Message 3 (assistant):
+def get_log_likelihood(inputs,data,clust):
+    """Get the LL of a combined set of clusters, ignoring time series offsets.
+    
+    Get the log likelihood of a cluster without worrying about the fact
+    different time series are offset. We're using it here really for those
+    cases in which we only have one cluster to get the loglikelihood of.
+    
+    arguments:
+    inputs -- the 'X's in a list, one item per cluster
+    data -- the 'Y's in a list, one item per cluster
+    clust -- list of clusters to use
+    
+    returns a tuple:
+    log likelihood and the offset (which is always zero for this model)
+    """
+ 
+    S = data[0].shape[0] #number of time series
+    
+    #build a new dataset from the clusters, by combining all clusters together
+    X = np.zeros([0,1])
+    Y = np.zeros([0,S])
+    
+    #for each person in the cluster,
+    #add their inputs and data to the new dataset
+    for p in clust:
+        X = np.vstack([X,inputs[p]])
+        Y = np.vstack([Y,data[p].T])
+        
+    #find the loglikelihood. We just add together the LL for each time series.
+    #ll=0
+    #for s in range(S):
+    #    m = GPy.models.GPRegression(X,Y[:,s][:,None])
+    #    m.optimize()
+    #    ll+=m.log_likelihood()
+
+    m = GPy.models.GPRegression(X,Y)
+    m.optimize()
+    ll=m.log_likelihood()    
+    return ll,0
+
+
+==================================================
+

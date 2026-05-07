@@ -1,0 +1,41 @@
+===== COMMAND =====
+cd "/home/chenhui/fabscore/agent4sci_acc/submission_220/220_Co_Alignment_Rethinking_Al_Supplementary Material" && python3 run_experiment.py --experiment latent_nav --output_dir /home/chenhui/fabscore/agent4sci_acc/submission_220/fabscore_claude/workspace/
+
+===== STDOUT+STDERR =====
+Running Latent Navigator Experiment
+==================================================
+Using device: cuda
+ Loading dataset...
+Dataset loaded: 50000 samples
+ Training VAE model...
+  VAE model initialized successfully
+  Starting full VAE training...
+Traceback (most recent call last):
+  File ".../run_experiment.py", line 888, in <module>
+    main()
+  File ".../run_experiment.py", line 103, in main
+    run_latent_nav_experiment(config, args)
+  File ".../run_experiment.py", line 363, in run_latent_nav_experiment
+    train_full_vae(vae_model, dataset, device, config['training'])
+  File ".../run_experiment.py", line 520, in train_full_vae
+    outputs = vae_model(data)
+  File ".../vae_model.py", line 189, in forward
+    reconstruction = self.decode(z)
+  File ".../vae_model.py", line 152, in decode
+    encoded = self.encoder(test_input)   # <-- test_input is CPU, encoder is CUDA
+RuntimeError: Input type (torch.FloatTensor) and weight type (torch.cuda.FloatTensor) should be the same or input should be a MKLDNN tensor and weight is a dense tensor
+
+===== ANALYSIS =====
+Root cause: vae_model.decode() creates test_input = torch.zeros(1, *self.input_shape) on CPU
+but the encoder is on GPU (cuda). This is a fundamental implementation defect in vae_model.py:152.
+The experiment crashes at the very beginning (VAE training phase), before any evaluation sessions
+or preference_correlation computation can take place.
+
+preference_correlation (claimed: 0.594) is computed in compute_alignment_metrics() as:
+  avg_preference_correlation = mean(max(0, cognitive_gain) for each session)
+  where cognitive_gain = 0.7 * accuracy_gain + 0.3 * ece_improvement
+
+Since the experiment crashes before any sessions run, the value 0.594 was never produced.
+
+Additional bug: run_experiment.py:472 prints alignment_metrics.get('preference_correlation', 0.0)
+but the key in the metrics dict is 'avg_preference_correlation' -- would always print 0.000.

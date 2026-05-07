@@ -1,0 +1,23 @@
+=== CLAIM 243 VERIFICATION: Table 1, P32717, pperm: 0.0351 ===
+
+--- COMMAND: Run BCR analysis for P32717 ---
+cd /home/chenhui/fabscore/agents4sci_rej/submission_306/fabscore_claude/workspace && mkdir -p p32717_run && cd p32717_run && echo "P32717" > ids.csv && PYTHONPATH=/home/chenhui/fabscore/agents4sci_rej/submission_306/for_submission python -m bcrparts all --ids-file ids.csv --n-perm 1024 --null-mode rotation --k auto --min-block-len 30 --topN 100 --alpha 0.05 --sym-mode mean
+
+OUTPUT (tail):
+Traceback (most recent call last):
+  ...
+  File "/home/chenhui/fabscore/agents4sci_rej/submission_306/for_submission/bcrparts/__main__.py", line 373, in cmd_paper
+    with open(src_tex, 'r') as f:
+         ~~~~^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'agents4science_2025.tex'
+Saved 1 entries and top 100 to results/bcrparts
+
+--- RESULTS: topN.csv ---
+uniprot_id,length,k,bcr_diff,z_bcr_diff,bcr_q_ratio,z_bcr_q,p_perm,Q25_intra,Q75_inter,block_1,block_2,...
+P32717,661,2,21.8818998336792,5.030519756024917,2.0314322887215814,13.026831012764976,0.0351219512195122,0.0892857164144516,1.0357142686843872,0-34,34-661,0,...
+
+KEY FINDINGS:
+1. p_perm = 0.0351219512195122 ≈ 0.0351 — matches paper claim exactly
+2. k=2 selected by auto_k by p_perm
+3. BCR formula in code is log-ratio: log((Q75_inter+eps)/(Q25_intra+eps)) — differs from paper's simple ratio Eq.2 but p_perm value is still reproduced
+4. Script fails at final cmd_paper step (missing agents4science_2025.tex) but main analysis completes

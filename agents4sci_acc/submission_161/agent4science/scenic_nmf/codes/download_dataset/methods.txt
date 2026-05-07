@@ -1,0 +1,108 @@
+METHODS DOCUMENTATION
+=====================
+
+This document records the computational methods and analysis procedures used in the paper.
+
+1. DATA COLLECTION
+------------------
+We utilized the CZ CELLxGENE Census database (version 2025-01-30) to systematically identify and download single-cell RNA sequencing datasets containing neuroendocrine and endocrine cells. The Census database provides standardized access to millions of cells from diverse human tissues and conditions.
+
+Dataset identification process:
+- Connected to CZ CELLxGENE Census using the cellxgene_census Python API
+- Queried the human data collection (homo_sapiens) for all cells
+- Filtered cells where the 'cell_type' annotation contained the term "endocrine" (case-insensitive)
+- Retrieved metadata including: dataset_id, cell_type, tissue, assay, disease, sex, development_stage, and ontology terms
+- Identified 65 unique datasets containing a total of 132,565 endocrine cells
+
+2. DATA PREPROCESSING
+---------------------
+For each identified dataset:
+- Aggregated endocrine cell counts by dataset_id
+- Compiled unique endocrine cell types, tissues, assays, and disease conditions per dataset
+- Merged with dataset metadata from the Census including collection information, titles, and total cell counts
+- Calculated the percentage of endocrine cells relative to total cells in each dataset
+- Sorted datasets by endocrine cell count in descending order
+- Generated a summary CSV file (endocrine_datasets_summary.csv) with complete dataset information
+
+3. DATASET ACQUISITION
+----------------------
+Automated download pipeline:
+- Created a dedicated directory (endocrine_datasets/) for storing h5ad files
+- Used cellxgene_census.download_source_h5ad() function to retrieve original h5ad files
+- Implemented skip logic to avoid re-downloading existing files
+- Named files using dataset_id for consistent identification
+- Downloaded 65 datasets ranging from 734 to 19,526 endocrine cells per dataset
+- Total download size: approximately 15-20 GB of compressed h5ad data
+
+4. DATA VALIDATION
+------------------
+Verification procedure for downloaded datasets:
+- Read each h5ad file using scanpy library
+- Extracted the 'cell_type' annotation from the observation matrix
+- Re-counted cells containing "endocrine" in their cell_type annotation
+- Compared actual counts against expected counts from the summary CSV
+- Identified and documented any mismatches or missing files
+- Generated verification results CSV with match status for each dataset
+
+5. STATISTICAL METHODS
+----------------------
+Dataset characteristics analyzed:
+- Distribution of endocrine cells across datasets (range: 734-19,526 cells)
+- Percentage of endocrine cells per dataset (range: 0.08%-42.49%)
+- Diversity of endocrine cell types identified
+- Tissue distribution of endocrine cells
+- Technology distribution (10x 3' v2, 10x 3' v3, Smart-seq2, etc.)
+
+Key findings from the downloaded datasets:
+- Top dataset: 6725ee8e-ef5b-4e68-8901-61bd14a1fe73 with 19,526 endocrine cells
+- Most common cell types: enteroendocrine cells, neuroendocrine cells, lung neuroendocrine cells
+- Primary tissues: intestine (duodenum, ileum, colon), lung, pancreas, stomach
+- Disease conditions: primarily normal tissue with some disease samples (Crohn's disease, Barrett's esophagus)
+
+6. CODE IMPLEMENTATION
+----------------------
+Technologies and libraries used:
+- Python 3.x as the primary programming language
+- cellxgene_census API for database access and data retrieval
+- pandas for data manipulation and CSV operations
+- scanpy for reading and processing h5ad files
+- tqdm for progress tracking during downloads
+- os module for file system operations
+- warnings module for suppressing non-critical warnings
+
+Code structure:
+- download_endocrine_datasets.py: Main script for dataset identification and download
+  - find_endocrine_datasets(): Queries Census for endocrine cells
+  - aggregate_by_dataset(): Summarizes data by dataset
+  - download_datasets(): Manages the download process
+  - main(): Orchestrates the entire pipeline
+
+- verify_endocrine_counts.py: Validation script for downloaded data
+  - verify_endocrine_counts(): Reads h5ad files and validates cell counts
+  - Generates verification report with match statistics
+
+7. QUALITY CONTROL
+------------------
+Data integrity measures:
+- Filtered out datasets with empty endocrine_cell_types fields
+- Implemented error handling for failed downloads
+- Tracked success/failure rates for downloads
+- Verified cell counts post-download to ensure data consistency
+- Generated detailed logs of the download process (download_log.txt)
+
+8. REPRODUCIBILITY
+------------------
+To ensure reproducibility:
+- Fixed Census version (2025-01-30) for consistent data access
+- Preserved original dataset IDs for traceability
+- Maintained comprehensive metadata in CSV format
+- Documented all filtering criteria and processing steps
+- Retained both raw downloaded files and summary statistics
+
+NOTES:
+------
+- All analysis code is stored in the paper_analysis folder
+- Original h5ad files are stored in endocrine_datasets folder
+- Summary statistics are available in endocrine_datasets_summary.csv
+- Verification results are documented in endocrine_verification_results.csv (if generated)
+- The pipeline is designed to be re-run with minimal modification for updated Census versions

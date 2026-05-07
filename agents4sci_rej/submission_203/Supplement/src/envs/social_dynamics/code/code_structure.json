@@ -1,0 +1,281 @@
+{
+  "agents": {
+    "EmojiPreferenceAgent": {
+      "imports": "from typing import Any, List, Optional\nimport asyncio\nfrom loguru import logger\nfrom onesim.models import JsonBlockParser\nfrom onesim.agent import GeneralAgent\nfrom onesim.profile import AgentProfile\nfrom onesim.memory import MemoryStrategy\nfrom onesim.planning import PlanningBase\nfrom onesim.events import *\nfrom onesim.relationship import RelationshipManager\nfrom .events import *",
+      "handlers": {
+        "1": {
+          "code": "async def initiate_recommendation(self, event: Event) -> List[Event]:\n        is_ready = self.profile.get_data(\"is_ready\", False)\n        if not isinstance(is_ready, bool) or not is_ready:\n            return []\n\n        preferred_emoji = self.profile.get_data(\"preferred_emoji\", None)\n        reason = self.profile.get_data(\"reason\", None)\n\n        if not preferred_emoji or not reason:\n            return []  # Return empty if essential data is missing\n\n        instruction = \"\"\"You are about to recommend your preferred emoji to an acquaintance.\n        Please select an acquaintance to send the recommendation to, using the following format:\n\n        {\n            \"target_ids\": \"<The string ID of the acquaintance>\",\n            \"emoji\": \"<The emoji you prefer>\",\n            \"reason\": \"<The reason you like this emoji>\"\n        }\n        \"\"\"\n        observation = f\"Preferred emoji: {preferred_emoji}, Reason: {reason}\"\n        result = await self.generate_reaction(instruction, observation)\n\n        target_ids = result.get('target_ids', None)\n        emoji = result.get('emoji', preferred_emoji)\n        reason = result.get('reason', reason)\n\n        if not isinstance(target_ids, list):\n            target_ids = [target_ids]\n\n        events = []\n        for target_id in target_ids:\n            self.profile.update_data(\"last_sent_recommendation\", target_id)\n\n            recommendation_event = RecommendationEvent(\n                from_agent_id=self.profile_id,\n                to_agent_id=target_id,\n                sender_id=self.profile_id,\n                receiver_id=target_id,\n                emoji=emoji,\n                reason=reason\n            )\n            events.append(recommendation_event)\n\n        return events",
+          "metadata": {
+            "id": 1,
+            "name": "initiate_recommendation",
+            "condition": "Agent is ready to start a recommendation round",
+            "description": "This action initiates the process where an agent selects an acquaintance and sends a recommendation for its preferred emoji.",
+            "type": "OR",
+            "required_variables": [
+              {
+                "name": "preferred_emoji",
+                "type": "string",
+                "context": "agent",
+                "description": "The emoji that the agent prefers and will recommend."
+              },
+              {
+                "name": "acquaintance_id",
+                "type": "string",
+                "context": "agent",
+                "description": "The unique identifier of the acquaintance to whom the recommendation will be sent."
+              },
+              {
+                "name": "reason",
+                "type": "string",
+                "context": "agent",
+                "description": "The brief reason why the agent likes the preferred emoji."
+              }
+            ],
+            "output_updates": [
+              {
+                "name": "last_sent_recommendation",
+                "type": "string",
+                "context": "agent",
+                "description": "The ID of the acquaintance to whom the last recommendation was sent."
+              }
+            ]
+          }
+        },
+        "2": {
+          "code": "async def process_recommendation(self, event: Event) -> List[Event]:\n        if not isinstance(event, RecommendationEvent):\n            return []\n\n        sender_id = event.sender_id\n        emoji = event.emoji\n        reason = event.reason\n        influence_count = self.profile.get_data(\"influence_count\", 0)\n        personal_stability = self.profile.get_data(\"personal_stability\", 0)\n\n        observation = f\"The agent has received a recommendation for the emoji {emoji} from {sender_id} with reason: {reason}. Current influence count: {influence_count}, personal stability: {personal_stability}.\"\n        instruction = \"\"\"\n        You have received a recommendation to change your emoji preference. Consider the following factors:\n        - Acceptance probability\n        - Social influence (number of agents using the recommended emoji)\n        - Personal stability (duration of current emoji usage)\n\n        Decide whether to adopt the recommended emoji. Return the decision in the following JSON format:\n\n        {\n            \"adopted\": <true or false>,\n            \"target_ids\": [\"<The string ID of the agent making the adoption decision>\"]\n        }\n        \"\"\"\n\n        result = await self.generate_reaction(instruction, observation)\n\n        adopted = result.get('adopted', False)\n        target_ids = result.get('target_ids', None)\n        if not isinstance(target_ids, list):\n            target_ids = [target_ids]\n\n        # Ensure the current agent's ID is included in the target_ids for decision logging\n        if self.profile_id not in target_ids:\n            target_ids.append(self.profile_id)\n\n        events = []\n        for target_id in target_ids:\n            current_emoji = self.profile.get_data(\"current_emoji\", \"\")\n            if adopted:\n                current_emoji = emoji\n                emoji_change_count = self.profile.get_data(\"emoji_change_count\", 0) + 1\n                self.profile.update_data(\"current_emoji\", current_emoji)\n                self.profile.update_data(\"emoji_change_count\", emoji_change_count)\n\n            adoption_decision_event = AdoptionDecisionEvent(\n                from_agent_id=self.profile_id,\n                to_agent_id=target_id,\n                receiver_id=target_id,\n                emoji=emoji,\n                adopted=adopted,\n                influence_count=influence_count,\n                personal_stability=personal_stability\n            )\n            events.append(adoption_decision_event)\n\n        return events",
+          "metadata": {
+            "id": 2,
+            "name": "process_recommendation",
+            "condition": "Agent receives a recommendation from another agent",
+            "description": "This action processes the incoming recommendation, evaluating whether to adopt the recommended emoji.",
+            "type": "OR",
+            "required_variables": [
+              {
+                "name": "sender_id",
+                "type": "string",
+                "context": "event",
+                "description": "The unique identifier of the agent sending the recommendation."
+              },
+              {
+                "name": "emoji",
+                "type": "string",
+                "context": "event",
+                "description": "The emoji being recommended by the sender agent."
+              },
+              {
+                "name": "reason",
+                "type": "string",
+                "context": "event",
+                "description": "The brief reason provided by the sender for liking the emoji."
+              },
+              {
+                "name": "influence_count",
+                "type": "integer",
+                "context": "agent",
+                "description": "The number of agents in the receiver's social network using the recommended emoji."
+              },
+              {
+                "name": "personal_stability",
+                "type": "integer",
+                "context": "agent",
+                "description": "The duration (in rounds) the receiver has been using their current emoji."
+              }
+            ],
+            "output_updates": [
+              {
+                "name": "current_emoji",
+                "type": "string",
+                "context": "agent",
+                "description": "The emoji currently adopted by the agent, updated if the recommendation is accepted."
+              },
+              {
+                "name": "emoji_change_count",
+                "type": "integer",
+                "context": "agent",
+                "description": "The count of how many times the agent has changed their emoji."
+              }
+            ]
+          }
+        },
+        "3": {
+          "code": "async def finalize_decision(self, event: Event) -> List[Event]:\n        if not isinstance(event, AdoptionDecisionEvent):\n            return []\n\n        adopted = event.adopted\n        receiver_id = event.receiver_id\n        round_number = self.env.get_data(\"round_number\", 0)\n\n        decision_log = self.profile.get_data(\"decision_log\", [])\n        decision_log.append({\"round\": round_number, \"adopted\": adopted, \"emoji\": event.emoji})\n        self.profile.update_data(\"decision_log\", decision_log)\n\n        instruction = \"\"\"Finalize the decision of emoji adoption. Include the agent's ID and the round number in the response.\n        Return the information in the following JSON format:\n        {\n            \"target_ids\": [\"ENV\"],\n            \"completion_status\": \"completed\"\n        }\n        \"\"\"\n\n        observation = f\"Receiver ID: {receiver_id}, Round Number: {round_number}, Adopted: {adopted}\"\n        result = await self.generate_reaction(instruction, observation)\n\n        target_ids = result.get('target_ids', [])\n        if not isinstance(target_ids, list):\n            target_ids = [target_ids]\n\n        # Ensure 'ENV' is always included in the target_ids for event completion\n        if \"ENV\" not in target_ids:\n            target_ids.append(\"ENV\")\n\n        events = []\n        for target_id in target_ids:\n            recommendation_complete_event = RecommendationCompleteEvent(\n                from_agent_id=self.profile_id,\n                to_agent_id=target_id,\n                agent_id=self.profile_id,\n                round_number=round_number,\n                completion_status=result.get('completion_status', \"completed\")\n            )\n            events.append(recommendation_complete_event)\n\n        return events",
+          "metadata": {
+            "id": 3,
+            "name": "finalize_decision",
+            "condition": "Agent has decided on emoji adoption",
+            "description": "This action finalizes the agent's decision on whether to adopt the recommended emoji, updating internal states as necessary.",
+            "type": "OR",
+            "required_variables": [
+              {
+                "name": "adopted",
+                "type": "boolean",
+                "context": "event",
+                "description": "Indicates whether the receiver adopted the recommended emoji."
+              },
+              {
+                "name": "receiver_id",
+                "type": "string",
+                "context": "event",
+                "description": "The unique identifier of the agent making the adoption decision."
+              },
+              {
+                "name": "round_number",
+                "type": "integer",
+                "context": "env",
+                "description": "The current round number in which the recommendation process was completed."
+              }
+            ],
+            "output_updates": [
+              {
+                "name": "decision_log",
+                "type": "list",
+                "context": "agent",
+                "description": "A log of decisions made by the agent, including whether each recommendation was adopted."
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "events": {
+    "imports": "from onesim.events import Event\nfrom typing import Any",
+    "definitions": {
+      "-1": {
+        "code": "class StartEvent(Event):\n    def __init__(self,\n        from_agent_id: str,\n        to_agent_id: str,\n        **kwargs: Any\n    ) -> None:\n        super().__init__(from_agent_id=from_agent_id, to_agent_id=to_agent_id, **kwargs)",
+        "metadata": {
+          "id": -1,
+          "from_agent_type": "EnvAgent",
+          "from_action_name": "start",
+          "to_agent_type": "EmojiPreferenceAgent",
+          "to_action_name": "initiate_recommendation",
+          "from_action_id": 0,
+          "to_action_id": 1,
+          "event_name": "StartEvent",
+          "event_info": "Initial trigger for emoji recommendation process",
+          "fields": []
+        }
+      },
+      "1": {
+        "code": "class RecommendationEvent(Event):\n    def __init__(self,\n        from_agent_id: str,\n        to_agent_id: str,\n        sender_id: str = \"\",\n        receiver_id: str = \"\",\n        emoji: str = \"\",\n        reason: str = \"\",\n        **kwargs: Any\n    ) -> None:\n        super().__init__(from_agent_id=from_agent_id, to_agent_id=to_agent_id, **kwargs)\n        self.sender_id = sender_id\n        self.receiver_id = receiver_id\n        self.emoji = emoji\n        self.reason = reason",
+        "metadata": {
+          "id": 1,
+          "from_agent_type": "EmojiPreferenceAgent",
+          "from_action_name": "initiate_recommendation",
+          "to_agent_type": "EmojiPreferenceAgent",
+          "to_action_name": "process_recommendation",
+          "from_action_id": 1,
+          "to_action_id": 2,
+          "event_name": "RecommendationEvent",
+          "event_info": "Agent recommends its preferred emoji to another agent",
+          "fields": [
+            {
+              "name": "sender_id",
+              "type": "string",
+              "default_value": "",
+              "description": "The unique identifier of the agent sending the recommendation."
+            },
+            {
+              "name": "receiver_id",
+              "type": "string",
+              "default_value": "",
+              "description": "The unique identifier of the agent receiving the recommendation."
+            },
+            {
+              "name": "emoji",
+              "type": "string",
+              "default_value": "",
+              "description": "The emoji being recommended by the sender agent."
+            },
+            {
+              "name": "reason",
+              "type": "string",
+              "default_value": "",
+              "description": "The brief reason provided by the sender for liking the emoji."
+            }
+          ]
+        }
+      },
+      "2": {
+        "code": "class AdoptionDecisionEvent(Event):\n    def __init__(self,\n        from_agent_id: str,\n        to_agent_id: str,\n        receiver_id: str = \"\",\n        emoji: str = \"\",\n        adopted: bool = False,\n        influence_count: int = 0,\n        personal_stability: int = 0,\n        **kwargs: Any\n    ) -> None:\n        super().__init__(from_agent_id=from_agent_id, to_agent_id=to_agent_id, **kwargs)\n        self.receiver_id = receiver_id\n        self.emoji = emoji\n        self.adopted = adopted\n        self.influence_count = influence_count\n        self.personal_stability = personal_stability",
+        "metadata": {
+          "id": 2,
+          "from_agent_type": "EmojiPreferenceAgent",
+          "from_action_name": "process_recommendation",
+          "to_agent_type": "EmojiPreferenceAgent",
+          "to_action_name": "finalize_decision",
+          "from_action_id": 2,
+          "to_action_id": 3,
+          "event_name": "AdoptionDecisionEvent",
+          "event_info": "Agent decides whether to adopt the recommended emoji",
+          "fields": [
+            {
+              "name": "receiver_id",
+              "type": "string",
+              "default_value": "",
+              "description": "The unique identifier of the agent making the adoption decision."
+            },
+            {
+              "name": "emoji",
+              "type": "string",
+              "default_value": "",
+              "description": "The emoji that was recommended to the receiver."
+            },
+            {
+              "name": "adopted",
+              "type": "boolean",
+              "default_value": false,
+              "description": "Indicates whether the receiver adopted the recommended emoji."
+            },
+            {
+              "name": "influence_count",
+              "type": "integer",
+              "default_value": 0,
+              "description": "The number of agents in the receiver's social network using the recommended emoji."
+            },
+            {
+              "name": "personal_stability",
+              "type": "integer",
+              "default_value": 0,
+              "description": "The duration (in rounds) the receiver has been using their current emoji."
+            }
+          ]
+        }
+      },
+      "3": {
+        "code": "class RecommendationCompleteEvent(Event):\n    def __init__(self,\n        from_agent_id: str,\n        to_agent_id: str,\n        agent_id: str = \"\",\n        round_number: int = 0,\n        completion_status: str = \"completed\",\n        **kwargs: Any\n    ) -> None:\n        super().__init__(from_agent_id=from_agent_id, to_agent_id=to_agent_id, **kwargs)\n        self.agent_id = agent_id\n        self.round_number = round_number\n        self.completion_status = completion_status",
+        "metadata": {
+          "id": 3,
+          "from_agent_type": "EmojiPreferenceAgent",
+          "from_action_name": "finalize_decision",
+          "to_agent_type": "EnvAgent",
+          "to_action_name": "terminate",
+          "from_action_id": 3,
+          "to_action_id": -1,
+          "event_name": "RecommendationCompleteEvent",
+          "event_info": "Agent completes the recommendation process for this round",
+          "fields": [
+            {
+              "name": "agent_id",
+              "type": "string",
+              "default_value": "",
+              "description": "The unique identifier of the agent that completed the recommendation process."
+            },
+            {
+              "name": "round_number",
+              "type": "integer",
+              "default_value": 0,
+              "description": "The current round number in which the recommendation process was completed."
+            },
+            {
+              "name": "completion_status",
+              "type": "string",
+              "default_value": "completed",
+              "description": "The status of the recommendation process, indicating completion."
+            }
+          ]
+        }
+      }
+    }
+  }
+}

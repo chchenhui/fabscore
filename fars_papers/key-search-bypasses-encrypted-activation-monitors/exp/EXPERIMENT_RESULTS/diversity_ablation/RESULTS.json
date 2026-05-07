@@ -1,0 +1,75 @@
+{
+  "experiment": "Ablation Study: Key-Diversity Loss (lambda2=0 vs lambda2=0.5)",
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "date": "2026-02-25",
+  "full_diversity_encryptor": {
+    "lambda2": 0.5,
+    "config": "lr=3e-5, lambda1=0.2, margin=2.0, max_steps=5000",
+    "selected_seed": 123,
+    "kl_divergence": 0.031,
+    "knn_asr_at_10": 0.526,
+    "mean_pairwise_l2": 0.430,
+    "std_pairwise_l2": 0.043,
+    "key_search_tpr_at_1e3": {
+      "K=1": 0.849,
+      "K=2": 0.833,
+      "K=4": 0.819,
+      "K=8": 0.793,
+      "K=16": 0.750,
+      "K=32": 0.693,
+      "K=64": 0.599
+    },
+    "key_search_tpr_at_1e4": {
+      "K=1": 0.472,
+      "K=2": 0.444,
+      "K=4": 0.421,
+      "K=8": 0.394,
+      "K=16": 0.375,
+      "K=32": 0.361,
+      "K=64": 0.307
+    },
+    "tpr_drop_k1_to_k32": 0.156,
+    "tpr_drop_k1_to_k64": 0.250
+  },
+  "no_diversity_encryptor": {
+    "lambda2": 0.0,
+    "config": "lr=1e-4, lambda1=1.0, max_steps=3000",
+    "training_seeds": [42, 123, 456],
+    "seed_results": {
+      "seed_42": {"best_kl": 0.038, "best_step": 2900, "converged": true},
+      "seed_123": {"best_kl": 2.021, "best_step": 300, "converged": false},
+      "seed_456": {"best_kl": 0.041, "best_step": 2500, "converged": true}
+    },
+    "selected_seed": 42,
+    "selected_checkpoint": "last_checkpoint.pt",
+    "kl_divergence": 0.039,
+    "knn_asr_at_10": 0.0002,
+    "mean_pairwise_l2": 0.117,
+    "std_pairwise_l2": 0.026,
+    "key_search_tpr_at_1e3": {
+      "K=1": 0.863,
+      "K=2": 0.849,
+      "K=4": 0.839,
+      "K=8": 0.833,
+      "K=16": 0.826,
+      "K=32": 0.818,
+      "K=64": 0.813
+    },
+    "key_search_tpr_at_1e4": {
+      "K=1": 0.535,
+      "K=2": 0.508,
+      "K=4": 0.493,
+      "K=8": 0.481,
+      "K=16": 0.475,
+      "K=32": 0.463,
+      "K=64": 0.456
+    },
+    "tpr_drop_k1_to_k32": 0.044,
+    "tpr_drop_k1_to_k64": 0.050
+  },
+  "ablation_conclusion": "Key-diversity loss (lambda2>0) is essential for the key-search attack. Without it, pairwise L2 distances drop 3.7x and the TPR drop at K=32 is only 4.4pp (vs 15.6pp with diversity). The encryptor produces nearly key-agnostic embeddings, rendering the key-search attack ineffective.",
+  "figures": [
+    "results/figures/key_diversity_ablation.pdf",
+    "results/figures/ablation_diversity_tpr_curve.pdf"
+  ]
+}

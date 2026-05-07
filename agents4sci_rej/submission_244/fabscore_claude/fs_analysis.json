@@ -1,0 +1,323 @@
+{
+    "no_code_files": [],
+    "obvious_hallucination": [
+        {
+            "index": 1,
+            "category": "table",
+            "content": "1. Table 2, Baseline (Full), Acc: 0.519",
+            "reason": "The Trainer.fit() method in implementation.py does not perform any gradient-based training. Model weights are fixed random matrices (no optimizer, no backprop). The 'training' is a pure simulation with deterministic loss decay (loss *= 0.9). For baseline_full the acc boost=0.0, so the actual value (0.51875) coincidentally matches, but the experiment itself is fabricated—no real transformer was trained on this data.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:351-387 (Trainer.fit() simulates training with hardcoded boosts)",
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:364-371 (eval_res['acc'] += boost * ep/epochs; eval_res['auc'] += 0.02 * ep/epochs)",
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:379-381 (final_eval['acc'] = history['val_acc'][-1]; final_eval['auc'] = history['val_auc'][-1])"
+            ]
+        },
+        {
+            "index": 2,
+            "category": "table",
+            "content": "2. Table 2, Baseline (Full), AUC: 0.5557",
+            "reason": "The Trainer.fit() method artificially boosts AUC by +0.02*(ep/epochs) for ALL models including baseline_full (lines 371-372). The final AUC=0.5557 includes an +0.02 boost over the actual model output (~0.5357). No real training occurs—model weights are fixed random matrices.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:371 (eval_res['auc'] += 0.02 * (ep/epochs) for ALL models)",
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:381 (final_eval['auc'] = history['val_auc'][-1])",
+                "Gupta_Shivendra_AGI_Assignment_1/results/all_results.json (val_auc sequence shows regular 0.00167 increments, characteristic of artificial boosting)"
+            ]
+        },
+        {
+            "index": 3,
+            "category": "table",
+            "content": "3. Table 2, Baseline (Full), Avg Kept: 64.0",
+            "reason": "Avg Kept=64.0 for baseline_full is from the evaluate() function which correctly returns Eb.shape[1]=64. However, this is embedded in a fully simulated experiment with no real transformer training—the entire experimental context is fabricated via hardcoded simulation in Trainer.fit().",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:330-331 (baseline_full: kept = Eb.shape[1] = 64)",
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:351-387 (Trainer.fit() is a simulation, no gradient training)"
+            ]
+        },
+        {
+            "index": 4,
+            "category": "table",
+            "content": "4. Table 2, Baseline (Full), FLOPs (rel.): 1.00×",
+            "reason": "FLOPs 1.00× is the trivially normalized baseline. However this comes from a fabricated synthetic experiment using a simulated training pipeline with no actual gradient updates. The entire experimental setup conflicts with the paper's description of trained transformers.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:291-293 (estimate_flops using L=64 for full model)",
+                "Gupta_Shivendra_AGI_Assignment_1/results/efficiency.json (flops_full=1048576.0)",
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:351-387 (simulated training, no real model training)"
+            ]
+        },
+        {
+            "index": 5,
+            "category": "table",
+            "content": "5. Table 2, Baseline (Full), Latency (proxy, rel.): 1.00×",
+            "reason": "Latency 1.00× is the normalized baseline. Computed by a toy formula estimate_latency(64)=83.92 ms, normalized to 1.0. From a fully fabricated synthetic experiment with simulated training (no actual gradient-based training or real inference measurement).",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:295-297 (estimate_latency: 2.0 + 0.02*num_tokens^2, a toy formula)",
+                "Gupta_Shivendra_AGI_Assignment_1/results/efficiency.json (latency_full_ms=83.92)",
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:351-387 (simulated training)"
+            ]
+        },
+        {
+            "index": 6,
+            "category": "table",
+            "content": "6. Table 2, Attn Top-k (50%), Acc: 0.523",
+            "reason": "For baseline_attn_prune the artificial boost is +0.005*(ep/epochs). At ep=12 this adds +0.005 to the actual model accuracy (~0.5175), yielding the reported 0.5225≈0.523. The paper-reported value is thus an artificially inflated metric, not a result from real model training. Model weights are fixed random matrices.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:366-367 (boost=0.005 for baseline_attn_prune)",
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:370 (eval_res['acc'] += boost*(ep/epochs))",
+                "Gupta_Shivendra_AGI_Assignment_1/results/all_results.json (val_acc sequence for baseline_attn_prune shows regular increments from 0.5179 to 0.5225)"
+            ]
+        },
+        {
+            "index": 7,
+            "category": "table",
+            "content": "7. Table 2, Attn Top-k (50%), AUC: 0.5559",
+            "reason": "AUC for baseline_attn_prune is boosted by +0.02*(ep/epochs) per epoch (same boost applied to all models). The final reported AUC=0.5559 includes an artificial +0.02 increment over the true model AUC. No actual transformer training performed.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:371 (AUC boost +0.02*ep/epochs applies to all models)",
+                "Gupta_Shivendra_AGI_Assignment_1/results/all_results.json (val_auc for baseline_attn_prune increments from 0.5376 to 0.5559 in regular steps)"
+            ]
+        },
+        {
+            "index": 8,
+            "category": "table",
+            "content": "8. Table 2, Attn Top-k (50%), Avg Kept: 32.0",
+            "reason": "Avg Kept=32.0 is from evaluate() with keep_rate=0.5 on L=64 → k=32 tokens. Correct computation, but embedded in a fabricated simulation experiment (no real trained model).",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:332-334 (baseline_attn_prune: kept = mean mask sum = 32)",
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:351-387 (simulation training loop)"
+            ]
+        },
+        {
+            "index": 9,
+            "category": "table",
+            "content": "9. Table 2, Attn Top-k (50%), FLOPs (rel.): 0.63×",
+            "reason": "The code's estimate_flops(avg_kept=32, d_model=64, n_layers=2) = 2*(32^2)*64*2 = 262,144 gives a ratio of 262,144/1,048,576 = 0.25× (75% reduction), stored in efficiency.json. The paper claims 0.63× (37.5% reduction). These are incompatible. The 0.63× would come from a mixed formula (layer1 at L tokens + layer2 at k tokens), but the code does NOT use this formula—it applies k for both layers. Additionally, no real training occurs.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:291-293 (estimate_flops(avg_kept, d, layers) uses k for BOTH layers)",
+                "Gupta_Shivendra_AGI_Assignment_1/results/efficiency.json (flops_proposed=262144.0, flops_full=1048576.0 → ratio=0.25×, NOT 0.63×)",
+                "Gupta_Shivendra_AGI_Assignment_1/paper/main.tex (\\flopsred{37.5\\%} hardcoded macro contradicts code's 75% reduction)"
+            ]
+        },
+        {
+            "index": 10,
+            "category": "table",
+            "content": "10. Table 2, Attn Top-k (50%), Latency (proxy, rel.): 0.27×",
+            "reason": "Latency proxy 22.48/83.92=0.268≈0.27× is numerically consistent with efficiency.json. But (a) the efficiency computation only covers the 'proposed' model, not separately the 'attn_prune' baseline; (b) the values come from a toy formula with no real inference measurement; and (c) the entire experiment is a simulated fabrication with no real model training.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:567-579 (efficiency computed only using finals['proposed']['avg_kept'], no separate attn_prune efficiency)",
+                "Gupta_Shivendra_AGI_Assignment_1/results/efficiency.json (latency_full_ms=83.92, latency_proposed_ms=22.48 → ratio=0.268≈0.27×)",
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:295-297 (toy latency formula, not real measurement)"
+            ]
+        },
+        {
+            "index": 11,
+            "category": "table",
+            "content": "11. Table 2, Proposed (Entropy, 0.50), Acc: 0.551",
+            "reason": "For proposed model the accuracy boost is +0.015*(ep/epochs). At ep=12 this adds +0.015 to the actual model output (~0.536), yielding reported 0.55125≈0.551. The boost is hardcoded in Trainer.fit() with no gradient learning—the paper reports an artificially inflated accuracy metric.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:364-365 (boost=0.015 for proposed model)",
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:370 (eval_res['acc'] = eval_res['acc'] + boost*(ep/epochs))",
+                "Gupta_Shivendra_AGI_Assignment_1/results/all_results.json (val_acc for proposed increases from 0.5375 to 0.55125 in 12 equal steps of 0.00125)"
+            ]
+        },
+        {
+            "index": 12,
+            "category": "table",
+            "content": "12. Table 2, Proposed (Entropy, 0.50), AUC: 0.5561",
+            "reason": "AUC=0.5561 includes the +0.02 artificial AUC boost from Trainer.fit(). The model has fixed random weights with no trained parameters. The paper presents this as a learned model result.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:371 (AUC boost for all models)",
+                "Gupta_Shivendra_AGI_Assignment_1/results/all_results.json (val_auc for proposed increases from 0.5378 to 0.5561 in 12 equal steps)"
+            ]
+        },
+        {
+            "index": 13,
+            "category": "table",
+            "content": "13. Table 2, Proposed (Entropy, 0.50), Avg Kept: 32.0",
+            "reason": "Avg Kept=32.0 is correctly computed from keep_rate=0.5 on L=64 via gate_tokens(). But this is from a simulation with no real model training—model weights are fixed random seeds.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:196-204 (gate_tokens: k=round(0.5*64)=32)",
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:351-387 (simulation training loop, no gradient updates)"
+            ]
+        },
+        {
+            "index": 14,
+            "category": "table",
+            "content": "14. Table 2, Proposed (Entropy, 0.50), FLOPs (rel.): 0.63×",
+            "reason": "efficiency.json stores flops_proposed=262,144 and flops_full=1,048,576, giving ratio=0.25×. The paper claims 0.63×. The code uses estimate_flops(avg_kept=32, d=64, n_layers=2)=2*32^2*64*2=262,144, treating BOTH layers as pruned. The correct mixed formula (layer1 at L, layer2 at k) would give 0.63×. The paper's LaTeX macro \\flopsred{37.5\\%} was not derived from the code's efficiency.json output.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:570-574 (estimate_flops(avg_kept, d, layers) — uses avg_kept for BOTH layers)",
+                "Gupta_Shivendra_AGI_Assignment_1/results/efficiency.json (flops_proposed=262144.0 / flops_full=1048576.0 = 0.25, NOT 0.63)"
+            ]
+        },
+        {
+            "index": 15,
+            "category": "table",
+            "content": "15. Table 2, Proposed (Entropy, 0.50), Latency (proxy, rel.): 0.27×",
+            "reason": "The latency ratio 22.48/83.92≈0.27× is numerically consistent with efficiency.json. However these values come from a toy formula (not real inference), and the entire experiment is a simulated fabrication with no actual gradient-based model training.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/results/efficiency.json (latency_full_ms=83.92, latency_proposed_ms=22.48)",
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:295-297 (toy formula: 2.0 + 0.02*num_tokens^2)",
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:351-387 (simulation training, no real model)"
+            ]
+        },
+        {
+            "index": 26,
+            "category": "results_section",
+            "content": "1. the proxy decreases from 83.92 to 22.48 (73.21%; dimensionless units)",
+            "reason": "The latency proxy values in efficiency.json (83.92, 22.48) come from the toy formula estimate_latency(num_tokens) = 2.0 + 0.02*num_tokens^2, applied in the context of a fabricated synthetic experiment (simulated training with no real gradient learning). The paper presents these proxy values as efficiency results from an actual experiment, but the entire synthetic experimental setup is a simulation.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/results/efficiency.json (latency_full_ms=83.92, latency_proposed_ms=22.48)",
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:295-297 (toy formula, not real latency measurement)",
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:351-387 (Trainer.fit() is a simulation with no gradient training)"
+            ]
+        }
+    ],
+    "static_verifiable": [
+        {
+            "index": 16,
+            "category": "table",
+            "content": "16. Table 3, Baseline (Full), Accuracy: 0.9140",
+            "reason": "The notebook experiment_sst2.ipynb contains an actual PyTorch GPU training run of DistilBERT-base-uncased on SST-2 (epoch 1, 4210 batches, ~12 min). The execution output in the notebook cell prints 'Baseline: Acc=0.9140, AUC=0.9725, FLOPs=1.51e+08'. results_sst2.json also records baseline_full.acc=0.914. Both artifacts match the paper claim exactly.",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/code/experiment_sst2.ipynb (cell-1 output: 'Baseline: Acc=0.9140')",
+                "Gupta_Shivendra_AGI_Assignment_1/results/results_sst2.json (finals.baseline_full.acc=0.914)"
+            ]
+        },
+        {
+            "index": 17,
+            "category": "table",
+            "content": "17. Table 3, Baseline (Full), AUC: 0.9725",
+            "reason": "The notebook execution output shows 'Baseline: Acc=0.9140, AUC=0.9725'. results_sst2.json records baseline_full.auc=0.9725. These match the paper claim exactly. The notebook uses real scikit-learn roc_auc_score on actual DistilBERT model predictions.",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/code/experiment_sst2.ipynb (cell-1 output: 'AUC=0.9725')",
+                "Gupta_Shivendra_AGI_Assignment_1/results/results_sst2.json (finals.baseline_full.auc=0.9725)"
+            ]
+        },
+        {
+            "index": 18,
+            "category": "table",
+            "content": "18. Table 3, Baseline (Full), FLOPs (×10⁸): 1.51",
+            "reason": "Notebook output: 'FLOPs=1.51e+08'. The flops_proxy formula in the notebook: (128^2*768) + 11*(128^2*768) = 12*128^2*768 = 150,994,944 ≈ 1.51×10^8. results_sst2.json: finals.baseline_full.flops=151000000.0. Matches paper claim exactly.",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/code/experiment_sst2.ipynb (flops_proxy function and cell-1 output: 'FLOPs=1.51e+08')",
+                "Gupta_Shivendra_AGI_Assignment_1/results/results_sst2.json (finals.baseline_full.flops=151000000.0)"
+            ]
+        },
+        {
+            "index": 19,
+            "category": "table",
+            "content": "19. Table 3, Proposed (ρ=0.75), Accuracy: 0.8268",
+            "reason": "Notebook output: 'Proposed: Acc=0.8268'. results_sst2.json: finals.proposed_entropy_gate.acc=0.8268. Real PyTorch training of DistilBertWithGate with keep_ratio=0.75 on SST-2. Matches paper claim exactly.",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/code/experiment_sst2.ipynb (cell-1 output: 'Proposed: Acc=0.8268')",
+                "Gupta_Shivendra_AGI_Assignment_1/results/results_sst2.json (finals.proposed_entropy_gate.acc=0.8268)"
+            ]
+        },
+        {
+            "index": 20,
+            "category": "table",
+            "content": "20. Table 3, Proposed (ρ=0.75), AUC: 0.8806",
+            "reason": "Notebook output: 'AUC=0.8806'. results_sst2.json: finals.proposed_entropy_gate.auc=0.8806. Computed via roc_auc_score on real DistilBERT+EntropyGate model predictions. Matches paper claim exactly.",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/code/experiment_sst2.ipynb (cell-1 output: 'AUC=0.8806')",
+                "Gupta_Shivendra_AGI_Assignment_1/results/results_sst2.json (finals.proposed_entropy_gate.auc=0.8806)"
+            ]
+        },
+        {
+            "index": 21,
+            "category": "table",
+            "content": "21. Table 3, Proposed (ρ=0.75), FLOPs (×10⁸): 0.90 (40.1%)",
+            "reason": "Notebook output: 'FLOPs=9.04e+07 (40.1%↓)'. flops_proxy(128, 768, rho=0.75, 12): (128^2*768) + 11*(96^2*768) = 12,582,912 + 77,856,768 = 90,439,680 ≈ 9.04×10^7 = 0.90×10^8. results_sst2.json: finals.proposed_entropy_gate.flops=90400000.0, flops_reduction='40.1%'. Matches paper claim.",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/code/experiment_sst2.ipynb (flops_proxy function, cell-1 output: '40.1%↓')",
+                "Gupta_Shivendra_AGI_Assignment_1/results/results_sst2.json (finals.proposed_entropy_gate.flops=90400000.0, flops_reduction='40.1%')"
+            ]
+        },
+        {
+            "index": 22,
+            "category": "figure",
+            "content": "1. Figure 1: Training/validation loss (left) and validation accuracy (right).",
+            "reason": "Figure PNG/PDF exists (results/figures/loss_curves.png, val_accuracy.png). The underlying data is in all_results.json (histories section with train_loss, val_loss, val_acc for 3 models over 12 epochs). The Evaluator.plot_curves() function reads this data directly to generate the plots. Both the artifact and backing data match the described figure content.",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/results/figures/ (loss_curves.png, loss_curves.pdf, val_accuracy.png, val_accuracy.pdf)",
+                "Gupta_Shivendra_AGI_Assignment_1/results/all_results.json (histories.*.train_loss, val_loss, val_acc)",
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:402-429 (Evaluator.plot_curves())"
+            ]
+        },
+        {
+            "index": 23,
+            "category": "figure",
+            "content": "2. Figure 2: AUC progression (left) and final accuracy comparison (right).",
+            "reason": "Figure PNG/PDF exist (results/figures/val_auc.png, bar_accuracy.png). Underlying data in all_results.json (histories.*.val_auc for AUC progression; finals.*.acc for bar comparison). Evaluator.plot_curves() and bar_comparison() generate these plots from the JSON.",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/results/figures/ (val_auc.png, val_auc.pdf, bar_accuracy.png, bar_accuracy.pdf)",
+                "Gupta_Shivendra_AGI_Assignment_1/results/all_results.json (histories.*.val_auc; finals.*.acc)",
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:430-471 (Evaluator.bar_comparison())"
+            ]
+        },
+        {
+            "index": 24,
+            "category": "figure",
+            "content": "3. Figure 3: Average kept tokens (left) and ablation results (right).",
+            "reason": "Figure PNG/PDF exist (bar_kept_tokens.png, ablation.png). Average kept tokens data is in all_results.json (finals.*.avg_kept). Ablation values are computed inline in experiment_runner.py (lines 59-66) from finals data. Both figures are generated from all_results.json.",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/results/figures/ (bar_kept_tokens.png, bar_kept_tokens.pdf, ablation.png, ablation.pdf)",
+                "Gupta_Shivendra_AGI_Assignment_1/results/all_results.json (finals.*.avg_kept)",
+                "Gupta_Shivendra_AGI_Assignment_1/code/experiment_runner.py:59-67 (ablation_accs computed from finals)"
+            ]
+        },
+        {
+            "index": 25,
+            "category": "figure",
+            "content": "4. Figure 4: ROC curve for the proposed method.",
+            "reason": "Figure PNG/PDF exist (roc_proposed.png, roc_proposed.pdf). Underlying data files val_true.npy and val_score_proposed.npy are present in results/. The Evaluator.roc_curve_plot() function takes these arrays to produce the ROC curve (lines 473-498). All components are statically verifiable.",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/results/figures/ (roc_proposed.png, roc_proposed.pdf)",
+                "Gupta_Shivendra_AGI_Assignment_1/results/val_true.npy",
+                "Gupta_Shivendra_AGI_Assignment_1/results/val_score_proposed.npy",
+                "Gupta_Shivendra_AGI_Assignment_1/code/implementation.py:473-498 (Evaluator.roc_curve_plot())"
+            ]
+        },
+        {
+            "index": 27,
+            "category": "results_section",
+            "content": "2. ρ = 0.75 yielded a ∼40% FLOPs reduction with a ∼8.7pp accuracy drop",
+            "reason": "Notebook output: 'FLOPs=9.04e+07 (40.1%↓)', Proposed Acc=0.8268 vs Baseline 0.9140 → drop=0.0872≈8.7pp. results_sst2.json records flops_reduction='40.1%' and the accuracy values. The SST-2 experiment involves real PyTorch training (4210 batches, ~12 minutes, GPU logs visible). All values match exactly.",
+            "code_evidence": [
+                "Gupta_Shivendra_AGI_Assignment_1/code/experiment_sst2.ipynb (cell-1 output: exact matching values)",
+                "Gupta_Shivendra_AGI_Assignment_1/results/results_sst2.json (flops_reduction='40.1%', acc drop 0.9140→0.8268)"
+            ]
+        }
+    ],
+    "insufficient_evidence": [],
+    "execution_required": [],
+    "error": [],
+    "summary": {
+        "total_claims": 27,
+        "no_code_files": 0,
+        "obvious_hallucination": 16,
+        "data_fabrication": 0,
+        "experiment_fabrication": 16,
+        "result_fabrication": 0,
+        "static_verifiable": 11,
+        "insufficient_evidence": 0,
+        "execution_required": 0,
+        "error": 0
+    }
+}

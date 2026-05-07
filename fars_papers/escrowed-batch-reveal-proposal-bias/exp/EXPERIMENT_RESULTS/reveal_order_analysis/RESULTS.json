@@ -1,0 +1,63 @@
+{
+  "task": "Reveal-Position Bias Analysis for EBR (Condition C)",
+  "model": "gemini-2.5-flash",
+  "n_total_runs": 45,
+  "n_valid_runs": 44,
+  "n_excluded": 1,
+  "exclusion_reason": "1 run had paid proposal outside the batch of 3 (arrival rank 5)",
+  "reveal_position_selection_rates": {
+    "position_1": {
+      "count": 32,
+      "rate": 0.7273,
+      "ci_95": [0.5815, 0.8365]
+    },
+    "position_2": {
+      "count": 5,
+      "rate": 0.1136,
+      "ci_95": [0.0495, 0.2398]
+    },
+    "position_3": {
+      "count": 7,
+      "rate": 0.1591,
+      "ci_95": [0.0793, 0.2937]
+    }
+  },
+  "arrival_rank_selection_rates_for_reference": {
+    "rank_1": {"count": 11, "rate": 0.25},
+    "rank_2": {"count": 16, "rate": 0.3636},
+    "rank_3": {"count": 17, "rate": 0.3864}
+  },
+  "binomial_test_position1_vs_uniform": {
+    "H0": "p(reveal_pos=1) = 1/3",
+    "H1": "p(reveal_pos=1) > 1/3",
+    "observed_rate": 0.7273,
+    "p_value": 1.1e-07,
+    "significant": true
+  },
+  "chi_squared_vs_uniform": {
+    "statistic": 30.864,
+    "p_value": 2e-07,
+    "significant": true
+  },
+  "interpretation": {
+    "category": "bias_shifted",
+    "threshold_applied": "1st-position rate (72.7%) >= 0.50 -> Pivot branch",
+    "finding": "EBR successfully eliminates arrival-order bias (arrival-rank distribution ~uniform, chi2 p=0.49 from prior analysis). However, it introduces a strong list-position primacy bias: the 1st proposal in the shuffled batch is selected 72.7% of the time, virtually identical to HardGate's 73.3% arrival-order bias rate. The bias has not been eliminated — it has shifted from temporal ordering to presentation ordering.",
+    "implication": "Sequential visibility is causal for arrival-order bias, confirming the EBR mechanism works as intended. However, the underlying LLM primacy bias (preference for the first item in any list) is a deeper confound that persists regardless of whether proposals arrive sequentially or are presented simultaneously.",
+    "recommendation": "To fully debias, recommend: (1) forced pairwise comparison step, (2) rotating presentation order across multiple LLM calls and aggregating, or (3) structured evaluation prompt that scores each proposal independently before comparing."
+  },
+  "comparison_with_hardgate": {
+    "hardgate_arrival_rank_1_rate": 0.733,
+    "ebr_reveal_position_1_rate": 0.727,
+    "ebr_arrival_rank_1_rate": 0.244,
+    "note": "EBR successfully randomizes which arrival-rank ends up first, but the LLM still picks whatever is listed first ~73% of the time"
+  },
+  "figures": [
+    "multi-agent-marketplace/experiments/ebr/figures/reveal_order_bias.png",
+    "multi-agent-marketplace/experiments/ebr/figures/reveal_order_comparison.png"
+  ],
+  "data_files": [
+    "multi-agent-marketplace/experiments/ebr/results/ebr_gemini/reveal_order_data.csv",
+    "multi-agent-marketplace/experiments/ebr/analysis/reveal_order_results.json"
+  ]
+}

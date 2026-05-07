@@ -1,0 +1,16 @@
+{
+  "optimize_index": 0,
+  "issues": [
+    {
+      "title": "Exact HS string matching fails under LLM classification variance",
+      "description": "The original CommitTimeTombstone policy used exact string matching on the full HS triple (task_type | target_artifact | hazards). LLM hazard-signature extraction is unstable under paraphrase: task_type matches 80%, target_artifact 76%, but hazards (exact set) only 44% of the time, yielding 30% combined exact-match stability. The primary variance is in hazard tags -- the LLM adds or drops individual hazard categories (e.g., force_success, skip_validation) across paraphrase variants of the same poisoned record. Fixed by replacing exact string matching with hazard-set containment matching (subset/superset), which raises effective stability from 30% to 92%."
+    },
+    {
+      "title": "Matching granularity too coarse -- all three fields required for match",
+      "description": "The original approach required all three fields (task_type, target_artifact, hazards) to match exactly. Analysis showed that the hazard field alone is sufficient to distinguish poisoned from benign content (97% of benign records have zero hazards), while task_type and target_artifact add noise. Fixed by matching solely on hazard set containment, ignoring the volatile task_type and target_artifact fields."
+    }
+  ],
+  "experiment_result_path": "EXPERIMENT_RESULTS/optimize_trace/iteration_0/",
+  "success": true,
+  "summary": "Replaced exact HS string matching with hazard-set containment matching in CommitTimeTombstoneFuzzy. Results: WriteBlockRate improved from 38% to 100% (50/50 paraphrases blocked), PRP@3 dropped from 0.9444 to 0.0000 (zero poisoned content in retrieval), Benign Recall@3 remains 1.0, Benign FalseBlock is 3% (3/100, within acceptable limits). Condition C now definitively outperforms all baselines including the retrieval-time fuzzy denylist (B-fuzzy: PRP@3=0.0 but Benign Recall@3=0.97)."
+}

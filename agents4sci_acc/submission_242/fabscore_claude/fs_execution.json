@@ -1,0 +1,105 @@
+{
+    "tables": [],
+    "figures": [
+        {
+            "claim_index": 32,
+            "claim": "2. Figure 2: LLM agent rejection patterns comparison showing systematic decision-making by both clients and freelancers. Both agent types prioritize skill alignment and project fit over cost considerations, with clients showing slightly higher emphasis on skill mismatch while freelancers demonstrate greater budget awareness.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The original simulation data required by comprehensive_rejection_analysis.py is missing. Fresh simulation runs confirm the code structure is plausible and that freelancers reason about both skill alignment and budget when rejecting jobs. However, (1) client rejection data cannot be generated from test runs because jobs receive almost no bids, making the comparative client vs. freelancer analysis impossible; (2) the freelancer theme distribution shows rate_budget slightly ahead of skill_mismatch (~35.7% vs ~34.6%), whereas the claim asserts skill alignment takes priority over cost — a small but directionally contrary finding; and (3) full reproduction of the original simulation would require extensive API calls across 100+ rounds. The claim cannot be confirmed or definitively refuted with available evidence.",
+            "evidence": "Original simulation files (true_gpt_simulation_20250905_001404.json, true_gpt_simulation_20250910_123457.json) are absent. Two fresh simulation runs were executed: (1) 3-round run → 6 freelancer rejections; (2) 8-round run → 103 freelancer rejections, 1 bid, 0 client rejections. Freelancer rejection theme distribution: rate_budget 35.7%, skill_mismatch 34.6%, fit 29.3%. No client-side rejection data obtainable because test runs generate almost no bids (skill mismatch between generated jobs and freelancer profiles). Claim states skill alignment > cost for both agents, but fresh run shows rate_budget ≈ skill_mismatch (essentially tied) for freelancers. | Code: supplementary_materials/comprehensive_rejection_analysis.py:142-172 (analyze_comprehensive_rejections reads missing files); supplementary_materials/comprehensive_rejection_analysis.py:240-256 (extract_themes function)",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "supplementary_materials/comprehensive_rejection_analysis.py:142-172 (analyze_comprehensive_rejections reads missing files)",
+                    "supplementary_materials/comprehensive_rejection_analysis.py:240-256 (extract_themes function)"
+                ],
+                "commands_executed": [
+                    "python run_marketplace.py --rounds 3 --freelancers 3 --clients 2 --disable-reflections; python run_marketplace.py --rounds 8 --freelancers 8 --clients 4 --bids-per-round 3 --jobs-per-freelancer 5 --disable-reflections"
+                ]
+            }
+        },
+        {
+            "claim_index": 33,
+            "claim": "3. Figure 3: Freelancer reputation tier distribution after 100 rounds showing natural progression hierarchy. Most freelancers (63%) remain in the \"New\" tier, while 27% achieve \"Established\" status, 9.5% reach \"Expert\" level, and 0.5% (1 freelancer) attain \"Elite\" status. This distribution reflects realistic market dynamics where advancement requires sustained performance.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The code path for generating Figure 3 exists and is plausible (category_breakdown_analysis.py:679 analyze_reputation_tiers and :817 analyze_reputation_impact), and a pre-existing PNG of the distribution is present in the repository. However, the underlying raw data (the original simulation JSON true_gpt_simulation_20250905_001404.json with 200 freelancers after 100 LLM rounds) is missing, and no JSON data files with tier counts exist in the category_breakdown directory. The pre-existing PNG alone is insufficient for verification. Full reproduction would require running a 100-round LLM-F+LLM-C simulation with 200 freelancers, which requires significant LLM API expenditure.",
+            "evidence": "reputation_tier_distribution.png exists in analysis_results/category_breakdown/ but no underlying JSON data files. analyze_reputation_tiers() reads from reputation_data.freelancers[].tier in simulation JSON. analyze_reputation_impact() computes tiers from freelancer_profiles using total_hired/completed_jobs thresholds. Required simulation file true_gpt_simulation_20250905_001404.json is absent. Existing test run simulation files (Session 3) have only 8 freelancers with 0 total_hired — all New tier, no Established/Expert/Elite. | Code: supplementary_materials/category_breakdown_analysis.py:679 (analyze_reputation_tiers), :817 (analyze_reputation_impact); missing input: supplementary_materials/results/simuleval/true_gpt_simulation_20250905_001404.json",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "supplementary_materials/category_breakdown_analysis.py:679 (analyze_reputation_tiers), :817 (analyze_reputation_impact)",
+                    "missing input: supplementary_materials/results/simuleval/true_gpt_simulation_20250905_001404.json"
+                ],
+                "commands_executed": [
+                    "None (no new commands run; reused analysis from prior sessions and inspected existing artifacts)"
+                ]
+            }
+        },
+        {
+            "claim_index": 34,
+            "claim": "4. Figure 4: Fill rates and competition intensity across skill categories in the LLM-F + LLM-C configuration. Data Science demonstrates the highest competition intensity with 10 bids per job, while Engineering & Architecture shows more moderate competition. Fill rates vary significantly across categories, with some domains achieving higher job completion rates than others.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The primary simulation file needed to verify Figure 4 (LLM-F+LLM-C 100-round simulation) is absent from the repository. The only available partial data (25-round test run) contradicts the claim — Data Science shows 5.45 bids/job (vs claimed ~10) and is not the highest category. However, this partial data is from a different/smaller run than the full LLM-F+LLM-C configuration described in the paper. Without the original simulation artifacts, full reproduction requires expensive LLM API calls, making it impossible to definitively verify or refute the specific 10 bids/job claim for the described configuration.",
+            "evidence": "analysis_results.json (25-round run) shows Data Science at 5.45 bids/job (not 10), and Data Science is NOT the highest category (Admin Support: 15.375, Customer Service: 15.33). Required file `results/simuleval/true_gpt_simulation_20250905_001404.json` is missing. category_breakdown_analysis.py code path exists but depends on this missing file. Pre-existing PNG in analysis_results/category_breakdown/ has no backing JSON data. | Code: supplementary_materials/category_breakdown_analysis.py:28 (reads missing results/simuleval/true_gpt_simulation_20250905_001404.json)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "supplementary_materials/category_breakdown_analysis.py:28 (reads missing results/simuleval/true_gpt_simulation_20250905_001404.json)"
+                ],
+                "commands_executed": [
+                    "None (reused existing artifacts from prior sessions)"
+                ]
+            }
+        }
+    ],
+    "results_section": [
+        {
+            "claim_index": 35,
+            "claim": "1. 37% of freelancers advance beyond \"New,\" forming a progression ladder (New→Established→Expert→Elite).",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: Claim 35 (37% of freelancers advance beyond 'New') is derived from Figure 3 reputation tier data (63% New + 27% Established + 9.5% Expert + 0.5% Elite = 37% beyond New). The analyze_reputation_tiers() function in category_breakdown_analysis.py would compute this from the missing simulation JSON. Only a pre-existing PNG exists with no backing data files. Full reproduction requires an expensive LLM API simulation run not feasible here.",
+            "evidence": "Only reputation_tier_distribution.png exists in supplementary_materials/analysis_results/category_breakdown/; no JSON data files with tier counts; required simulation file results/simuleval/true_gpt_simulation_20250905_001404.json is absent | Code: supplementary_materials/category_breakdown_analysis.py:679 (analyze_reputation_tiers), line 817 (analyze_reputation_impact)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "supplementary_materials/category_breakdown_analysis.py:679 (analyze_reputation_tiers), line 817 (analyze_reputation_impact)"
+                ],
+                "commands_executed": [
+                    "None — reused investigation from Sessions 4-5 (same evidentiary situation as claim 33)"
+                ]
+            }
+        },
+        {
+            "claim_index": 36,
+            "claim": "2. Some categories like Data Science demonstrate high competition (approximately 10 bids per job) with strong fill rates, while others like Engineering & Architecture show more moderate competition levels (around 3 bids per job) with different completion patterns.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The partial evidence (25-round run) shows Engineering & Architecture at exactly 3.0 bids/job, matching the claim's ~3 figure. However, Data Science shows only 5.45 bids/job, not ~10 as claimed. This data is from a different, smaller run (25 rounds, 116 jobs) than the full LLM-F+LLM-C simulation described in the paper. The original simulation file is missing, and the category_breakdown_analysis.py script depends on it. The discrepancy in Data Science bids/job may reflect scale differences between runs rather than fabrication. Full reproduction would require extensive LLM API costs, making definitive verification impossible.",
+            "evidence": "analysis_results.json (25-round small run): Data Science & Analytics = 5.45 bids/job (not ~10), Engineering & Architecture = 3.0 bids/job (matches ~3 claim). Required full-run simulation file `results/simuleval/true_gpt_simulation_20250905_001404.json` is absent from the repository. | Code: supplementary_materials/category_breakdown_analysis.py (reads results/simuleval/true_gpt_simulation_20250905_001404.json, line ~52); supplementary_materials/analysis_results/analysis_results.json (category_competition section)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "supplementary_materials/category_breakdown_analysis.py (reads results/simuleval/true_gpt_simulation_20250905_001404.json, line ~52)",
+                    "supplementary_materials/analysis_results/analysis_results.json (category_competition section)"
+                ],
+                "commands_executed": [
+                    "None (reused existing artifacts from prior sessions)"
+                ]
+            }
+        }
+    ],
+    "summary": {
+        "total": 5,
+        "verified": 0,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 5,
+        "error": 0
+    }
+}

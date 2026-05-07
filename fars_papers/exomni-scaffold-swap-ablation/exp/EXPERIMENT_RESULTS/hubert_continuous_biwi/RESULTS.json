@@ -1,0 +1,61 @@
+{
+  "experiment": "HuBERT-Continuous Ablation on BIWI",
+  "variant": "hubert_continuous",
+  "dataset": "biwi",
+  "description": "Ablation to isolate the effect of discretization in Condition B. Uses HuBERT-base-ls960 continuous features (no k-means quantization) + prosody, keeping all else equal to Condition B.",
+  "training_config": {
+    "optimizer": "adamw",
+    "lr": 0.0002,
+    "weight_decay": 0.0001,
+    "epochs": 600,
+    "batch_size": 8,
+    "scheduler": "cosine",
+    "warmup_epochs": 10,
+    "eval_every_epochs": 5
+  },
+  "results": {
+    "LVE_mean": 9.494374220745764e-06,
+    "LVE_std": 1.0606862814990233e-07,
+    "per_seed": {
+      "seed_42": {
+        "LVE": 9.41280935270091e-06,
+        "MVE": 0.0011741363608355944,
+        "UFVE": 0.0010476764000486583,
+        "FDD": 2.816971066401797e-06,
+        "best_epoch": 595,
+        "best_val_loss": 3.490775879696958e-06
+      },
+      "seed_123": {
+        "LVE": 9.643547173254774e-06,
+        "MVE": 0.001181484088495684,
+        "UFVE": 0.0010576556232990697,
+        "FDD": 2.7115939729969846e-06,
+        "best_epoch": 590,
+        "best_val_loss": 3.5253977361822413e-06
+      },
+      "seed_456": {
+        "LVE": 9.426766136281609e-06,
+        "MVE": 0.0011750428675441071,
+        "UFVE": 0.0010488342425863568,
+        "FDD": 2.8272325047153028e-06,
+        "best_epoch": 590,
+        "best_val_loss": 3.488013019743908e-06
+      }
+    }
+  },
+  "comparison": {
+    "condA_WavLM_continuous": {
+      "LVE_mean": 9.00e-06,
+      "LVE_std": 6.85e-07
+    },
+    "hubert_continuous": {
+      "LVE_mean": 9.49e-06,
+      "LVE_std": 1.06e-07
+    },
+    "condB_HuBERT_discrete": {
+      "LVE_mean": 8.08e-06,
+      "LVE_std": 8.05e-07
+    }
+  },
+  "conclusion": "Condition B (discrete units, LVE=8.08e-6) outperforms HuBERT-continuous (LVE=9.49e-6) by ~15%, demonstrating that discretization provides a beneficial information bottleneck. The HuBERT representation without quantization performs comparably to (slightly worse than) Condition A (WavLM continuous, LVE=9.00e-6), indicating the performance advantage of Condition B comes from the discretization step, not from the underlying HuBERT encoder."
+}

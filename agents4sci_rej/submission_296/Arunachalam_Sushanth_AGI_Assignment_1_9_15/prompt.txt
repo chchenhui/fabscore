@@ -1,0 +1,261 @@
+# Agents4Science Intelligent Document Processing (IDP) – Full Research Workflow Runbook
+# (Professor’s 10-step workflow + automated admissions doc-review + local UI dashboard)
+
+You are the AI first author and research engineer. Execute this end-to-end plan in this workspace.
+Create/modify files EXACTLY at the paths specified. Be explicit, deterministic, and reproducible.
+
+PROJECT SCOPE (domain)
+- Goal: Automate graduate admissions document review with Intelligent Document Processing (IDP):
+  transcripts → OCR/parse → GPA compute → academic decision; resumes → entities; SoPs → rubric + cited-span summary.
+- Outputs: structured JSON, readiness/decision signals, evidence spans, plots, and an anonymized paper.
+- Data: SYNTHETIC ONLY (no PII). Every figure/table must be script-regenerated.
+
+CONSTRAINTS & POLICY
+- Anonymous PDF (no names/affiliations). AI is first author ONLY in OpenReview metadata; humans secondary.
+- Include: AI Contribution Disclosure, Responsible AI / Broader Impact (NeurIPS Code of Ethics aligned), Reproducibility statement.
+- Local-only, no external services; Windows compatible; pip-installable only.
+- Dependencies (may be installed with pip): numpy, pandas, scikit-learn, matplotlib, scipy, pillow, pdfminer.six, pyyaml, streamlit
+  (optional: seaborn; fastapi, uvicorn for a tiny local API; scikit-image, networkx if you implement extra visuals).
+- Single experiment entrypoint: `python code/run_experiments.py`
+- Automation entrypoints: `python code/ingest_service.py --watch` and `python code/cli.py ...`
+- UI entrypoint: `streamlit run ui/app.py --server.port 8501`
+- Save all plots to `results/figures/` as `.png` AND `.pdf`. Log to `logs/`.
+- AFTER EVERY STEP, append a dated line to `prompts/ai_contrib_log.md` describing what you (the AI) did.
+
+REPO LAYOUT (ensure)
+paper/, paper/statements/, code/, code/tests/, data/, data/schemas/, results/, results/figures/, prompts/, admin/, config/, logs/, incoming/, processed/, rejected/, archive/, ui/
+
+================================================================================
+STEP 1: RESEARCH IDEA AND CONCEPT DEVELOPMENT  →  paper/outline.md
+================================================================================
+Write a 1-page outline covering:
+- Problem & motivation (manual admissions review is slow; need accurate, auditable pre-screen).
+- Research Domain Exploration (IDP + OCR + parsing + feature fusion + summarization; impact, risks).
+- Technical Innovation Focus (OCR/parse transcripts to GPA; GPA-based academic decision; calibration/abstention; UI with cited evidence).
+- Implementation Feasibility (synthetic dataset, CPU-only, pip-only, Windows).
+- Research Impact Assessment (time saved, transparency, fairness; human-in-loop escalation).
+- Deliverable: `paper/outline.md` with clear problem statement, contributions (3–5), implementation plan, evaluation strategy.
+
+(OPTIONAL: If later given an interview transcript, add an “Interview-aligned outline” section.)
+
+================================================================================
+STEP 2: JSON FILE AND CATEGORY GENERATION
+================================================================================
+Create `data/metadata.json` with EXACT structure:
+
+{
+"authors": ["AI System (First Author)", "Your Name (Human, Secondary Author)"],
+"instance_id": "idp_admissions_2025",
+"year": 2025,
+"url": "",
+"abstract": "150-200 word abstract: problem, novel approach, key technical contributions, concrete numbers (e.g., AUC, GPA MAE, time-saved), unique advantages",
+"venue": "1st Open Conference of AI Agents for Science",
+"source_papers": [
+  { "reference": "Doc parsing/IDP survey", "rank": 1, "type": ["survey"], "justification": "", "usage": "" },
+  { "reference": "OCR/Document layout foundation", "rank": 2, "type": ["methodological foundation"], "justification": "", "usage": "" },
+  { "reference": "Transcript parsing/table extraction", "rank": 3, "type": ["implementation"], "justification": "", "usage": "" },
+  { "reference": "Calibration/uncertainty", "rank": 4, "type": ["methodological foundation"], "justification": "", "usage": "" },
+  { "reference": "Active learning / abstention", "rank": 5, "type": ["methodological foundation"], "justification": "", "usage": "" },
+  { "reference": "Comparison baseline (GPA-only)", "rank": 6, "type": ["comparison baseline"], "justification": "", "usage": "" },
+  { "reference": "Summarization with citation grounding", "rank": 7, "type": ["implementation"], "justification": "", "usage": "" }
+],
+"task1": "Technical implementation specs:\n1. Synthetic data gen params\n2. OCR + parsing pipeline\n3. Feature extraction math\n4. Model/decision rules\n5. Training protocol\n6. Evaluation metrics (GPA MAE, extraction acc, ROC/AUC, ECE, ROUGE-lite, NER F1, Kendall tau)\n7. Expected targets",
+"task2": "Research objectives & expected outcomes with targets"
+}
+
+Create `prompts/metaprompt.py` with:
+- TASK (plain description), DATASETS (synthetic specs), BASELINES (GPA-only, random),
+- EVALUATION (full metrics), COMPARISON_TEMPLATE (Markdown table schema),
+- ABLATIONS (remove channels/features/calibration), IMPLEMENTATION (repro notes, seeds, OS/runtime).
+
+================================================================================
+STEP 3: MATHEMATICAL FORMULATION DEVELOPMENT  →  paper/mathematical_formulation.tex
+================================================================================
+Create a compile-ready LaTeX doc including:
+1) Signal/Data Representation: transcript rows {course, credits, grade}, resume entities, SoP rubric; token positions; feature vectors.
+2) Core Algorithm: OCR→parse; GPA function: GPA = Σ(grade_points*credits)/Σ(credits); readiness score f(x) if used.
+3) Decision Rule: good_academic = (GPA ≥ τ_gpa) ∧ (credits ≥ τ_credits); abstention when confidence < τ_conf.
+4) Optimization/Training: BCE (for label), calibration (temperature scaling); MC-dropout proxy if simulated; early stopping (if applicable).
+5) Evaluation Framework: GPA MAE, extraction accuracy, ROC/AUC, ECE + reliability, Kendall τ, ROUGE-lite, NER F1.
+6) Theoretical Notes: complexity & robustness; fairness constraints (threshold transparency).
+Number all equations and define notation.
+
+================================================================================
+STEP 4: EXPERIMENTAL IMPLEMENTATION  →  code/  (+ UI in ui/)
+================================================================================
+Create the following modules with docstrings/comments; keep CPU-only, pip-only; no web downloads.
+
+CONFIG & SCHEMAS
+- `config/config.yaml` with:
+  gpa_threshold, min_credits, abstain_threshold, program_rules (per-program overrides),
+  ocr_backend: auto|pdfminer|simulated (pytesseract optional), paths: incoming/ processed/ rejected/ archive/
+- `data/schemas/decision.schema.json` (JSON Schema for outputs):
+  {
+    "application_id": "str",
+    "decision": "ACCEPT_ACADEMIC"|"REVIEW"|"REJECT_ACADEMIC"|"ABSTAIN",
+    "reason": "str",
+    "gpa": "number",
+    "credits": "number",
+    "confidence": "number",
+    "warnings": ["str"],
+    "evidence": {
+      "transcript_spans": [{"start": int, "end": int, "text": "str"}],
+      "sop_spans": [{"start": int, "end": int, "text": "str"}],
+      "resume_entities": [{"type": "str", "text": "str", "start": int, "end": int}]
+    },
+    "timestamp": "str"
+  }
+
+CORE PIPELINE
+1) `code/ocr_backends.py`
+   - Backends:
+     • pdfminer (text + basic layout heuristics) for PDFs
+     • simulated OCR for synthetic docs
+     • OPTIONAL: pytesseract if installed (skip if not)
+   - `extract_tokens(path, backend, config) -> List[Token{text, bbox}]`
+2) `code/transcript_parser.py`
+   - Regex/heuristics to detect course rows, credits, grades; grade→points mapping (A=4.0, A-=3.7, ... configurable).
+   - Compute `total_credits`, `gpa`; return parsed rows + evidence char spans.
+   - Unit tests: `code/tests/test_transcript_parser.py`
+3) `code/decision_rules.py`
+   - Load thresholds from config; implement:
+     `academically_good(gpa, credits, program) -> (decision, reason, confidence)`
+   - Implement abstention when confidence < abstain_threshold.
+4) `code/resume_ner.py`
+   - Lightweight NER: regex/keyword lists (+ optional sklearn baseline) with BIO spans; return entities + NER F1.
+5) `code/sop_rubric.py`
+   - Multi-label rubric classifier (sklearn) using bag-of-words; produce 3–5 sentence **cited-span** summary.
+   - ROUGE-lite token overlap vs synthetic GT bullets.
+6) `code/feature_fusion.py`
+   - Build readiness features (optional): [gpa_norm, credits_norm, skill counts, rubric scores].
+7) `code/model.py`
+   - LogisticRegression (and tiny MLP optional) with `fit/predict_proba/predict`.
+8) `code/calibration.py`
+   - Temperature scaling; ECE; reliability diagram plotter.
+9) `code/consistency_checks.py`
+   - Cross-document checks (e.g., GPA recompute vs extracted, date mismatches).
+10) `code/evaluate.py`
+    - Metrics: extraction accuracy; GPA MAE; decision precision/recall/F1 (vs GT); ROC/AUC & confusion matrix; Kendall τ; ECE + reliability; ROUGE-lite; NER F1; estimate `time_saved_minutes_per_100_apps`.
+    - Plot functions for all figures.
+
+AUTOMATION & CLI
+11) `code/ingest_service.py`
+    - Watch-folder loop (poll every N seconds): read from `incoming/`; for each file:
+      OCR → transcript_parse → GPA → decision_rules → (optional) resume/sop → write JSON to `processed/<application_id>.json`
+      Move originals to `archive/` or `rejected/` on error; append to `processed/summary.csv`; log to `logs/service.log`.
+    - CLI flags: `--watch`, `--once`, `--backend auto|pdfminer|simulated`, `--config config/config.yaml`, `--interval SEC`
+    - Expose `process_path(path, config)` so UI can call it directly for uploads.
+12) `code/cli.py`
+    - `ingest --src incoming --backend auto`
+    - `score --file <transcript.pdf>` → prints GPA + decision
+    - `report --out reports/summary.html` → simple HTML report from CSV/metrics
+
+UI DASHBOARD (local-only; Streamlit)
+13) `ui/app.py`
+    - Tabs: **Upload**, **Dashboard**, **Applicant Detail**, **Chat Bot**, **Settings**
+      • Upload: choose files, write to `incoming/`, call `process_path()`; show status/warnings
+      • Dashboard: table of `processed/*.json` with filters (decision, confidence, program, warnings), CSV export
+      • Applicant Detail: GPA/credits/thresholds/decision/confidence; Evidence tabs (transcript spans, resume entities, SoP cited spans); Consistency tab; per-app mini reliability point
+      • Chat Bot: Q&A answerable from JSON (“What’s GPA?”, “Why abstained?”, “Show course CS501 evidence”). If not answerable → “ escalate”
+      • Settings: edit thresholds live; “Preview” & “Save to config/config.yaml”
+14) `ui/components.py` – shared widgets (score badge, evidence viewer, risk banner)
+15) `ui/service_client.py` – thin wrapper to call `process_path()` and read JSONs
+16) `ui/bot.py` – rule/template based Q&A over JSON (no external LLM)
+17) `ui/fig_export.py` – generate a schematic **UI overview** figure with matplotlib (no screenshots), save as `results/figures/ui_overview.(png|pdf)`
+
+TESTS
+18) `code/tests/test_decision_rules.py` – threshold & abstention logic
+19) (Optional) tests for NER/rubric small cases
+
+RUNNER
+20) `code/run_experiments.py`
+    - Generate synthetic dataset; train readiness model (optional); compute metrics; save `results/metrics.json`; export all plots; mirror to `results/results_YYYYmmdd_HHMMSS/`.
+    - Print summary (AUC, GPA MAE, ECE, NER F1, ROUGE-lite, time-saved estimate).
+
+================================================================================
+STEP 5: EXPERIMENT EXECUTION
+================================================================================
+- Provide `ExperimentRunner` inside `run_experiments.py` with `self.timestamp` and timestamped results dir.
+- Baselines: GPA-only; random; OCR-free simulated text vs OCR.
+- Main method: pipeline with calibration + abstention.
+- Ablations: remove channels (transcript/resume/SoP), remove calibration, remove layout cues.
+
+Command examples (Windows):
+- `python code\run_experiments.py`
+- Automation (watch-folder): `python code\ingest_service.py --watch --backend auto --config config\config.yaml`
+- Batch once: `python code\cli.py ingest --src incoming --backend auto`
+- UI: `streamlit run ui\app.py --server.port 8501`
+
+================================================================================
+STEP 6: RESULTS GENERATION AND VISUALIZATION  →  results/figures/
+================================================================================
+Save each as `.png` AND `.pdf` (300 DPI):
+- ROC (+AUC)
+- Confusion matrix
+- GPA error histogram/distribution
+- Baseline vs Proposed bar
+- Ablation bar
+- Reliability diagram (+ ECE)
+- (Optional) Risk–coverage (abstention)
+- NER F1 bar
+- ROUGE-lite bar
+- Transcript parse overlay demo (rendered rows)
+- **UI overview** schematic from `ui/fig_export.py`
+
+(If seaborn available: `plt.style.use('seaborn-v0_8-paper'); sns.set_palette("husl")`; otherwise plain matplotlib.)
+
+================================================================================
+STEP 7: RESULTS ANALYSIS  →  results_analysis.md
+================================================================================
+- Performance vs baselines; where OCR/layout helps; robustness to noisy scans/templates.
+- Calibration/abstention interpretation; impact on safe automation.
+- Time-saved estimate (throughput vs manual).
+- Fairness/ethics: threshold transparency; human-in-loop on low confidence; privacy-by-design.
+- Failure modes; limitations; next steps.
+
+================================================================================
+STEP 8: PAPER WRITING  →  paper/
+================================================================================
+Create compile-ready LaTeX:
+- `paper/main.tex` (anonymous, two-column OK as a stub):
+  Title; Abstract (150–200 words with numbers); Introduction; Related Work; Method (OCR→parse→GPA→decision, automation, UI); Experiments; Discussion/Limitations; Conclusion. Reference all figures.
+- `paper/refs.bib` (include OCR/pdfminer, transcript parsing/table extraction, calibration, abstention, transparency).
+- Statements:
+  `paper/statements/ai_disclosure.tex` (AI first author, human roles),
+  `paper/statements/responsible_ai.tex` (privacy, fairness, non-final decisions, escalation),
+  `paper/statements/reproducibility.tex` (exact regenerate steps).
+- When official template available, add `paper/agents4science_version/` and port content; ≤ 8 pages main text.
+
+================================================================================
+STEP 9: REVIEW GENERATION  →  paper/review.md
+================================================================================
+Produce a realistic review:
+- Summary (2–3 sentences)
+- Scores (1–10): Technical Quality, Clarity & Presentation, Significance & Impact, Experimental Evaluation
+- Strengths (5–7 bullets)
+- Weaknesses (5–7 bullets)
+- Detailed comments (soundness, completeness, SOTA comparisons, reproducibility)
+- Questions for authors
+- Recommendation: Accept / Weak Accept / Weak Reject / Reject
+- Confidence: 1–5
+
+================================================================================
+STEP 10: FINAL SUBMISSION PREPARATION  →  admin/
+================================================================================
+- `admin/checklist.md` (Agents4Science + course): anonymity, page limit, statements, reproducibility, timestamped results, OpenReview prep → Yes/No with notes.
+- `admin/openreview_prep.json` (title, abstract, keywords; AI first; humans secondary)
+- `admin/openreview_id.txt` (placeholder to fill after submission)
+- Build PDF: latexmk or pdflatex ×2. Verify figures included; page count; address warnings; (PDF/A if required).
+
+================================================================================
+EXECUTION WORKFLOW (for you, Claude)
+================================================================================
+1) Initialize: create any missing folders; write defaults to `config/config.yaml`.
+2) Implement: follow STEPs 1→10 in order; write files to specified paths; keep OCR backend pluggable (pdfminer default, simulated fallback).
+3) Verify: run experiments; then demo automation with 2–3 synthetic files in `incoming/`; launch UI and confirm end-to-end.
+4) Iterate: fix issues; re-run; log seeds/versions; keep `prompts/ai_contrib_log.md` updated.
+5) Finalize: create `admin/FINAL_SUMMARY.md` listing every artifact and where it lives.
+
+NOTES
+- Academic decision is **GPA-rule-based** from config; on low confidence or parse uncertainty, **ABSTAIN and escalate** (UI “Escalate to Human”).
+- Keep everything local/offline, CPU-only, pip-only; provide clear hooks to swap heavier models later if policy allows.

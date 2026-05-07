@@ -1,0 +1,391 @@
+{
+    "tables": [
+        {
+            "claim_index": 1,
+            "claim": "1. Table 1, TrustPath, Precision: 1.000",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: TrustPath Precision=1.000 is not hardcoded; it is computed dynamically. The code is plausible and could produce this value if all samples end up with ground_truth.errors=[] (due to LLM injection failures) and all methods return empty detected_errors. However, no experiment has been run (no result files in RESULTS_DIR), and no API key is available to reproduce the result. Insufficient evidence to verify or refute the specific claimed value.",
+            "evidence": "No result files exist (RESULTS_DIR never created). Code at evaluation.py:72-78 returns precision=recall=f1=1.0 when both detected_errors and ground_truth_errors are empty. Code at evaluation.py:89-96 returns precision=1.0 when detected_errors is empty but ground_truth non-empty. The value 1.000 is NOT hardcoded but could arise from these edge cases if all LLM error-injection calls fail (defaulting has_injected_errors=False → ground_truth.errors=[]). All 4 methods achieving P=R=F1=1.000 is consistent with this scenario. No API key available to run the experiment. | Code: code/evaluation.py:72-78 (empty-list shortcut returning 1.0/1.0/1.0), code/evaluation.py:89-96 (no detected errors → precision=1.0), code/data_processing.py:377-382 (error injection failure defaults to has_injected_errors=False)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:72-78 (empty-list shortcut returning 1.0/1.0/1.0), code/evaluation.py:89-96 (no detected errors → precision=1.0), code/data_processing.py:377-382 (error injection failure defaults to has_injected_errors=False)"
+                ],
+                "commands_executed": [
+                    "None (no API key available; static code analysis only)"
+                ]
+            }
+        },
+        {
+            "claim_index": 2,
+            "claim": "2. Table 1, TrustPath, Recall: 1.000",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: Recall=1.000 for TrustPath is not independently hardcoded; it is computed dynamically in evaluate_error_detection() (evaluation.py:72-78) and equals 1.0 when both detected_errors and ground_truth_errors are empty. Whether this occurs in practice depends on actual API execution results (LLM-based error injection and detection). No experiment has been run (no results/ directory exists), and no API key is available to execute the experiment. The claim cannot be verified or refuted from static analysis alone.",
+            "evidence": "evaluation.py lines 72-78: when both ground_truth_errors and detected_errors are empty, the function returns {precision:1.0, recall:1.0, f1:1.0, accuracy:1.0}. No results/ directory or evaluation_results.json exists. Analysis reused from Session 3 (claim_index 1) which examined the identical code path. | Code: code/evaluation.py:72-78 (empty-lists shortcut returning recall=1.0)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:72-78 (empty-lists shortcut returning recall=1.0)"
+                ],
+                "commands_executed": [
+                    "None — reused code analysis from Session 3"
+                ]
+            }
+        },
+        {
+            "claim_index": 3,
+            "claim": "3. Table 1, TrustPath, F1 Score: 1.000",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The F1=1.000 claim is not independently hardcoded; it emerges from the same empty-lists shortcut in evaluate_error_detection() (evaluation.py:72-78) as Precision and Recall. Whether this shortcut is actually triggered depends on the LLM-based error injection and detection pipeline, which requires an API key to execute. No experiment result files exist, so the claimed value cannot be verified or refuted from existing artifacts.",
+            "evidence": "evaluation.py lines 72-78: shortcut returns precision=recall=f1=1.0 when both ground_truth_errors and detected_errors are empty. No results/ directory, no JSON/CSV metric files. No API key available to run the experiment. | Code: code/evaluation.py:72-78 (evaluate_error_detection shortcut: returns f1=1.0 when both lists empty)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:72-78 (evaluate_error_detection shortcut: returns f1=1.0 when both lists empty)"
+                ],
+                "commands_executed": [
+                    "None — analysis reused from Sessions 3 and 4 which already examined evaluation.py:65-96"
+                ]
+            }
+        },
+        {
+            "claim_index": 4,
+            "claim": "4. Table 1, TrustPath, ROUGE-L: 0.000",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: Unlike simple_fact_checking and uncertainty_estimation baselines (which hardcode suggested_corrections=[]), TrustPath generates corrections dynamically via LLM. ROUGE-L=0.0 could result from (a) error injection failure making ground_truth corrections empty, (b) TrustPath detecting no errors, or (c) generated corrections having no overlap with ground truth. No experiment result files exist (results/ directory absent) and no API key is available to run the experiment. The code path does NOT statically guarantee ROUGE-L=0.0 for TrustPath as it does for the hardcoded-empty baselines.",
+            "evidence": "code/trust_path.py: _generate_corrections() calls LLM for each detected error; code/evaluation.py:144-151: returns rougeL_f=0.0 if corrections or ground_truth_corrections is empty; code/run_experiment.py:168: TrustPath result includes suggested_corrections=analysis_results.get('suggested_corrections',[]); code/data_processing.py:486-511: ground_truth['corrections']=[] when error injection fails | Code: code/evaluation.py:144-151 (evaluate_correction_quality early return), code/trust_path.py:195-258 (_generate_corrections), code/run_experiment.py:168",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:144-151 (evaluate_correction_quality early return), code/trust_path.py:195-258 (_generate_corrections), code/run_experiment.py:168"
+                ],
+                "commands_executed": [
+                    "None"
+                ]
+            }
+        },
+        {
+            "claim_index": 6,
+            "claim": "6. Table 1, TrustPath, Overall Score: 0.635",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The overall score formula is mathematically consistent with 0.635 for a specific processing time (~8.18s), but the efficiency component depends entirely on actual API execution timing. All deterministic components (F1, BLEU, ROUGE-L, TC) are either hardcoded or follow from code structure, but the efficiency/runtime value cannot be verified without running the experiment. No result files exist and no API key is available.",
+            "evidence": "evaluation.py:425-475 defines overall = 0.4*f1 + 0.3*(bleu+rougeL)/2 + 0.2*tc + 0.1*efficiency. With hardcoded transparency_score=0.9 for TrustPath (run_experiment.py:409), and paper-reported F1=1.0, ROUGE-L=0.0, TC=0.9, BLEU≈0.0: overall = 0.58 + 0.1*efficiency. For overall=0.635, efficiency_score must equal 0.55 (processing_time≈8.18s). No results/ directory exists; no experiment has been run. | Code: code/evaluation.py:425-475 (_calculate_overall_score), code/evaluation.py:244-267 (evaluate_trust_metrics), code/run_experiment.py:407-413 (transparency_scores)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:425-475 (_calculate_overall_score), code/evaluation.py:244-267 (evaluate_trust_metrics), code/run_experiment.py:407-413 (transparency_scores)"
+                ],
+                "commands_executed": [
+                    "None (static code analysis only; no API key available to run python code/run_experiment.py --api-key <KEY>)"
+                ]
+            }
+        },
+        {
+            "claim_index": 7,
+            "claim": "7. Table 1, simple_fact_checking, Precision: 1.000",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: Precision=1.000 for simple_fact_checking is not hardcoded. It would arise from the same empty-lists shortcut in evaluate_error_detection() (evaluation.py:72-78) as the TrustPath precision claims (indices 1-3), but depends on actual LLM API execution to determine detected_errors. No result files exist and no API key is available to run the experiment.",
+            "evidence": "code/run_experiment.py:217-223 — detected_errors for simple_fact_checking populated dynamically from LLM API call via SimpleFactChecker.check_response(); code/evaluation.py:72-78 — empty-lists shortcut returns precision=1.0 when both detected_errors and ground_truth_errors are empty; no results/ directory exists; no API key available | Code: code/run_experiment.py:217-223 (detected_errors from fact_check_results), code/evaluation.py:72-78 (empty-lists shortcut), code/baselines.py:74-163 (SimpleFactChecker.check_response)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/run_experiment.py:217-223 (detected_errors from fact_check_results), code/evaluation.py:72-78 (empty-lists shortcut), code/baselines.py:74-163 (SimpleFactChecker.check_response)"
+                ],
+                "commands_executed": [
+                    "None — analysis reused from Sessions 3-7 (same code path as claim_index 1)"
+                ]
+            }
+        },
+        {
+            "claim_index": 8,
+            "claim": "8. Table 1, simple_fact_checking, Recall: 1.000",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: Recall=1.000 for simple_fact_checking is not hardcoded — it is returned by the same shortcut block as Precision in evaluate_error_detection() (evaluation.py:72-78), which triggers when both ground_truth_errors and detected_errors are empty. The detected_errors for simple_fact_checking depends on a live LLM API call. No experiment has been run (results/ directory absent), and no API key is available to run one. Cannot verify or refute the claimed value.",
+            "evidence": "evaluation.py lines 72-78: empty-list shortcut returns precision=recall=f1=1.0 together; simple_fact_checking detected_errors populated by live LLM call (not hardcoded); no results/ directory or experiment artifacts exist | Code: code/evaluation.py:72-78 (evaluate_error_detection empty-list shortcut), code/run_experiment.py:190-244 (run_simple_fact_checker)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:72-78 (evaluate_error_detection empty-list shortcut), code/run_experiment.py:190-244 (run_simple_fact_checker)"
+                ],
+                "commands_executed": [
+                    "None — analysis reused from prior sessions (Sessions 3-8)"
+                ]
+            }
+        },
+        {
+            "claim_index": 9,
+            "claim": "9. Table 1, simple_fact_checking, F1 Score: 1.000",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: F1=1.000 for simple_fact_checking is returned by the exact same single shortcut block (evaluation.py:72-78) as Precision and Recall — all three are physically inseparable. The detected_errors for simple_fact_checking comes from an actual LLM API call, not hardcoded. Whether they equal 1.0 depends on actual execution. No experiment result files exist to verify the claim, and no API key is available to run the experiment. This is directly analogous to claims 7 (Precision) and 8 (Recall) for simple_fact_checking, both classified as Insufficient Evidence.",
+            "evidence": "evaluation.py lines 72-78: single shortcut return block `{'precision': 1.0, 'recall': 1.0, 'f1_score': 1.0}` when both ground_truth_errors and detected_errors are empty. simple_fact_checking detected_errors comes from LLM API call (baselines.py:74-163, run_experiment.py:190-244). No results/ directory exists. No API key available. | Code: code/evaluation.py:72-78 (shortcut return block), code/baselines.py:74-163 (SimpleFactChecker.check_response), code/run_experiment.py:190-244 (run_simple_fact_checker)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:72-78 (shortcut return block), code/baselines.py:74-163 (SimpleFactChecker.check_response), code/run_experiment.py:190-244 (run_simple_fact_checker)"
+                ],
+                "commands_executed": [
+                    "None — analysis reused from Sessions 3-9 in progress.md"
+                ]
+            }
+        },
+        {
+            "claim_index": 12,
+            "claim": "12. Table 1, simple_fact_checking, Overall Score: 0.554",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The overall score formula is consistent with producing 0.554 given specific runtime (≈3.51s avg processing time). Static components (TC=0.4 from hardcoded transparency_score=0.4, ROUGE-L=0.0, BLEU=0.0) can be verified analytically, but the efficiency_score depends on actual API execution timing. No experiment result files exist (no results/ directory), and no API key is available to run the experiment.",
+            "evidence": "evaluation.py:468-473 formula: overall = 0.4*f1 + 0.3*(bleu+rougeL)/2 + 0.2*tc + 0.1*efficiency_score; run_experiment.py:410 transparency_score=0.4 hardcoded; efficiency_score=1/(1+processing_time/10); with f1=1.0, TC=0.4, ROUGE-L=0.0, BLEU=0.0: overall=0.48+0.1*efficiency; for 0.554 requires efficiency=0.74 (processing_time≈3.51s) | Code: code/evaluation.py:465-473 (_calculate_overall_score), code/run_experiment.py:410 (transparency_scores['simple_fact_checking']=0.4)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:465-473 (_calculate_overall_score), code/run_experiment.py:410 (transparency_scores['simple_fact_checking']=0.4)"
+                ],
+                "commands_executed": [
+                    "None — analysis reused from prior sessions; no new commands run"
+                ]
+            }
+        },
+        {
+            "claim_index": 13,
+            "claim": "13. Table 1, uncertainty_estimation, Precision: 1.000",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: Precision=1.000 for uncertainty_estimation is not hardcoded. Unlike simple_fact_checking (which requires an LLM call for detected_errors), uncertainty_estimation uses hybrid detection: marker-based (no API needed) + LLM-based. If the generated text contains uncertainty markers ('may', 'approximately', etc.), detected_errors is non-empty without any API call. With non-empty detected_errors and empty ground_truth, precision=0.0 not 1.0. But the claim is consistent with the empty-list shortcut (both lists empty → precision=1.0). Without running the experiment, neither verification nor refutation is possible. No existing result artifacts are present.",
+            "evidence": "baselines.py:195-297 (UncertaintyEstimator.estimate_uncertainty), run_experiment.py:272-280 (detected_errors from uncertain_statements), evaluation.py:72-96 (4-path precision logic). No results/ directory exists. No API key available. | Code: code/baselines.py:195-297 (UncertaintyEstimator.estimate_uncertainty), code/run_experiment.py:272-280 (run_uncertainty_estimator detected_errors), code/evaluation.py:72-96 (evaluate_error_detection precision logic)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/baselines.py:195-297 (UncertaintyEstimator.estimate_uncertainty), code/run_experiment.py:272-280 (run_uncertainty_estimator detected_errors), code/evaluation.py:72-96 (evaluate_error_detection precision logic)"
+                ],
+                "commands_executed": [
+                    "None — code analysis reused from prior sessions (Sessions 3-11); no new commands run"
+                ]
+            }
+        },
+        {
+            "claim_index": 14,
+            "claim": "14. Table 1, uncertainty_estimation, Recall: 1.000",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: Recall=1.000 for uncertainty_estimation is not hardcoded. It is consistent with two code paths in evaluate_error_detection() (evaluation.py:72-87): both-empty shortcut and ground_truth-empty-but-detected-nonempty case. Unlike precision (which is 0.0 when detected is non-empty but ground_truth empty), recall=1.0 in both these scenarios. However, recall=0.0 arises if ground_truth errors are non-empty but no detected errors match. Without running the experiment (no API key), the actual outcome cannot be determined. No result files exist in the repository.",
+            "evidence": "evaluation.py:72-87 shows recall=1.0 in two code paths: (1) both ground_truth_errors and detected_errors empty → recall=1.0; (2) ground_truth_errors empty, detected_errors non-empty → recall=1.0 (line 84). No results/ directory exists, no experiment result files found. | Code: code/evaluation.py:72-87 (evaluate_error_detection recall code paths)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:72-87 (evaluate_error_detection recall code paths)"
+                ],
+                "commands_executed": [
+                    "None (reused Session 12 code analysis of evaluation.py and baselines.py)"
+                ]
+            }
+        },
+        {
+            "claim_index": 15,
+            "claim": "15. Table 1, uncertainty_estimation, F1 Score: 1.000",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: F1=1.000 for uncertainty_estimation is not hardcoded. It requires both ground_truth_errors and detected_errors to be empty (evaluation.py:72-78). Unlike other baselines, UncertaintyEstimator performs marker-based detection that could produce non-empty detected_errors without an API key, potentially giving F1=0.0. The claim cannot be verified or refuted without running the experiment (requires an API key and produces results/ output that does not exist).",
+            "evidence": "evaluation.py lines 72-78: when both ground_truth_errors and detected_errors are empty, the function returns {precision:1.0, recall:1.0, f1_score:1.0} in a single return statement. UncertaintyEstimator uses marker-based detection (no API needed) that can produce non-empty detected_errors (19 markers like 'probably', 'likely', 'may'), which with empty ground_truth_errors would give F1=0.0 instead of 1.0. No results/ directory exists, no JSON/CSV metrics from any prior run. | Code: code/evaluation.py:72-78 (shortcut return block), code/baselines.py:165-297 (UncertaintyEstimator marker-based detection), code/run_experiment.py:407-413 (hardcoded transparency_scores)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:72-78 (shortcut return block), code/baselines.py:165-297 (UncertaintyEstimator marker-based detection), code/run_experiment.py:407-413 (hardcoded transparency_scores)"
+                ],
+                "commands_executed": [
+                    "None — analysis reused from Sessions 12 and 13 which analyzed the same code path for claim_index 13 (uncertainty_estimation Precision) and 14 (Recall). The claim reason states 'Same as claim 13.'"
+                ]
+            }
+        },
+        {
+            "claim_index": 18,
+            "claim": "18. Table 1, uncertainty_estimation, Overall Score: 0.572",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The overall score formula is internally consistent with producing 0.572 for uncertainty_estimation given a specific average processing time (~3.89s), but the only free parameter (efficiency_score derived from actual runtime) cannot be verified without executing the experiment via API. No result files exist and no API key is available.",
+            "evidence": "evaluation.py:468-473 formula: overall = 0.4*f1 + 0.3*(bleu+rougeL)/2 + 0.2*tc + 0.1*efficiency_score; run_experiment.py:411 uncertainty_estimation transparency_score=0.5 (hardcoded); TC=0.5 when f1=1.0; BLEU=ROUGE-L=0.0 hardcoded; static part = 0.5 + 0.1*efficiency; for overall=0.572: efficiency_score=0.72 (processing_time≈3.89s); no results/ directory exists | Code: code/evaluation.py:460-475 (_calculate_overall_score), code/run_experiment.py:407-413 (hardcoded transparency_scores)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:460-475 (_calculate_overall_score), code/run_experiment.py:407-413 (hardcoded transparency_scores)"
+                ],
+                "commands_executed": [
+                    "None (no commands run; analysis reused from prior sessions 2, 7, 11)"
+                ]
+            }
+        },
+        {
+            "claim_index": 19,
+            "claim": "19. Table 1, standard_correction, Precision: 1.000",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: Precision=1.000 for standard_correction is not hardcoded. The run_standard_corrector() function calls SimpleFactChecker.check_response() via an LLM API to build detected_errors — the same dynamic code path as simple_fact_checking. Whether precision equals 1.0 depends on whether both detected_errors and ground_truth_errors are empty (evaluation.py:72-78 shortcut). No experiment result files exist and no API key is available to run the experiment and verify.",
+            "evidence": "code/baselines.py:299-393 (StandardCorrector uses SimpleFactChecker to detect errors via LLM API call, not hardcoded); code/run_experiment.py:328-338 (run_standard_corrector builds detected_errors from fact_check_results.get('erroneous_claims', []) — actual LLM API call); code/evaluation.py:72-78 (shortcut returns precision=1.0 only when both ground_truth_errors and detected_errors are empty); no results/ directory exists; no API key available | Code: code/run_experiment.py:328-338 (detected_errors from fact_check_results), code/evaluation.py:72-78 (precision shortcut), code/baselines.py:299-393 (StandardCorrector)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/run_experiment.py:328-338 (detected_errors from fact_check_results), code/evaluation.py:72-78 (precision shortcut), code/baselines.py:299-393 (StandardCorrector)"
+                ],
+                "commands_executed": [
+                    "None — no commands run; code inspection reused from Sessions 3-15"
+                ]
+            }
+        },
+        {
+            "claim_index": 20,
+            "claim": "20. Table 1, standard_correction, Recall: 1.000",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: Recall=1.000 for standard_correction is not independently hardcoded; it is returned by the same shortcut block (evaluation.py:72-78) as Precision and F1 for standard_correction (claim_index 19), and is also achievable via the second path (evaluation.py:84). Since detected_errors depends on actual LLM execution and no experiment result files exist, the claim cannot be verified or refuted.",
+            "evidence": "evaluation.py:72-78 shortcut block returns precision=recall=f1=1.0 together when both ground_truth_errors and detected_errors are empty. Additionally evaluation.py:84 returns recall=1.0 when ground_truth_errors is empty (even if detected_errors is non-empty). detected_errors for standard_correction is populated dynamically from SimpleFactChecker.check_response() LLM API call — not hardcoded. No results/ directory exists, no JSON/CSV metrics, no API key available. | Code: code/evaluation.py:72-78 (empty-list shortcut), code/evaluation.py:84 (ground_truth empty path), code/run_experiment.py:302-365 (run_standard_corrector), code/baselines.py:299-393 (StandardCorrector)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:72-78 (empty-list shortcut), code/evaluation.py:84 (ground_truth empty path), code/run_experiment.py:302-365 (run_standard_corrector), code/baselines.py:299-393 (StandardCorrector)"
+                ],
+                "commands_executed": [
+                    "None — reused analysis from Session 16 (claim_index 19) which analyzed the identical code path"
+                ]
+            }
+        },
+        {
+            "claim_index": 21,
+            "claim": "21. Table 1, standard_correction, F1 Score: 1.000",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: F1=1.000 for standard_correction is not hardcoded independently — it is returned by the same single shortcut block (evaluation.py:72-78) as Precision and Recall, which fires when both detected_errors and ground_truth_errors are empty. detected_errors comes from an actual LLM API call (SimpleFactChecker.check_response()), not a hardcoded value. No experiment result files exist (results/ directory absent), and no API key is available to run the experiment. Same reasoning as claims 19 and 20.",
+            "evidence": "evaluation.py:72-78 single return statement returning precision=recall=f1=1.0 when both ground_truth_errors and detected_errors are empty; run_experiment.py:302-365 run_standard_corrector() uses SimpleFactChecker.check_response() LLM API call to populate detected_errors (not hardcoded); no results/ directory exists; no JSON/CSV metric files found | Code: code/evaluation.py:72-78 (empty-lists shortcut), code/run_experiment.py:302-365 run_standard_corrector()",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:72-78 (empty-lists shortcut), code/run_experiment.py:302-365 run_standard_corrector()"
+                ],
+                "commands_executed": [
+                    "None — reused analysis from Sessions 16 and 17"
+                ]
+            }
+        },
+        {
+            "claim_index": 22,
+            "claim": "22. Table 1, standard_correction, ROUGE-L: 0.000",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: Unlike simple_fact_checking/uncertainty_estimation which hardcode suggested_corrections=[], standard_correction conditionally populates corrections based on API response (has_corrections flag). ROUGE-L=0.0 is plausible if all samples have has_corrections=False or all error injections fail, but NOT statically guaranteed — if has_corrections=True for some samples AND error injection succeeded, ROUGE-L would be computed between placeholder text and real corrections (non-zero). Cannot verify without running the experiment.",
+            "evidence": "run_experiment.py:347-355 shows standard_correction's suggested_corrections is empty when has_corrections=False, or contains placeholder text '[Standard correction available in full corrected response]' when has_corrections=True. evaluation.py:144-151 shows early return of rougeL_f=0.0 when either corrections or ground_truth_corrections is empty. No result files exist (results/ directory absent). No API key available. | Code: code/run_experiment.py:347-355 (suggested_corrections population), code/evaluation.py:144-151 (early return for empty lists), code/evaluation.py:371-374 (per-sample correction evaluation)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/run_experiment.py:347-355 (suggested_corrections population), code/evaluation.py:144-151 (early return for empty lists), code/evaluation.py:371-374 (per-sample correction evaluation)"
+                ],
+                "commands_executed": [
+                    "None (no commands run; code analysis reused from prior sessions)"
+                ]
+            }
+        },
+        {
+            "claim_index": 24,
+            "claim": "24. Table 1, standard_correction, Overall Score: 0.514",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The overall score formula is mathematically consistent with producing 0.514 for ~8.52s average processing time. TC=0.3 is deterministically derived from hardcoded transparency_score=0.3 and f1=1.0. The only free parameter is the actual API processing time (efficiency_score), which cannot be verified without running the experiment. No API key is available, and no experiment result files exist.",
+            "evidence": "evaluation.py:468-473 formula: overall = 0.4*f1 + 0.3*(bleu+rougeL)/2 + 0.2*tc + 0.1*efficiency_score. run_experiment.py:412 hardcodes standard_correction transparency_score=0.3. evaluation.py:258: TC = 1.0 - abs(0.3 - f1) = 0.3 when f1=1.0. Given F1=1.0, BLEU=0.0, ROUGE-L=0.0, TC=0.3: overall = 0.46 + 0.1*efficiency. For overall=0.514, efficiency_score=0.54, processing_time≈8.52s. No results/ directory exists; no JSON/CSV metrics found. | Code: code/evaluation.py:468-473 (_calculate_overall_score), code/evaluation.py:258 (trust_calibration formula), code/run_experiment.py:412 (standard_correction transparency_score=0.3)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:468-473 (_calculate_overall_score), code/evaluation.py:258 (trust_calibration formula), code/run_experiment.py:412 (standard_correction transparency_score=0.3)"
+                ],
+                "commands_executed": [
+                    "None (no commands run; analysis based on code inspection reusing Sessions 7, 11, 15, 19 findings)"
+                ]
+            }
+        }
+    ],
+    "figures": [
+        {
+            "claim_index": 25,
+            "claim": "1. ../paper/overall_performance.png: Overall Performance of each method, combining metrics from all evaluation categories.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The visualization code (visualization.py:311-361 visualize_overall_performance) runs successfully and correctly plots overall_score per method combining all evaluation categories (formula: 0.4*f1 + 0.3*(bleu+rougeL)/2 + 0.2*tc + 0.1*efficiency). However, fresh execution only works with hardcoded test data from the __main__ block, not from the paper's experimental results. No underlying metric data files (evaluation_results.json, CSVs, etc.) exist in the repository. The pre-existing paper/overall_performance.png cannot be verified as corresponding to the paper's claimed experimental results. Without an API key to run the full experiment, the specific content of the paper's figure cannot be verified.",
+            "evidence": "visualization.py __main__ block regenerated results/overall_performance.png successfully using hardcoded test data (TrustPath=0.85, sfc=0.60, ue=0.65, sc=0.62), which differs from paper's Table 1 values (TrustPath=0.635, sfc=0.554, ue=0.572, sc=0.514). No results/evaluation_results.json or any metric data file exists in the repository. | Code: code/visualization.py:311-361 (visualize_overall_performance), code/visualization.py:675-795 (__main__ test data block)",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/visualization.py:311-361 (visualize_overall_performance), code/visualization.py:675-795 (__main__ test data block)"
+                ],
+                "commands_executed": [
+                    "python code/visualization.py"
+                ]
+            }
+        },
+        {
+            "claim_index": 26,
+            "claim": "2. ../paper/error_detection_performance.png: Error Detection Performance measured by precision, recall, and F1 score for all methods.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The visualization function visualize_error_detection_performance() (visualization.py:63-122) correctly implements the described figure — a grouped bar chart of precision, recall, and F1 for all methods. Session 21 already executed python code/visualization.py and confirmed the function works, generating results/error_detection_performance.png. However, that execution used hardcoded test data from the __main__ block, not real experimental data. The test values differ from the paper's claimed values (paper: all 1.000; test data: 0.65-0.85 range). No underlying real metric files exist. The pre-existing paper/error_detection_performance.png has unverifiable provenance. Without real experimental data (requires API key), the paper figure's actual content cannot be verified.",
+            "evidence": "results/error_detection_performance.png generated by Session 21's `python code/visualization.py` run using hardcoded test data (TrustPath precision=0.85/recall=0.80/f1=0.82, simple_fact_checking=0.70/0.65/0.67, uncertainty_estimation=0.75/0.70/0.72, standard_correction=0.65/0.75/0.70). No results/evaluation_results.json or any real experiment metric files exist. Paper claims precision=recall=F1=1.000 for all methods in Table 1. | Code: code/visualization.py:63-122 (visualize_error_detection_performance), code/visualization.py:682-768 (__main__ hardcoded test data)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/visualization.py:63-122 (visualize_error_detection_performance), code/visualization.py:682-768 (__main__ hardcoded test data)"
+                ],
+                "commands_executed": [
+                    "None (reused Session 21 artifact: python code/visualization.py from repo root, which generated results/error_detection_performance.png with test data)"
+                ]
+            }
+        },
+        {
+            "claim_index": 27,
+            "claim": "3. ../paper/trust_metrics.png: Trust-related metrics including trust calibration, explanation satisfaction, and transparency scores.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The visualization code correctly implements a figure with trust calibration, explanation satisfaction, and transparency scores. Session 21's execution (reused here) confirmed the code runs and generates a trust_metrics.png. However, no underlying metric data from real experiments exists — the figure was only generated with hardcoded test data, not experimental results. No API key is available to run the full experiment. The pre-existing `paper/trust_metrics.png` has unverifiable provenance.",
+            "evidence": "Session 21 ran `python code/visualization.py` and generated `results/trust_metrics.png` (confirmed in fabscore_claude/workspace/claim_25_command_output.txt line 16). The `visualize_trust_metrics()` function (visualization.py:260-309) extracts `trust_calibration`, `explanation_satisfaction`, and `transparency_score` from `evaluation_results` and plots as grouped bars — matching the claim description. BUT: execution used hardcoded test data (TrustPath: tc=0.85, expl_sat=0.90, trans=0.95) from the `__main__` block, which differs from the paper's values (TC=0.9 from hardcoded transparency_score=0.9). No `results/evaluation_results.json` from a real experiment exists. | Code: code/visualization.py:260-309 (visualize_trust_metrics), code/visualization.py:675-795 (__main__ block with hardcoded test data)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/visualization.py:260-309 (visualize_trust_metrics), code/visualization.py:675-795 (__main__ block with hardcoded test data)"
+                ],
+                "commands_executed": [
+                    "Reused Session 21's execution: `python code/visualization.py` (run from /home/chenhui/fabscore/claude_papers/iclr2025_buildingtrust). No new command run for this session."
+                ]
+            }
+        },
+        {
+            "claim_index": 29,
+            "claim": "5. ../paper/radar_chart.png: Radar chart comparing all methods across five key metrics: error detection (F1 score), correction quality, efficiency, trust calibration, and transparency.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The radar chart implementation and structure exactly match the claim (5 metrics, all methods, correct metric names). Session 21 successfully executed the visualization script and generated the radar chart. However, the execution used hardcoded test data from the `__main__` block — not real experimental data — so the actual chart content cannot be verified. No `results/evaluation_results.json` from real experiments exists, and no API key is available to run the full experiment.",
+            "evidence": "Session 21 ran `python code/visualization.py` and generated `results/radar_chart.png` (confirmed in fabscore_claude/workspace/claim_25_command_output.txt line 21). The `visualize_radar_chart()` function (visualization.py:363-439) implements a radar chart with exactly 5 metrics: Error Detection (F1), Correction Quality (ROUGE-L), Trust Calibration, Transparency, and Efficiency — matching the claim. However, execution used hardcoded test data (TrustPath F1=0.82, ROUGE-L=0.70 etc.) that differs substantially from the paper's claimed values (TrustPath F1=1.0, ROUGE-L=0.0). No real experimental metric data files exist. | Code: code/visualization.py:363-439 (visualize_radar_chart), code/visualization.py:675-795 (__main__ test data)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/visualization.py:363-439 (visualize_radar_chart), code/visualization.py:675-795 (__main__ test data)"
+                ],
+                "commands_executed": [
+                    "None new; reused Session 21 artifact: `python code/visualization.py` (run from /home/chenhui/fabscore/claude_papers/iclr2025_buildingtrust)"
+                ]
+            }
+        }
+    ],
+    "results_section": [],
+    "summary": {
+        "total": 22,
+        "verified": 0,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 22,
+        "error": 0
+    }
+}

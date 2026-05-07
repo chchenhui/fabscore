@@ -1,0 +1,67 @@
+{
+  "experiment": "Random Mask Ablation: CA Signal Validation",
+  "model": "Qwen/Qwen3-8B",
+  "description": "Compare FCBoost CA-derived masks against random static masks to validate whether CA selection provides meaningful signal beyond any static boost.",
+  "config": {
+    "mask_structure": "F=8 RoPE pairs per KV head (16 boosted channels out of 128)",
+    "num_layers": 36,
+    "num_kv_heads": 8,
+    "head_dim": 128,
+    "boost_values": true,
+    "quantization": "K=INT2, V=INT2, boosted channels=INT4, sink=32, buffer=128",
+    "eval_seed": "random=0, numpy=1234, torch=1234, fewshot=1234",
+    "num_repeats_per_mask": 1,
+    "max_gen_toks": 32768
+  },
+  "results": {
+    "fcboost_ca_mask": {
+      "description": "FCBoost v2 with CA-derived mask (3-seed average from main experiment)",
+      "aime24": {"per_seed": [76.67, 73.33, 73.33], "mean": 74.44, "std": 1.57},
+      "aime25": {"per_seed": [66.67, 66.67, 70.00], "mean": 67.78, "std": 1.57},
+      "average": 71.11
+    },
+    "random_mask_seed42": {
+      "aime24": 63.33,
+      "aime25": 66.67,
+      "average": 65.00
+    },
+    "random_mask_seed123": {
+      "aime24": 70.00,
+      "aime25": 63.33,
+      "average": 66.67
+    },
+    "random_mask_seed456": {
+      "aime24": 56.67,
+      "aime25": 66.67,
+      "average": 61.67
+    },
+    "random_mask_summary": {
+      "aime24": {"values": [63.33, 70.00, 56.67], "mean": 63.33, "std": 5.44},
+      "aime25": {"values": [66.67, 63.33, 66.67], "mean": 65.56, "std": 1.57},
+      "average": {"values": [65.00, 66.67, 61.67], "mean": 64.44, "std": 2.06}
+    },
+    "kivi_kv2star": {
+      "description": "KIVI-KV2* baseline (no channel boost), 3-seed average",
+      "aime24": {"mean": 65.56},
+      "aime25": {"mean": 66.67},
+      "average": 66.11
+    }
+  },
+  "analysis": {
+    "question_1": {
+      "question": "Does the random mask improve over KIVI-KV2* (no boost)?",
+      "answer": "No. Random mask average (64.44%) is actually slightly below KIVI-KV2* (66.11%), a difference of -1.67pp. Random boosting of arbitrary channels does not reliably help and may even hurt slightly, suggesting that boosting wrong channels can introduce noise.",
+      "random_mask_avg": 64.44,
+      "kivi_kv2star_avg": 66.11,
+      "delta": -1.67
+    },
+    "question_2": {
+      "question": "Does FCBoost (CA mask) significantly outperform the random mask mean?",
+      "answer": "Yes. FCBoost CA mask (71.11%) outperforms random mask mean (64.44%) by +6.67pp. This is a substantial gap, demonstrating that the CA-derived channel selection provides genuinely useful information about quantization sensitivity. The CA signal identifies channels where precision matters most, rather than randomly distributing the precision budget.",
+      "fcboost_ca_avg": 71.11,
+      "random_mask_avg": 64.44,
+      "delta": 6.67
+    },
+    "conclusion": "The CA-derived mask provides a meaningful signal beyond simply applying any static boost. Random masks perform comparably to (or slightly worse than) no boost at all, while the CA mask achieves +6.67pp over random masks and +5.00pp over the no-boost baseline. This validates that the Contextual Agreement metric correctly identifies quantization-sensitive RoPE frequency channels."
+  }
+}

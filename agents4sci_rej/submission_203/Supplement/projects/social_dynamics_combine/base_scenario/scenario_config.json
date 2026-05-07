@@ -1,0 +1,94 @@
+{
+  "scenario_info": {
+    "scene_name": "social_dynamics",
+    "description": "Multi-agent simulation of cultural region emergence driven by individual openness and spatial information flow in a spatially explicit society.",
+    "created_date": "2025-08-10"
+  },
+  "simulation_config": {
+    "mode": "ROUND",
+    "max_steps": 50,
+    "termination_conditions": {
+      "convergence": {
+        "type": "cultural_region_stability",
+        "window": 50,
+        "threshold": 0.01
+      },
+      "max_steps": 50
+    }
+  },
+  "environment_config": {
+    "scene_name": "social_dynamics",
+    "data": {
+      "grid_type": "2D_square",
+      "grid_size": [
+        10,
+        10
+      ],
+      "boundary_conditions": "toroidal",
+      "initial_cultural_distribution": {
+        "method": "random",
+        "num_traits": 5,
+        "trait_options_per_dimension": 10
+      },
+      "interaction_range_options": [
+        "first-order_neighbors",
+        "third-order_neighbors",
+        "fifth-order_neighbors"
+      ],
+      "cultural_similarity_metric": "proportion_shared_traits"
+    }
+  },
+  "agent_config": {
+    "total_count": 100,
+    "types": {
+      "CulturalAgent": {
+        "count": 100,
+        "profile_path": "profile/data/CulturalAgent.json",
+        "schema_path": "profile/schema/CulturalAgent.json",
+        "trait_vector_length": 5,
+        "trait_value_options": 10,
+        "openness_levels": [
+          "vewy low",
+          "low",
+          "medium",
+          "high",
+          "vert high"
+        ],
+        "interaction_range": [
+          "first-order_neighbors",
+          "third-order_neighbors",
+          "fifth-order_neighbors"
+        ]
+      }
+    }
+  },
+  "metric_config": {
+    "metrics": [
+      {
+        "name": "num_cultural_regions",
+        "type": "count",
+        "description": "Number of distinct cultural regions identified by spatial clustering of agents with highly similar trait sets."
+      },
+      {
+        "name": "region_size_distribution",
+        "type": "distribution",
+        "description": "Distribution of sizes (number of agents) of all identified cultural regions."
+      },
+      {
+        "name": "average_cultural_similarity",
+        "type": "mean",
+        "description": "Average pairwise cultural similarity between neighboring agents across the grid."
+      },
+      {
+        "name": "trait_adoption_events",
+        "type": "count",
+        "description": "Total number of cultural trait adoption events per simulation step."
+      },
+      {
+        "name": "convergence_time",
+        "type": "step_count",
+        "description": "Number of steps until the number and composition of cultural regions stabilize."
+      }
+    ]
+  }
+}

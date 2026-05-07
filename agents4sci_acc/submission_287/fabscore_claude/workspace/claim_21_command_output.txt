@@ -1,0 +1,66 @@
+## Claim 21: Nivolumab → Pericardial effusion, Verifier: 0.0
+
+### Command
+python3 -c "
+import requests, math, re, json
+
+# FAERS API query for nivolumab + pericardial effusion
+faers_url = 'https://api.fda.gov/drug/event.json'
+params = {
+    'search': 'patient.drug.medicinalproduct:\"nivolumab\"+AND+patient.reaction.reactionmeddrapt:\"pericardial effusion\"',
+    'limit': 1
+}
+r = requests.get(faers_url, params=params)
+print('FAERS status:', r.status_code)
+if r.status_code == 200:
+    data = r.json()
+    count = data.get('meta', {}).get('results', {}).get('total', 0)
+    print('FAERS count:', count)
+else:
+    print('FAERS response:', r.text[:300])
+    count = 0
+
+# Label API query for nivolumab
+label_url = 'https://api.fda.gov/drug/label.json'
+params2 = {
+    'search': 'openfda.generic_name:\"nivolumab\" OR openfda.brand_name:\"nivolumab\"',
+    'limit': 25
+}
+r2 = requests.get(label_url, params=params2)
+print('Label status:', r2.status_code)
+label_boost = 0.0
+if r2.status_code == 200:
+    data2 = r2.json()
+    adverse_text = ' '.join(
+        ' '.join(res.get('adverse_reactions', []))
+        for res in data2.get('results', [])
+    )
+    side_effect = 'pericardial effusion'
+    if re.search(rf'\b{re.escape(side_effect.lower())}\b', adverse_text.lower()):
+        label_boost = 2.0
+        print('Found in labeling:', True)
+    else:
+        print('Found in labeling:', False)
+else:
+    print('Label response:', r2.text[:300])
+
+score = round(math.log1p(count) + label_boost, 2)
+print(f'Score: log1p({count}) + {label_boost} = {score}')
+"
+
+### Output
+FAERS status: 404
+FAERS response: {
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "No matches found!"
+  }
+}
+Label status: 200
+Found in labeling: False
+Score: log1p(0) + 0.0 = 0.0
+
+### Conclusion
+FDA FAERS: 0 records for nivolumab + "pericardial effusion" (404 NOT_FOUND)
+Drug labeling: "pericardial effusion" not found in adverse_reactions text
+Score = log1p(0) + 0.0 = 0.0 ✓ matches claimed value of 0.0

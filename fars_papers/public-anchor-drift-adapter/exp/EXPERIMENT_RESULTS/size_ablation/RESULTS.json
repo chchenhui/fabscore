@@ -1,0 +1,52 @@
+{
+  "experiment": "anchor_size_sensitivity_ablation",
+  "description": "Effect of N_p (number of public anchor pairs) on retrieval recovery",
+  "config": {
+    "model_old": "sentence-transformers/all-distilroberta-v1",
+    "model_new": "sentence-transformers/all-mpnet-base-v2",
+    "adapter": "ResidualMLPAdapter",
+    "hidden_dim": 256,
+    "dropout": 0.0,
+    "lr": 3e-4,
+    "weight_decay": 0.01,
+    "max_epochs": 50,
+    "patience": 5,
+    "seed": 0,
+    "data_source": "wikipedia",
+    "sizes_tested": [500, 1000, 2000, 5000, 10000]
+  },
+  "nDCG@10": {
+    "500":   {"scifact": 0.00423, "trec-covid": 0.00718, "fiqa": 0.00000, "arguana": 0.01485},
+    "1000":  {"scifact": 0.01314, "trec-covid": 0.03374, "fiqa": 0.00018, "arguana": 0.05867},
+    "2000":  {"scifact": 0.04980, "trec-covid": 0.05569, "fiqa": 0.01164, "arguana": 0.20050},
+    "5000":  {"scifact": 0.26474, "trec-covid": 0.21013, "fiqa": 0.11653, "arguana": 0.36612},
+    "10000": {"scifact": 0.39345, "trec-covid": 0.32299, "fiqa": 0.21421, "arguana": 0.41880}
+  },
+  "Recall@10": {
+    "500":   {"scifact": 0.01333, "trec-covid": 0.00013, "fiqa": 0.00000, "arguana": 0.02703},
+    "1000":  {"scifact": 0.02833, "trec-covid": 0.00093, "fiqa": 0.00039, "arguana": 0.11593},
+    "2000":  {"scifact": 0.09583, "trec-covid": 0.00170, "fiqa": 0.01754, "arguana": 0.37838},
+    "5000":  {"scifact": 0.41250, "trec-covid": 0.00551, "fiqa": 0.15702, "arguana": 0.64438},
+    "10000": {"scifact": 0.57333, "trec-covid": 0.00857, "fiqa": 0.28245, "arguana": 0.70555}
+  },
+  "recovery_ratio_rho": {
+    "500":   {"scifact": 0.0095, "trec-covid": 0.0213, "fiqa": 0.0000, "arguana": 0.0358},
+    "1000":  {"scifact": 0.0296, "trec-covid": 0.1003, "fiqa": 0.0008, "arguana": 0.1484},
+    "2000":  {"scifact": 0.1122, "trec-covid": 0.1655, "fiqa": 0.0506, "arguana": 0.5129},
+    "5000":  {"scifact": 0.5966, "trec-covid": 0.6244, "fiqa": 0.5061, "arguana": 0.9386},
+    "10000": {"scifact": 0.8866, "trec-covid": 0.9598, "fiqa": 0.9303, "arguana": 1.0739}
+  },
+  "best_val_loss": {
+    "500": 0.001731,
+    "1000": 0.001399,
+    "2000": 0.001078,
+    "5000": 0.000815,
+    "10000": 0.000691
+  },
+  "key_findings": {
+    "saturation_regime": "N_p=5000 is NOT saturated (avg rho ~0.67); N_p=10000 approaches saturation (avg rho ~0.96)",
+    "minimum_viable_Np": "~5000 pairs for meaningful recovery (rho > 0.5); below 2000 is negligible",
+    "sharp_transition": "Major performance jump between N_p=2000 and N_p=5000",
+    "cross_dataset_consistency": "All 4 datasets show same qualitative scaling pattern"
+  }
+}

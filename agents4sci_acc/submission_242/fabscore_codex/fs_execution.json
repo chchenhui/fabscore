@@ -1,0 +1,127 @@
+{
+    "tables": [],
+    "figures": [
+        {
+            "claim_index": 32,
+            "claim": "2. Figure 2: LLM agent rejection patterns comparison showing systematic decision-making by both clients and freelancers. Both agent types prioritize skill alignment and project fit over cost considerations, with clients showing slightly higher emphasis on skill mismatch while freelancers demonstrate greater budget awareness.",
+            "verdict": "Error",
+            "explanation": "Execution stage: The claim could not be verified in this environment because the repository lacks the raw Figure 2 simulation inputs, and the repo-native regeneration path requires outbound LLM API access that is unavailable here. The run also reveals a secondary robustness bug after the API failure (`AttributeError: 'dict' object has no attribute 'id'`), but the primary blocker for verification is the external DNS/network failure.",
+            "evidence": "`supplementary_materials/comprehensive_rejection_analysis.py` hardcodes `results/simuleval/true_gpt_simulation_20250905_001404.json` and `results/simuleval/true_gpt_simulation_20250910_123457.json`; neither file exists in the repository. Running `python supplementary_materials/comprehensive_rejection_analysis.py` raised `FileNotFoundError` on the first path. A minimal regeneration attempt with `python supplementary_materials/run_marketplace.py --freelancers 1 --clients 1 --rounds 1 --jobs-per-freelancer 1 --bids-per-round 1 --job-posting-cooldown-min 2 --job-posting-cooldown-max 7 --max-active-jobs 1 --reflection-probability 0.0 --freelancer-agent-type llm --client-agent-type llm --quiet` failed before producing any JSON because the OpenAI call hit `httpcore.ConnectError: [Errno -3] Temporary failure in name resolution` / `openai.APIConnectionError: Connection error.` No files were created under `results/`. | Code: supplementary_materials/comprehensive_rejection_analysis.py:149-161; supplementary_materials/src/marketplace/true_gpt_marketplace.py:66-68; supplementary_materials/src/marketplace/true_gpt_marketplace.py:340-346; supplementary_materials/src/marketplace/true_gpt_marketplace.py:2413-2418; supplementary_materials/src/marketplace/true_gpt_marketplace.py:435-438; supplementary_materials/src/marketplace/true_gpt_marketplace.py:2477-2489",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "supplementary_materials/comprehensive_rejection_analysis.py:149-161",
+                    "supplementary_materials/src/marketplace/true_gpt_marketplace.py:66-68",
+                    "supplementary_materials/src/marketplace/true_gpt_marketplace.py:340-346",
+                    "supplementary_materials/src/marketplace/true_gpt_marketplace.py:2413-2418",
+                    "supplementary_materials/src/marketplace/true_gpt_marketplace.py:435-438",
+                    "supplementary_materials/src/marketplace/true_gpt_marketplace.py:2477-2489"
+                ],
+                "commands_executed": [
+                    "python supplementary_materials/comprehensive_rejection_analysis.py ; python supplementary_materials/run_marketplace.py --freelancers 1 --clients 1 --rounds 1 --jobs-per-freelancer 1 --bids-per-round 1 --job-posting-cooldown-min 2 --job-posting-cooldown-max 7 --max-active-jobs 1 --reflection-probability 0.0 --freelancer-agent-type llm --client-agent-type llm --quiet"
+                ]
+            }
+        },
+        {
+            "claim_index": 33,
+            "claim": "3. Figure 3: Freelancer reputation tier distribution after 100 rounds showing natural progression hierarchy. Most freelancers (63%) remain in the \"New\" tier, while 27% achieve \"Established\" status, 9.5% reach \"Expert\" level, and 0.5% (1 freelancer) attain \"Elite\" status. This distribution reflects realistic market dynamics where advancement requires sustained performance.",
+            "verdict": "Error",
+            "explanation": "Execution stage: The claim could not be verified because the exact simulation JSON required by the Figure 3 analysis script is missing, and the minimal repo-native regeneration path is blocked by external network failure before any claim-relevant data can be produced. This is an environment/execution blocker rather than a concrete contradiction in the repository.",
+            "evidence": "Paper context from 242_Simulating_Two_Sided_Job_M.pdf Appendix C.2 / Figure 3 states the 63% / 27% / 9.5% / 0.5% tier split. The repo contains only the final image supplementary_materials/analysis_results/category_breakdown/reputation_tier_distribution.png, but no checked-in raw Figure 3 input JSON under results/. Fresh execution in fabscore_codex/workspace/claim_33_command_output.txt shows: (1) python supplementary_materials/category_breakdown_analysis.py prints 'File not found: results/simuleval/true_gpt_simulation_20250905_001404.json'; (2) a minimal regeneration attempt fails with OpenAI connection error '[Errno -3] Temporary failure in name resolution' and then crashes with AttributeError: 'dict' object has no attribute 'id'; (3) no simulation JSON was created under results/. | Code: supplementary_materials/category_breakdown_analysis.py:28-36,679-727; supplementary_materials/src/marketplace/true_gpt_marketplace.py:342-348,436-439,2405-2418,2477-2492",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "supplementary_materials/category_breakdown_analysis.py:28-36,679-727",
+                    "supplementary_materials/src/marketplace/true_gpt_marketplace.py:342-348,436-439,2405-2418,2477-2492"
+                ],
+                "commands_executed": [
+                    "python supplementary_materials/category_breakdown_analysis.py; python supplementary_materials/run_marketplace.py --freelancers 1 --clients 1 --rounds 1 --jobs-per-freelancer 1 --bids-per-round 1 --job-posting-cooldown-min 1 --job-posting-cooldown-max 1 --max-active-jobs 1 --reflection-probability 0.0 --freelancer-agent-type llm --client-agent-type llm --quiet"
+                ]
+            }
+        },
+        {
+            "claim_index": 34,
+            "claim": "4. Figure 4: Fill rates and competition intensity across skill categories in the LLM-F + LLM-C configuration. Data Science demonstrates the highest competition intensity with 10 bids per job, while Engineering & Architecture shows more moderate competition. Fill rates vary significantly across categories, with some domains achieving higher job completion rates than others.",
+            "verdict": "Error",
+            "explanation": "Execution stage: The repository has a plausible Figure 4 analysis path, but the required raw simulation JSON is missing and the minimal repo-native regeneration path is blocked by external network failure before claim-relevant data can be produced. Because execution cannot proceed in this environment, the claim cannot be verified from source data here.",
+            "evidence": "Paper Appendix D / Figure 4 states Data Science has approximately 10 bids per job and Engineering & Architecture around 3. Fresh execution logged in `fabscore_codex/workspace/claim_34_command_output.txt` shows `python supplementary_materials/category_breakdown_analysis.py` immediately fails on missing `results/simuleval/true_gpt_simulation_20250905_001404.json`. A minimal regeneration attempt then fails with OpenAI `Temporary failure in name resolution` and crashes in `run_simulation()` with `AttributeError: 'dict' object has no attribute 'id'`, leaving `results/` empty. A checked-in non-provenanced artifact, `supplementary_materials/analysis_results/analysis_results.json`, contains category metrics such as Data Science `avg_bids_per_job=5.454545454545454` and Engineering `avg_bids_per_job=3.0`, but it cannot be linked to the paper's Figure 4 execution path. | Code: supplementary_materials/category_breakdown_analysis.py:20-36,136-166,507-531; supplementary_materials/src/marketplace/true_gpt_marketplace.py:342-348,436-439,2412-2418,2477-2492",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "supplementary_materials/category_breakdown_analysis.py:20-36,136-166,507-531",
+                    "supplementary_materials/src/marketplace/true_gpt_marketplace.py:342-348,436-439,2412-2418,2477-2492"
+                ],
+                "commands_executed": [
+                    "python supplementary_materials/category_breakdown_analysis.py; python supplementary_materials/run_marketplace.py --freelancers 1 --clients 1 --rounds 1 --jobs-per-freelancer 1 --bids-per-round 1 --job-posting-cooldown-min 1 --job-posting-cooldown-max 1 --max-active-jobs 1 --reflection-probability 0.0 --freelancer-agent-type llm --client-agent-type llm --quiet; find results -maxdepth 3 -type f"
+                ]
+            }
+        }
+    ],
+    "results_section": [
+        {
+            "claim_index": 35,
+            "claim": "1. 37% of freelancers advance beyond \"New,\" forming a progression ladder (New->Established->Expert->Elite).",
+            "verdict": "Error",
+            "explanation": "Execution stage: The repository contains the claim-relevant analysis code, but the raw simulation JSON needed to recompute the 37% figure is missing, and the prior minimal repo-native regeneration attempt for this exact Figure 3 pipeline is blocked by external network failure before claim-relevant data can be produced. That leaves the claim unverifiable in this environment.",
+            "evidence": "Paper text extracted this session states the claim explicitly on pages 7, 14, and 15: 37% of 200 freelancers advance beyond New, with a 63%/27%/9.5%/0.5% New/Established/Expert/Elite split. `supplementary_materials/category_breakdown_analysis.py` is hardcoded to load `results/simuleval/true_gpt_simulation_20250905_001404.json` and compute `promoted_freelancers = Established + Expert + Elite`, but no checked-in raw `tier_distribution` or `promotion_rate` artifact was found under `supplementary_materials/analysis_results`. Reused blocker artifact: `fabscore_codex/workspace/claim_33_command_output.txt`, which shows `python supplementary_materials/category_breakdown_analysis.py` failing on the missing JSON and the minimal regeneration command failing with OpenAI `Temporary failure in name resolution`, producing no replacement simulation file. | Code: `supplementary_materials/category_breakdown_analysis.py:28-35` (hardcoded missing input), `supplementary_materials/category_breakdown_analysis.py:679-727` (tier counting from simulation reputation data), `supplementary_materials/category_breakdown_analysis.py:824-920` (promotion-rate calculation), `supplementary_materials/src/marketplace/simple_reputation.py:22-27` and `supplementary_materials/src/marketplace/simple_reputation.py:258-266` (tier ladder definitions and calculation hook).",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "`supplementary_materials/category_breakdown_analysis.py:28-35` (hardcoded missing input), `supplementary_materials/category_breakdown_analysis.py:679-727` (tier counting from simulation reputation data), `supplementary_materials/category_breakdown_analysis.py:824-920` (promotion-rate calculation), `supplementary_materials/src/marketplace/simple_reputation.py:22-27` and `supplementary_materials/src/marketplace/simple_reputation.py:258-266` (tier ladder definitions and calculation hook)."
+                ],
+                "commands_executed": [
+                    "Inspection commands logged in `fabscore_codex/workspace/claim_35_command_output.txt`, including PDF text extraction and code/artifact searches. Reused prior execution artifact from `fabscore_codex/workspace/claim_33_command_output.txt`: `python supplementary_materials/category_breakdown_analysis.py`; `python supplementary_materials/run_marketplace.py --freelancers 1 --clients 1 --rounds 1 --jobs-per-freelancer 1 --bids-per-round 1 --job-posting-cooldown-min 1 --job-posting-cooldown-max 1 --max-active-jobs 1 --reflection-probability 0.0 --freelancer-agent-type llm --client-agent-type llm --quiet`."
+                ]
+            }
+        },
+        {
+            "claim_index": 36,
+            "claim": "2. Some categories like Data Science demonstrate high competition (approximately 10 bids per job) with strong fill rates.",
+            "verdict": "Error",
+            "explanation": "Execution stage: The claim is downstream of the Figure 4 category-analysis pipeline, but the repository is missing the paper-run simulation JSON that `category_breakdown_analysis.py` requires. The only checked-in numeric category table comes from a different 25-round analysis path and cannot validate the paper’s 100-round result. Regeneration is blocked in this environment by external network failure when the repo tries to call OpenAI, so execution cannot proceed to a claim-validating result.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_36_command_output.txt` captures the paper text for Figure 4, confirms `results/` contains no required `results/simuleval/true_gpt_simulation_20250905_001404.json`, and records that the only checked-in numeric category artifact is `supplementary_materials/analysis_results/analysis_results.json` with `simulation_overview.total_rounds = 25` and `Data Science & Analytics.avg_bids_per_job = 5.454545454545454`. Reused exact blocker artifact `fabscore_codex/workspace/claim_34_command_output.txt`, which shows `python supplementary_materials/category_breakdown_analysis.py` failing on the missing JSON and the minimal regeneration command failing with OpenAI DNS/network error (`Temporary failure in name resolution`) before any replacement simulation JSON is produced. | Code: `supplementary_materials/category_breakdown_analysis.py:28-35` (hardcoded missing Figure 4 input), `supplementary_materials/category_breakdown_analysis.py:136-165` (per-category `avg_bids_per_job` and `fill_rate` computation), `supplementary_materials/category_breakdown_analysis.py:507-531` (Figure 4 plotting from computed category metrics); blocker path reused from prior artifact: `supplementary_materials/src/marketplace/true_gpt_marketplace.py:342-348` and `supplementary_materials/src/marketplace/true_gpt_marketplace.py:2412-2418`.",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "`supplementary_materials/category_breakdown_analysis.py:28-35` (hardcoded missing Figure 4 input), `supplementary_materials/category_breakdown_analysis.py:136-165` (per-category `avg_bids_per_job` and `fill_rate` computation), `supplementary_materials/category_breakdown_analysis.py:507-531` (Figure 4 plotting from computed category metrics)",
+                    "blocker path reused from prior artifact: `supplementary_materials/src/marketplace/true_gpt_marketplace.py:342-348` and `supplementary_materials/src/marketplace/true_gpt_marketplace.py:2412-2418`."
+                ],
+                "commands_executed": [
+                    "Inspection commands recorded in `fabscore_codex/workspace/claim_36_command_output.txt`, including PDF text extraction, `nl -ba supplementary_materials/category_breakdown_analysis.py | sed -n '1,220p'`, inspection of `supplementary_materials/analysis_results/analysis_results.json`, and `find results -maxdepth 3 -type f | sort`. Reused prior execution artifact from `fabscore_codex/workspace/claim_34_command_output.txt`, which contains: `python supplementary_materials/category_breakdown_analysis.py` and `python supplementary_materials/run_marketplace.py --freelancers 1 --clients 1 --rounds 1 --jobs-per-freelancer 1 --bids-per-round 1 --job-posting-cooldown-min 1 --job-posting-cooldown-max 1 --max-active-jobs 1 --reflection-probability 0.0 --freelancer-agent-type llm --client-agent-type llm --quiet`."
+                ]
+            }
+        },
+        {
+            "claim_index": 37,
+            "claim": "3. Others like Engineering & Architecture show more moderate competition levels (around 3 bids per job) with different completion patterns.",
+            "verdict": "Error",
+            "explanation": "Execution stage: The repository contains partial supporting evidence for an Engineering & Architecture value of 3.0 bids/job, but that evidence comes from a different 25-round analysis artifact and cannot verify the paper's 100-round Figure 4 claim. The exact repo-native Figure 4 path is blocked because its required simulation JSON is missing, and the documented regeneration path is currently blocked by external network failure before it can produce replacement data.",
+            "evidence": "Paper pages 14-15 state the Figure 4 claim. `supplementary_materials/category_breakdown_analysis.py:28-35` is hardcoded to load `results/simuleval/true_gpt_simulation_20250905_001404.json`, but `results/` is empty in this repository. A checked-in auxiliary artifact, `supplementary_materials/analysis_results/analysis_results.json`, reports `simulation_overview.total_rounds = 25` and `skill_analysis.category_coverage[\"Engineering & Architecture\"].avg_bids_per_job = 3.0` with `fill_rate = 0.23076923076923078`, so it is not the paper's 100-round Figure 4 run. Reused blocker artifact `fabscore_codex/workspace/claim_34_command_output.txt` shows the exact Figure 4 script failing on the missing JSON, and the minimal regeneration attempt failing with OpenAI `Temporary failure in name resolution` followed by `AttributeError: 'dict' object has no attribute 'id'`. | Code: `supplementary_materials/category_breakdown_analysis.py:28-35` (hardcoded missing Figure 4 input), `supplementary_materials/category_breakdown_analysis.py:136-165` (per-category `avg_bids_per_job` and `fill_rate` computation), `supplementary_materials/src/marketplace/true_gpt_marketplace.py:342-348` (OpenAI persona generation call), `supplementary_materials/src/marketplace/true_gpt_marketplace.py:2412-2418` (simulation assumes returned freelancers have `.id`).",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "`supplementary_materials/category_breakdown_analysis.py:28-35` (hardcoded missing Figure 4 input), `supplementary_materials/category_breakdown_analysis.py:136-165` (per-category `avg_bids_per_job` and `fill_rate` computation), `supplementary_materials/src/marketplace/true_gpt_marketplace.py:342-348` (OpenAI persona generation call), `supplementary_materials/src/marketplace/true_gpt_marketplace.py:2412-2418` (simulation assumes returned freelancers have `.id`)."
+                ],
+                "commands_executed": [
+                    "Inspection commands recorded in `fabscore_codex/workspace/claim_37_command_output.txt`, including: `python - <<'PY' ... PdfReader('242_Simulating_Two_Sided_Job_M.pdf') ... PY`, `nl -ba supplementary_materials/category_breakdown_analysis.py | sed -n '1,220p'`, `python - <<'PY' ... analysis_results.json ... PY`, `find results -maxdepth 3 -type f | sort`, and `nl -ba supplementary_materials/src/marketplace/true_gpt_marketplace.py | sed -n '330,350p;2408,2424p'`. Reused prior execution artifact `fabscore_codex/workspace/claim_34_command_output.txt`, which contains the attempted regeneration commands: `python supplementary_materials/category_breakdown_analysis.py` and `python supplementary_materials/run_marketplace.py --freelancers 1 --clients 1 --rounds 1 --jobs-per-freelancer 1 --bids-per-round 1 --job-posting-cooldown-min 1 --job-posting-cooldown-max 1 --max-active-jobs 1 --reflection-probability 0.0 --freelancer-agent-type llm --client-agent-type llm --quiet`."
+                ]
+            }
+        }
+    ],
+    "summary": {
+        "total": 6,
+        "verified": 0,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 0,
+        "error": 6
+    }
+}

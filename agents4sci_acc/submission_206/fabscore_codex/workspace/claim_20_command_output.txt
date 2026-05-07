@@ -1,0 +1,82 @@
+===== COMMAND =====
+python3 - <<'PY'
+from PyPDF2 import PdfReader
+reader = PdfReader('206_Self_Spec_Model_Authored_S.pdf')
+for i, page in enumerate(reader.pages, start=1):
+    text = page.extract_text() or ''
+    if 'Table 3' in text:
+        print(f'--- PAGE {i} ---')
+        for line in text.splitlines():
+            if 'Table 3' in line or 'Claude 3.7 10, 116' in line or 'GPT-4o' in line or 'Claude 3.5' in line:
+                print(line)
+PY
+===== STDOUT =====
+===== STDERR =====
+--- PAGE 6 ---
+GPT-4o 87% 92% +5
+Claude 3.5 90% 89%−1
+the percentage point difference. GPT-4o and Claude 3.7 clearly benefit from Self-Spec, while Claude
+guiding their solution. In contrast, Claude 3.5 shows a slight decrease in performance with Self-Spec
+of the approach for state-of-the-art LLMs. The slight regression for Claude 3.5 points to differences
+Shared (Claude 3.7 & GPT-4o) 65, 134, 163
+Shared (Claude 3.7 & Claude 3.5) 92, 146
+Shared (GPT-4o & Claude 3.5) 50, 83
+Claude 3.7 10, 116
+GPT-4o 74, 91, 102, 115, 132, 141
+Claude 3.5 9, 14, 17, 19, 32, 112, 113, 125, 126, 129, 135, 138, 153
+Table 3: Model-unique failure candidates (potential regressions; baseline not provided)
+Model-specific errors suggest characteristic tendencies: Claude 3.5 often inserts over-strict “defensive”
+GPT-4o shows localized logic slips (per-row vs. global accounting in HE/115, filename rules in
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+python3 - <<'PY'
+import json
+for path in ['A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl', 'A4S_update/failed_spec_gpt_4o.jsonl']:
+    ids = []
+    with open(path, 'r', encoding='utf-8') as f:
+        for line in f:
+            obj = json.loads(line)
+            ids.append(obj['task_id'])
+    print(path, 'count=', len(ids), 'contains HumanEval/10 =', 'HumanEval/10' in ids)
+    print('ids=', ids)
+PY
+===== STDOUT =====
+===== STDERR =====
+A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl count= 10 contains HumanEval/10 = False
+ids= ['HumanEval/32', 'HumanEval/65', 'HumanEval/75', 'HumanEval/116', 'HumanEval/130', 'HumanEval/132', 'HumanEval/145', 'HumanEval/146', 'HumanEval/160', 'HumanEval/163']
+A4S_update/failed_spec_gpt_4o.jsonl count= 14 contains HumanEval/10 = False
+ids= ['HumanEval/50', 'HumanEval/65', 'HumanEval/74', 'HumanEval/75', 'HumanEval/83', 'HumanEval/91', 'HumanEval/102', 'HumanEval/115', 'HumanEval/132', 'HumanEval/134', 'HumanEval/141', 'HumanEval/145', 'HumanEval/160', 'HumanEval/163']
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+python3 - <<'PY'
+import json, importlib.util
+spec = importlib.util.spec_from_file_location('spec_eval', 'A4S_update/spec_result_evaluation.py')
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+record = None
+line_no = None
+with open('A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl', 'r', encoding='utf-8') as f:
+    for idx, line in enumerate(f, start=1):
+        obj = json.loads(line)
+        if obj.get('task_id') == 'HumanEval/10':
+            record = obj
+            line_no = idx
+            break
+print('record_line=', line_no)
+print('task_id=', record['task_id'])
+passed, err, tb = mod.run_test({'entry_point': record['entry_point'], 'test': record['test']}, record['generated_solution'])
+print('passed=', passed)
+print('error=', err)
+if tb:
+    print(tb)
+PY
+===== STDOUT =====
+===== STDERR =====
+record_line= 11
+task_id= HumanEval/10
+passed= True
+error= 
+===== EXIT CODE: 0 =====
+

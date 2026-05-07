@@ -1,0 +1,16 @@
+{
+  "optimize_index": 0,
+  "issues": [
+    {
+      "title": "DQC_0117 summed dimensional facts across all axes indiscriminately",
+      "description": "The DQC_0117 rule executor summed ALL dimensional facts for the target concept regardless of which axis they belonged to. When a concept has facts along multiple axes (e.g., ProductOrServiceAxis and StatementBusinessSegmentsAxis), this produced incorrect sums. Fixed by adding axis-aware grouping: group dimensional facts by axis QName, compute sum per axis, and pick the axis whose sum has the largest absolute difference from the extracted value. This fixed 12 instances (IDs: 169-171, 176-179, 184, 192-195), improving DQC_0117 ACC from 27.50% to 37.50%."
+    },
+    {
+      "title": "Linkbase injection used wrong XML namespace prefix for appinfo tags",
+      "description": "The _inject_linkbase_refs() function in xbrl_reconstructor.py always used bare <appinfo> tags regardless of the schema's namespace prefix (xs: or xsd:). This caused Arelle warning [xbrl.5.1.2.linkbaseRefLocation]. Fixed by detecting the prefix used in the schema and generating matching <xs:appinfo> or <xsd:appinfo> tags. Minor impact - silences warnings and marginally improves edge cases."
+    }
+  ],
+  "experiment_result_path": "EXPERIMENT_RESULTS/optimize_trace/iteration_0/",
+  "success": true,
+  "summary": "Improved ACC from 38.86% (129/332) to 42.17% (140/332), a +3.31pp gain (+11 instances). The primary fix was axis-aware dimensional fact grouping in DQC_0117, which converted 12 calculation errors to correct answers. A minor namespace fix in XBRL reconstruction was also applied. Two other attempted fixes (DQC_0126 linkrole selection and DQC_0015 largest-negative selection) were reverted after testing showed no net improvement."
+}

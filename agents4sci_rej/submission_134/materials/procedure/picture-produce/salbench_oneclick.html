@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>5×5 细微差异图像 · 一键生成（每组10张 + Excel答题卡）</title>
+<style>
+  :root { --pad: 22px; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; margin: var(--pad); color: #222;}
+  h1 { font-size: 20px; margin: 0 0 8px;}
+  .desc { color:#555; margin-bottom: 14px; line-height: 1.6;}
+  .card { border: 1px solid #eee; border-radius: 10px; padding: var(--pad); margin-bottom: 14px; box-shadow: 0 1px 8px rgba(0,0,0,.03); }
+  button { padding: 12px 16px; font-size: 15px; cursor: pointer; border-radius: 10px; border: 1px solid #ddd; background:#fafafa; }
+  button:active { transform: translateY(1px); }
+  .primary { background: #111; color:#fff; border-color:#111; }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap: wrap;}
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  #log { font-size: 13px; white-space: pre-wrap; background: #fcfcfc; border: 1px dashed #ddd; padding: 10px; border-radius: 8px; max-height: 40vh; overflow:auto;}
+  .hint { color:#666; font-size: 13px;}
+  .ok { color: #0a7a2f; }
+  .warn { color: #b35b00; }
+  canvas { display:none; }
+</style>
+<!-- 依赖：JSZip（打包ZIP） + SheetJS（生成xlsx）。首次打开需联网加载两段小脚本。 -->
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <h1>5×5 细微差异图像 · 一键生成（每组10张 + Excel答题卡）</h1>
+  <div class="card desc">
+    <div>参数：<span class="mono">画布 800×800</span>、<span class="mono">5×5 网格</span>、随机形状（圆 / 正方形 / 长方形 / 三角形 / ⭐星形）。</div>
+    <div>三组：A 尺寸差异（仅一个放大 <b>10%</b>）；B 颜色差异（仅一个与其它有细微色差，RGB 欧氏距离≈<b>45</b>）；C 尺寸+颜色，但分属<b>不同</b>图案。</div>
+    <div class="hint">说明：像素级抖动（±2px）避免完美阵列；颜色“细微差异”按 RGB 欧氏距离控制；与论文 P3 合成图像设置一致。生成后会自动下载一个 ZIP，里含 PNG、<span class="mono">答题卡.xlsx</span>、CSV 与 <span class="mono">metadata.json</span>。</div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <button id="go" class="primary">一键生成并下载 ZIP（3 组 × 10 张 + 答题卡.xlsx）</button>
+      <span id="status" class="hint">预计 1～3 秒</span>
+    </div>
+    <div id="log" class="mono" style="margin-top:12px;"></div>
+  </div>
+
+  <canvas id="cv" width="800" height="800"></canvas>
+
+<script>
+(() => {
+  const W = 800, H = 800, GRID = 5, MARGIN = 40, JITTER = 2;
+  const SIZE_RATIO = 1.10;
+  const COLOR_DIST = 45; // approx RGB euclidean distance
+  const SHAPES = ["circle", "square", "rect", "triangle", "star"];
+
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  const cellW = (W - 2*MARGIN) / GRID;
+  const cellH = (H - 2*MARGIN) / GRID;
+  const logBox = document.getElementById('log');
+  const status = document.getElementById('status');
+  const btn = document.getElementById('go');
+
+  function log(t){ logBox.textContent += t + "\\n"; logBox.scrollTop = logBox.scrollHeight; }
+  function randInt(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+  function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+  function randomColor(){ return [randInt(60,195), randInt(60,195), randInt(60,195)]; }
+  function addColorDelta(rgb, dist=COLOR_DIST){
+    // random 3D unit vector
+    let ux = Math.random()*2-1, uy=Math.random()*2-1, uz=Math.random()*2-1;
+    const len = Math.sqrt(ux*ux+uy*uy+uz*uz)||1; ux/=len; uy/=len; uz/=len;
+    const dx=ux*dist, dy=uy*dist, dz=uz*dist;
+    let r = Math.max(0, Math.min(255, Math.round(rgb[0]+dx)));
+    let g = Math.max(0, Math.min(255, Math.round(rgb[1]+dy)));
+    let b = Math.max(0, Math.min(255, Math.round(rgb[2]+dz)));
+    return [r,g,b];
+  }
+  function euclid(a,b){
+    return Math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2 + (a[2]-b[2])**2);
+  }
+  function rgbToHex(rgb){
+    return "#" + rgb.map(v => v.toString(16).toUpperCase().padStart(2,'0')).join("");
+  }
+  function idxToRC(idx, grid=GRID){ const r = Math.floor(idx/grid), c = idx % grid; return [r+1, c+1]; }
+
+  function baseSizeForShape(shape){
+    if(shape==="circle") return 60;
+    if(shape==="square") return 60;
+    if(shape==="rect") return {w:70, h:45};
+    if(shape==="triangle") return 70;
+    if(shape==="star") return 70;
+    return 60;
+  }
+  function gridCenters(){
+    const arr = [];
+    for(let r=0;r<GRID;r++){
+      for(let c=0;c<GRID;c++){
+        const cx = MARGIN + (c+0.5)*cellW + randInt(-JITTER,JITTER);
+        const cy = MARGIN + (r+0.5)*cellH + randInt(-JITTER,JITTER);
+        arr.push({i:r*GRID+c, r, c, cx, cy});
+      }
+    }
+    return arr;
+  }
+
+  function drawShape(shape, cx, cy, size, color){
+    ctx.fillStyle = `rgb(${color[0]},${color[1]},${color[2]})`;
+    if(shape==="circle"){
+      const r = size/2;
+      ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+    }else if(shape==="square"){
+      const half = size/2;
+      ctx.fillRect(cx-half, cy-half, size, size);
+    }else if(shape==="rect"){
+      const {w,h} = size;
+      ctx.fillRect(cx - w/2, cy - h/2, w, h);
+    }else if(shape==="triangle"){
+      const s = size, h = s*Math.sqrt(3)/2;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - h/2);
+      ctx.lineTo(cx - s/2, cy + h/2);
+      ctx.lineTo(cx + s/2, cy + h/2);
+      ctx.closePath(); ctx.fill();
+    }else if(shape==="star"){
+      const outer = size/2;
+      const inner = outer*0.5; // 内外半径比例
+      const N = 5;
+      ctx.beginPath();
+      for(let k=0;k<2*N;k++){
+        const ang = -Math.PI/2 + k*Math.PI/N;
+        const rad = (k%2===0) ? outer : inner;
+        const x = cx + rad*Math.cos(ang);
+        const y = cy + rad*Math.sin(ang);
+        if(k===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.closePath();
+      ctx.fill();
+    }else{
+      const r = size/2; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+    }
+  }
+
+  function clear(){ ctx.fillStyle = "#fff"; ctx.fillRect(0,0,W,H); }
+
+  async function canvasToU8(){
+    const blob = await new Promise(res => cv.toBlob(res, "image/png"));
+    const ab = await blob.arrayBuffer();
+    return new Uint8Array(ab);
+  }
+
+  function escXml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function colName(idx){ // 0-based index -> A, B, ..., AA
+    let s="", n=idx+1;
+    while(n>0){ const r=(n-1)%26; s=String.fromCharCode(65+r)+s; n=Math.floor((n-1)/26); }
+    return s;
+  }
+  function makeSheetXML(rows){
+    const cols = rows[0].length;
+    const lastCell = colName(cols-1) + (rows.length);
+    let xml = '<?xml version="1.0" encoding="UTF-8"?>\\n';
+    xml += '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">\\n';
+    xml += `<dimension ref="A1:${lastCell}"/>\\n<sheetData>\\n`;
+    for(let r=0;r<rows.length;r++){
+      xml += `<row r="${r+1}">`;
+      for(let c=0;c<rows[r].length;c++){
+        const A1 = colName(c) + (r+1);
+        const val = rows[r][c] == null ? "" : String(rows[r][c]);
+        xml += `<c r="${A1}" t="inlineStr"><is><t>${escXml(val)}</t></is></c>`;
+      }
+      xml += `</row>\\n`;
+    }
+    xml += '</sheetData></worksheet>';
+    return xml;
+  }
+
+  // 生成一张图（返回 PNG bytes 和元数据与答题行）
+  function generateOne(setType, shape){
+    clear();
+    const centers = gridCenters();
+    const baseCol = randomColor();
+    const targetCol = addColorDelta(baseCol, COLOR_DIST);
+    let idxSize = randInt(0, centers.length-1);
+    let idxColor = randInt(0, centers.length-1);
+    if(setType === "size_color"){
+      while(idxColor === idxSize) idxColor = randInt(0, centers.length-1);
+    }else{
+      idxColor = idxSize;
+    }
+
+    // 绘制
+    for(let i=0;i<centers.length;i++){
+      const {cx,cy} = centers[i];
+      let color = baseCol;
+      if((setType==="color" || setType==="size_color") && i===idxColor) color = targetCol;
+
+      if(shape==="rect"){
+        const base = baseSizeForShape("rect");
+        let w=base.w, h=base.h;
+        if((setType==="size" || setType==="size_color") && i===idxSize){
+          w = Math.round(base.w*SIZE_RATIO); h = Math.round(base.h*SIZE_RATIO);
+        }
+        drawShape("rect", cx, cy, {w,h}, color);
+      }else{
+        const s0 = baseSizeForShape(shape);
+        let s = s0;
+        if((setType==="size" || setType==="size_color") && i===idxSize){
+          s = Math.round(s0*SIZE_RATIO);
+        }
+        drawShape(shape, cx, cy, s, color);
+      }
+    }
+
+    const [rs, cs] = idxToRC(idxSize);
+    const [rc, cc] = idxToRC(idxColor);
+    const distActual = Math.round(euclid(baseCol, targetCol));
+    const meta = {
+      set_type: setType,
+      shape,
+      grid: `${GRID}x${GRID}`,
+      size_ratio: (setType==="size" || setType==="size_color") ? SIZE_RATIO : 1.0,
+      color_distance_target: (setType==="color" || setType==="size_color") ? COLOR_DIST : 0,
+      color_distance_actual: (setType==="color" || setType==="size_color") ? distActual : 0,
+      target_index_size: (setType==="size" || setType==="size_color") ? (rs-1)*GRID + (cs-1) : null,
+      target_index_color: (setType==="color" || setType==="size_color") ? (rc-1)*GRID + (cc-1) : null,
+      base_color: baseCol, target_color: (setType==="color" || setType==="size_color") ? targetCol : baseCol,
+      canvas: `${W}x${H}`
+    };
+
+    const setLabel = setType==="size" ? "尺寸差异" : (setType==="color" ? "颜色差异" : "尺寸+颜色差异");
+    let ans = "";
+    if(setType==="size") ans = `尺寸在 r${rs} c${cs}（放大 ${SIZE_RATIO.toFixed(2)}x）`;
+    else if(setType==="color") ans = `颜色在 r${rc} c${cc}（RGB距离≈${distActual}）`;
+    else ans = `尺寸在 r${rs} c${cs}（${SIZE_RATIO.toFixed(2)}x）；颜色在 r${rc} c${cc}（RGB距离≈${distActual}）`;
+
+    const row = [
+      "", setLabel, shape, `${GRID}x${GRID}`,
+      (setType!=="color" ? `r${rs} c${cs}` : ""),
+      (setType!=="size" ? `r${rc} c${cc}` : ""),
+      (setType!=="color" ? SIZE_RATIO.toFixed(2) : ""),
+      (setType!=="size" ? distActual : ""),
+      rgbToHex(baseCol),
+      (setType!=="size" ? rgbToHex(meta.target_color) : rgbToHex(baseCol)),
+      Math.floor(Math.random()*1e9).toString().padStart(9,"0"),
+      ans
+    ];
+
+    return { meta, row };
+  }
+
+  async function run(){
+    btn.disabled = true; status.textContent = "生成中…";
+    logBox.textContent = "";
+    log("开始生成 3 组 × 各 10 张图像…");
+
+    const zip = new JSZip();
+    const metadata = {};
+    const header = ["文件名","集合","形状","网格","尺寸目标位置","颜色目标位置","尺寸比例","RGB色差(实际)","基准色","目标色","随机种子","正确答案"];
+    const rows = [header];
+
+    // 3 组
+    const sets = [
+      {key:"A", type:"size", label: "A_size_only"},
+      {key:"B", type:"color", label:"B_color_only"},
+      {key:"C", type:"size_color", label:"C_size_and_color"}
+    ];
+
+    let counter = 0;
+    for(const s of sets){
+      for(let i=1;i<=10;i++){
+        const shape = pick(SHAPES);
+        const {meta, row} = generateOne(s.type, shape);
+        const fname = `${s.label}_${String(i).padStart(3,'0')}_${shape}.png`;
+        row[0] = fname; // 填回文件名
+        rows.push(row);
+        metadata[fname] = meta;
+        // 导出PNG
+        const bytes = await canvasToU8();
+        zip.file(fname, bytes);
+        counter++;
+        if(counter % 5 === 0) log(`已生成 ${counter}/30 …`);
+        await new Promise(r => setTimeout(r, 0)); // 让UI喘口气
+      }
+    }
+
+    // 写 metadata.json / CSV / Excel
+    zip.file("metadata.json", JSON.stringify(metadata, null, 2));
+
+    // CSV（带 BOM，Excel 直接打开不乱码）
+    const csv = "\\ufeff" + rows.map(r => r.map(v => {
+      const s = (v==null?"":String(v));
+      return /[",\n]/.test(s) ? ('"'+ s.replace(/"/g,'""') + '"') : s;
+    }).join(",")).join("\\n");
+    zip.file("answer_key.csv", csv);
+
+    // 使用 SheetJS 生成 xlsx
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, "答题卡");
+    const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+    zip.file("answer_key.xlsx", wbout);
+
+    log("正在打包 ZIP …");
+    const blob = await zip.generateAsync({type:"blob"});
+    const fnameZip = `salbench_5x5_${new Date().toISOString().replace(/[:.]/g,'-')}_30imgs.zip`;
+
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = fnameZip;
+    a.click();
+    URL.revokeObjectURL(a.href);
+
+    log(`✅ 完成：已打包 30 张图片 + 答题卡.xlsx/CSV + metadata.json`);
+    status.innerHTML = '<span class="ok">已完成，ZIP 已下载</span>';
+    btn.disabled = false;
+  }
+
+  document.getElementById('go').addEventListener('click', run);
+})();
+</script>
+
+<div class="card hint">
+  使用提示：
+  <ol>
+    <li>下载本文件后，<b>直接双击用浏览器打开</b>（推荐 Chrome/Edge）。</li>
+    <li>点击“<b>一键生成并下载 ZIP</b>”。大约 1–3 秒会自动下载一个压缩包。</li>
+    <li>压缩包内含：3 组 × 10 张 PNG、<span class="mono">answer_key.xlsx</span>、<span class="mono">answer_key.csv</span>、<span class="mono">metadata.json</span>。</li>
+  </ol>
+  参数与细节遵循论文对 P3 合成集的做法（网格 + 轻微抖动；颜色差异用 RGB 欧氏距离；尺寸差异用统一比例缩放，等比 +10%）。
+</div>
+</body>
+</html>

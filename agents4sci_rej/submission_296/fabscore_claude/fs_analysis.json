@@ -1,0 +1,218 @@
+{
+    "no_code_files": [],
+    "obvious_hallucination": [
+        {
+            "index": 6,
+            "category": "table",
+            "content": "6. Table 2, Random Assignment, Decision Acc.: 33.3%",
+            "reason": "Both stored metrics.json files (runs 20250912_175803 and 20250912_180002) consistently record baseline_random decision_accuracy = 0.338 (33.8%), not 33.3%. The paper likely substituted the theoretical expectation of 1/3 ≈ 33.3% for the actual measured value of 33.8%. The discrepancy is confirmed by static inspection of two independent runs.",
+            "fabrication_type": "result_fabrication",
+            "code_evidence": [
+                "results/metrics.json: baseline_random.decision_accuracy = 0.338",
+                "results/results_20250912_175803/metrics.json: baseline_random.decision_accuracy = 0.338",
+                "results/results_20250912_180002/metrics.json: baseline_random.decision_accuracy = 0.338",
+                "code/run_experiments.py: _run_baselines() random baseline with np.random.seed(42)",
+                "paper/main_paper.md: Table 2 reports 33.3%"
+            ]
+        },
+        {
+            "index": 7,
+            "category": "table",
+            "content": "7. Table 2, Random Assignment, ECE: 0.67",
+            "reason": "Both stored metrics.json files (runs 20250912_175803 and 20250912_180002) consistently record baseline_random ECE = 0.41290717876442024. The paper claims ECE = 0.67 for Random Assignment, which is a substantial discrepancy (63% relative error). The theoretical ECE for a random uniform confidence baseline (~0.75 mean confidence) with ~33% accuracy would be approximately 0.42, also inconsistent with 0.67. No stored artifact or theoretical justification supports the claimed 0.67 value.",
+            "fabrication_type": "result_fabrication",
+            "code_evidence": [
+                "results/metrics.json: baseline_random.ece = 0.41290717876442024",
+                "results/results_20250912_175803/metrics.json: baseline_random.ece = 0.41290717876442024",
+                "results/results_20250912_180002/metrics.json: baseline_random.ece = 0.41290717876442024",
+                "code/evaluate.py: _compute_expected_calibration_error()",
+                "code/run_experiments.py: _run_baselines() random confidence from np.random.uniform(0.5, 1.0)",
+                "paper/main_paper.md: Table 2 reports ECE = 0.67 for Random Assignment"
+            ]
+        }
+    ],
+    "static_verifiable": [
+        {
+            "index": 1,
+            "category": "table",
+            "content": "1. Table 1, GPA MAE, Value: 0.831",
+            "reason": "results/metrics.json (both runs) records main_pipeline.gpa_mae = 0.8308103370026504, which rounds to 0.831. The evaluation code in evaluate.py computes this as np.mean(np.abs(true_gpas - pred_gpas)). The stored artifact directly confirms the claimed value.",
+            "code_evidence": [
+                "results/metrics.json: metrics.main_pipeline.gpa_mae = 0.8308103370026504",
+                "results/results_20250912_180002/metrics.json: same value",
+                "code/evaluate.py: compute_transcript_metrics() gpa_mae computation"
+            ]
+        },
+        {
+            "index": 2,
+            "category": "table",
+            "content": "2. Table 1, Decision Accuracy, Value: 12.8%",
+            "reason": "results/metrics.json records main_pipeline.decision_accuracy = 0.128 = 12.8%. Both timestamped runs show the same value. Evaluation code in evaluate.py computes this by comparing system decisions against GPA-threshold-based expected decisions.",
+            "code_evidence": [
+                "results/metrics.json: metrics.main_pipeline.decision_accuracy = 0.128",
+                "results/results_20250912_175803/metrics.json: same value",
+                "code/evaluate.py: _compute_decision_accuracy()"
+            ]
+        },
+        {
+            "index": 3,
+            "category": "table",
+            "content": "3. Table 1, Expected Calibration Error, Value: 0.691",
+            "reason": "results/metrics.json records main_pipeline.ece = 0.6911666666666663, which rounds to 0.691. Both timestamped runs confirm this value. Evaluation code in evaluate.py computes ECE using 10-bin calibration analysis.",
+            "code_evidence": [
+                "results/metrics.json: metrics.main_pipeline.ece = 0.6911666666666663",
+                "results/results_20250912_175803/metrics.json: same value",
+                "code/evaluate.py: _compute_expected_calibration_error()"
+            ]
+        },
+        {
+            "index": 4,
+            "category": "table",
+            "content": "4. Table 1, Processing Time (sec), Value: 0.0004",
+            "reason": "results/metrics.json records efficiency.avg_processing_time = 0.000351927 (second run) and 0.000317483 (first run), both of which round to approximately 0.0004 seconds. The processing time is computed from datetime.now() deltas in run_experiments.py.",
+            "code_evidence": [
+                "results/metrics.json: metrics.efficiency.avg_processing_time = 0.000351927",
+                "results/results_20250912_175803/metrics.json: 0.000317483",
+                "code/run_experiments.py: processing_time = (datetime.now() - start_time).total_seconds()"
+            ]
+        },
+        {
+            "index": 5,
+            "category": "table",
+            "content": "5. Table 1, Throughput (apps/hour), Value: 10.2M",
+            "reason": "results/metrics.json records efficiency.throughput_per_hour = 10,229,394.16413063 ≈ 10.2M apps/hour. This is computed as 3600 / avg_processing_time in run_experiments.py. Both stored metrics confirm a throughput in the 10-11M range.",
+            "code_evidence": [
+                "results/metrics.json: metrics.efficiency.throughput_per_hour = 10229394.16413063",
+                "results/results_20250912_175803/metrics.json: throughput_per_hour = 11339189.8",
+                "code/run_experiments.py: throughput_per_hour = 3600 / np.mean(processing_times)"
+            ]
+        },
+        {
+            "index": 8,
+            "category": "table",
+            "content": "8. Table 2, GPA-Only Rules, Decision Acc.: 100%",
+            "reason": "results/metrics.json records baseline_gpa_only.decision_accuracy = 1.0 = 100%. This is consistent across both stored runs. The GPA-only baseline in run_experiments.py uses the same decision thresholds as the evaluator (≥3.0→ACCEPT, <2.5→REJECT, else REVIEW), making perfect accuracy guaranteed by design.",
+            "code_evidence": [
+                "results/metrics.json: metrics.baseline_gpa_only.decision_accuracy = 1.0",
+                "results/results_20250912_175803/metrics.json: same value",
+                "code/run_experiments.py: _run_baselines() gpa_only baseline uses same thresholds as evaluator"
+            ]
+        },
+        {
+            "index": 9,
+            "category": "table",
+            "content": "9. Table 2, GPA-Only Rules, GPA MAE: 0.0",
+            "reason": "results/metrics.json records baseline_gpa_only.gpa_mae = 0.0. The GPA-only baseline in run_experiments.py sets predicted_gpa = true_gpa (perfect prediction), so MAE is exactly 0.0 by design.",
+            "code_evidence": [
+                "results/metrics.json: metrics.baseline_gpa_only.gpa_mae = 0.0",
+                "code/run_experiments.py: gpa_only_results appends predicted_gpa = true_gpa"
+            ]
+        },
+        {
+            "index": 10,
+            "category": "table",
+            "content": "10. Table 2, GPA-Only Rules, ECE: 0.20",
+            "reason": "results/metrics.json records baseline_gpa_only.ece = 0.19999999999999984 ≈ 0.20. The GPA-only baseline uses fixed confidence = 0.8 with 100% accuracy, so ECE bins with confidence around 0.8 but 100% accuracy yields |0.8 - 1.0| * proportion ≈ 0.20.",
+            "code_evidence": [
+                "results/metrics.json: metrics.baseline_gpa_only.ece = 0.19999999999999984",
+                "code/run_experiments.py: gpa_only_results uses fixed confidence = 0.8"
+            ]
+        },
+        {
+            "index": 11,
+            "category": "table",
+            "content": "11. Table 2, Proposed System, Decision Acc.: 12.8%",
+            "reason": "Same as claim 2: results/metrics.json records main_pipeline.decision_accuracy = 0.128 = 12.8%, confirmed in both stored runs.",
+            "code_evidence": [
+                "results/metrics.json: metrics.main_pipeline.decision_accuracy = 0.128",
+                "paper/main_paper.md: Table 2 Proposed System = 12.8%"
+            ]
+        },
+        {
+            "index": 12,
+            "category": "table",
+            "content": "12. Table 2, Proposed System, GPA MAE: 0.831",
+            "reason": "Same as claim 1: results/metrics.json records main_pipeline.gpa_mae = 0.8308103370026504 ≈ 0.831, confirmed in both stored runs.",
+            "code_evidence": [
+                "results/metrics.json: metrics.main_pipeline.gpa_mae = 0.8308103370026504",
+                "paper/main_paper.md: Table 2 Proposed System GPA MAE = 0.831"
+            ]
+        },
+        {
+            "index": 13,
+            "category": "table",
+            "content": "13. Table 2, Proposed System, ECE: 0.691",
+            "reason": "Same as claim 3: results/metrics.json records main_pipeline.ece = 0.6911666666666663 ≈ 0.691, confirmed in both stored runs.",
+            "code_evidence": [
+                "results/metrics.json: metrics.main_pipeline.ece = 0.6911666666666663",
+                "paper/main_paper.md: Table 2 Proposed System ECE = 0.691"
+            ]
+        },
+        {
+            "index": 14,
+            "category": "figure",
+            "content": "1. Figure 1: Baseline Comparison Results.",
+            "reason": "Figure artifact exists at results/figures/baseline_comparison.png and .pdf (also in both timestamped run directories). The underlying data source is results/metrics.json which contains the baseline metrics used to generate the plot. The plotting script code/plotting.py contains generate_baseline_comparison() which generates this figure from pipeline output data (decision_accuracy, gpa_mae, ece for each baseline). Both the image artifacts and the underlying data exist.",
+            "code_evidence": [
+                "results/figures/baseline_comparison.png",
+                "results/figures/baseline_comparison.pdf",
+                "results/results_20250912_180002/figures/baseline_comparison.png",
+                "code/plotting.py: generate_baseline_comparison()",
+                "results/metrics.json: metrics.baseline_gpa_only and metrics.baseline_random and metrics.main_pipeline"
+            ]
+        },
+        {
+            "index": 15,
+            "category": "figure",
+            "content": "2. Figure 2: Processing Time Analysis.",
+            "reason": "Figure artifact exists at results/figures/processing_time_analysis.png and .pdf (also in both timestamped run directories). The underlying data is in results/metrics.json (efficiency section with avg_processing_time = 0.000351927). The plotting script code/plotting.py generates this figure from pipeline output processing times.",
+            "code_evidence": [
+                "results/figures/processing_time_analysis.png",
+                "results/figures/processing_time_analysis.pdf",
+                "results/results_20250912_180002/figures/processing_time_analysis.png",
+                "code/plotting.py: generate_processing_time_plot()",
+                "results/metrics.json: metrics.efficiency.avg_processing_time = 0.000351927"
+            ]
+        },
+        {
+            "index": 16,
+            "category": "figure",
+            "content": "3. Figure 3: GPA Error Distribution.",
+            "reason": "Figure artifact exists at results/figures/gpa_error_distribution.png and .pdf (also in both timestamped run directories). The underlying data is the individual transcript results in results/metrics.json (main_pipeline section with gpa_mae = 0.831). The plotting script code/plotting.py:generate_gpa_error_plot() computes error histograms from the per-sample ground_truth_gpa and predicted_gpa values stored in metrics.json.",
+            "code_evidence": [
+                "results/figures/gpa_error_distribution.png",
+                "results/figures/gpa_error_distribution.pdf",
+                "results/results_20250912_180002/figures/gpa_error_distribution.png",
+                "code/plotting.py: generate_gpa_error_plot()",
+                "results/metrics.json: baselines.gpa_only and main_pipeline per-sample GPA data"
+            ]
+        },
+        {
+            "index": 17,
+            "category": "results_section",
+            "content": "1. 70% Time Savings: Dramatic reduction from 20-minute manual review to sub-second automated processing",
+            "reason": "results/metrics.json confirms: manual_time_minutes = 20.0, automated_time_seconds = 0.000351927 (sub-second), savings_percentage = 99.99997% (which is clearly >70%). The paper's claim of '70% time savings' is a conservative/threshold statement — the actual achieved savings (99.9999%) exceeds 70%. The 20-minute manual baseline and sub-second automation are directly supported by stored metrics. The paper's outline.md stated 70% as a target, and the abstract says 'achieving 70% processing time reduction'.",
+            "code_evidence": [
+                "results/metrics.json: metrics.efficiency.time_saved_estimate.manual_time_minutes = 20.0",
+                "results/metrics.json: metrics.efficiency.time_saved_estimate.automated_time_seconds = 0.000351927",
+                "results/metrics.json: metrics.efficiency.time_saved_estimate.savings_percentage = 99.99997",
+                "code/run_experiments.py: _estimate_time_savings() with manual_time = 20 * 60 seconds"
+            ]
+        }
+    ],
+    "insufficient_evidence": [],
+    "execution_required": [],
+    "error": [],
+    "summary": {
+        "total_claims": 17,
+        "no_code_files": 0,
+        "obvious_hallucination": 2,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 2,
+        "static_verifiable": 15,
+        "insufficient_evidence": 0,
+        "execution_required": 0,
+        "error": 0
+    }
+}

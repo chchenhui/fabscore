@@ -1,0 +1,295 @@
+
+syntax = "proto3";
+
+package agent;
+
+// 事件服务定义
+service AgentService {
+  // 注册worker节点
+  rpc RegisterWorker (RegisterWorkerRequest) returns (RegisterWorkerResponse) {}
+  
+  // 心跳服务
+  rpc Heartbeat (HeartbeatRequest) returns (HeartbeatResponse) {}
+  
+  // 在worker上创建agent
+  rpc CreateAgent (CreateAgentRequest) returns (CreateAgentResponse) {}
+  
+  // 发送事件
+  rpc SendEvent (EventRequest) returns (EventResponse) {}
+  
+  // 批量创建agents
+  rpc CreateAgentsBatch (CreateAgentsBatchRequest) returns (CreateAgentsBatchResponse) {}
+  
+  // 发送数据存储事件
+  rpc SendStorageEvent (StorageEventRequest) returns (StorageEventResponse) {}
+  
+  // 批量发送数据存储事件
+  rpc SendStorageEventBatch (StorageEventBatchRequest) returns (StorageEventBatchResponse) {}
+  
+  // 发送决策记录
+  rpc SendDecisionRecord (DecisionRecordRequest) returns (DecisionRecordResponse) {}
+  
+  // 批量发送决策记录
+  rpc SendDecisionRecordBatch (DecisionRecordBatchRequest) returns (DecisionRecordBatchResponse) {}
+  
+  // 获取环境数据
+  rpc GetEnvData (EnvDataRequest) returns (EnvDataResponse) {}
+  
+  // 更新环境数据
+  rpc UpdateEnvData (EnvDataUpdateRequest) returns (EnvDataUpdateResponse) {}
+  
+  // 请求停止仿真
+  rpc StopSimulation (SimulationStopRequest) returns (SimulationStopResponse) {}
+  
+  // 获取Agent数据
+  rpc GetAgentData (AgentDataRequest) returns (AgentDataResponse) {}
+  
+  // 获取指定类型的Agent数据
+  rpc GetAgentDataByType (AgentDataByTypeRequest) returns (AgentDataByTypeResponse) {}
+  
+  // 获取节点的Token使用情况
+  rpc GetTokenUsage (TokenUsageRequest) returns (TokenUsageResponse) {}
+
+  // 定位Agent所在Worker
+  rpc LocateAgent (LocateAgentRequest) returns (LocateAgentResponse) {}
+
+  // Master向Worker批量收集数据
+  rpc CollectDataBatch(BatchDataRequest) returns (BatchDataResponse) {}
+}
+
+// Worker注册请求
+message RegisterWorkerRequest {
+  string worker_id = 1;
+  string address = 2;
+  int32 port = 3;
+}
+
+// Worker注册响应
+message RegisterWorkerResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// 心跳请求
+message HeartbeatRequest {
+  string worker_id = 1;
+  int64 timestamp = 2;
+}
+
+// 心跳响应
+message HeartbeatResponse {
+  bool acknowledged = 1;
+}
+
+// 创建Agent请求
+message CreateAgentRequest {
+  string agent_type = 1;
+  string agent_id = 2;
+  string config_json = 3;  // JSON序列化的配置
+}
+
+// 创建Agent响应
+message CreateAgentResponse {
+  bool success = 1;
+  string message = 2;
+  string agent_id = 3;
+}
+
+// 事件请求
+message EventRequest {
+  string event_id = 1;
+  string event_kind = 2;
+  string from_agent_id = 3;
+  string to_agent_id = 4;
+  int64 timestamp = 5;
+  string payload_json = 6;  // JSON序列化的payload
+  string reply_to_worker_address = 7; // For P2P direct replies
+  int32 reply_to_worker_port = 8;    // For P2P direct replies
+}
+
+// 事件响应
+message EventResponse {
+  bool received = 1;
+}
+
+// 批量事件请求 (用于P2P批量发送)
+message EventBatchRequest {
+  repeated EventRequest events = 1;
+}
+
+// 批量事件响应
+message EventBatchResponse {
+  bool received = 1;
+  int32 processed_count = 2;
+  string error = 3;
+}
+
+// 数据存储事件请求
+message StorageEventRequest {
+  string event_type = 1;
+  string source_type = 2;
+  string source_id = 3;
+  string target_type = 4;
+  string target_id = 5;
+  string payload_json = 6;  // JSON序列化的payload
+}
+
+// 数据存储事件响应
+message StorageEventResponse {
+  bool received = 1;
+}
+
+// 批量数据存储事件请求
+message StorageEventBatchRequest {
+  repeated StorageEventRequest events = 1;
+}
+
+// 批量数据存储事件响应
+message StorageEventBatchResponse {
+  bool received = 1;
+  int32 processed_count = 2;
+  string error = 3;
+}
+
+// 决策记录请求
+message DecisionRecordRequest {
+  string agent_id = 1;
+  string prompt = 2;
+  string output = 3;
+  double processing_time = 4;
+  string context_json = 5;  // JSON序列化的context
+}
+
+// 决策记录响应
+message DecisionRecordResponse {
+  bool received = 1;
+}
+
+// 批量决策记录请求
+message DecisionRecordBatchRequest {
+  repeated DecisionRecordRequest decisions = 1;
+}
+
+// 批量决策记录响应
+message DecisionRecordBatchResponse {
+  bool received = 1;
+  int32 processed_count = 2;
+  string error = 3;
+}
+
+// 批量创建agents请求
+message CreateAgentsBatchRequest {
+  repeated string configs_json = 1;
+}
+
+// 批量创建agents响应
+message CreateAgentsBatchResponse {
+  bool success = 1;
+  string message = 2;
+  repeated string agent_ids = 3;
+}
+
+// 环境数据请求
+message EnvDataRequest {
+  string key = 1;
+  string default_value_json = 2;  // JSON序列化的默认值
+}
+
+// 环境数据响应
+message EnvDataResponse {
+  bool success = 1;
+  string value_json = 2;  // JSON序列化的值
+  string error = 3;
+}
+
+// 环境数据更新请求
+message EnvDataUpdateRequest {
+  string key = 1;
+  string value_json = 2;  // JSON序列化的值
+}
+
+// 环境数据更新响应
+message EnvDataUpdateResponse {
+  bool success = 1;
+  string error = 2;
+}
+
+// 停止仿真请求
+message SimulationStopRequest {
+  string worker_id = 1;
+  string reason = 2;
+  int64 timestamp = 3;
+}
+
+// 停止仿真响应
+message SimulationStopResponse {
+  bool acknowledged = 1;
+  string message = 2;
+}
+
+// Agent数据请求
+message AgentDataRequest {
+  string agent_id = 1;
+  string key = 2;
+  string default_value_json = 3;  // JSON序列化的默认值
+}
+
+// Agent数据响应
+message AgentDataResponse {
+  bool success = 1;
+  string value_json = 2;  // JSON序列化的值
+  string error = 3;
+}
+
+// 按类型获取Agent数据请求
+message AgentDataByTypeRequest {
+  string agent_type = 1;
+  string key = 2;
+  string default_value_json = 3;  // JSON序列化的默认值
+}
+
+// 按类型获取Agent数据响应
+message AgentDataByTypeResponse {
+  bool success = 1;
+  string values_json = 2;  // JSON序列化的{agent_id: value}字典
+  string error = 3;
+}
+
+// 定位Agent请求
+message LocateAgentRequest {
+  string agent_id = 1;
+}
+
+// 定位Agent响应
+message LocateAgentResponse {
+  bool success = 1;
+  string worker_address = 2;
+  int32 worker_port = 3;
+  string error_message = 4;
+}
+
+// Token使用情况请求
+message TokenUsageRequest {
+  string worker_id = 1;
+}
+
+// Token使用情况响应
+message TokenUsageResponse {
+  bool success = 1;
+  string token_stats_json = 2;  // JSON序列化的token统计数据
+  string error = 3;
+}
+
+// Master向Worker批量收集数据请求
+message BatchDataRequest {
+  string agent_type = 1;          // 要查询的Agent类型
+  string data_key = 2;            // 要获取的数据的键
+  string default_value_json = 3;  // JSON序列化的默认值 (可选)
+}
+
+// Master向Worker批量收集数据响应
+message BatchDataResponse {
+  bool success = 1;
+  string collected_data_json = 2; // JSON序列化的收集到的数据 {agent_id: value}
+  string error_message = 3;       // 错误信息 (如果success为false)
+}        

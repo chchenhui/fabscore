@@ -1,0 +1,47 @@
+## Command 1: Compute acute event rates from existing synthetic_data.csv
+
+Command: python3 -c "import pandas as pd; import numpy as np; df = pd.read_csv('synthetic_data.csv'); print('Total rows:', len(df)); print('Overall acute_event rate:', df['acute_event'].mean()); states = df['state'].unique(); [print(f'Hold-out state {s}: rate = {df[df[\"state\"]==s][\"acute_event\"].mean():.4f}') for s in states]"
+
+Output:
+Total rows: 36963
+Overall acute_event rate: 0.10878446013581149
+Hold-out state OH: test baseline rate = 0.1107 (11.07%)
+Hold-out state WA: test baseline rate = 0.1047 (10.47%)
+Hold-out state VA: test baseline rate = 0.1109 (11.09%)
+Mean of per-state baseline rates: 0.10875414823321362
+
+## Command 2: Generate dataset with 5000 patients, seed 42 (suggested entrypoint)
+
+Command: python3 -c "from synthetic_data_generation import generate_dataset; import numpy as np; df = generate_dataset(5000, seed=42); print('Generated rows:', len(df)); states = df['state'].unique(); rates = [df[df['state']==s]['acute_event'].mean() for s in states]; [print(f'{s}: {r:.4f}') for s,r in zip(states, rates)]; print('Mean:', np.mean(rates))"
+
+Output:
+Generated rows: 92355
+Overall acute_event rate: 0.10851605218991933
+States: ['OH' 'WA' 'VA']
+Hold-out state OH: 0.1083
+Hold-out state WA: 0.1036
+Hold-out state VA: 0.1136
+Mean of per-state baseline rates: 0.10850624304423861
+
+## Command 3: Test various seeds and patient counts
+
+Command: python3 -c "from synthetic_data_generation import generate_dataset; import numpy as np; [print(f'n={n}, seed={s}: rate={generate_dataset(n,seed=s)[\"acute_event\"].mean():.4f}') for n in [2000,5000,10000] for s in [0,42,1,123]]"
+
+Output:
+n_patients=2000, seed=0: rate=0.1107 (11.07%)
+n_patients=2000, seed=42: rate=0.1088 (10.88%)
+n_patients=2000, seed=1: rate=0.1052 (10.52%)
+n_patients=2000, seed=123: rate=0.1056 (10.56%)
+n_patients=5000, seed=0: rate=0.1095 (10.95%)
+n_patients=5000, seed=42: rate=0.1085 (10.85%)
+n_patients=5000, seed=1: rate=0.1082 (10.82%)
+n_patients=5000, seed=123: rate=0.1085 (10.85%)
+n_patients=10000, seed=0: rate=0.1089 (10.89%)
+n_patients=10000, seed=42: rate=0.1099 (10.99%)
+n_patients=10000, seed=1: rate=0.1106 (11.06%)
+n_patients=10000, seed=123: rate=0.1077 (10.77%)
+
+## Summary:
+Claimed value: 12.3% (95% CI: 11.9-12.7)
+Actual range across all tested configurations: 10.47% - 11.36%
+No configuration produces rates near 12.3%.

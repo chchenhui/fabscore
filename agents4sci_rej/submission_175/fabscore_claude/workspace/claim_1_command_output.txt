@@ -1,0 +1,48 @@
+================================================================================
+COMMAND 1: Check existing pkl for few_shot_results
+python3 -c "import pickle; ..."
+Working dir: /home/chenhui/fabscore/agents4sci_rej/submission_175/SupplementaryMaterials/code
+--------------------------------------------------------------------------------
+OUTPUT:
+few_shot_results (from nearest-neighbor classifier in simple_meta_learning_analysis.py):
+  SKCM: {'1_shot': 0.8333333333333334, '5_shot': 1.0, '10_shot': 1.0}
+  SARC: {'1_shot': 0.8333333333333334, '5_shot': 0.6333333333333333, '10_shot': 0.9333333333333333}
+  TGCT: {'1_shot': 0.7666666666666667, '5_shot': 0.8666666666666667, '10_shot': 0.9}
+  LGG: {'1_shot': 0.7333333333333333, '5_shot': 0.9666666666666667, '10_shot': 0.9666666666666667}
+  MESO: {'1_shot': 0.7, '5_shot': 0.8, '10_shot': 0.7666666666666667}
+
+Average 5-shot: (1.0+0.633+0.867+0.967+0.8)/5 = 85.34%
+Paper claims Full Model 5-shot: 85.7%
+Note: This is from nearest-neighbor classifier, NOT hierarchical MAML.
+
+================================================================================
+COMMAND 2: Attempt to run hierarchical MAML pipeline
+/home/chenhui/miniconda3/envs/mlrbench/bin/python3 hierarchical_meta_learning_pipeline.py \
+  --data_dir ../data \
+  --results_dir /home/chenhui/fabscore/agents4sci_rej/submission_175/fabscore_claude/workspace/results \
+  --config configs/default_config.yaml
+Working dir: /home/chenhui/fabscore/agents4sci_rej/submission_175/SupplementaryMaterials/code
+--------------------------------------------------------------------------------
+OUTPUT:
+2026-04-24 19:45:41,777 - __main__ - INFO - Starting Hierarchical Meta-Learning Pipeline
+2026-04-24 19:45:41,777 - __main__ - INFO - Arguments: ...
+2026-04-24 19:45:41,780 - __main__ - INFO - Loaded configuration from configs/default_config.yaml
+2026-04-24 19:45:42,898 - __main__ - INFO - Using device: cuda
+2026-04-24 19:45:42,899 - __main__ - INFO - Step 1: Loading and preprocessing TCGA data...
+2026-04-24 19:45:42,899 - src.data.preprocessing - INFO - Starting TCGA data loading and preprocessing...
+2026-04-24 19:45:42,899 - src.data.preprocessing - INFO - Loading raw TCGA pathway data...
+2026-04-24 19:45:42,899 - __main__ - ERROR - Pipeline failed with error: No RDS files found in ../data
+Traceback (most recent call last):
+  File "hierarchical_meta_learning_pipeline.py", line 371, in <module>
+    main()
+  File "hierarchical_meta_learning_pipeline.py", line 104, in main
+    data_splits = dataset.load_and_preprocess()
+  File "src/data/preprocessing.py", line 62, in load_and_preprocess
+    raw_data = self._load_raw_data()
+  File "src/data/preprocessing.py", line 91, in _load_raw_data
+    raise FileNotFoundError(f"No RDS files found in ../data")
+FileNotFoundError: No RDS files found in ../data
+
+CONCLUSION: Pipeline cannot run — no TCGA RDS data files exist. No MAML training has been done.
+The only results in the repository are from a nearest-neighbor classifier (simple_meta_learning_analysis.py),
+not the hierarchical MAML "Full Model" claimed in the paper.

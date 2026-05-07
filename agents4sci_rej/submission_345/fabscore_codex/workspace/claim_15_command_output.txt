@@ -1,0 +1,889 @@
+===== COMMAND =====
+sed -n '1,260p' 345_Multi_Agent_AI_System_for__Supplementary\ Material/validation/phase5_real_validation.py
+===== OUTPUT =====
+#!/usr/bin/env python3
+"""
+Phase 5: Real Historical Validation with Full Multi-Agent System
+Following Linus principles: Test the actual system, not simulations
+"""
+
+import pandas as pd
+import numpy as np
+import asyncio
+import sys
+from pathlib import Path
+from typing import Dict, List, Any
+import json
+from datetime import datetime
+import time
+
+# Add paths
+ai_scientist_path = str(Path(__file__).parent.parent / "ai_scientist")
+src_path = str(Path(__file__).parent.parent / "src")
+if ai_scientist_path not in sys.path:
+    sys.path.insert(0, ai_scientist_path)
+if src_path not in sys.path:
+    sys.path.insert(0, src_path)
+
+from gpt5_orchestrator import GPT5Orchestrator
+from models.baselines import peak_sales_heuristic, ensemble_baseline
+from models.analogs import AnalogForecaster
+from models.ta_priors import get_ta_peak_share_prior, get_ta_y2_share_prior
+from system_monitor import reset_system_monitor, get_system_monitor
+
+class RealHistoricalValidator:
+    """
+    Phase 5: Test our actual multi-agent system against real historical outcomes
+    Uses real LLM calls (GPT-5, DeepSeek, Perplexity, Claude) not simulations
+    """
+    
+    def __init__(self):
+        self.start_time = time.time()
+        self.timings = {}
+        self._log_timing("script_start", "Phase 5 validation script started")
+        
+        self._log_timing("data_load_start", "Starting data loading")
+        self.launches = pd.read_parquet('data_proc/launches.parquet')
+        self._log_timing("launches_loaded", f"Loaded {len(self.launches)} launches")
+        
+        # Use fixed revenue data if available, otherwise original
+        fixed_revenue_path = Path('data_proc/launch_revenues_fixed.parquet')
+        if fixed_revenue_path.exists():
+            self.revenues = pd.read_parquet('data_proc/launch_revenues_fixed.parquet')
+            self._log_timing("revenue_data_loaded", "Using FIXED revenue data (post-SEC extraction fix)")
+        else:
+            self.revenues = pd.read_parquet('data_proc/launch_revenues.parquet')
+            self._log_timing("revenue_data_loaded", "Using ORIGINAL revenue data (may have SEC extraction issues)")
+        
+        # MUST_GET_RIGHT cases from MASSIVE_OVERHAUL_PLAN.md
+        self.must_get_right = {
+            'blockbusters': ['Keytruda', 'Humira', 'Eliquis'],  # Must predict massive success
+            'failures': ['Exubera', 'Belsomra', 'Addyi'],       # Must predict failure  
+            'moderate': ['Repatha', 'Entresto', 'Aimovig']      # Must predict access challenges
+        }
+        
+        # Industry consultant baseline (±40% MAPE per plan)
+        self.consultant_mape_target = 0.40
+        self.our_mape_target = 0.25  # Our target: 25% MAPE
+        
+        self._log_timing("init_complete", f"Initialization complete: {len(self.launches)} launches, {len(self.revenues)} revenue records")
+    
+    def _log_timing(self, step: str, description: str):
+        """Log timing for performance analysis"""
+        current_time = time.time()
+        elapsed = current_time - self.start_time
+        self.timings[step] = {
+            'elapsed_total': elapsed,
+            'timestamp': current_time,
+            'description': description
+        }
+        print(f"[{elapsed:6.2f}s] {description}")
+    
+    def _get_step_duration(self, step1: str, step2: str) -> float:
+        """Get duration between two timing steps"""
+        if step1 in self.timings and step2 in self.timings:
+            return self.timings[step2]['elapsed_total'] - self.timings[step1]['elapsed_total']
+        return 0.0
+    
+    def select_validation_drugs(self) -> List[Dict[str, Any]]:
+        """Select key drugs for full multi-agent validation"""
+        
+        self._log_timing("drug_selection_start", "Starting drug selection")
+        
+        # Find drugs we have both launch data and revenue data for
+        drugs_with_revenue = set(self.revenues['launch_id'].unique())
+        available_drugs = self.launches[self.launches['launch_id'].isin(drugs_with_revenue)]
+        self._log_timing("drug_filtering", f"Found {len(available_drugs)} drugs with both launch and revenue data")
+        
+        validation_drugs = []
+        
+        # Priority 1: MUST_GET_RIGHT drugs that we have data for
+        all_must_get_right = []
+        for category, drugs in self.must_get_right.items():
+            all_must_get_right.extend(drugs)
+        
+        priority_drugs = available_drugs[available_drugs['drug_name'].isin(all_must_get_right)]
+        
+        for _, drug in priority_drugs.iterrows():
+            launch_id = drug['launch_id']
+            actual_revenues = self.get_actual_revenues(launch_id)
+            
+            if np.max(actual_revenues) > 0:  # Has real revenue data
+                validation_drugs.append({
+                    'drug': drug,
+                    'actual_revenues': actual_revenues,
+                    'category': self.get_drug_category(drug['drug_name']),
+                    'priority': 'must_get_right'
+                })
+        
+        # Priority 2: Add a few more representative drugs
+        other_drugs = available_drugs[~available_drugs['drug_name'].isin(all_must_get_right)]
+        for _, drug in other_drugs.head(3).iterrows():
+            launch_id = drug['launch_id']
+            actual_revenues = self.get_actual_revenues(launch_id)
+            
+            if np.max(actual_revenues) > 0:
+                validation_drugs.append({
+                    'drug': drug,
+                    'actual_revenues': actual_revenues,
+                    'category': 'representative',
+                    'priority': 'additional'
+                })
+        
+        self._log_timing("drug_selection_complete", f"Selected {len(validation_drugs)} drugs for validation")
+        
+        for vd in validation_drugs:
+            drug_name = vd['drug']['drug_name']
+            actual_peak = np.max(vd['actual_revenues'])
+            print(f"  - {drug_name}: ${actual_peak:,.0f} peak ({vd['category']})")
+        
+        return validation_drugs
+    
+    def get_drug_category(self, drug_name: str) -> str:
+        """Determine if drug is blockbuster, failure, or moderate"""
+        for category, drugs in self.must_get_right.items():
+            if drug_name in drugs:
+                return category
+        return 'other'
+    
+    def get_actual_revenues(self, launch_id: str, years: int = 5) -> np.ndarray:
+        """Get actual revenue trajectory for validation"""
+        
+        drug_revenues = self.revenues[self.revenues['launch_id'] == launch_id]
+        drug_revenues = drug_revenues.sort_values('year_since_launch')
+        
+        actual = np.zeros(years)
+        for _, row in drug_revenues.iterrows():
+            year = int(row['year_since_launch'])
+            if 0 <= year < years:
+                actual[year] = row['revenue_usd']
+        
+        return actual
+    
+    async def run_multi_agent_forecast(self, drug: pd.Series) -> Dict[str, Any]:
+        """Run our actual multi-agent system on a historical drug"""
+        
+        drug_name = drug['drug_name']
+        multiagent_start = time.time()
+        print(f"\n--- Running Multi-Agent System: {drug_name} ---")
+        
+        # Reset monitor for this drug
+        reset_system_monitor()
+        
+        try:
+            # Initialize our actual GPT-5 orchestrator
+            init_start = time.time()
+            orchestrator = GPT5Orchestrator()
+            init_time = time.time() - init_start
+            print(f"[+{init_time:5.2f}s] GPT-5 Orchestrator initialized")
+            
+            # Create a realistic query as if we were forecasting at launch
+            therapeutic_area = drug.get('therapeutic_area', 'Unknown')
+            indication = drug.get('indication', 'Unknown')
+            
+            query = f"Commercial forecast for {drug_name} in {therapeutic_area} for {indication}"
+            
+            print(f"Query: {query}")
+            print("Executing full 8-step multi-agent pipeline...")
+            print("  Step 1: Query parsing (GPT-5)...")
+            print("  Step 2: Data collection (DeepSeek)...")
+            print("  Step 3: Data review (Perplexity)...")
+            print("  Step 4: Market analysis (GPT-5)...")
+            print("  Step 5: Multi-method forecasting...")
+            print("  Step 6: Harsh review (Perplexity)...")
+            print("  [Progress updates will appear as pipeline executes]")
+            
+            # Run the actual multi-agent system
+            pipeline_start = time.time()
+            start_time = datetime.now()
+            result = await orchestrator.process_drug_forecast(query)
+            end_time = datetime.now()
+            pipeline_time = time.time() - pipeline_start
+            
+            execution_time = (end_time - start_time).total_seconds()
+            print(f"[+{pipeline_time:5.2f}s] Multi-agent pipeline completed in {execution_time:.1f} seconds")
+            
+            # Extract forecast from result
+            extract_start = time.time()
+            forecast_data = result.get('forecast', {})
+            confidence = result.get('confidence', 0)
+            extract_time = time.time() - extract_start
+            print(f"[+{extract_time:5.2f}s] Forecast data extracted")
+            
+            # Convert to 5-year revenue trajectory
+            # Extract from our orchestrator's actual output format
+            if isinstance(forecast_data, dict):
+                peak_sales = forecast_data.get('peak_sales_forecast', 0)
+                print(f"DEBUG: forecast_data keys: {list(forecast_data.keys())}")
+                print(f"DEBUG: extracted peak_sales: ${peak_sales:,.0f}")
+                
+                if peak_sales > 0:
+                    # Create realistic trajectory
+                    forecast_trajectory = np.array([
+                        peak_sales * 0.1,   # Y0: Launch year
+                        peak_sales * 0.4,   # Y1: Building
+                        peak_sales * 0.8,   # Y2: Growing  
+                        peak_sales * 1.0,   # Y3: Peak
+                        peak_sales * 0.9    # Y4: Mature
+                    ])
+                else:
+                    forecast_trajectory = np.zeros(5)
+            else:
+                print(f"DEBUG: forecast_data is not dict, type: {type(forecast_data)}")
+                forecast_trajectory = np.zeros(5)
+            
+            # Get monitoring data and usage from audit trail
+            monitor = get_system_monitor()
+            audit_trail = monitor.generate_audit_trail()
+            
+            # Extract actual costs and tokens from audit trail
+            execution_summary = audit_trail.get('execution_summary', {})
+            actual_cost = execution_summary.get('total_cost_usd', 0.0)
+            actual_tokens = execution_summary.get('total_tokens', 0)
+            
+            return {
+                'forecast_trajectory': forecast_trajectory,
+                'confidence': confidence,
+                'execution_time': execution_time,
+                'total_cost': actual_cost,
+                'total_tokens': actual_tokens,
+                'decisions_made': len(monitor.decisions),
+                'audit_trail': audit_trail,
+                'raw_result': result
+            }
+            
+        except Exception as e:
+            print(f"Multi-agent system failed for {drug_name}: {e}")
+            return {
+                'forecast_trajectory': np.zeros(5),
+                'confidence': 0,
+                'execution_time': 0,
+                'total_cost': 0,
+                'total_tokens': 0,
+                'decisions_made': 0,
+
+===== COMMAND =====
+sed -n '1,260p' 345_Multi_Agent_AI_System_for__Supplementary\ Material/src/models/analogs.py
+===== OUTPUT =====
+"""
+Analog-based forecasting using historical similar drugs.
+This is what real consultants use - find similar historical launches.
+Following Linus principle: Real data beats theory every time.
+
+Enhanced per GPT-5 guidance (Day 3):
+- TA priors integration for missing data
+- Similarity by year-since-launch correlation/DTW
+- Normalize curves by Y2 or peak
+- Cap analog weight ≤0.5, same TA required
+- Ensemble fallback if inputs missing
+"""
+
+import numpy as np
+import pandas as pd
+from typing import Dict, List, Tuple, Optional, Any
+from pathlib import Path
+from scipy.stats import pearsonr
+import warnings
+import sys
+
+# Add parent to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Import TA priors for enhanced functionality
+try:
+    from .ta_priors import (
+        apply_ta_priors, get_ta_analog_weights, get_ta_peak_share_prior,
+        get_ta_access_tier_multiplier, get_ta_growth_rate, get_ta_factor_caps,
+        get_ta_prediction_interval_multipliers, get_ta_minimum_revenue_threshold,
+        get_ta_y2_share_prior
+    )
+except ImportError:
+    # Fallback if ta_priors not available
+    apply_ta_priors = None
+    get_ta_analog_weights = None
+    get_ta_peak_share_prior = None
+    get_ta_access_tier_multiplier = None
+    get_ta_growth_rate = None
+    get_ta_factor_caps = None
+    get_ta_prediction_interval_multipliers = None
+    get_ta_minimum_revenue_threshold = None
+    get_ta_y2_share_prior = None
+
+
+def choose_normalization_base(
+    trajectory: np.ndarray, 
+    method: str, 
+    therapeutic_area: str
+) -> Optional[Tuple[float, str]]:
+    """
+    Choose consistent normalization base for trajectory scaling.
+    
+    Args:
+        trajectory: Revenue trajectory array
+        method: 'y2' or 'peak'
+        therapeutic_area: TA for getting priors
+    
+    Returns:
+        Tuple of (base_value, base_type) or None if invalid
+    """
+    
+    if method == 'y2':
+        # Prefer Y2 if present
+        if len(trajectory) > 1 and trajectory[1] > 0:
+            return trajectory[1], 'y2_actual'
+        
+        # Else median of Y0-Y2 only (true early years for Y2 estimation)
+        early_years = trajectory[:3]  # Y0-Y2 only
+        nonzero_early = early_years[early_years > 0]
+        if len(nonzero_early) > 0:
+            return np.median(nonzero_early), 'early_median'
+        
+        # Else use peak × ta_prior_y2_share
+        peak_revenue = np.max(trajectory) if np.max(trajectory) > 0 else 0
+        if peak_revenue > 0 and get_ta_y2_share_prior is not None:
+            y2_share = get_ta_y2_share_prior(therapeutic_area)
+            peak_share = get_ta_peak_share_prior(therapeutic_area) if get_ta_peak_share_prior else 0.15
+            estimated_y2 = peak_revenue * (y2_share / peak_share)
+            return estimated_y2, 'peak_derived'
+            
+    elif method == 'peak':
+        # Use peak revenue
+        peak_revenue = np.max(trajectory) if np.max(trajectory) > 0 else 0
+        if peak_revenue > 0:
+            return peak_revenue, 'peak_actual'
+    
+    return None
+
+
+def dtw_distance(seq1: np.ndarray, seq2: np.ndarray) -> float:
+    """
+    Dynamic Time Warping distance between two sequences.
+    Used for comparing revenue trajectories of different lengths.
+    """
+    n, m = len(seq1), len(seq2)
+    
+    # Initialize DTW matrix
+    dtw = np.zeros((n + 1, m + 1))
+    dtw[0, 1:] = np.inf
+    dtw[1:, 0] = np.inf
+    
+    # Fill DTW matrix
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            cost = abs(seq1[i-1] - seq2[j-1])
+            dtw[i, j] = cost + min(dtw[i-1, j], dtw[i, j-1], dtw[i-1, j-1])
+    
+    return dtw[n, m]
+
+
+class AnalogForecaster:
+    """
+    Forecast based on historical analogs.
+    Industry standard approach used by LEK, ZS, IQVIA.
+    
+    Enhanced with:
+    - TA priors for missing data
+    - Trajectory similarity metrics (correlation/DTW)
+    - Y2/peak normalization
+    - Capped analog weights
+    """
+    
+    def __init__(self, data_dir: Path = None):
+        self.data_dir = data_dir or Path(__file__).parent.parent.parent / "data_proc"
+        self.launches = None
+        self.revenues = None
+        self.analogs = None
+        self.ta_imputations = None
+        self._load_data()
+    
+    def _load_data(self):
+        """Load processed datasets including TA-imputed data."""
+        try:
+            self.launches = pd.read_parquet(self.data_dir / "launches.parquet")
+            self.revenues = pd.read_parquet(self.data_dir / "launch_revenues.parquet")
+            self.analogs = pd.read_parquet(self.data_dir / "analogs.parquet")
+            
+            # Load TA-imputed data if available
+            ta_impute_path = self.data_dir / "ta_imputations.parquet"
+            if ta_impute_path.exists():
+                self.ta_imputations = pd.read_parquet(ta_impute_path)
+                
+        except FileNotFoundError:
+            # Allow initialization without data for testing
+            pass
+    
+    def find_best_analogs_enhanced(
+        self, 
+        drug_row: pd.Series,
+        n_analogs: int = 5,
+        require_same_ta: bool = True
+    ) -> List[str]:
+        """
+        Enhanced analog finding with TA constraints and similarity scoring.
+        
+        Args:
+            drug_row: Target drug
+            n_analogs: Number of analogs to find
+            require_same_ta: Only consider drugs in same TA
+            
+        Returns:
+            List of launch_ids for best analogs
+        """
+        
+        if self.launches is None or self.revenues is None:
+            return []
+        
+        # Get candidate analogs
+        candidates = self.launches.copy()
+        
+        # Exclude the drug itself
+        candidates = candidates[candidates['launch_id'] != drug_row['launch_id']]
+        
+        # Filter by TA if required
+        if require_same_ta:
+            drug_ta = drug_row.get('therapeutic_area', 'Unknown')
+            candidates = candidates[candidates['therapeutic_area'] == drug_ta]
+            
+            # If no same-TA drugs, fall back to weighted cross-TA
+            if len(candidates) == 0 and get_ta_analog_weights is not None:
+                candidates = self.launches[self.launches['launch_id'] != drug_row['launch_id']]
+                require_same_ta = False
+        
+        # Calculate enhanced similarities
+        similarities = []
+        
+        for _, candidate in candidates.iterrows():
+            # Get revenue trajectory for similarity calculation
+            candidate_revs = self.revenues[
+                self.revenues['launch_id'] == candidate['launch_id']
+            ].sort_values('year_since_launch')
+            
+            if len(candidate_revs) < 2:
+                continue
+                
+            candidate_traj = candidate_revs['revenue_usd'].values
+            
+            # Calculate characteristic similarity
+            char_sim = self._calculate_characteristic_similarity(drug_row, candidate)
+            
+            # Apply TA weight if cross-TA
+            ta_weight = 1.0
+            if not require_same_ta and get_ta_analog_weights is not None:
+                drug_ta = drug_row.get('therapeutic_area', 'Unknown')
+                ta_weights = get_ta_analog_weights(drug_ta)
+                candidate_ta = candidate.get('therapeutic_area', 'Unknown')
+                ta_weight = ta_weights.get(candidate_ta, 0.1)
+            
+            # Combined similarity with cap at 0.5
+            total_sim = min(char_sim * ta_weight, 0.5)
+            
+            similarities.append((candidate['launch_id'], total_sim))
+        
+        # Sort and return top N
+        similarities.sort(key=lambda x: x[1], reverse=True)
+        return [aid for aid, _ in similarities[:n_analogs]]
+    
+    def _calculate_characteristic_similarity(
+        self,
+        drug1: pd.Series,
+        drug2: pd.Series
+    ) -> float:
+        """
+        Calculate similarity based on drug characteristics.
+        """
+        
+        similarities = []
+        
+        # Market size similarity
+        if drug1.get('eligible_patients_at_launch', 0) > 0 and drug2.get('eligible_patients_at_launch', 0) > 0:
+            size_ratio = min(
+                drug1['eligible_patients_at_launch'] / drug2['eligible_patients_at_launch'],
+                drug2['eligible_patients_at_launch'] / drug1['eligible_patients_at_launch']
+            )
+            similarities.append(size_ratio)
+        
+        # Price similarity
+        if drug1.get('list_price_month_usd_launch', 0) > 0 and drug2.get('list_price_month_usd_launch', 0) > 0:
+            price_ratio = min(
+                drug1['list_price_month_usd_launch'] / drug2['list_price_month_usd_launch'],
+                drug2['list_price_month_usd_launch'] / drug1['list_price_month_usd_launch']
+            )
+            similarities.append(price_ratio)
+        
+        # GTN similarity
+        if drug1.get('net_gtn_pct_launch', 0) > 0 and drug2.get('net_gtn_pct_launch', 0) > 0:
+            gtn_diff = abs(drug1['net_gtn_pct_launch'] - drug2['net_gtn_pct_launch'])
+            gtn_sim = 1 - gtn_diff
+            similarities.append(gtn_sim)
+        
+        # Access tier similarity using TA-based multipliers
+        drug_ta = drug1.get('therapeutic_area', drug2.get('therapeutic_area', 'Immunology'))
+        access_map = get_ta_access_tier_multiplier(drug_ta) if get_ta_access_tier_multiplier else {'OPEN': 1.0, 'PA': 0.65, 'NICHE': 0.35}
+        tier1 = access_map.get(drug1.get('access_tier_at_launch', 'PA'), 0.6)
+        tier2 = access_map.get(drug2.get('access_tier_at_launch', 'PA'), 0.6)
+        access_sim = 1 - abs(tier1 - tier2)
+        similarities.append(access_sim)
+        
+        # Return average similarity
+
+===== COMMAND =====
+python fabscore_codex/workspace/claim_15_repro.py
+===== OUTPUT =====
+[  0.00s] Phase 5 validation script started
+[  0.00s] Starting data loading
+Traceback (most recent call last):
+  File "/home/chenhui/fabscore/agent4sci_rej/submission_345/fabscore_codex/workspace/claim_15_repro.py", line 71, in <module>
+    main()
+    ~~~~^^
+  File "/home/chenhui/fabscore/agent4sci_rej/submission_345/fabscore_codex/workspace/claim_15_repro.py", line 22, in main
+    validator = RealHistoricalValidator()
+  File "/home/chenhui/fabscore/agent4sci_rej/submission_345/345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py", line 43, in __init__
+    self.launches = pd.read_parquet('data_proc/launches.parquet')
+                    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chenhui/fabscore/.venv/lib/python3.13/site-packages/pandas/io/parquet.py", line 669, in read_parquet
+    return impl.read(
+           ~~~~~~~~~^
+        path,
+        ^^^^^
+    ...<6 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "/home/chenhui/fabscore/.venv/lib/python3.13/site-packages/pandas/io/parquet.py", line 258, in read
+    path_or_handle, handles, filesystem = _get_path_or_handle(
+                                          ~~~~~~~~~~~~~~~~~~~^
+        path,
+        ^^^^^
+    ...<2 lines>...
+        mode="rb",
+        ^^^^^^^^^^
+    )
+    ^
+  File "/home/chenhui/fabscore/.venv/lib/python3.13/site-packages/pandas/io/parquet.py", line 141, in _get_path_or_handle
+    handles = get_handle(
+        path_or_handle, mode, is_text=False, storage_options=storage_options
+    )
+  File "/home/chenhui/fabscore/.venv/lib/python3.13/site-packages/pandas/io/common.py", line 882, in get_handle
+    handle = open(handle, ioargs.mode)
+FileNotFoundError: [Errno 2] No such file or directory: 'data_proc/launches.parquet'
+
+===== COMMAND =====
+python fabscore_codex/workspace/claim_15_repro.py
+===== OUTPUT =====
+[  0.00s] Phase 5 validation script started
+[  0.00s] Starting data loading
+[  0.02s] Loaded 60 launches
+[  0.03s] Using ORIGINAL revenue data (may have SEC extraction issues)
+[  0.03s] Initialization complete: 60 launches, 360 revenue records
+{
+  "claim": "Repatha enhanced analog: $3.6B peak (238% of actual, 138.3% peak APE)",
+  "repatha_row_count": 15,
+  "unique_launch_ids": 15,
+  "forecast_peak_min": 197295273.43564716,
+  "forecast_peak_max": 350180241.0626245,
+  "forecast_pct_min": 0.7227195871711259,
+  "forecast_pct_max": 1.2744821436453657,
+  "peak_ape_min": 0.027536835546471794,
+  "peak_ape_max": 0.27728041282887406
+}
+
+===== COMMAND =====
+nl -ba 345_Multi_Agent_AI_System_for__Supplementary\ Material/src/data/build_dataset.py | sed -n 70,120p
+===== OUTPUT =====
+    70	    
+    71	    def load_raw_data(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    72	        """Load raw CSV files."""
+    73	        logger.info(f"Loading raw data from {self.data_dir}")
+    74	        
+    75	        # For now, create synthetic data that looks real
+    76	        # In production, this would load actual scraped data
+    77	        launches = self._create_synthetic_launches()
+    78	        revenues = self._create_synthetic_revenues(launches)
+    79	        
+    80	        return launches, revenues
+    81	    
+    82	    def _create_synthetic_launches(self) -> pd.DataFrame:
+    83	        """Create realistic synthetic launch data for testing."""
+    84	        
+    85	        # Real drug examples for realistic data
+    86	        drugs = [
+    87	            # Blockbusters
+    88	            {'drug_name': 'Keytruda', 'company': 'Merck', 'approval_date': '2014-09-04',
+    89	             'indication': 'Melanoma', 'mechanism': 'PD-1 inhibitor', 'route': 'IV',
+    90	             'therapeutic_area': 'Oncology', 'eligible_patients': 500000,
+    91	             'list_price_monthly': 12500, 'gtn': 0.65, 'tier': 'PA'},
+    92	            
+    93	            {'drug_name': 'Humira', 'company': 'AbbVie', 'approval_date': '2002-12-31',
+    94	             'indication': 'Rheumatoid Arthritis', 'mechanism': 'TNF inhibitor', 'route': 'SC',
+    95	             'therapeutic_area': 'Immunology', 'eligible_patients': 2000000,
+    96	             'list_price_monthly': 5500, 'gtn': 0.55, 'tier': 'PA'},
+    97	            
+    98	            # Moderate success
+    99	            {'drug_name': 'Repatha', 'company': 'Amgen', 'approval_date': '2015-08-27',
+   100	             'indication': 'Hypercholesterolemia', 'mechanism': 'PCSK9 inhibitor', 'route': 'SC',
+   101	             'therapeutic_area': 'Cardiovascular', 'eligible_patients': 8000000,
+   102	             'list_price_monthly': 1200, 'gtn': 0.45, 'tier': 'PA'},
+   103	            
+   104	            # Failures
+   105	            {'drug_name': 'Exubera', 'company': 'Pfizer', 'approval_date': '2006-01-27',
+   106	             'indication': 'Diabetes', 'mechanism': 'Inhaled insulin', 'route': 'Inhaled',
+   107	             'therapeutic_area': 'Endocrinology', 'eligible_patients': 30000000,
+   108	             'list_price_monthly': 150, 'gtn': 0.75, 'tier': 'OPEN'},
+   109	        ]
+   110	        
+   111	        # Expand to 50+ drugs with variations
+   112	        expanded_drugs = []
+   113	        for i, template in enumerate(drugs * 15):  # Repeat to get 60 drugs
+   114	            drug = template.copy()
+   115	            drug['launch_id'] = f"DRUG_{i:04d}"
+   116	            
+   117	            # Add variations
+   118	            drug['eligible_patients_at_launch'] = int(drug['eligible_patients'] * np.random.uniform(0.8, 1.2))
+   119	            drug['market_size_source'] = f"https://clinicaltrials.gov/study/NCT{np.random.randint(1000000, 9999999)}"
+   120	            drug['list_price_month_usd_launch'] = drug['list_price_monthly'] * np.random.uniform(0.9, 1.1)
+
+===== COMMAND =====
+sed -n 1,240p fabscore_codex/workspace/claim_15_metrics.json
+===== OUTPUT =====
+{
+  "summary": {
+    "claim": "Repatha enhanced analog: $3.6B peak (238% of actual, 138.3% peak APE)",
+    "repatha_row_count": 15,
+    "unique_launch_ids": 15,
+    "forecast_peak_min": 197295273.43564716,
+    "forecast_peak_max": 350180241.0626245,
+    "forecast_pct_min": 0.7227195871711259,
+    "forecast_pct_max": 1.2744821436453657,
+    "peak_ape_min": 0.027536835546471794,
+    "peak_ape_max": 0.27728041282887406
+  },
+  "records": [
+    {
+      "launch_id": "DRUG_0002",
+      "drug_name": "Repatha",
+      "therapeutic_area": "Cardiovascular",
+      "actual_peak": 309024772.07642555,
+      "forecast_peak": 285420200.1731174,
+      "forecast_pct_of_actual": 0.9236159232649788,
+      "peak_ape": 0.07638407673502129,
+      "mape": 0.1554729708027481,
+      "actual_revenues": [
+        151950005.14897498,
+        153136205.03090015,
+        185076594.08871737,
+        225811682.23124307,
+        309024772.07642555
+      ],
+      "forecast_revenues": [
+        132366704.89023396,
+        118340123.34877712,
+        151884661.69329262,
+        188431675.35489807,
+        285420200.1731174
+      ]
+    },
+    {
+      "launch_id": "DRUG_0006",
+      "drug_name": "Repatha",
+      "therapeutic_area": "Cardiovascular",
+      "actual_peak": 175902814.2239358,
+      "forecast_peak": 197295273.43564716,
+      "forecast_pct_of_actual": 1.1216152186427066,
+      "peak_ape": 0.12161521864270657,
+      "mape": 0.12168748829542768,
+      "actual_revenues": [
+        84778574.87432,
+        81785878.40861978,
+        91488749.67879784,
+        111744543.58965841,
+        175902814.2239358
+      ],
+      "forecast_revenues": [
+        92013928.55185305,
+        83380162.3229562,
+        108175463.0856787,
+        134048064.61755672,
+        197295273.43564716
+      ]
+    },
+    {
+      "launch_id": "DRUG_0010",
+      "drug_name": "Repatha",
+      "therapeutic_area": "Cardiovascular",
+      "actual_peak": 222126755.00251195,
+      "forecast_peak": 243477174.662457,
+      "forecast_pct_of_actual": 1.0961181810795535,
+      "peak_ape": 0.09611818107955342,
+      "mape": 0.13331530626664123,
+      "actual_revenues": [
+        99465546.26041293,
+        93786154.4803917,
+        129573380.14594343,
+        130172122.54444706,
+        222126755.00251195
+      ],
+      "forecast_revenues": [
+        115056983.16995114,
+        104759397.6442289,
+        130712171.90548448,
+        167650580.9942791,
+        243477174.662457
+      ]
+    },
+    {
+      "launch_id": "DRUG_0014",
+      "drug_name": "Repatha",
+      "therapeutic_area": "Cardiovascular",
+      "actual_peak": 358533238.7308445,
+      "forecast_peak": 259118994.2826827,
+      "forecast_pct_of_actual": 0.7227195871711259,
+      "peak_ape": 0.27728041282887406,
+      "mape": 0.32535107643683664,
+      "actual_revenues": [
+        167046203.56810963,
+        153021742.85054204,
+        217439139.05113232,
+        290179682.5983963,
+        358533238.7308445
+      ],
+      "forecast_revenues": [
+        121660433.8735227,
+        111327257.77475232,
+        136490369.3508624,
+        164525384.01545066,
+        259118994.2826827
+      ]
+    },
+    {
+      "launch_id": "DRUG_0018",
+      "drug_name": "Repatha",
+      "therapeutic_area": "Cardiovascular",
+      "actual_peak": 245402056.27484012,
+      "forecast_peak": 260034623.44788533,
+      "forecast_pct_of_actual": 1.059626913462605,
+      "peak_ape": 0.05962691346260501,
+      "mape": 0.21116535247912754,
+      "actual_revenues": [
+        106794116.21424869,
+        99062620.78530411,
+        105120100.78620808,
+        138547930.37612814,
+        245402056.27484012
+      ],
+      "forecast_revenues": [
+        123534322.1233882,
+        112804745.62790081,
+        147143012.84546345,
+        180246030.36012226,
+        260034623.44788533
+      ]
+    },
+    {
+      "launch_id": "DRUG_0022",
+      "drug_name": "Repatha",
+      "therapeutic_area": "Cardiovascular",
+      "actual_peak": 188434663.86846596,
+      "forecast_peak": 229902592.67272353,
+      "forecast_pct_of_actual": 1.2200652892251485,
+      "peak_ape": 0.22006528922514834,
+      "mape": 0.317587240031964,
+      "actual_revenues": [
+        92447741.6820273,
+        65159732.84986053,
+        92636795.3694424,
+        121816346.68991534,
+        188434663.86846596
+      ],
+      "forecast_revenues": [
+        106939122.72859466,
+        101769950.14744346,
+        127048661.19372216,
+        155656265.3615957,
+        229902592.67272353
+      ]
+    },
+    {
+      "launch_id": "DRUG_0026",
+      "drug_name": "Repatha",
+      "therapeutic_area": "Cardiovascular",
+      "actual_peak": 200437504.27560738,
+      "forecast_peak": 227676389.06422436,
+      "forecast_pct_of_actual": 1.1358971460309282,
+      "peak_ape": 0.13589714603092806,
+      "mape": 0.07453494823430522,
+      "actual_revenues": [
+        96638799.98858517,
+        98356212.97290353,
+        115313246.84288876,
+        158120589.23726302,
+        200437504.27560738
+      ],
+      "forecast_revenues": [
+        105903604.7810131,
+        100784486.575149,
+        125818417.6165778,
+        154149007.28501198,
+        227676389.06422436
+      ]
+    },
+    {
+      "launch_id": "DRUG_0030",
+      "drug_name": "Repatha",
+      "therapeutic_area": "Cardiovascular",
+      "actual_peak": 217417130.95035735,
+      "forecast_peak": 277094251.11883664,
+      "forecast_pct_of_actual": 1.2744821436453657,
+      "peak_ape": 0.27448214364536583,
+      "mape": 0.10814210288298565,
+      "actual_revenues": [
+        111424309.9705951,
+        113598968.68212505,
+        157359869.46163535,
+        187080443.4700712,
+        217417130.95035735
+      ],
+      "forecast_revenues": [
+        128890308.6446183,
+        122660070.052585,
+        153127692.9931814,
+        187607524.47766343,
+        277094251.11883664
+      ]
+    },
+    {
+      "launch_id": "DRUG_0034",
+      "drug_name": "Repatha",
+      "therapeutic_area": "Cardiovascular",
+      "actual_peak": 279913688.8189077,
+      "forecast_peak": 320000413.12419397,
+      "forecast_pct_of_actual": 1.143211017919244,
+      "peak_ape": 0.14321101791924404,
+      "mape": 0.10467168380163172,
+      "actual_revenues": [
+        152804658.63494313,
+        156461606.3057487,
+        155400652.26193172,
+        246665785.09628296,
+        279913688.8189077
+      ],
+      "forecast_revenues": [
+        148848097.16349587,
+        141653148.4582702,
+        176838475.79197124,
+        216657274.90070808,
+        320000413.12419397
+      ]
+    },
+    {
+      "launch_id": "DRUG_0038",
+      "drug_name": "Repatha",
+      "therapeutic_area": "Cardiovascular",
+      "actual_peak": 306119695.0050666,
+      "forecast_peak": 319708105.5117909,
+      "forecast_pct_of_actual": 1.0443892069946672,
+      "peak_ape": 0.044389206994667224,
+      "mape": 0.11038374474844734,
+      "actual_revenues": [
+        152665077.67473882,
+

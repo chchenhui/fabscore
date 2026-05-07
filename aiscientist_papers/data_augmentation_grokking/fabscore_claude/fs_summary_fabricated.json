@@ -1,0 +1,250 @@
+{
+  "tables": [
+    {
+      "claim_index": 1,
+      "claim": "1. Table 1, Baseline, Addition: 2363",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: experiment.py (run_0/Baseline) has built-in augmentation in ModSumDataset.fetch_example: independent 20% reversal AND 20% negation. The paper calls this the 'Baseline' with no augmentation, but the code clearly applies augmentation during data sampling. The number 2363 matches run_0/final_info.json x_plus_y step_val_acc_99_mean=2363.33, so the result is real but produced under a misrepresented experimental condition.",
+      "evidence": "experiment.py:73-82 (ModSumDataset.fetch_example with if rand<0.2: reverse, if rand<0.2: negate); run_0/final_info.json",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "experiment.py:73-82 (ModSumDataset.fetch_example with if rand<0.2: reverse, if rand<0.2: negate)",
+          "run_0/final_info.json"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 2,
+      "claim": "2. Table 1, Baseline, Subtraction: 4720",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: experiment.py (run_0/Baseline) has built-in augmentation in ModSubtractDataset.fetch_example: if rand<0.2 reversal elif rand<0.4 negation. The paper calls this 'Baseline' (no augmentation) but the code applies augmentation. The number 4720 matches run_0/final_info.json x_minus_y step_val_acc_99_mean=4720.0, so the result is real but under misrepresented conditions.",
+      "evidence": "experiment.py:98-108 (ModSubtractDataset.fetch_example with if/elif augmentation); run_0/final_info.json",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "experiment.py:98-108 (ModSubtractDataset.fetch_example with if/elif augmentation)",
+          "run_0/final_info.json"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 3,
+      "claim": "3. Table 1, Baseline, Division: 4200",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: experiment.py (run_0/Baseline) has built-in augmentation in ModDivisonDataset.fetch_example: 20% negation. The paper calls this 'Baseline' (no augmentation) but the code applies negation augmentation. The number 4200 matches run_0/final_info.json x_div_y step_val_acc_99_mean=4200.0, but produced under a misrepresented condition.",
+      "evidence": "experiment.py:127-134 (ModDivisonDataset.fetch_example with if rand<0.2: negate); run_0/final_info.json",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "experiment.py:127-134 (ModDivisonDataset.fetch_example with if rand<0.2: negate)",
+          "run_0/final_info.json"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 5,
+      "claim": "5. Table 1, Reversal, Subtraction: 5160",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: run_1.py (Reversal run) does NOT override ModSubtractDataset.fetch_example — it uses the base class AbstractDataset.fetch_example which has zero augmentation. The paper implies 'Reversal' augmentation was applied to subtraction, but the code applies no augmentation to subtraction at all in run_1. The result (5160 > baseline 4720) is consistent with having less augmentation than baseline (run_0 had 20% reversal/negation for subtraction), not with adding reversal.",
+      "evidence": "run_1.py:83-103 (ModSubtractDataset has no fetch_example override, inherits base class); run_1/final_info.json",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_1.py:83-103 (ModSubtractDataset has no fetch_example override, inherits base class)",
+          "run_1/final_info.json"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 6,
+      "claim": "6. Table 1, Reversal, Division: 4500",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: run_1.py (Reversal run) does NOT override ModDivisonDataset.fetch_example — it uses the base class AbstractDataset.fetch_example which has zero augmentation. The paper implies 'Reversal' augmentation was applied to division, but the code applies no augmentation to division in run_1. The baseline (run_0) had 20% negation for division, so run_1's 4500 steps (slightly worse than baseline 4200) reflects removed augmentation rather than added reversal.",
+      "evidence": "run_1.py:94-103 (ModDivisonDataset has no fetch_example override, inherits base class); run_1/final_info.json",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_1.py:94-103 (ModDivisonDataset has no fetch_example override, inherits base class)",
+          "run_1/final_info.json"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 7,
+      "claim": "7. Table 1, Negation, Addition: 1000",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: run_2.py (Negation run) ModSumDataset.fetch_example applies: if rand<0.3 then 50% chance reversal else 50% chance negation. This is a MIXED reversal+negation augmentation (each at 15% effective probability), not pure negation as the paper implies under 'Negation' row for addition. The paper states this as 'negation augmentation' but the code actually applies mixed reversal and negation for the addition operation.",
+      "evidence": "run_2.py:73-83 (ModSumDataset.fetch_example with if rand<0.3: 50%reversal or 50%negation); run_2/final_info.json",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_2.py:73-83 (ModSumDataset.fetch_example with if rand<0.3: 50%reversal or 50%negation)",
+          "run_2/final_info.json"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 14,
+      "claim": "14. Table 1, Combined (30%), Subtraction: 1367",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: run_4.py (Combined 30% run) ModSubtractDataset.fetch_example uses: if rand<0.15 reversal elif rand<0.30 negation — identical code to run_3.py (Combined 15% run) for subtraction. The paper implies 'Combined (30%)' has higher augmentation intensity than 'Combined (15%)', but for subtraction, both runs use exactly the same 15% per-type exclusive probability. The augmentation label '30%' conflicts with the actual per-type probability of 15% in the code.",
+      "evidence": "run_4.py:98-108 (ModSubtractDataset: if rand<0.15 reversal elif rand<0.30 negation — same as run_3); run_3.py:99-109 (identical code for ModSubtractDataset); run_4/final_info.json",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_4.py:98-108 (ModSubtractDataset: if rand<0.15 reversal elif rand<0.30 negation — same as run_3)",
+          "run_3.py:99-109 (identical code for ModSubtractDataset)",
+          "run_4/final_info.json"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 15,
+      "claim": "15. Table 1, Combined (30%), Division: 1877",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: run_4.py (Combined 30% run) ModDivisonDataset.fetch_example applies 30% negation only — identical to run_3.py (Combined 15%) and run_2.py (Negation). The paper implies 'Combined (30%)' is a distinct higher-intensity condition from 'Combined (15%)', but for division, both combined runs (and the Negation run) apply the identical 30% negation code. The different reported step count (1877 vs 1767 for Combined 15%) is due to random seed variation, not a different augmentation setup.",
+      "evidence": "run_4.py:117-135 (ModDivisonDataset: if rand<0.3 negate — same as run_3.py and run_2.py); run_3.py:118-138 (identical code); run_2.py:112-132 (identical code); run_4/final_info.json",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_4.py:117-135 (ModDivisonDataset: if rand<0.3 negate — same as run_3.py and run_2.py)",
+          "run_3.py:118-138 (identical code)",
+          "run_2.py:112-132 (identical code)",
+          "run_4/final_info.json"
+        ],
+        "commands_executed": []
+      }
+    }
+  ],
+  "figures": [],
+  "results_section": [],
+  "summary": {
+    "total": 22,
+    "verified": 14,
+    "data_fabrication": 0,
+    "experiment_fabrication": 8,
+    "result_fabrication": 0,
+    "no_code_files": 0,
+    "insufficient_evidence": 0
+  },
+  "analysis_summary": {
+    "total_claims": 22,
+    "no_code_files": 0,
+    "obvious_hallucination": 8,
+    "data_fabrication": 0,
+    "experiment_fabrication": 8,
+    "result_fabrication": 0,
+    "static_verifiable": 10,
+    "insufficient_evidence": 0,
+    "execution_required": 4,
+    "error": 0
+  },
+  "execution_summary": {
+    "total": 4,
+    "verified": 4,
+    "data_fabrication": 0,
+    "experiment_fabrication": 0,
+    "result_fabrication": 0,
+    "no_code_files": 0,
+    "insufficient_evidence": 0,
+    "error": 0
+  },
+  "final_assessment": {
+    "fab_score": 0.6364,
+    "total_claims": 22,
+    "verified": 14,
+    "data_fabrication": 0,
+    "experiment_fabrication": 8,
+    "result_fabrication": 0,
+    "no_code_files": 0,
+    "insufficient_evidence": 0,
+    "static_code_analysis_breakdown": {
+      "verified": 10,
+      "no_code_files": 0,
+      "data_fabrication": 0,
+      "experiment_fabrication": 8,
+      "result_fabrication": 0,
+      "insufficient_evidence": 0
+    },
+    "execution_artifact_analysis_breakdown": {
+      "verified": 1,
+      "no_code_files": 0,
+      "data_fabrication": 0,
+      "experiment_fabrication": 0,
+      "result_fabrication": 0,
+      "insufficient_evidence": 0
+    },
+    "code_execution_breakdown": {
+      "verified": 3,
+      "no_code_files": 0,
+      "data_fabrication": 0,
+      "experiment_fabrication": 0,
+      "result_fabrication": 0,
+      "insufficient_evidence": 0
+    }
+  },
+  "filtered_summary": {
+    "total_claims": 8,
+    "tables": 8,
+    "figures": 0,
+    "results_section": 0,
+    "verdict_breakdown": {
+      "Verified": 0,
+      "Data Fabrication": 0,
+      "Experiment Fabrication": 8,
+      "Result Fabrication": 0,
+      "No Code Files": 0,
+      "Insufficient Evidence": 0,
+      "Error": 0,
+      "Other": 0
+    }
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "experiment": "Cross-Model Deduction Comparison",
+  "dataset": "BGL",
+  "payload": "D",
+  "k_values": [1, 3],
+  "seeds": [42, 123, 456],
+  "models": {
+    "qwen": "Qwen/Qwen2.5-7B-Instruct",
+    "llama": "meta-llama/Meta-Llama-3-8B-Instruct"
+  },
+  "summary": {
+    "Qwen2.5-7B-Instruct": {
+      "C0": {"PA_mean": 0.3478, "PA_std": 0.0337, "FTA_mean": 0.3256, "WR_mean": 0.1287},
+      "C1_k1": {"PA_mean": 0.4318, "PA_std": 0.2013, "FTA_mean": 0.2734, "WR_mean": 0.1087},
+      "C1_k3": {"PA_mean": 0.3124, "PA_std": 0.0277, "FTA_mean": 0.2437, "WR_mean": 0.1688},
+      "C2_k1": {"PA_mean": 0.4318, "PA_std": 0.2013, "FTA_mean": 0.2734, "WR_mean": 0.1087},
+      "C2_k3": {"PA_mean": 0.3124, "PA_std": 0.0277, "FTA_mean": 0.2437, "WR_mean": 0.1688}
+    },
+    "LLaMA-3-8B-Instruct": {
+      "C0": {"PA_mean": 0.0170, "PA_std": 0.0093, "FTA_mean": 0.0529, "WR_mean": 0.1466},
+      "C1_k1": {"PA_mean": 0.0184, "PA_std": 0.0067, "FTA_mean": 0.0590, "WR_mean": 0.0953},
+      "C1_k3": {"PA_mean": 0.0388, "PA_std": 0.0382, "FTA_mean": 0.0471, "WR_mean": 0.1244},
+      "C2_k1": {"PA_mean": 0.0280, "PA_std": 0.0024, "FTA_mean": 0.0498, "WR_mean": 0.0848},
+      "C2_k3": {"PA_mean": 0.0473, "PA_std": 0.0310, "FTA_mean": 0.0381, "WR_mean": 0.1477}
+    }
+  },
+  "per_seed": {
+    "Qwen2.5-7B-Instruct": {
+      "C0": {
+        "42": {"PA": 0.3098, "FTA": 0.2700, "WR": 0.1014},
+        "123": {"PA": 0.3742, "FTA": 0.3359, "WR": 0.1534},
+        "456": {"PA": 0.3593, "FTA": 0.3710, "WR": 0.1311}
+      },
+      "C1_k1": {
+        "42": {"PA": 0.2856, "FTA": 0.2559, "WR": 0.0989},
+        "123": {"PA": 0.6613, "FTA": 0.2795, "WR": 0.0909},
+        "456": {"PA": 0.3485, "FTA": 0.2848, "WR": 0.1363}
+      },
+      "C1_k3": {
+        "42": {"PA": 0.3072, "FTA": 0.2745, "WR": 0.1025},
+        "123": {"PA": 0.2876, "FTA": 0.1869, "WR": 0.1638},
+        "456": {"PA": 0.3423, "FTA": 0.2696, "WR": 0.2401}
+      }
+    },
+    "LLaMA-3-8B-Instruct": {
+      "C0": {
+        "42": {"PA": 0.0258, "FTA": 0.0414, "WR": 0.1775},
+        "123": {"PA": 0.0180, "FTA": 0.1100, "WR": 0.2068},
+        "456": {"PA": 0.0072, "FTA": 0.0074, "WR": 0.0556}
+      },
+      "C1_k1": {
+        "42": {"PA": 0.0180, "FTA": 0.0095, "WR": 0.0705},
+        "123": {"PA": 0.0253, "FTA": 0.1341, "WR": 0.0512},
+        "456": {"PA": 0.0119, "FTA": 0.0333, "WR": 0.1643}
+      },
+      "C1_k3": {
+        "42": {"PA": 0.0175, "FTA": 0.0225, "WR": 0.0326},
+        "123": {"PA": 0.0830, "FTA": 0.0989, "WR": 0.2398},
+        "456": {"PA": 0.0160, "FTA": 0.0197, "WR": 0.1008}
+      },
+      "R_safe": {
+        "42": {"PA": 0.0299, "FTA": 0.0076, "WR": 0.1020},
+        "123": {"PA": 0.0294, "FTA": 0.0077, "WR": 0.1032},
+        "456": {"PA": 0.0289, "FTA": 0.0077, "WR": 0.1012}
+      },
+      "C2_k1": {
+        "42": {"PA": 0.0299, "FTA": 0.0076, "decision": "r_safe"},
+        "123": {"PA": 0.0253, "FTA": 0.1341, "decision": "r_gen"},
+        "456": {"PA": 0.0289, "FTA": 0.0077, "decision": "r_safe"}
+      },
+      "C2_k3": {
+        "42": {"PA": 0.0299, "FTA": 0.0076, "decision": "r_safe"},
+        "123": {"PA": 0.0830, "FTA": 0.0989, "decision": "r_gen"},
+        "456": {"PA": 0.0289, "FTA": 0.0077, "decision": "r_safe"}
+      }
+    }
+  },
+  "key_findings": {
+    "baseline_gap": "LLaMA-3-8B-Instruct has much lower baseline C0 PA (0.017 vs 0.348 for Qwen) on BGL, indicating weaker instruction-following for log parsing tasks.",
+    "poisoning_effect": "With such low baseline PA, the poisoning attack (C1) has no room to degrade performance further. LLaMA C1 PA is similar to or slightly above C0, showing no meaningful PA degradation from poisoned rules.",
+    "direction_consistency": "At k=1, both models show no PA degradation (consistent). At k=3, Qwen shows slight drop while LLaMA shows slight increase (inconsistent, but both changes are small relative to noise).",
+    "defense_effect": "C2 admission control on LLaMA triggers R_safe fallback in 4/6 configs (seed 42 and 456 for both k=1,3). R_safe provides slightly higher PA than C1 poisoned for LLaMA (0.029 vs 0.018), showing defense provides marginal benefit even when baseline is very low.",
+    "conclusion": "The poisoning attack's effectiveness is MODEL-DEPENDENT. LLaMA-3-8B-Instruct's poor baseline log parsing performance (PA ~2%) means poisoned rules cannot meaningfully degrade it further. The attack is a property of the poisoned rule text interacting with a model that has sufficient instruction-following capability to both (a) follow the clean rules and (b) be misled by the poisoned rules. LLaMA-3-8B lacks the baseline capability for the attack to be observable."
+  }
+}

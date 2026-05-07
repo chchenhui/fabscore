@@ -1,0 +1,33 @@
+=== CLAIM 171 VERIFICATION: Table 1, P0A921, k: 3 ===
+
+--- COMMAND 1: Check AlphaFold API for P0A921 ---
+python3 -c "requests.get v4 and v6 PAE endpoints"
+OUTPUT:
+v4 status: 404
+v6 status: 200
+P0A921 length=289, source=v6
+
+--- COMMAND 2: Run BCR with n_perm=1024, null_mode=rotation, seed=0 ---
+python3 -c "partition_k_spectral + bcr_q_ratio for k=2,3, n_perm=1024, seed=0"
+OUTPUT:
+P0A921 length=289
+--- k=2 ---
+  k=2 blocks: [(0, 203), (203, 289)], len=2
+  k=2: bcr_q_ratio=0.510826, z=-0.000000, p_perm=1.000000
+  hinge_len=0 (blocks count=2)
+--- k=3 ---
+  k=3 blocks: [(0, 34), (34, 203), (203, 289)], len=3
+  k=3: bcr_q_ratio=2.233592, z=6.570924, p_perm=0.097561
+  hinge_len=169 (blocks count=3)
+
+CODE SELECTS k=3 (p_perm=0.097561 < 1.0 for k=2)
+PAPER CLAIMS k=3 for P0A921 — MATCH
+
+KEY FINDINGS:
+1. Code selects k=3 for P0A921 (k=2 has p_perm=1.0 — degenerate; k=3 has p_perm=0.097561).
+2. Paper claims k=3 for P0A921 — numerical match with code selection.
+3. However, p_perm=0.097561 > 0.05 means P0A921 would NOT be a significant BCR discovery under the code.
+4. BCR formula discrepancy: code uses log-ratio log((Q75_inter+eps)/(Q25_intra+eps)); paper Eq.2 states Q75_inter/(Q25_intra+eps).
+5. hinge_len=169 (central block (34,203), length=203-34=169).
+6. AlphaFold PAE data v4 not available (404); v6 used (length=289).
+7. cohorts/evidence_ready.csv missing — BH correction across full cohort impossible.

@@ -1,0 +1,46 @@
+{
+  "experiment": "ablation_no_href_rewrite",
+  "description": "Ablation to measure the contribution of the href-rewriting step in XBRL package reconstruction. Disabling local href rewriting causes schemaRef/linkbaseRef attributes to retain original remote/company-specific URLs, testing whether FinMR queries contain self-contained XBRL artifacts.",
+  "dataset": "TheFinAI/FinMR",
+  "n_instances": 332,
+  "comparison_table": [
+    {
+      "variant": "With href rewrite (baseline)",
+      "executability_coverage": 0.5873,
+      "n_executable": 195,
+      "n_total": 332,
+      "acc_on_executable_subset": 0.7179,
+      "acc_full_set": 0.4217,
+      "dominant_failure_cause": "N/A"
+    },
+    {
+      "variant": "Without href rewrite (ablation)",
+      "executability_coverage": 0.0,
+      "n_executable": 0,
+      "n_total": 332,
+      "acc_on_executable_subset": 0.0,
+      "acc_full_set": 0.0,
+      "dominant_failure_cause": "missing_dts_artifact"
+    }
+  ],
+  "with_rewrite": {
+    "n_executable": 195,
+    "executability_coverage": 0.5873,
+    "acc_on_executable_subset": 0.7179,
+    "acc_full_set": 0.4217
+  },
+  "without_rewrite": {
+    "n_executable": 0,
+    "executability_coverage": 0.0,
+    "acc_on_executable_subset": 0.0,
+    "acc_full_set": 0.0
+  },
+  "failure_causes_without_rewrite": {
+    "missing_dts_artifact": 332
+  },
+  "newly_failed_count": 195,
+  "newly_failed_causes": {
+    "missing_dts_artifact": 195
+  },
+  "key_finding": "href rewriting is absolutely critical: without it, 0% of instances are executable. All 332 instances fail because the instance document's schemaRef points to original company-specific filenames (e.g. 'company-20230101.xsd') which do not match the local reconstructed 'schema.xsd'. Additionally, schema documents lack linkbaseRef entries pointing to local linkbase files. This confirms that FinMR queries do NOT contain self-contained XBRL artifacts -- the reconstruction pipeline's href rewriting step is indispensable."
+}

@@ -1,0 +1,53 @@
+### model
+model_name_or_path: Qwen/Qwen2.5-1.5B
+trust_remote_code: true
+
+### method
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_rank: 16
+lora_alpha: 32
+lora_dropout: 0.05
+lora_target: all
+
+### dataset
+dataset: numinamath1_5
+dataset_dir: /mnt/bmcpfs-29000zjpjtl6xjmjiifyk/fars/fars-exp/live/exp/tinylr-proxy-sft-data-valuation/exp/tlr_proxy_sft/data
+template: default
+cutoff_len: 4096
+preprocessing_num_workers: 16
+dataloader_num_workers: 4
+
+### output
+output_dir: /mnt/bmcpfs-29000zjpjtl6xjmjiifyk/fars/fars-exp/live/exp/tinylr-proxy-sft-data-valuation/exp/tlr_proxy_sft/outputs/proxy_tiny_v2/numinamath1_5/seed_42
+logging_steps: 10
+save_steps: 200
+save_total_limit: 5
+plot_loss: true
+overwrite_output_dir: true
+save_only_model: false
+report_to: wandb
+run_name: proxy_tiny_v2_numinamath1_5_seed42
+
+### train
+per_device_train_batch_size: 4
+gradient_accumulation_steps: 4
+max_steps: 1000
+learning_rate: 1.0e-5
+lr_scheduler_type: cosine
+warmup_ratio: 0.1
+weight_decay: 0.0
+bf16: true
+use_liger_kernel: true
+packing: false
+seed: 42
+
+### eval (periodic evaluation + best checkpoint)
+val_size: 0.02
+per_device_eval_batch_size: 4
+eval_strategy: steps
+eval_steps: 200
+load_best_model_at_end: true
+metric_for_best_model: eval_loss
+greater_is_better: false

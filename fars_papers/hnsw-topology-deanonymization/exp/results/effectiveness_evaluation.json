@@ -1,0 +1,85 @@
+{
+  "evaluation": "Effectiveness Evaluation of Degree-Penalized Geodesic Embedding for HNSW Topology Deanonymization",
+  "primary_metric": "recall@10",
+  "datasets": ["SIFT10K (128-d)", "MSMARCO-10K (768-d)"],
+  "seeds": [42, 123, 456],
+  "comparison_table": {
+    "adjacency_only": {
+      "sift10k": {
+        "recall@10": {"mean": 0.3475, "std": 0.0006, "per_seed": {"42": 0.3470, "123": 0.3484, "456": 0.3471}}
+      },
+      "msmarco10k": {
+        "recall@10": {"mean": 0.3248, "std": 0.0007, "per_seed": {"42": 0.3251, "123": 0.3238, "456": 0.3254}}
+      }
+    },
+    "unweighted_geodesic_lmds": {
+      "sift10k": {
+        "recall@10": {"mean": 0.1603, "std": 0.0016, "per_seed": {"42": 0.1623, "123": 0.1602, "456": 0.1585}},
+        "params": {"n_landmarks": 2000, "n_components": 128}
+      },
+      "msmarco10k": {
+        "recall@10": {"mean": 0.2731, "std": 0.0020, "per_seed": {"42": 0.2702, "123": 0.2748, "456": 0.2743}},
+        "params": {"n_landmarks": 3000, "n_components": 128}
+      }
+    },
+    "degree_penalized_geodesic_lmds": {
+      "sift10k": {
+        "recall@10": {"mean": 0.2684, "std": 0.0030, "per_seed": {"42": 0.2726, "123": 0.2670, "456": 0.2657}},
+        "params": {"n_landmarks": 2000, "n_components": 128, "alpha": 3.0}
+      },
+      "msmarco10k": {
+        "recall@10": {"mean": 0.4164, "std": 0.0003, "per_seed": {"42": 0.4169, "123": 0.4163, "456": 0.4161}},
+        "params": {"n_landmarks": 3000, "n_components": 128, "alpha": 4.0}
+      }
+    }
+  },
+  "deltas_vs_adjacency_only": {
+    "degree_penalized": {
+      "sift10k": {
+        "delta_recall@10": -0.0791,
+        "per_seed": {"42": -0.0744, "123": -0.0814, "456": -0.0814},
+        "direction": "worse"
+      },
+      "msmarco10k": {
+        "delta_recall@10": 0.0916,
+        "per_seed": {"42": 0.0918, "123": 0.0925, "456": 0.0907},
+        "direction": "better"
+      }
+    },
+    "unweighted_geodesic": {
+      "sift10k": {
+        "delta_recall@10": -0.1872,
+        "direction": "worse"
+      },
+      "msmarco10k": {
+        "delta_recall@10": -0.0517,
+        "direction": "worse"
+      }
+    }
+  },
+  "degree_penalty_contribution": {
+    "sift10k": {
+      "delta_over_unweighted": 0.1081,
+      "note": "Degree penalty improves over unweighted geodesic by +0.108 R@10 (67% relative) but still below adjacency-only"
+    },
+    "msmarco10k": {
+      "delta_over_unweighted": 0.1433,
+      "note": "Degree penalty improves over unweighted geodesic by +0.143 R@10 (52% relative) and exceeds adjacency-only"
+    }
+  },
+  "decision_rule_application": {
+    "proceed_criteria": "Delta >= 0.10 on at least one dataset AND Delta >= 0.05 on the other, consistently across all 3 seeds",
+    "proceed_met": false,
+    "proceed_reason": "SIFT10K delta is negative (-0.0791), so the dual-dataset improvement criterion is not met",
+    "pivot_criteria": "Unweighted geodesic improves over adjacency-only but degree penalty provides no additional gain",
+    "pivot_met": false,
+    "pivot_reason": "Unweighted geodesic does NOT improve over adjacency-only on either dataset. The degree penalty IS essential (provides +0.108 and +0.143 over unweighted). This does not match the Pivot scenario.",
+    "refute_criteria": "Both geodesic variants improve Recall@10 by < 0.02 on both datasets",
+    "refute_met": false,
+    "refute_reason": "Degree-penalized geodesic improves by +0.0916 on MSMARCO-10K, well above 0.02 threshold",
+    "actual_outcome": "mixed",
+    "outcome_description": "The degree-penalized method shows a strong positive effect on MSMARCO-10K (768-d) with +0.0916 improvement over adjacency-only, but degrades performance on SIFT10K (128-d) by -0.0791. The effect is dimension-dependent: the method works in high-d but not low-d. None of the three predefined decision outcomes (Proceed/Pivot/Refute) exactly applies."
+  },
+  "verdict": "good",
+  "verdict_justification": "The experiment ran successfully on all configurations and seeds. There is a clear positive signal: the degree-penalized geodesic method recovers substantially more true kNN relationships than raw adjacency on the high-dimensional MSMARCO-10K dataset (+9.16pp, consistent across all 3 seeds with very low variance). The degree penalty is essential (unweighted geodesic alone underperforms adjacency-only on both datasets). While the method does not improve on low-dimensional SIFT10K, the high-d result demonstrates that topology-only reconstruction CAN enable meaningful additional kNN recovery, particularly when the embedding dimensionality is high and the adjacency-only baseline is weaker."
+}

@@ -1,0 +1,20 @@
+{
+  "optimize_index": 0,
+  "issues": [
+    {
+      "title": "Encryptor key diversity far too low for effective key-search attack",
+      "description": "Original encryptor had diversity L2=0.262 (margin=0.5, lambda2=0.1). By layer 27, 28 residual stream layers washed out the key-dependent variation, making monitor scores nearly identical across keys. Fixed by increasing diversity margin to 2.0 and lambda2 to 0.5. Achieved L2=1.037 (4x improvement), which propagates meaningful score variation to layer 27."
+    },
+    {
+      "title": "K values too small to exploit available key-space diversity",
+      "description": "Original max K=64 was insufficient. Extended to K=512 to fully exploit the improved key diversity. At K=128 the attack drops TPR by 37.8pp, and at K=512 by 68.6pp."
+    },
+    {
+      "title": "No gradient-based attack baseline",
+      "description": "Implemented a white-box gradient-based key optimization attack (Adam, lr=0.1, 200 steps, 8 random starts) as an upper bound on attack effectiveness. Not needed for this iteration since the random attack already shows dramatic TPR drops, but available for future use."
+    }
+  ],
+  "experiment_result_path": "EXPERIMENT_RESULTS/optimize_trace/iteration_0/",
+  "success": true,
+  "summary": "Dramatically improved key-search attack effectiveness by increasing encryptor key diversity 4x (L2: 0.262->1.037). The attack now drops TPR@FPR=1e-3 by 25.0pp at K=64 (vs 2.8pp originally, 8.9x improvement) and 68.6pp at K=512. The >=20pp target is met at K=64. Key changes: diversity margin 0.5->2.0, lambda2 0.1->0.5, extended K to 512. The central hypothesis (key-search bypasses encrypted activation monitors) is now strongly supported."
+}

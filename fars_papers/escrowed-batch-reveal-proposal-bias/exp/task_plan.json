@@ -1,0 +1,74 @@
+[
+  {
+    "index": 0,
+    "category": "Environment Configuration",
+    "title": "Magentic Marketplace Setup and Project Structure Initialization",
+    "description": "Set up the development environment for running Escrowed Batch Reveal experiments on the Magentic Marketplace platform. The project requires a local PostgreSQL database (for the marketplace server), Python 3.11+, the magentic-marketplace package, and API keys for LLM providers (Gemini, Anthropic). All experiments are API-inference only (no GPU training). The codebase will be organized to support multiple experimental conditions (SoftWait, HardGate, EBR) with shared experiment runner and analysis scripts, building on top of the existing Magentic Marketplace repository.",
+    "status": "completed",
+    "summary": "Environment fully configured: cloned multi-agent-marketplace repo, installed magentic-marketplace in dev mode plus analysis deps (matplotlib, pandas, numpy, scipy, python-dotenv). PostgreSQL running via pgserver with TCP on localhost:5432. LLM access via LEMMA MAAS proxy (OpenAI-compatible endpoint) for both gemini-2.5-flash and claude-sonnet-4-5. Patched OpenAI client to use tool-calling with Gemini-compatible schema (resolved $defs/$ref, const, anyOf, title). Created experiments/ebr/ directory structure. Verified end-to-end with position-bias experiment: SQLite export with 4 agents, 58 actions, 47 logs."
+  },
+  {
+    "index": 1,
+    "category": "Baseline Experiment",
+    "title": "SoftWait (Prompt-Only) Baseline on gemini-2.5-flash",
+    "description": "Evaluate the SoftWait prompt-only baseline (Condition A) on gemini-2.5-flash using the Magentic Marketplace proposal-bias scenarios. SoftWait modifies only the customer agent's system prompt to instruct it to wait for K=3 proposals and explicitly compare all proposals before making a payment decision. No code-level enforcement is applied \u2014 the agent can still pay after seeing just 1 proposal if it chooses to ignore the instruction. Proposals are revealed sequentially (standard `check_messages` behavior). This establishes the prompt-only debiasing baseline.\n\n**Reference**: \"Magentic Marketplace: An Open-Source Environment for Studying Agentic Markets\" | https://github.com/microsoft/multi-agent-marketplace",
+    "status": "completed",
+    "summary": "SoftWait prompt-only baseline completed: 30 runs (3 scenarios x 10 reps) on gemini-2.5-flash. Earliest-arrival chosen rate = 0.633 (63.3%), completion rate = 1.000 (100%). Rank histogram: Rank 1 = 63.3%, Rank 2 = 10.0%, Rank 3 = 26.7%. Gate check PASSED (0.633 > 0.50). Strong first-proposal bias persists despite explicit prompt instructions to wait and compare. Per-scenario: contractors_first=50%, contractors_second=60%, contractors_third=80% earliest-arrival rate."
+  },
+  {
+    "index": 2,
+    "category": "Baseline Experiment",
+    "title": "Inference-Time Scaling Baseline on gemini-2.5-flash",
+    "description": "Evaluate a lightweight inference-time scaling baseline on gemini-2.5-flash. This condition uses the SoftWait prompt (same as Condition A) but adds a decision-quality improvement at payment time: when the agent decides to send a `pay` message, the final LLM call is sampled N=5 times, and the sample that selects the lowest-price proposal among those visible is chosen. This tests whether increased compute at decision time can reduce first-proposal bias without protocol changes. Proposals are still revealed sequentially.\n\n**Reference**: \"Magentic Marketplace: An Open-Source Environment for Studying Agentic Markets\" | https://github.com/microsoft/multi-agent-marketplace",
+    "status": "completed",
+    "summary": "ITS baseline completed: 30 runs (3 scenarios x 10 reps) on gemini-2.5-flash with N=5 best-of-N sampling at payment time. Earliest-arrival chosen rate = 0.633 (63.3%), completion rate = 1.000 (100%). Rank histogram: Rank 1 = 63.3%, Rank 2 = 20.0%, Rank 3 = 16.7%. Aggregate earliest-arrival rate identical to SoftWait (0.633), indicating ITS does not reduce first-proposal bias overall. Per-scenario: contractors_first=20% (improved from 50%), contractors_second=70% (worsened from 60%), contractors_third=100% (worsened from 80%). The bias originates from premature payment decisions, which N=5 sampling cannot fix."
+  },
+  {
+    "index": 3,
+    "category": "Baseline Experiment",
+    "title": "QuoteBatch / HardGate Baseline on gemini-2.5-flash",
+    "description": "Evaluate the QuoteBatch / HardGate baseline (Condition B) on gemini-2.5-flash. HardGate enforces a code-level payment constraint: the customer agent's `pay` action is blocked (returns a non-informative failure string 'ACTION_UNAVAILABLE') until `proposal_storage.count_proposals() >= K` (K=3). This ensures the customer has received at least K proposals before it can commit to payment. However, proposals are still revealed **sequentially** through `check_messages` \u2014 the agent sees each proposal as it arrives. This is the closest existing method baseline (action-gating without visibility change) and serves as the critical comparison point for the proposed EBR method.\n\n**Reference**: \"Magentic Marketplace: An Open-Source Environment for Studying Agentic Markets\" | https://github.com/microsoft/multi-agent-marketplace",
+    "status": "completed",
+    "summary": "HardGate baseline completed: 30 runs (3 scenarios x 10 reps) on gemini-2.5-flash with K=3 payment gating. Earliest-arrival chosen rate = 0.800 (80.0%), completion rate = 1.000 (100%). Rank histogram: Rank 1 = 80.0%, Rank 2 = 3.3%, Rank 3 = 16.7%. HardGate shows HIGHER first-proposal bias than SoftWait (80% vs 63.3%), demonstrating that forcing the agent to wait for all proposals does not reduce bias when proposals are revealed sequentially. Per-scenario: contractors_first=80%, contractors_second=70%, contractors_third=90% earliest-arrival rate. This establishes the critical B condition baseline for the B->C (HardGate->EBR) comparison."
+  },
+  {
+    "index": 4,
+    "category": "Main Experiment",
+    "title": "QuoteBatch + Escrowed Batch Reveal (EBR) on gemini-2.5-flash",
+    "description": "Implement and evaluate the proposed Escrowed Batch Reveal (EBR) method (Condition C) on gemini-2.5-flash. EBR combines the HardGate payment constraint (Condition B) with a visibility intervention: `order_proposal` messages are **buffered** in an escrow list within the customer agent's `fetch_messages()` override. Until the escrow buffer reaches K=3 proposals, `check_messages` returns no proposal messages to the LLM (only non-proposal messages like text replies pass through). When the buffer reaches K, the next `check_messages` returns all K proposals simultaneously in **shuffled order**. This isolates the sequential-visibility mechanism: the B\u2192C comparison holds payment gating constant while changing only whether proposals are seen one-at-a-time or all-at-once. The key implementation hook is overriding `BaseSimpleMarketplaceAgent.fetch_messages()` to intercept and buffer `OrderProposal`-type messages from `FetchMessagesResponse.messages` before they enter `_event_history`.",
+    "status": "completed",
+    "summary": "EBR (Condition C) implemented and evaluated on gemini-2.5-flash: 30 runs (3 scenarios x 10 reps). EBRCustomerAgent extends HardGateCustomerAgent, overriding fetch_messages() to buffer OrderProposal messages until K=3 accumulate, then release all simultaneously in shuffled order. Includes fallback release after 10 empty fetches. Results: earliest-arrival chosen rate = 0.467 (46.7%), down from HardGate 80.0% \u2014 a 33.3pp reduction. Completion rate = 1.000 (100%). Rank histogram: R1=46.7%, R2=23.3%, R3=30.0%. Reveal-position analysis: position 1 chosen 80.0% of the time, confirming first-position bias persists but is decorrelated from arrival order via shuffling. 12/30 runs used fallback release (< 3 proposals). The B->C comparison demonstrates that sequential visibility is the primary mechanism driving first-proposal bias."
+  },
+  {
+    "index": 5,
+    "category": "Optimization",
+    "title": "Optimize: QuoteBatch + Escrowed Batch Reveal (EBR) on gemini-2.5-flash",
+    "description": "Optimize the main experiment 'QuoteBatch + Escrowed Batch Reveal (EBR) on gemini-2.5-flash' to improve results.",
+    "status": "completed",
+    "summary": "Optimization succeeded after 1/2 iterations.\n  - Step 0: success, issues: [EBR 40% Fallback Rate Due to Missing Proposals, Weak Comparison Prompt Leading to High Reveal-Position Bias, Increased Sample Size for Statistical Power]\nDetails: EXPERIMENT_RESULTS/optimize_trace/"
+  },
+  {
+    "index": 6,
+    "category": "Effectiveness Evaluation",
+    "title": "Effectiveness Evaluation of Escrowed Batch Reveal",
+    "description": "Evaluate whether the proposed Escrowed Batch Reveal (EBR) method effectively reduces first-proposal bias compared to all baselines. The core comparison is between Condition B (HardGate: payment-gated, sequential reveal) and Condition C (HardGate + EBR: payment-gated, batched reveal) on gemini-2.5-flash. Secondary comparisons include Condition A (SoftWait: prompt-only) and the inference-time scaling baseline. The primary metric is the **earliest-arrival chosen rate** (fraction of runs where the first-arriving proposal was paid). The decision rule: (1) Accept/Proceed if EarliestArrival(C) \u2264 EarliestArrival(B) \u2212 0.20 with completion rate drop \u226410pp; (2) Pivot if bias shifts from arrival-order to presentation-order; (3) Refute if EarliestArrival(C) \u2265 EarliestArrival(B) \u2212 0.10.",
+    "status": "completed",
+    "summary": "Effectiveness evaluation completed with verdict: GOOD (Accept/Proceed). EBR reduces earliest-arrival chosen rate from 73.3% (HardGate B) to 24.4% (EBR C), a 48.9pp reduction (z=-4.639, p<0.001). Pre-registered Accept/Proceed criterion satisfied: C=0.244 <= B-0.20=0.533. Completion rates identical (100%). EBR rank distribution is indistinguishable from uniform (chi-sq p=0.49). Prompt-only (SoftWait 63.3%) and inference-time scaling (ITS 63.3%) baselines are ineffective. Sequential visibility confirmed as causal driver of first-proposal bias. Analysis scripts: experiments/ebr/analysis/statistical_tests.py, main_results_table.py. Figure: experiments/ebr/figures/main_results.png. Full report: EXPERIMENT_RESULTS/effectiveness_evaluation_report.md"
+  },
+  {
+    "index": 7,
+    "category": "Analysis Experiment",
+    "title": "Reveal-Order Bias Analysis (Presentation Position Effect in EBR)",
+    "description": "Analyze whether Escrowed Batch Reveal (EBR, Condition C) eliminates proposal-order bias or merely shifts it from arrival-order to presentation-order. When EBR reveals K=3 proposals simultaneously in shuffled order, a new potential confound arises: the LLM may still exhibit primacy bias toward the first proposal in the rendered list, regardless of arrival time. This analysis examines the **reveal-position selection rate** \u2014 the probability that the 1st/2nd/3rd presented proposal (in the shuffled batch) is the one ultimately paid. If the 1st-presented selection rate is significantly above 1/3, the bias has shifted from arrival-order to list-position, which has different implications for marketplace design.",
+    "status": "completed",
+    "summary": "Reveal-position bias analysis completed. EBR successfully eliminates arrival-order bias (arrival-rank distribution ~uniform), but 1st-reveal-position selection rate is 72.7% (32/44 valid runs), significantly above 1/3 (binomial p=1.1e-07). Chi-squared vs uniform rejects uniformity (stat=30.86, p<1e-06). This triggers the Pivot branch: bias has shifted from arrival-order to list-position primacy. The LLM selects whatever proposal appears first in the rendered list ~73% of the time, regardless of arrival order. EBR provides statistical fairness (random first position) but not per-transaction debiasing. Recommended mitigations: forced comparison step, rotation aggregation, or independent scoring. Analysis: experiments/ebr/analysis/reveal_order_analysis.py. Figures: experiments/ebr/figures/reveal_order_bias.png, reveal_order_comparison.png. Results: EXPERIMENT_RESULTS/reveal_order_analysis/"
+  },
+  {
+    "index": 8,
+    "category": "Analysis Experiment",
+    "title": "Second Model Confirmation (HardGate and EBR on claude-sonnet-4-5)",
+    "description": "Replicate the decisive B\u2192C comparison (HardGate vs EBR) on a second strong model, claude-sonnet-4-5, to assess whether the findings generalize beyond gemini-2.5-flash. This is a robustness check: if EBR's effect is model-dependent, the intervention's practical value is limited. Both conditions reuse the same agent implementations (`HardGateCustomerAgent`, `EBRCustomerAgent`) and experimental parameters (K=3, temperature=0.7, 10 repetitions \u00d7 3 scenarios) already developed for gemini-2.5-flash. Only the model configuration changes.",
+    "status": "completed",
+    "summary": "Cross-model robustness check completed. HardGate (B) and EBR (C) replicated on claude-sonnet-4-5 with 30 runs each (3 scenarios x 10 reps). Key finding: claude-sonnet-4-5 does NOT exhibit first-proposal bias under HardGate (earliest-arrival rate = 36.7%, near random chance 33.3%), unlike gemini-2.5-flash (73.3%). EBR reduces claude to 23.3% but the difference is not statistically significant (p=0.13) due to floor effect -- there is no bias to correct. Gemini: delta=48.9pp, p<0.001 (significant). Claude: delta=13.3pp, p=0.13 (not significant). Verdict: PARTIAL_GENERALIZATION_FLOOR_EFFECT -- first-proposal bias is model-dependent; EBR is effective when bias exists but unnecessary for models that already evaluate proposals rationally. 100% completion rates for both conditions on both models. Analysis: experiments/ebr/analysis/cross_model_analysis.py. Figure: experiments/ebr/figures/cross_model_comparison.png. Results: EXPERIMENT_RESULTS/cross_model_robustness/"
+  }
+]

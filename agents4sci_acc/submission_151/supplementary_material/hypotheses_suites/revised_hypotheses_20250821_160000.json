@@ -1,0 +1,108 @@
+[
+    {
+      "claim": "[COMPLETED] On the JailbreakBench benchmark, Semantic Entropy (SE) is outperformed by simpler textual consistency baselines. The performance ranking of baselines is model-dependent: Avg Pairwise BERTScore is the strongest detector for Llama-4-Scout-17B, while Embedding Variance is strongest for Qwen-2.5-7B-Instruct. This is due to the 'Consistency Confound', where strong models produce templated refusals, leading to SE ≈ 0 on harmful prompts.",
+      "dataset": "JailbreakBench/JBB-Behaviors (120-item validation split).",
+      "metric": {
+        "primary": "AUROC",
+        "secondary": ["FNR@5%FPR", "EER"],
+        "method_specific_scores": ["Mean score and class-conditional means (Harmful vs. Benign) for SE (across τ grid), BERTScore, Embedding Variance, and Levenshtein Variance."],
+        "diagnostics": ["Response length distributions", "Empty response rates", "SE cluster size distributions", "Optimal threshold values", "Realized FPR on test set"]
+      },
+      "baseline": "Avg Pairwise BERTScore, Embedding Variance, Levenshtein Variance.",
+      "success_threshold": "N/A - This hypothesis has been tested, and its results form the foundation for the subsequent hypotheses.",
+      "budget": {
+        "compute": "N/A",
+        "hours": "N/A",
+        "memory": "N/A"
+      },
+      "citations": {
+        "dataset": [{"title": "JailbreakBench: An Open Robustness Benchmark for Jailbreaking Large Language Models", "url": "https://arxiv.org/abs/2404.01318", "venue": "NeurIPS", "year": "2024"}]
+      }
+    },
+    {
+      "claim": "The relative performance ranking of consistency metrics (SE, BERTScore, Embedding Variance) will change when generalizing from JailbreakBench to HarmBench-Contextual, but SE will remain a sub-optimal detector compared to the simpler baselines for both Qwen-2.5-7B-Instruct and Llama-4-Scout-17B.",
+      "dataset": "Positive class: 'contextual' split from HarmBench. Negative class: A 'HarmBench-Benign-Matched' dataset, constructed by topic- and length-matching prompts from the WildGuardTest benign set.",
+      "metric": {
+        "primary": "FNR@5%FPR",
+        "secondary": ["AUROC", "EER"],
+        "method_specific_scores": ["Mean score and class-conditional means (Harmful vs. Benign) for SE (across τ grid), BERTScore, Embedding Variance, and Levenshtein Variance."],
+        "diagnostics": ["Response length distributions", "Empty response rates", "SE cluster size distributions", "Optimal threshold values", "Realized FPR on test set"]
+      },
+      "baseline": "Avg Pairwise BERTScore, Embedding Variance, Levenshtein Variance.",
+      "success_threshold": "For both models, the FNR@5%FPR for the SE detector is numerically greater than the FNR@5%FPR for the best-performing simple baseline (BERTScore or Embedding Variance).",
+      "budget": { "compute": "1 GPU", "hours": "6", "memory": "40GB" },
+      "citations": {
+        "dataset": [
+          {"title": "HarmBench: A Standardized Evaluation Framework for Automated Red Teaming and Robust Refusal", "url": "https://arxiv.org/abs/2402.04249", "venue": "arXiv", "year": "2024"},
+          {"title": "WildGuard: Open One-stop Moderation Tools for Safety Risks, Jailbreaks, and Refusals of LLMs", "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/0f69b4b96a46f284b726fbd70f74fb3b-Abstract-Datasets_and_Benchmarks_Track.html", "venue": "NeurIPS", "year": "2024"}
+        ]
+      }
+    },
+    {
+      "claim": "Paraphrasing JailbreakBench prompts will degrade the performance of all consistency detectors, but Semantic Entropy's performance will degrade most severely, confirming its reliance on memorized refusal templates which are disrupted by paraphrasing.",
+      "dataset": "A procedurally generated 'JBB-Paraphrase-2025-08' dataset, containing paraphrased versions of both the harmful and benign prompts from the JailbreakBench test set.",
+      "metric": {
+        "primary": "ΔFNR@5%FPR (Change in FNR@5%FPR from original to paraphrased dataset).",
+        "secondary": ["ΔAUROC", "ΔEER"],
+        "method_specific_scores": ["Mean score and class-conditional means for all detectors on both original and paraphrased data to analyze score shifts."],
+        "diagnostics": ["Comparison of response length and SE cluster size distributions between original and paraphrased prompts."]
+      },
+      "baseline": "The performance degradation (ΔFNR@5%FPR) of other consistency baselines (Avg Pairwise BERTScore, Embedding Variance, Levenshtein Variance).",
+      "success_threshold": "The increase in FNR@5%FPR for the SE detector is numerically the largest among all tested detectors for both models.",
+      "budget": { "compute": "1 GPU", "hours": "5", "memory": "40GB" },
+      "citations": {
+        "dataset": [
+          {"title": "JailbreakBench: An Open Robustness Benchmark for Jailbreaking Large Language Models", "url": "https://arxiv.org/abs/2404.01318", "venue": "NeurIPS", "year": "2024"},
+          {"title": "LiveBench: A Challenging, Contamination-Limited LLM Benchmark", "url": "https://openreview.net/forum?id=sKYHBTAxVa", "venue": "ICLR", "year": "2025"}
+        ]
+      }
+    },
+    {
+      "claim": "The underperformance of Semantic Entropy relative to the best simple baseline is robust and not an artifact of hyperparameter choice; no combination of clustering threshold (τ), sample count (N), or temperature (T) within a reasonable range will allow SE to significantly outperform the best-performing simple baseline on JailbreakBench.",
+      "dataset": "JailbreakBench/JBB-Behaviors test split.",
+      "metric": {
+        "primary": "A grid report comparing the FNR@5%FPR for each SE configuration against the FNR@5%FPR of the best baseline.",
+        "secondary": ["A grid report of AUROC scores for all SE configurations."],
+        "method_specific_scores": ["Mean score and class-conditional means for SE for each hyperparameter configuration."],
+        "diagnostics": ["Optimal threshold values per configuration", "Realized FPR per configuration"]
+      },
+      "baseline": "The FNR@5%FPR of the single best baseline for each model (BERTScore for Llama-4, Embedding Variance for Qwen) using their canonical parameters.",
+      "success_threshold": "For every tested combination of τ ∈ {0.1, 0.2, 0.3, 0.4}, N ∈ {5, 10}, and T ∈ {0.3, 0.7}, the resulting FNR@5%FPR for SE is numerically higher than that of the best-performing baseline for that model.",
+      "budget": { "compute": "1 GPU", "hours": "6", "memory": "40GB" },
+      "citations": {
+        "dataset": [{"title": "JailbreakBench: An Open Robustness Benchmark for Jailbreaking Large Language Models", "url": "https://arxiv.org/abs/2404.01318", "venue": "NeurIPS", "year": "2024"}]
+      }
+    },
+    {
+      "claim": "The primary failure modes of different consistency detectors are distinct: for Semantic Entropy, over 75% of its false negatives on JailbreakBench will be due to the 'Consistency Confound' (SE ≈ 0 from templated refusals), while for Embedding Variance, a significant portion (>25%) of its false negatives will be cases where refusals are semantically identical but lexically diverse.",
+      "dataset": "The set of false negative classifications made by the SE and Embedding Variance detectors on the JailbreakBench test set.",
+      "metric": {
+        "primary": "Percentage of false negatives attributable to specific, defined mechanisms ('Consistency Confound' for SE, 'Lexical Diversity with Semantic Identity' for Embedding Variance).",
+        "secondary": ["Qualitative examples with response hashes."],
+        "method_specific_scores": ["Analysis of score distributions (SE, Embedding Variance) specifically for the false negative subset."],
+        "diagnostics": ["Analysis of response lengths and SE cluster sizes within the false negative subset."]
+      },
+      "baseline": "Not applicable. This is a descriptive and comparative analysis of failure modes.",
+      "success_threshold": "More than 75% of SE's false negatives meet the 'Consistency Confound' criteria AND more than 25% of Embedding Variance's false negatives meet the 'Lexical Diversity' criteria.",
+      "budget": { "compute": "1 GPU", "hours": "2", "memory": "40GB" },
+      "citations": {
+        "dataset": [{"title": "JailbreakBench: An Open Robustness Benchmark for Jailbreaking Large Language Models", "url": "https://arxiv.org/abs/2404.01318", "venue": "NeurIPS", "year": "2024"}]
+      }
+    },
+    {
+      "claim": "The observed pattern—Semantic Entropy's underperformance relative to simpler baselines like BERTScore and Embedding Variance—will generalize to popular closed-source models when tested on the JailbreakBench benchmark.",
+      "dataset": "JailbreakBench/JBB-Behaviors test split.",
+      "metric": {
+        "primary": "Aggregate TPR@5%FPR across all tested closed-API models.",
+        "secondary": ["Aggregate AUROC", "Aggregate EER"],
+        "method_specific_scores": ["Aggregate mean score and class-conditional means for all detectors across the closed-API models."],
+        "diagnostics": ["Aggregate response length distributions", "Aggregate empty response rates", "Aggregate SE cluster size distributions"]
+      },
+      "baseline": "Avg Pairwise BERTScore, Embedding Variance, and Levenshtein Variance detectors, evaluated on the same set of closed-source APIs.",
+      "success_threshold": "The aggregate TPR@5%FPR for the SE detector is numerically lower than the aggregate TPR@5%FPR for the best-performing baseline.",
+      "budget": { "compute": "1 GPU", "hours": "6", "memory": "40GB" },
+      "citations": {
+        "dataset": [{"title": "JailbreakBench: An Open Robustness Benchmark for Jailbreaking Large Language Models", "url": "https://arxiv.org/abs/2404.01318", "venue": "NeurIPS", "year": "2024"}]
+      }
+    }
+  ]

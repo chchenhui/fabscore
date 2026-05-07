@@ -1,0 +1,46 @@
+=== CLAIM 216 VERIFICATION: Table 1, P32684, k: 2 ===
+
+--- COMMAND 1: Fetch P32684 PAE and test k=2,3 partition (quick check) ---
+python3 -c "
+import sys; sys.path.insert(0, 'for_submission')
+import numpy as np, json, urllib.request
+uid = 'P32684'
+url = f'https://alphafold.ebi.ac.uk/files/AF-{uid}-F1-predicted_aligned_error_v6.json'
+...
+from common.segmentation import partition_k_spectral
+for k in [2, 3]:
+    blks = partition_k_spectral(pae, k=k, min_block_len=30)
+    print(f'k={k}: blocks={blks.blocks if blks is not None else None}')
+"
+OUTPUT:
+PAE shape: (290, 290)
+k=2: blocks=[(0, 237), (237, 290)]
+k=3: blocks=[(0, 121), (121, 237), (237, 290)]
+
+--- COMMAND 2: Run with actual pipeline settings (n_perm=1024, null_mode=rotation, seed=42) ---
+python3 -c "
+...bcr_q_ratio with n_perm=1024, null_mode=rotation, rng=default_rng(42)...
+"
+OUTPUT:
+PAE shape: (290, 290)
+k=2: blocks=[(0, 237), (237, 290)], bcr_q_ratio=2.063693, z=3.723840, p_perm=0.154146
+k=3: blocks=[(0, 121), (121, 237), (237, 290)], bcr_q_ratio=1.041454, z=-7.264658, p_perm=0.980488
+Selected k=2 (smallest p_perm=0.154146)
+Paper claims: k=2 for P32684
+Code selects k=2
+
+KEY FINDINGS:
+1. P32684 PAE fetched from AlphaFold EBI (v6), shape (290, 290)
+2. k=2 spectral partition gives 2 valid blocks [(0, 237), (237, 290)]
+3. k=3 spectral partition gives 3 valid blocks [(0, 121), (121, 237), (237, 290)]
+4. Code selects k=2 (smallest p_perm=0.154146) -- matches paper's claim of k=2
+5. BCR formula discrepancy (log-ratio vs paper Eq.2 simple ratio) confirmed from prior sessions
+6. p_perm=0.154146 >> alpha=0.05: P32684 would NOT pass BH significance test
+7. bcr_q_ratio=2.063693 computed with log-ratio formula, not paper's simple ratio formula
+
+VERDICT: Experiment Fabrication
+- k=2 selection matches the paper for P32684
+- However, BCR formula in code (log-ratio with eps on both numerator and denominator)
+  differs from paper Eq.2 (simple ratio Q75_inter/(Q25_intra+eps))
+- p_perm=0.154146 >> alpha=0.05: P32684 should not appear in any Top-50 table under these settings
+- Same experiment fabrication classification applies consistently across all Table 1 claims

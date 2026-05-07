@@ -1,0 +1,102 @@
+=== COMMAND: sed -n '396,410p' results/paper.md ===
+The CEVA models showed a distinctive pattern of adaptation in this scenario, with more selective adaptation to different value dimensions, potentially reflecting their ability to prioritize different types of values in the face of conflicting signals.
+
+### 5.3 Comparative Analysis Across Metrics and Scenarios
+
+#### 5.3.1 Adaptation Accuracy
+
+Figure 21 compares adaptation accuracy across scenarios and models.
+
+![Adaptation Accuracy](./figures/scenario_comparison_adaptation_accuracy.png)
+*Figure 21: Adaptation accuracy across scenarios*
+
+The adaptive_alignment model consistently achieved the highest adaptation accuracy across all scenarios, followed closely by the CEVA models. The static_alignment model had significantly lower accuracy, particularly in the gradual_drift scenario where the cumulative effect of small value changes led to substantial misalignment over time.
+
+#### 5.3.2 Stability
+
+
+=== COMMAND: nl -ba claude_code/visualization.py | sed -n '226,265p' ===
+   226	    Returns:
+   227	        Path to the saved figure
+   228	    """
+   229	    fig, ax = plt.subplots()
+   230	    
+   231	    # Extract metric values for each model and scenario
+   232	    scenarios = list(scenario_results.keys())
+   233	    model_metrics = {}
+   234	    
+   235	    for scenario_name in scenarios:
+   236	        scenario_data = scenario_results[scenario_name]
+   237	        for model_name, model_data in scenario_data["models"].items():
+   238	            if model_name not in model_metrics:
+   239	                model_metrics[model_name] = []
+   240	                
+   241	            model_metrics[model_name].append(model_data["metrics"].get(metric_name, 0))
+   242	            
+   243	    # Plot metric values for each model
+   244	    bar_width = 0.8 / len(model_metrics)
+   245	    x = np.arange(len(scenarios))
+   246	    
+   247	    for i, (model_name, values) in enumerate(model_metrics.items()):
+   248	        ax.bar(x + i * bar_width, values, bar_width, label=model_name)
+   249	        
+   250	    # Add labels and legend
+   251	    ax.set_xlabel("Scenario")
+   252	    ax.set_ylabel(metric_name.replace('_', ' ').title())
+   253	    if title:
+   254	        ax.set_title(title)
+   255	    else:
+   256	        ax.set_title(f"{metric_name.replace('_', ' ').title()} Comparison")
+   257	    ax.set_xticks(x + bar_width * (len(model_metrics) - 1) / 2)
+   258	    ax.set_xticklabels(scenarios)
+   259	    ax.legend()
+   260	    
+   261	    # Adjust layout
+   262	    plt.tight_layout()
+   263	    
+   264	    # Save and return figure path
+   265	    return save_figure(fig, filename, figures_dir, config)
+
+=== COMMAND: nl -ba claude_code/visualization.py | sed -n '403,411p' ===
+   403	    # Plot key metric comparisons across scenarios
+   404	    for metric in ['adaptation_accuracy', 'stability', 'user_satisfaction', 'agency_preservation']:
+   405	        figure_paths[f'metric_{metric}'] = plot_scenario_performance(
+   406	            results['scenarios'],
+   407	            metric,
+   408	            f'scenario_comparison_{metric}',
+   409	            figures_dir,
+   410	            config
+   411	        )
+
+=== COMMAND: nl -ba claude_code/evaluation.py | sed -n '188,200p' ===
+   188	        # Calculate adaptation accuracy
+   189	        # This is averaged across all time steps and measures how well the model tracks human values
+   190	        human_values_array = np.array(raw_data["human_values"])[:, 0, :]  # First agent only
+   191	        model_values_array = np.array(raw_data["model_values"][model.name])
+   192	        
+   193	        # Calculate Euclidean distance at each time step
+   194	        distances = np.linalg.norm(human_values_array - model_values_array, axis=1)
+   195	        avg_distance = np.mean(distances)
+   196	        
+   197	        # Convert to adaptation accuracy (1 - normalized distance)
+   198	        # Maximum distance in n-dimensional space with values summing to 1 is sqrt(2)
+   199	        max_distance = np.sqrt(2)
+   200	        metrics["adaptation_accuracy"] = 1 - (avg_distance / max_distance)
+
+=== COMMAND: python inspect_results_json ===
+artifact= fabscore_codex/workspace/claim_23_run_json/results/results.json
+SCENARIO gradual_drift
+static_alignment 0.7247123846524747
+adaptive_alignment 0.9607610232010794
+ceva_basic 0.9117852877879145
+ceva_full 0.9117852877879145
+SCENARIO rapid_shift
+static_alignment 0.7937949458228207
+adaptive_alignment 0.9609362612541186
+ceva_basic 0.9071272818493994
+ceva_full 0.9071272818493994
+SCENARIO value_conflict
+static_alignment 0.77988980607719
+adaptive_alignment 0.9605249741700335
+ceva_basic 0.9260593550747834
+ceva_full 0.9260593550747834

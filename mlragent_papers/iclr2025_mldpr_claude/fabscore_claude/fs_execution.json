@@ -1,0 +1,68 @@
+{
+    "tables": [],
+    "figures": [
+        {
+            "claim_index": 1,
+            "claim": "1. figures/acknowledgment_time.png: Figure 2 shows the average time taken by users to acknowledge deprecation notifications",
+            "verdict": "Verified",
+            "explanation": "Execution stage: The raw underlying data for Figure 2 exists in experiment_results.json with acknowledgment_time means of CONTROL=30.45, BASIC=23.96, FULL=18.56 days, matching the claim exactly. A minimal script successfully regenerated the acknowledgment_time bar chart from this data, confirming the figure represents average time taken by users to acknowledge deprecation notifications across the three strategies.",
+            "evidence": "results/experiment_results.json aggregate_metrics.user_response: CONTROL.acknowledgment_time.mean=30.45, BASIC.acknowledgment_time.mean=23.96, FULL.acknowledgment_time.mean=18.56 days. Fresh figure regenerated at fabscore_claude/workspace/acknowledgment_time_regenerated.png. | Code: claude_code/evaluation.py:501-518 (generate_all_figures -> plot_comparison_bar_chart('acknowledgment_time')); results/experiment_results.json aggregate_metrics.user_response.{CONTROL,BASIC,FULL}.acknowledgment_time",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "claude_code/evaluation.py:501-518 (generate_all_figures -> plot_comparison_bar_chart('acknowledgment_time'))",
+                    "results/experiment_results.json aggregate_metrics.user_response.{CONTROL,BASIC,FULL}.acknowledgment_time"
+                ],
+                "commands_executed": [
+                    "python3 -c \"import json; import matplotlib; matplotlib.use('Agg'); import matplotlib.pyplot as plt; ... (loads experiment_results.json, extracts acknowledgment_time means, generates bar chart)\""
+                ]
+            }
+        },
+        {
+            "claim_index": 2,
+            "claim": "2. figures/access_control_grant_rate.png: Figure 3 shows the access control grant rates for the full framework implementation",
+            "verdict": "Verified",
+            "explanation": "Execution stage: The experiment executed end-to-end. The FULL framework simulation produced system_performance_evaluation.json containing access_control.grant_rate (computed at framework.py:750 from access_logs). The evaluation pipeline in evaluation.py:compare_system_performance() read this data and generate_all_figures() regenerated access_control_grant_rate.png. The figure corresponds exactly to the paper's Figure 3 claim.",
+            "evidence": "Successfully ran `python run_experiment.py --simulations 50`; generated `system_performance_evaluation.json` for FULL strategy with access_control.grant_rate=1.0 (134 granted, 0 denied); `evaluation.py:generate_all_figures()` saved `results/figures/access_control_grant_rate.png` from this data. Paper line 280: 'Figure 3 shows the access control grant rates for the full framework implementation'. | Code: claude_code/framework.py:750 (evaluate_system_performance → access_control.grant_rate), claude_code/evaluation.py:536-552 (generate_all_figures → access_control_grant_rate.png)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "claude_code/framework.py:750 (evaluate_system_performance → access_control.grant_rate), claude_code/evaluation.py:536-552 (generate_all_figures → access_control_grant_rate.png)"
+                ],
+                "commands_executed": [
+                    "cd /home/chenhui/fabscore/mlrbench_papers/iclr2025_mldpr_claude/claude_code && python run_experiment.py --simulations 50"
+                ]
+            }
+        },
+        {
+            "claim_index": 3,
+            "claim": "3. figures/citation_patterns.png: Figure 4 shows citation patterns over time for deprecated datasets under different strategies",
+            "verdict": "Verified",
+            "explanation": "Execution stage: The underlying per-simulation citation_pattern data exists in experiment_results.json. The script create_visualizations.py:plot_citation_patterns_by_strategy() successfully regenerated the figure from this data, producing a line plot with 3 strategies over 6 time periods — matching the paper's Figure 4 description of 'citation patterns over time for deprecated datasets under different strategies'.",
+            "evidence": "Per-simulation citation_pattern data confirmed in results/experiment_results.json (research_impact.{dataset_id}.{strategy}, 4500 rows across 50 sims × 5 datasets × 3 strategies × 6 time periods). Fresh figure regenerated to fabscore_claude/workspace/citation_patterns_regenerated.png with title 'Citation Patterns Over Time by Deprecation Strategy', 3 lines (CONTROL, BASIC, FULL), time periods [1–6]. CONTROL starts ~99.84, BASIC/FULL start at 100.0, all declining over time. | Code: claude_code/create_visualizations.py:416 (plot_citation_patterns_by_strategy), claude_code/create_visualizations.py:196 (prepare_research_impact_data)",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "claude_code/create_visualizations.py:416 (plot_citation_patterns_by_strategy), claude_code/create_visualizations.py:196 (prepare_research_impact_data)"
+                ],
+                "commands_executed": [
+                    "python3 -c 'import sys; sys.path.insert(0, \"claude_code\"); import json; from create_visualizations import prepare_research_impact_data, plot_citation_patterns_by_strategy; results = json.load(open(\"results/experiment_results.json\")); research_df = prepare_research_impact_data(results); fig = plot_citation_patterns_by_strategy(research_df, save_path=\"fabscore_claude/workspace/citation_patterns_regenerated.png\")'"
+                ]
+            }
+        }
+    ],
+    "results_section": [],
+    "summary": {
+        "total": 3,
+        "verified": 3,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 0,
+        "error": 0
+    }
+}

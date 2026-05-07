@@ -1,0 +1,213 @@
+{
+    "no_code_files": [],
+    "obvious_hallucination": [
+        {
+            "index": 6,
+            "category": "results_section",
+            "content": "1. For all tasks, we observe that the invariance point (where the invariance score exceeds 90% of its maximum value) is consistently reached very early in training, at step 100.",
+            "reason": "Clear code bug in run_4.py (line 492-495): the max_invariance_score is updated to inv_score immediately before the threshold check. At step 100 (first measurement), S > 0.9 * S is always true for any S > 0. So invariance_point is always set to 100 regardless of actual dynamics. For x_minus_y and x_plus_y, the invariance score at step 100 is only 0.017-0.037, far below 90% of the eventual maximum (~1.0). The invariance_point=100 result is an artifact of the ordering bug, not a scientific finding about early invariance learning.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_4.py:492-495 (inv_score > max_invariance_score update before threshold check)",
+                "run_4/final_info.json: invariance_point=100 for all tasks",
+                "run_4/final_info.json: x_minus_y seed 0 invariance score at step 100 = 0.017, eventual max = 1.0",
+                "run_4/final_info.json: x_plus_y seed 0 invariance score at step 100 = 0.026, eventual max = 1.0"
+            ]
+        },
+        {
+            "index": 7,
+            "category": "results_section",
+            "content": "2. Modular division: Grokking point at 4406.67 ± 253.33 steps (mean ± standard error)",
+            "reason": "The mean (4406.67) exactly matches run_4/final_info.json x_div_y grokking_point_mean. However, the reported SE of 253.33 conflicts with all computations from the actual seed data [4690, 3950, 4580]: the stored SE = 108.67 (computed as std/n=325.9/3, itself a bug), the correct SE = std/sqrt(n) = 188.2, and no standard statistical formula yields 253.33. The SE value is not derivable from run_4 data with any standard method.",
+            "fabrication_type": "result_fabrication",
+            "code_evidence": [
+                "run_4/final_info.json: x_div_y grokking_point_mean=4406.667, grokking_point_stderr=108.673",
+                "run_4/final_info_x_div_y_0.json: step_val_acc_99=4690",
+                "run_4/final_info_x_div_y_1.json: step_val_acc_99=3950",
+                "run_4/final_info_x_div_y_2.json: step_val_acc_99=4580",
+                "run_4.py:584: stderrs computed as np.std(v)/len(v) instead of np.std(v)/sqrt(len(v))"
+            ]
+        },
+        {
+            "index": 8,
+            "category": "results_section",
+            "content": "3. Modular subtraction: Grokking point at 4536.67 ± 93.33 steps",
+            "reason": "The mean (4536.67) exactly matches run_4/final_info.json x_minus_y grokking_point_mean. However, the reported SE of 93.33 conflicts with all computations from the actual seed data [4860, 5520, 3230]: the stored SE = 320.81 (std/n=962.4/3), the correct SE = std/sqrt(n) = 555.7. No standard formula yields 93.33 from these seeds. The SE is not derivable from run_4 data.",
+            "fabrication_type": "result_fabrication",
+            "code_evidence": [
+                "run_4/final_info.json: x_minus_y grokking_point_mean=4536.667, grokking_point_stderr=320.813",
+                "run_4/final_info_x_minus_y_0.json: step_val_acc_99=4860",
+                "run_4/final_info_x_minus_y_1.json: step_val_acc_99=5520",
+                "run_4/final_info_x_minus_y_2.json: step_val_acc_99=3230",
+                "run_4.py:584: np.std(v)/len(v) bug"
+            ]
+        },
+        {
+            "index": 9,
+            "category": "results_section",
+            "content": "4. Modular addition: Grokking point at 2633.33 ± 406.67 steps",
+            "reason": "The mean (2633.33) exactly matches run_4/final_info.json x_plus_y grokking_point_mean. However, the reported SE of 406.67 conflicts with all computations from the actual seed data [2240, 2600, 3060]: the stored SE = 111.86 (std/n=335.6/3), the correct SE = std/sqrt(n) = 193.8. No standard formula yields 406.67 from these seeds. The SE is not derivable from run_4 data.",
+            "fabrication_type": "result_fabrication",
+            "code_evidence": [
+                "run_4/final_info.json: x_plus_y grokking_point_mean=2633.333, grokking_point_stderr=111.864",
+                "run_4/final_info_x_plus_y_0.json: step_val_acc_99=2240",
+                "run_4/final_info_x_plus_y_1.json: step_val_acc_99=2600",
+                "run_4/final_info_x_plus_y_2.json: step_val_acc_99=3060",
+                "run_4.py:584: np.std(v)/len(v) bug"
+            ]
+        },
+        {
+            "index": 13,
+            "category": "results_section",
+            "content": "8. Accuracy on a set of 100 examples: 50.33% ± 2.33% [permutation task]",
+            "reason": "The mean (50.33%) exactly matches run_4/final_info.json permutation_analysis_mean.accuracy=0.5033. However, the paper SE of 2.33% conflicts with the stored SE of 1.26% (=0.01257, computed as std/n=0.03771/3). The correct SE = std/sqrt(n) = 0.03771/sqrt(3) = 2.18%. Neither the stored buggy value (1.26%) nor the correct value (2.18%) equals the paper's 2.33%. The SE is not derivable from seeds [0.53, 0.45, 0.53] with any standard formula.",
+            "fabrication_type": "result_fabrication",
+            "code_evidence": [
+                "run_4/final_info.json: permutation permutation_analysis_mean.accuracy=0.5033, permutation_analysis_stderr.accuracy=0.012571",
+                "run_4/final_info_permutation_0.json: permutation_analysis.accuracy=0.53",
+                "run_4/final_info_permutation_1.json: permutation_analysis.accuracy=0.45",
+                "run_4/final_info_permutation_2.json: permutation_analysis.accuracy=0.53",
+                "run_4.py:580: nested dict stderrs computed as np.std(...)/len(v) bug"
+            ]
+        },
+        {
+            "index": 14,
+            "category": "results_section",
+            "content": "9. Average attention across all layers: 0.25 ± 0.01, indicating roughly uniform attention [permutation task]",
+            "reason": "The mean (0.25) is trivially correct (sum of attention weights per row = 1 for 4 positions, so mean of all elements = 0.25 by construction). However, the paper's SE of 0.01 conflicts with the stored SE of 0.109 (run_4/final_info.json permutation_analysis_stderr.avg_attention=0.1088). The stored SE of 0.109 appears computed incorrectly (possibly std across all attention matrix element values rather than across seed means). Neither value is derivable from a correct statistical computation, and the two values conflict strongly (factor of ~10x difference).",
+            "fabrication_type": "result_fabrication",
+            "code_evidence": [
+                "run_4/final_info.json: permutation permutation_analysis_mean.avg_attention=0.24999999741097176",
+                "run_4/final_info.json: permutation permutation_analysis_stderr.avg_attention=0.10881486682021241",
+                "run_4.py:580: nested dict stderrs computed as np.std([nested_matrices])/len(v) incorrectly"
+            ]
+        }
+    ],
+    "static_verifiable": [
+        {
+            "index": 10,
+            "category": "results_section",
+            "content": "5. Final validation accuracies of 100% for division and subtraction, and 99.07% for addition",
+            "reason": "All three values exactly match run_4/final_info.json: x_div_y final_val_acc_mean=1.0 (100%), x_minus_y final_val_acc_mean=1.0 (100%), x_plus_y final_val_acc_mean=0.99072265625 (99.07%). These are direct reads from the stored results without ambiguity.",
+            "code_evidence": [
+                "run_4/final_info.json: x_div_y means.final_val_acc_mean=1.0",
+                "run_4/final_info.json: x_minus_y means.final_val_acc_mean=1.0",
+                "run_4/final_info.json: x_plus_y means.final_val_acc_mean=0.99072265625"
+            ]
+        },
+        {
+            "index": 11,
+            "category": "results_section",
+            "content": "6. Failure to achieve high validation accuracy (final accuracy of 0.85%) [permutation task]",
+            "reason": "Exactly matches run_4/final_info.json: permutation final_val_acc_mean=0.008544921875 = 0.8544% ≈ 0.85%.",
+            "code_evidence": [
+                "run_4/final_info.json: permutation means.final_val_acc_mean=0.008544921875",
+                "run_4/final_info_permutation_0.json: final_val_acc=0.010009765625",
+                "run_4/final_info_permutation_1.json: final_val_acc=0.01025390625",
+                "run_4/final_info_permutation_2.json: final_val_acc=0.00537109375"
+            ]
+        },
+        {
+            "index": 12,
+            "category": "results_section",
+            "content": "7. High training accuracy (96.68%), indicating severe overfitting [permutation task]",
+            "reason": "Exactly matches run_4/final_info.json: permutation final_train_acc_mean=0.966796894868215 = 96.68%.",
+            "code_evidence": [
+                "run_4/final_info.json: permutation means.final_train_acc_mean=0.966796894868215",
+                "run_4/final_info_permutation_0.json: final_train_acc=0.9994140863418579",
+                "run_4/final_info_permutation_1.json: final_train_acc=0.9019531607627869",
+                "run_4/final_info_permutation_2.json: final_train_acc=0.9990234375"
+            ]
+        }
+    ],
+    "insufficient_evidence": [],
+    "execution_required": [
+        {
+            "index": 1,
+            "category": "figure",
+            "content": "1. Figure 1: Comparison of invariance points and grokking points across tasks. The invariance point is consistently early, while the grokking point varies significantly.",
+            "reason": "The grokking_vs_invariance_points.png exists in the root directory, and final_info.json contains the underlying grokking_point and invariance_point values. However, all_results.npy is absent from all run directories, which is required by plot.py's plot_grokking_points() function. Furthermore, plot.py has a logic bug: it calls results_info[run][dataset].get('grokking_point', 7500) where results_info is populated only from val_info/train_info/invariance_scores sub-dicts (not final_info), so grokking_point and invariance_point always default to 7500, meaning the figure as reproduced would show all bars at 7500. Execution of run_4.py to regenerate all_results.npy and inspection of plot.py is required to establish what the existing PNG actually shows vs. what the paper claims.",
+            "candidate_files": [
+                "run_4.py",
+                "plot.py"
+            ],
+            "suggested_entrypoints": [
+                "python run_4.py --out_dir run_4",
+                "python plot.py"
+            ]
+        },
+        {
+            "index": 2,
+            "category": "figure",
+            "content": "2. Figure 2(a): Modular Division — Learning dynamics for modular division, showing training loss, validation accuracy, and invariance score over time.",
+            "reason": "The combined_metrics_x_div_y.png exists in the root directory. Invariance scores for x_div_y are in run_4/final_info.json (all 1.0 from step 100, trivially because the division transform (a+97)%97=a is identity). However, training loss and validation accuracy time-series data requires all_results.npy which is absent from all run directories. run_4.py can regenerate all_results.npy, after which plot.py can be used to verify the figure content.",
+            "candidate_files": [
+                "run_4.py",
+                "plot.py",
+                "run_4/final_info.json"
+            ],
+            "suggested_entrypoints": [
+                "python run_4.py --out_dir run_4",
+                "python plot.py"
+            ]
+        },
+        {
+            "index": 3,
+            "category": "figure",
+            "content": "3. Figure 2(b): Modular Subtraction — Learning dynamics for modular subtraction, showing training loss, validation accuracy, and invariance score over time.",
+            "reason": "The combined_metrics_x_minus_y.png exists. Invariance scores for x_minus_y are in run_4/final_info.json (shows gradual increase from ~0.017 at step 100 to 1.0). Training loss and validation accuracy time-series require all_results.npy (absent). run_4.py can regenerate all_results.npy.",
+            "candidate_files": [
+                "run_4.py",
+                "plot.py",
+                "run_4/final_info.json"
+            ],
+            "suggested_entrypoints": [
+                "python run_4.py --out_dir run_4",
+                "python plot.py"
+            ]
+        },
+        {
+            "index": 4,
+            "category": "figure",
+            "content": "4. Figure 2(c): Modular Addition — Learning dynamics for modular addition, showing training loss, validation accuracy, and invariance score over time.",
+            "reason": "The combined_metrics_x_plus_y.png exists. Invariance scores for x_plus_y are in run_4/final_info.json (gradual increase from ~0.026 at step 100 to 1.0). Training loss and validation accuracy time-series require all_results.npy (absent). run_4.py can regenerate all_results.npy.",
+            "candidate_files": [
+                "run_4.py",
+                "plot.py",
+                "run_4/final_info.json"
+            ],
+            "suggested_entrypoints": [
+                "python run_4.py --out_dir run_4",
+                "python plot.py"
+            ]
+        },
+        {
+            "index": 5,
+            "category": "figure",
+            "content": "5. Figure 2(d): Permutations — Learning dynamics for permutations, showing training loss, validation accuracy, and invariance score over time.",
+            "reason": "The combined_metrics_permutation.png exists. Invariance scores for permutation are in run_4/final_info.json (consistently low, ~0.02-0.07, throughout training). Training loss and validation accuracy time-series require all_results.npy (absent). run_4.py can regenerate all_results.npy.",
+            "candidate_files": [
+                "run_4.py",
+                "plot.py",
+                "run_4/final_info.json"
+            ],
+            "suggested_entrypoints": [
+                "python run_4.py --out_dir run_4",
+                "python plot.py"
+            ]
+        }
+    ],
+    "error": [],
+    "summary": {
+        "total_claims": 14,
+        "no_code_files": 0,
+        "obvious_hallucination": 6,
+        "data_fabrication": 0,
+        "experiment_fabrication": 1,
+        "result_fabrication": 5,
+        "static_verifiable": 3,
+        "insufficient_evidence": 0,
+        "execution_required": 5,
+        "error": 0
+    }
+}

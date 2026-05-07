@@ -1,0 +1,38 @@
+=== Command 1: Simple negative threshold (claim's literal definition) ===
+python3 -c "import pandas as pd; df=pd.read_csv('code_data/fig1_catalyst_data.csv'); fav=df[(df['mixing_enthalpy_ev_atom']<0)&(df['d_band_center_ev']<0)]; print(fav.groupby('catalyst_type').size()/df.groupby('catalyst_type').size())"
+
+Output:
+catalyst_type
+Known                1.0
+LLM_Generated_DA     0.833333
+LLM_Generated_HEA    1.0
+dtype: float64
+
+→ Known=100%, LLM-HEA=100% (claim says 28%/73% → MISMATCH)
+
+=== Command 2: Script reference lines (-0.5 mix, -2.5 d_band) ===
+python3 -c "..."
+
+Output:
+mix < -0.5, d_band < -2.5: Known=10.0%, LLM-HEA=72.0%
+(claim says 28%/73% → MISMATCH)
+
+=== Command 3: Exhaustive threshold search ===
+Closest match found: mix<-0.3673, dband<-2.5102 → Known=28%, LLM-HEA=72%
+or: mix<-0.3687, dband<-2.4772 → Known=28%, LLM-HEA=74%
+
+No threshold combination gives exactly 28%/73% simultaneously.
+
+=== Command 4: Global mean threshold ===
+Global means: mix=-0.4753, d_band=-2.4507
+Below global mean for both: Known=15.3%, LLM-HEA=76.0%
+(claim says 28%/73% → MISMATCH)
+
+=== Command 5: All-LLM threshold search ===
+80 total LLM entries (50 HEA + 30 DA)
+No combination gives 42/150 (28%) for Known and 58-59/80 (73%) for all-LLM simultaneously.
+
+CONCLUSION: The claimed 73% (LLM-HEA) and 28% (Known) in the favorable quadrant
+cannot be reproduced from the data with any natural or script-defined threshold.
+The paper's literal definition ("negative ∆Hmix, negative d-band") gives 100%/100%.
+The closest achievable combination is 28%/72% or 28%/74%.

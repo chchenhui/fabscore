@@ -1,0 +1,27 @@
+=== Command: cd workspace && python plot.py ===
+(no stdout/stderr output - completed successfully)
+Generated files:
+- generated_samples.png
+- kl_divergence_comparison.png
+- kl_path_tradeoff.png (Figure 2 trade-off scatter)
+- path_adherence_comparison.png
+
+=== Key findings from code inspection (plot.py lines 113-129) ===
+Plot 4 (Figure 2 equivalent):
+    for i, run in enumerate(runs):
+        if 'path_adherence' in final_results[run][datasets[0]]['means']:
+            kl_divergences = [final_results[run][dataset]['means']['kl_divergence'] for dataset in datasets]
+            path_adherences = [final_results[run][dataset]['means']['path_adherence'] for dataset in datasets]
+            ax.scatter(kl_divergences, path_adherences, label=labels[run], color=colors[i], s=50)
+    ax.savefig("kl_path_tradeoff.png")
+
+=> Uses ax.scatter() WITHOUT any error bar parameters (xerr/yerr)
+=> No plt.errorbar() calls
+=> No 'stds' data accessed in final_info.json
+=> Paper claims "Error bars represent standard deviation over 5 runs" - FALSE
+
+=== Comparison: original repo kl_path_tradeoff.png vs freshly generated ===
+Original (repo): Shows 4 methods (Linear 0.5/0.1/1.0, Circular 1.0), NO Baseline, NO error bars
+Generated (workspace): Shows 5 methods (Baseline + 4 above), NO error bars
+
+Both versions lack error bars. No 5-run replications exist in any run_*/final_info.json.

@@ -1,0 +1,39 @@
+## Command: python3 regenerate citation_patterns
+
+$ python3 -c "
+import sys; sys.path.insert(0, 'claude_code')
+import json
+from create_visualizations import prepare_research_impact_data, plot_citation_patterns_by_strategy
+results = json.load(open('results/experiment_results.json'))
+research_df = prepare_research_impact_data(results)
+citation_data = research_df[research_df['metric'] == 'citation_pattern']
+print('Citation pattern data shape:', citation_data.shape)
+print('Strategies:', citation_data['strategy'].unique().tolist())
+print('Time periods:', sorted(citation_data['time_period'].unique().tolist()))
+fig = plot_citation_patterns_by_strategy(research_df, save_path='fabscore_claude/workspace/citation_patterns_regenerated.png')
+if fig:
+    print('Figure regenerated successfully')
+    print('Title:', fig.axes[0].get_title())
+    print('X label:', fig.axes[0].get_xlabel())
+    print('Y label:', fig.axes[0].get_ylabel())
+    lines = fig.axes[0].get_lines()
+    print('Number of lines:', len(lines))
+    for line in lines:
+        print(f'  Line label: {line.get_label()}, x: {line.get_xdata()[:3]}, y: {line.get_ydata()[:3]}')
+"
+
+OUTPUT:
+2026-04-24 22:49:14,411 - visualizations - INFO - Saved citation patterns plot to fabscore_claude/workspace/citation_patterns_regenerated.png
+Citation pattern data shape: (4500, 6)
+Strategies: ['CONTROL', 'BASIC', 'FULL']
+Time periods: [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+Figure regenerated successfully
+Title: Citation Patterns Over Time by Deprecation Strategy
+X label: Time Period
+Y label: Citation Count
+Number of lines: 3
+  Line label: CONTROL, x: [1. 2. 3.], y: [99.83607546 94.81863457 90.85616629]
+  Line label: BASIC, x: [1. 2. 3.], y: [100.          84.8954133   71.98505917]
+  Line label: FULL, x: [1. 2. 3.], y: [100.         84.2530893  71.4925578]
+
+Artifact saved: fabscore_claude/workspace/citation_patterns_regenerated.png

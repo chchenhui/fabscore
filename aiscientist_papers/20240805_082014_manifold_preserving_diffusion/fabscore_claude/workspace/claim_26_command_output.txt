@@ -1,0 +1,75 @@
+===========================
+CLAIM 26 VERIFICATION COMMANDS
+===========================
+
+--- COMMAND 1: Run baseline (experiment.py) ---
+python experiment.py --out_dir fabscore_claude/workspace/run_0 --num_train_steps 10000
+
+OUTPUT: Training completed for all 4 datasets (circle, dino, line, moons).
+- Saved: fabscore_claude/workspace/run_0/all_results.pkl
+- Saved: fabscore_claude/workspace/run_0/final_info.json
+- Note: experiment.py includes manifold-preserving loss (dataset-specific weights)
+
+--- COMMAND 2: Run Manifold-Preserving (run_1.py) ---
+python run_1.py --out_dir fabscore_claude/workspace/run_1 --num_train_steps 10000
+
+OUTPUT: Training completed for all 4 datasets.
+- Saved: fabscore_claude/workspace/run_1/all_results.pkl
+- Saved: fabscore_claude/workspace/run_1/final_info.json
+
+--- COMMAND 3: Run Increased Weight (run_2.py) ---
+python run_2.py --out_dir fabscore_claude/workspace/run_2 --num_train_steps 10000
+
+OUTPUT: Training completed for all 4 datasets.
+- Saved: fabscore_claude/workspace/run_2/all_results.pkl
+- Saved: fabscore_claude/workspace/run_2/final_info.json
+
+--- COMMAND 4: Run Balanced Weight (run_3.py) ---
+python run_3.py --out_dir fabscore_claude/workspace/run_3 --num_train_steps 10000
+
+OUTPUT: Training completed for all 4 datasets.
+- Saved: fabscore_claude/workspace/run_3/all_results.pkl
+- Saved: fabscore_claude/workspace/run_3/final_info.json
+
+--- COMMAND 5: Run Dataset-Specific (run_4.py) ---
+python run_4.py --out_dir fabscore_claude/workspace/run_4 --num_train_steps 10000
+
+OUTPUT: Training completed for all 4 datasets.
+- Saved: fabscore_claude/workspace/run_4/all_results.pkl
+- Saved: fabscore_claude/workspace/run_4/final_info.json
+
+--- COMMAND 6: Run plot.py from workspace ---
+cd fabscore_claude/workspace && MPLBACKEND=Agg python plot.py
+
+OUTPUT:
+- Generated: generated_images.png (Figure 1) - SUCCESS before KeyError
+- Generated: train_loss.png - SUCCESS
+- ERROR at Plot 3 (KL bar chart): KeyError: 'kl_divergence' (plot.py expects flat key but data has nested "means" key)
+- Figure 1 (generated images) was saved successfully before the error
+
+--- COMMAND 7: Verify pkl structure ---
+python3 -c "import pickle; data=pickle.load(open('fabscore_claude/workspace/run_0/all_results.pkl','rb')); print({k: v['images'].shape for k,v in data.items()})"
+
+OUTPUT: {'circle': (10000, 2), 'dino': (10000, 2), 'line': (10000, 2), 'moons': (10000, 2)}
+
+--- COMMAND 8: KL divergence comparison (fresh runs) ---
+Fresh KL divergence values:
+Baseline (run_0): {'circle': 0.3619, 'dino': 1.0590, 'line': 0.1663, 'moons': 0.0967}
+Manifold-Preserving (run_1): {'circle': 0.3810, 'dino': 1.1129, 'line': 0.1609, 'moons': 0.0852}
+Increased Weight (run_2): {'circle': 0.3366, 'dino': 1.1736, 'line': 0.1384, 'moons': 0.0974}
+Balanced Weight (run_3): {'circle': 0.3495, 'dino': 1.1384, 'line': 0.1423, 'moons': 0.0769}
+Dataset-Specific (run_4): {'circle': 0.3322, 'dino': 1.0836, 'line': 0.1397, 'moons': 0.0905}
+
+Comparison Dataset-Specific (run_4) vs Baseline (run_0):
+  circle: 0.3322 vs 0.3619 → IMPROVED
+  dino:   1.0836 vs 1.0590 → NOT IMPROVED (worse)
+  line:   0.1397 vs 0.1663 → IMPROVED
+  moons:  0.0905 vs 0.0967 → IMPROVED
+
+CONCLUSION:
+- Figure 1 structure is correct: 5 rows x 4 columns
+- Rows: Baseline, Manifold-Preserving, Increased Weight, Balanced Weight, Dataset-Specific
+- Columns: circle, dino, line, moons
+- Dataset-Specific IS the bottom row
+- "Improved quality across ALL datasets" is NOT fully supported: Dino KL is worse for Dataset-Specific
+- Both original run data (dino KL: 1.151 vs 1.060) and fresh run data (1.084 vs 1.059) confirm Dino does NOT improve

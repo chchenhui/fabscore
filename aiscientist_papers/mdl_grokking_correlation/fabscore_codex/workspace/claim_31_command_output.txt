@@ -1,0 +1,70 @@
+===== COMMAND =====
+rg -n "Figure 6|training metrics|train_loss_x_div_y|fig:training_metrics" latex/template.tex plot.py mdl_grokking_correlation.pdf
+===== STDOUT =====
+latex/template.tex:290:    \item Training and validation metrics over time (Figure \ref{fig:training_metrics}).
+latex/template.tex:417:        \includegraphics[width=\textwidth]{train_loss_x_div_y.png}
+latex/template.tex:419:        \label{fig:train_loss_x_div_y}
+latex/template.tex:422:    \label{fig:training_metrics_x_div_y}
+===== STDERR =====
+
+===== COMMAND =====
+python - <<'PY'
+import numpy as np, json
+path='fabscore_codex/workspace/claim_25_x_div_y/all_results.npy'
+res=np.load(path, allow_pickle=True).item()
+keys=sorted(k for k in res if k.startswith('x_div_y_') and 'train_info' in k)
+out={}
+means=[]
+steps=None
+for k in keys:
+    seq=res[k]
+    if steps is None:
+        steps=[d['step'] for d in seq]
+    losses=[float(d['train_loss']) for d in seq]
+    means.append(losses)
+arr=np.array(means)
+mean=arr.mean(axis=0)
+stderr=arr.std(axis=0)/np.sqrt(arr.shape[0])
+summary={
+    'source': path,
+    'num_seeds': int(arr.shape[0]),
+    'num_points': int(arr.shape[1]),
+    'step_start': int(steps[0]),
+    'step_end': int(steps[-1]),
+    'loss_start_mean': float(mean[0]),
+    'loss_500_mean': float(mean[steps.index(500)]),
+    'loss_1000_mean': float(mean[steps.index(1000)]),
+    'loss_2000_mean': float(mean[steps.index(2000)]),
+    'loss_4000_mean': float(mean[steps.index(4000)]),
+    'loss_7500_mean': float(mean[-1]),
+    'loss_7500_stderr': float(stderr[-1]),
+    'min_loss_mean': float(mean.min()),
+    'min_loss_step': int(steps[int(mean.argmin())]),
+    'first_step_below_0_1': int(next((s for s,m in zip(steps, mean) if m < 0.1), -1)),
+    'first_step_below_0_01': int(next((s for s,m in zip(steps, mean) if m < 0.01), -1)),
+}
+with open('fabscore_codex/workspace/claim_31_train_loss_summary.json','w') as f:
+    json.dump(summary, f, indent=2)
+print(json.dumps(summary, indent=2))
+PY
+===== STDOUT =====
+{
+  "source": "fabscore_codex/workspace/claim_25_x_div_y/all_results.npy",
+  "num_seeds": 3,
+  "num_points": 750,
+  "step_start": 10,
+  "step_end": 7500,
+  "loss_start_mean": 4.695454279581706,
+  "loss_500_mean": 0.4348245660463969,
+  "loss_1000_mean": 0.03741638222709298,
+  "loss_2000_mean": 0.03154459735378623,
+  "loss_4000_mean": 0.012273879100879034,
+  "loss_7500_mean": 0.012054432493944963,
+  "loss_7500_stderr": 0.004648617652627439,
+  "min_loss_mean": 0.003088081410775582,
+  "min_loss_step": 4740,
+  "first_step_below_0_1": 640,
+  "first_step_below_0_01": 1200
+}
+===== STDERR =====
+

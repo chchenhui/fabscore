@@ -1,0 +1,168 @@
+=== COMMAND: sed -n '424,452p' results/paper.md ===
+User satisfaction largely followed the pattern of adaptation accuracy, with the adaptive_alignment model achieving the highest satisfaction scores, followed by the CEVA models, and the static_alignment model showing the lowest satisfaction, particularly in the gradual_drift scenario.
+
+#### 5.3.4 Agency Preservation
+
+Figure 24 compares agency preservation across scenarios and models.
+
+![Agency Preservation](./figures/scenario_comparison_agency_preservation.png)
+*Figure 24: Agency preservation across scenarios*
+
+The ceva_full model showed significantly lower agency preservation scores compared to the other models. This reflects the trade-off in the full CEVA implementation, where the bidirectional feedback mechanisms may reduce user agency in the short term by actively initiating value discussions, even as they potentially enhance long-term alignment.
+
+## 6. Discussion
+
+The results of our experiments provide valuable insights into the performance of different alignment approaches and the potential benefits and challenges of co-evolutionary value alignment.
+
+### 6.1 Key Findings
+
+1. **Adaptive alignment outperforms static alignment**: All adaptive models significantly outperformed the static alignment model in terms of adaptation accuracy and user satisfaction. This confirms our hypothesis that accounting for value evolution is crucial for maintaining alignment over time.
+
+2. **Simple adaptation can be effective**: The simple adaptive_alignment model showed surprisingly strong performance, often outperforming the more complex CEVA models in adaptation accuracy and user satisfaction. This suggests that even basic adaptation mechanisms can significantly improve alignment compared to static approaches.
+
+3. **Trade-offs between accuracy and stability**: There is a clear trade-off between adaptation accuracy and stability, with more adaptive models showing lower stability. However, the CEVA models, particularly ceva_basic, achieved a better balance between these metrics than the simple adaptive_alignment model.
+
+4. **Agency preservation challenges**: The full CEVA implementation with bidirectional feedback mechanisms showed significantly lower agency preservation scores, highlighting the potential tension between proactive value communication and user autonomy.
+
+5. **Scenario-dependent performance**: The relative performance of different models varied across scenarios, with the adaptive models showing the greatest advantage in the gradual_drift scenario and more modest advantages in the rapid_shift and value_conflict scenarios.
+
+### 6.2 Implications for Alignment Research
+
+=== COMMAND: nl -ba claude_code/evaluation.py | sed -n '240,285p' ===
+   240        # Calculate agency preservation
+   241        # This is a theoretical construct - in a real system, we'd measure user perceptions
+   242        # Here we'll use a heuristic: inversely related to number of reflection prompts
+   243        reflection_count = sum(1 for r in raw_data["responses"][model.name] if "reflection_prompt" in r)
+   244        reflection_ratio = reflection_count / len(raw_data["responses"][model.name])
+   245        
+   246        # Some reflection is good, but too much can be annoying
+   247        # Optimal ratio might be around 0.1-0.2 (10-20% of interactions)
+   248        if reflection_ratio <= 0.2:
+   249            agency_score = 1.0 - (reflection_ratio / 0.4)  # Linear penalty up to 0.2
+   250        else:
+   251            agency_score = 0.5 - (reflection_ratio - 0.2)  # Steeper penalty after 0.2
+   252            
+   253        metrics["agency_preservation"] = max(0, min(1, agency_score))  # Clamp to 0-1
+   254        
+   255        return metrics
+   256    
+   257    
+   258    class EvaluationManager:
+   259        """
+   260        Manages evaluation of alignment models across multiple scenarios.
+   261        """
+   262        def __init__(
+   263            self,
+   264            value_dimensions: List[str],
+   265            scenarios: List[Dict],
+   266            models: List[Dict],
+   267            value_adaptation_rates: Dict[str, float],
+   268            random_seed: Optional[int] = None
+   269        ):
+   270            """
+   271            Initialize an evaluation manager.
+   272            
+   273            Args:
+   274                value_dimensions: List of value dimension names
+   275                scenarios: List of scenario configurations
+   276                models: List of model configurations
+   277                value_adaptation_rates: Dictionary mapping value levels to adaptation rates
+   278                random_seed: Random seed for reproducibility
+   279            """
+   280            self.value_dimensions = value_dimensions
+   281            self.scenario_configs = scenarios
+   282            self.model_configs = models
+   283            self.value_adaptation_rates = value_adaptation_rates
+   284            self.random_seed = random_seed
+   285        
+
+=== COMMAND: nl -ba claude_code/visualization.py | sed -n '229,275p' ===
+   229    fig, ax = plt.subplots()
+   230    
+   231    # Extract metric values for each model and scenario
+   232    scenarios = list(scenario_results.keys())
+   233    model_metrics = {}
+   234    
+   235    for scenario_name in scenarios:
+   236        scenario_data = scenario_results[scenario_name]
+   237        for model_name, model_data in scenario_data["models"].items():
+   238            if model_name not in model_metrics:
+   239                model_metrics[model_name] = []
+   240                
+   241            model_metrics[model_name].append(model_data["metrics"].get(metric_name, 0))
+   242            
+   243    # Plot metric values for each model
+   244    bar_width = 0.8 / len(model_metrics)
+   245    x = np.arange(len(scenarios))
+   246    
+   247    for i, (model_name, values) in enumerate(model_metrics.items()):
+   248        ax.bar(x + i * bar_width, values, bar_width, label=model_name)
+   249        
+   250    # Add labels and legend
+   251    ax.set_xlabel("Scenario")
+   252    ax.set_ylabel(metric_name.replace('_', ' ').title())
+   253    if title:
+   254        ax.set_title(title)
+   255    else:
+   256        ax.set_title(f"{metric_name.replace('_', ' ').title()} Comparison")
+   257    ax.set_xticks(x + bar_width * (len(model_metrics) - 1) / 2)
+   258    ax.set_xticklabels(scenarios)
+   259    ax.legend()
+   260    
+   261    # Adjust layout
+   262    plt.tight_layout()
+   263    
+   264    # Save and return figure path
+   265    return save_figure(fig, filename, figures_dir, config)
+   266
+   267
+   268    def plot_aggregate_metrics(
+   269        aggregate_metrics: Dict, 
+   270        filename: str, 
+   271        figures_dir: Path,
+   272        config: Dict,
+   273        title: str = "Aggregate Model Performance"
+   274    ) -> str:
+   275        """
+
+=== COMMAND: nl -ba claude_code/visualization.py | sed -n '398,410p' ===
+   398    figure_paths['scenario_comparison'] = plot_scenario_comparison(
+   399        results['scenarios'], 'scenario_comparison', figures_dir, config
+   400    )
+   401    
+   402    # Plot performance across scenarios for each metric
+   403    for metric in ['adaptation_accuracy', 'stability', 'user_satisfaction', 'agency_preservation']:
+   404        figure_paths[f'metric_{metric}'] = plot_scenario_performance(
+   405            results['scenarios'], metric, f'scenario_comparison_{metric}', figures_dir, config,
+   406            title=f'{metric.replace("_", " ").title()} Across Scenarios'
+   407        )
+   408    
+   409    # Plot aggregate metrics radar chart
+   410    aggregate_metrics = results['aggregate_metrics']
+
+=== COMMAND: nl -ba claude_code/run_experiment.py | sed -n '300,312p' ===
+   300        f.write("### Agency Preservation\n\n")
+   301        f.write("Agency preservation measures how well human agency is maintained in the alignment process.\n\n")
+   302        f.write("The CEVA full model showed lower agency preservation due to its more active value reflection prompts.\n\n")
+   303        
+   304        if 'metric_agency_preservation' in figure_paths:
+   305            f.write(f"![Agency Preservation](../{os.path.basename(figure_paths['metric_agency_preservation'])})\n\n")
+   306            f.write("*Figure 4.4: Agency preservation across scenarios*\n\n")
+
+=== COMMAND: python - <<'PY' ... ===
+artifact= fabscore_codex/workspace/claim_23_run_json/results/results.json
+scenario= gradual_drift
+static_alignment 1
+adaptive_alignment 1
+ceva_basic 1
+ceva_full 0.5
+scenario= rapid_shift
+static_alignment 1
+adaptive_alignment 1
+ceva_basic 1
+ceva_full 0.525
+scenario= value_conflict
+static_alignment 1
+adaptive_alignment 1
+ceva_basic 1
+ceva_full 0.49

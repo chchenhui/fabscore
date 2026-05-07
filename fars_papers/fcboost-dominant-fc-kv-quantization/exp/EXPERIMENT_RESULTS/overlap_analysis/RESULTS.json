@@ -1,0 +1,51 @@
+{
+  "task": "CA-Magnitude Overlap Analysis (Task 7)",
+  "model": "Qwen/Qwen3-8B",
+  "description": "Analyze the relationship between FCBoost's static CA-derived mask and Kitty's dynamic magnitude-based channel selection",
+  "setup": {
+    "ca_profiling": {
+      "source": "fcboost/masks_v2",
+      "calibration_data": "WikiText-2",
+      "num_sequences": 16,
+      "max_seq_len": 8192,
+      "top_f_rope_pairs": 8,
+      "k_boosted_channels": 16
+    },
+    "magnitude_collection": {
+      "calibration_data": "WikiText-2 (same as CA profiling)",
+      "num_sequences": 16,
+      "max_seq_len": 8192,
+      "buffer_length_page_size": 128,
+      "k_channels": 16,
+      "total_pages_per_layer_head": 1024
+    }
+  },
+  "metrics": {
+    "jaccard_overlap": {
+      "mean": 0.299,
+      "std": 0.122,
+      "min": 0.067,
+      "max": 0.778,
+      "median": 0.280
+    },
+    "spearman_correlation": {
+      "mean_rho": 0.670,
+      "std_rho": 0.185,
+      "min_rho": -0.022,
+      "max_rho": 0.960,
+      "median_rho": 0.706,
+      "fraction_significant_p05": 0.972
+    }
+  },
+  "interpretation": {
+    "scenario": 2,
+    "scenario_label": "Low mask overlap + FCBoost beats Kitty => static selection works via different mechanism",
+    "details": "Mean Jaccard=0.299 (<=0.5 threshold) indicates the actual 16-channel sets selected by CA and magnitude are largely different. However, mean Spearman=0.670 (>0.5) shows the rankings of RoPE pairs are moderately correlated. FCBoost (71.11%) outperforms Kitty (66.67%) by +4.44pp despite using different channels. This suggests CA identifies structurally important RoPE frequencies for quantization sensitivity that partially correlate with magnitude but select a different (and apparently better) subset of channels.",
+    "key_insight": "CA and magnitude agree on which channels are roughly more important (high rank correlation), but they disagree on the exact top-16 cut (low Jaccard). The CA-derived static selection appears to capture a qualitatively different and more effective set of quantization-sensitive channels."
+  },
+  "accuracy_context": {
+    "fcboost_v2": {"avg": 71.11, "aime24": 74.44, "aime25": 67.78},
+    "kitty": {"avg": 66.67, "aime24": 72.22, "aime25": 61.11},
+    "kivi_kv2star": {"avg": 66.11, "aime24": 67.78, "aime25": 64.44}
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "task": "DS Error, H_res Routing, and Product Stability Analysis",
+  "task_index": 8,
+  "seed": 42,
+  "num_hc_modules": 96,
+  "num_transformer_layers": 48,
+  "h_res_matrix_size": "4x4",
+  "sinkhorn_iters": 10,
+  "conditions": {
+    "mHC default": {
+      "tau": 0.05,
+      "r_cap": null,
+      "ds_row_error_mean_step5000": 0.0,
+      "ds_row_error_max_step5000": 0.0,
+      "ds_col_error_mean_step5000": 0.0,
+      "ds_col_error_max_step5000": 0.0,
+      "entropy_mean": 0.0,
+      "entropy_min": 0.0,
+      "entropy_max": 0.0,
+      "product_col_dev_depth96": 0.0,
+      "notes": "H_res logits receive zero gradients so stay at initialization. Sinkhorn range ~160 (extremely high) but DS error is zero because H_res_logits remain uniform (all-zeros init). No learned routing."
+    },
+    "Cap-init": {
+      "tau": 0.2667,
+      "r_cap": null,
+      "ds_row_error_mean_step5000": 0.0,
+      "ds_row_error_max_step5000": 0.0,
+      "ds_col_error_mean_step5000": 0.0,
+      "ds_col_error_max_step5000": 0.0,
+      "entropy_mean": 6.488036670415642e-12,
+      "entropy_min": 6.488036670415642e-12,
+      "entropy_max": 6.488036670415642e-12,
+      "product_col_dev_depth96": 2.7051250128806714e-11,
+      "notes": "H_res logits receive negligible gradients (~1e-15 to 1e-21). Sinkhorn range ~30 (better conditioned). DS error zero because logits barely move from initialization. Tiny non-zero entropy from lower tau denominator. No meaningful learned routing."
+    },
+    "RRCS (r_cap=2.0)": {
+      "tau": 0.05,
+      "r_cap": 2.0,
+      "ds_row_error_mean_step5000": 3.9363900820414227e-07,
+      "ds_row_error_max_step5000": 1.3113021850585938e-06,
+      "ds_col_error_mean_step5000": 8.878608544667561e-08,
+      "ds_col_error_max_step5000": 1.788139343261719e-07,
+      "entropy_mean": 0.9326850200692812,
+      "entropy_min": 0.9183943271636963,
+      "entropy_max": 1.043879747390747,
+      "product_col_dev_depth96": 9.34005870423249e-08,
+      "notes": "RRCS enables gradient flow into H_res_logits (~1e-5 grad norms). Sinkhorn range grows to ~162 but is capped to r_cap=2.0 before iterations. DS errors are small but non-zero (~4e-7 mean), confirming the range-capped inputs still produce near-DS outputs. Entropy ~0.93 indicates meaningful learned routing patterns that are neither purely permutation-like nor purely uniform. Product stability is excellent (9e-8 at depth 96)."
+    }
+  },
+  "figures": {
+    "ds_error_comparison": "results/figures/ds_error_comparison.png",
+    "hres_routing_heatmaps": "results/figures/hres_routing_heatmaps.png",
+    "hres_entropy_by_layer": "results/figures/hres_entropy_by_layer.png",
+    "hres_product_stability": "results/figures/hres_product_stability.png"
+  }
+}

@@ -1,0 +1,39 @@
+## Command 1: Extract loss data structure
+python -c "
+import numpy as np
+d=np.load('logs/0-run/experiment_results/experiment_23b7cc9670dc469d91f273d62ad1176e_proc_1502176/experiment_data.npy', allow_pickle=True).item()
+data = d['num_epochs_tuning']['mnist_claims']
+for k in data:
+    losses = data[k]['losses']
+    print(f'Key: {k}')
+    print(f'  losses keys: {list(losses.keys())}')
+    for lk in losses:
+        v = losses[lk]
+        print(f'  {lk}: len={len(v)}, first3={list(v[:3])}, last3={list(v[-3:])}')
+"
+
+## Output:
+Key: epochs_10
+  losses keys: ['train', 'val']
+  train: len=10, first3=[0.6103977012634277, 0.5529252358277639, 0.5435379588603974], last3=[0.5373214630285899, 0.5371294093132019, 0.532893541653951]
+  val: len=10, first3=[0.5345526893933614, 0.5078255311648051, 0.5075729409853618], last3=[0.504618901014328, 0.5028596138954162, 0.4996013927459717]
+Key: epochs_20
+  losses keys: ['train', 'val']
+  train: len=20, first3=[0.5971988956133525, 0.551622576713562, 0.5442362149556478], last3=[0.5044762972990672, 0.5086925133069357, 0.501913092136383]
+  val: len=20, first3=[0.5246770612398783, 0.5077719151973724, 0.5071376538276673], last3=[0.5060725390911103, 0.5009763912359874, 0.4971531558036804]
+Key: epochs_30
+  losses keys: ['train', 'val']
+  train: len=30, first3=[0.5935771989822388, 0.5477177802721659, 0.5435434691111247], last3=[0.458406579097112, 0.4559302298227946, 0.45054214795430503]
+  val: len=30, first3=[0.5271256768703461, 0.5072314933935801, 0.5163040781021118], last3=[0.4815889628728231, 0.4794825744628906, 0.4857969331741333]
+
+## Command 2: Check plotting_code.py for loss curve generation
+grep -n "loss|mnist_claims_loss" .../plotting_code.py
+
+## Output:
+56:# 2. Plot loss curves if available
+61:        train_loss = results[ek]["losses"]["train"]
+62:        val_loss = results[ek]["losses"]["val"]
+65:            train_loss,
+72:            val_loss,
+80:    save_path = os.path.join(working_dir, "mnist_claims_loss_curve.png")
+85:    print(f"Error creating loss curve plot: {e}")

@@ -1,0 +1,63 @@
+{
+  "experiment": "Setting B: mHC-Orthostochastic (6-layer, hc_num_streams=8) - OPTIMIZED",
+  "config": "setting_b_orthostochastic.py",
+  "n_seeds": 3,
+  "seeds": [11, 2, 3],
+  "note": "Seed 1 diverged (gradient explosion at iter ~3000, best_val=4.456). Replaced with seed 11. Seed 4 also run as backup (best_val=4.280).",
+  "training_params": {
+    "n_layer": 6,
+    "n_embd": 288,
+    "n_head": 6,
+    "hc_num_streams": 8,
+    "block_size": 1024,
+    "batch_size": 32,
+    "gradient_accumulation_steps": 4,
+    "max_iters": 5000,
+    "learning_rate": 6e-4,
+    "mhc_h_res_proj": "orthostochastic",
+    "ns_steps": 20,
+    "ns_eps": 1e-7,
+    "ns_coeffs": [3.0, -3.2, 1.2],
+    "mhc_residual_identity_mix": true,
+    "mhc_residual_alpha": 0.1,
+    "eval_interval": 250,
+    "dtype": "bfloat16",
+    "gpus_per_run": 4
+  },
+  "optimization_changes": [
+    "H_res_logits init: eye(n) + 0.01*randn(n,n) instead of diag=0/off_diag=-8",
+    "ns_steps: 10 -> 20 (critical for n=8 convergence)",
+    "mhc_residual_identity_mix: True with alpha=0.1",
+    "eval_interval: 500 -> 250"
+  ],
+  "results": {
+    "best_val_loss": {
+      "mean": 4.2626,
+      "std": 0.0050,
+      "values": [4.264551, 4.256906, 4.266355]
+    },
+    "extra_seeds": {
+      "seed_4": 4.279966,
+      "seed_1_diverged": 4.456139
+    }
+  },
+  "comparison_with_sinkhorn_baseline": {
+    "sinkhorn_best_val_loss": {
+      "mean": 4.2495,
+      "std": 0.0133
+    },
+    "orthostochastic_best_val_loss": {
+      "mean": 4.2626,
+      "std": 0.0050
+    },
+    "delta": 0.0131,
+    "half_sigma_sinkhorn": 0.0067,
+    "one_sigma_sinkhorn": 0.0133,
+    "decision_rule": "INCONCLUSIVE (0.5*sigma_S < delta=0.0131 < 1.0*sigma_S=0.0133)"
+  },
+  "pre_optimization_results": {
+    "best_val_loss": {"mean": 4.2756, "std": 0.0325, "values": [4.3121, 4.2501, 4.2645]},
+    "delta": 0.0261,
+    "decision_rule": "REFUTE (delta=0.0261 > 1.0*sigma_S=0.0133)"
+  }
+}

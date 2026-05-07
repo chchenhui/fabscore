@@ -1,0 +1,43 @@
+## Command: python3 (inline script to generate curves.png)
+## Date: 2026-04-24
+
+python3 -c "
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import json
+
+with open('Supplementary files/Results/results.json', 'r') as f:
+    results = json.load(f)
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
+
+ax1.plot(results['history']['train_loss'], label='Train Loss')
+ax1.plot(results['history']['val_loss'], label='Validation Loss')
+ax1.set_title('Training and Validation Loss')
+ax1.set_xlabel('Epochs')
+ax1.set_ylabel('Loss')
+ax1.legend()
+
+ax2.plot(results['history']['train_accuracy'], label='Train Accuracy')
+ax2.plot(results['history']['val_accuracy'], label='Validation Accuracy')
+ax2.set_title('Training and Validation Accuracy')
+ax2.set_xlabel('Epochs')
+ax2.set_ylabel('Accuracy')
+ax2.legend()
+
+plt.tight_layout()
+plt.savefig('fabscore_claude/workspace/claim_56_curves.png', dpi=300)
+plt.close()
+
+print('SUCCESS: curves.png generated')
+print(f'Epochs: {len(results[\"history\"][\"train_loss\"])}')
+print(f'Train loss range: {min(results[\"history\"][\"train_loss\"]):.4f} - {max(results[\"history\"][\"train_loss\"]):.4f}')
+print(f'Val loss range: {min(results[\"history\"][\"val_loss\"]):.4f} - {max(results[\"history\"][\"val_loss\"]):.4f}')
+"
+
+## Output:
+SUCCESS: curves.png generated
+Epochs: 20
+Train loss range: 0.0017 - 4.4603
+Val loss range: 0.3756 - 1.0638

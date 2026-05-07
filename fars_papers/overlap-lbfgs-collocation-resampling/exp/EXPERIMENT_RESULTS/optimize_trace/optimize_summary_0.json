@@ -1,0 +1,24 @@
+{
+  "optimize_index": 0,
+  "issues": [
+    {
+      "title": "Excessive stochastic noise from 50% overlap fraction",
+      "description": "With overlap_frac=0.5, each L-BFGS step saw 50% new collocation points, causing large loss landscape shifts. This led to 27-34% cautious skip rate (curvature pairs rejected), degraded Hessian approximation, and seed 1 completely stuck (loss didn't decrease). Fixed by increasing overlap_frac from 0.5 to 0.9, reducing noise while retaining coverage benefits. Cautious skip rate dropped to 2.8-3.0%."
+    },
+    {
+      "title": "Missing Adam+fixed transition phase",
+      "description": "The original 2-phase training (Adam+resample -> overlap-LBFGS) jumped directly from stochastic to quasi-Newton optimization. Added Adam+fixed-collocation intermediate phase (5000 budget) to stabilize the loss landscape on fixed points before L-BFGS, matching the approach that fixed the ice-shelf problem in a prior optimization."
+    },
+    {
+      "title": "Boundary loss stagnation due to low lambda_bc",
+      "description": "With lambda_bc=1.0, seed 1's BC loss stayed at ~1.1e-4 throughout L-BFGS and never decreased, while fixed-LBFGS drove it to 2.7e-7. L-BFGS prioritized the stochastic PDE residual over the deterministic BC enforcement. Fixed by scheduling lambda_bc: 1.0 during Adam (resampling phase), 5.0 during Adam+fixed, and 10.0 during overlap-LBFGS. Higher BC weight gives L-BFGS a stable gradient component to work with."
+    },
+    {
+      "title": "Insufficient compute budget",
+      "description": "Original budget was 30000 with 15000 for L-BFGS. Increased to 50000 total (15000 Adam + 5000 Adam+fixed + 30000 overlap-LBFGS) to give the corrected L-BFGS more iterations to converge."
+    }
+  ],
+  "experiment_result_path": "EXPERIMENT_RESULTS/optimize_trace/iteration_0/",
+  "success": true,
+  "summary": "Optimized overlap-LBFGS on 2D Poisson from rel L2 5.56e-3 to 7.03e-4 (7.9x improvement). Four fixes: (1) increased overlap fraction 0.5->0.9 to reduce stochastic noise, (2) added Adam+fixed intermediate phase for smooth transition, (3) scheduled lambda_bc (1.0->5.0->10.0) to enforce BCs during L-BFGS, (4) increased budget to 50000. Cautious skip rate dropped from 27-34% to 2.8-3.0%. All seeds now converge consistently (std: 1.14e-4 vs 3.62e-3). The optimized method is now within 2.1x of fixed-LBFGS (3.42e-4), down from 16x gap originally."
+}

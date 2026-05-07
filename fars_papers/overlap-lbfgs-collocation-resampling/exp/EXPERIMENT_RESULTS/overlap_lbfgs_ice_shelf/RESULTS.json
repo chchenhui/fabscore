@@ -1,0 +1,76 @@
+{
+  "experiment": "overlap_lbfgs_ice_shelf",
+  "method": "Adam warmstart + overlap-resampled L-BFGS (o=0.5, gamma=0.5, 3-phase)",
+  "problem": "1D ice-shelf inverse (B(x) inference)",
+  "config": {
+    "optimizer_phase1": "Adam + resampling",
+    "optimizer_phase2": "Adam + fixed collocation",
+    "optimizer_phase3": "OverlapLBFGS",
+    "lr_adam": 0.001,
+    "overlap_frac": 0.5,
+    "lbfgs_history_size": 20,
+    "lbfgs_c1": 1e-4,
+    "lbfgs_c2": 0.9,
+    "lbfgs_max_ls": 20,
+    "cautious_eps": 1e-6,
+    "gamma": 0.5,
+    "N_ob": 401,
+    "N_coll": 1001,
+    "noise_level": 0.3,
+    "budget": 50000,
+    "adam_budget": 20000,
+    "adam_fixed_budget": 7500,
+    "network": "[1, 20, 20, 20, 20, 20, 20, 3]",
+    "dtype": "float64",
+    "best_checkpoint_metric": "B_err"
+  },
+  "per_seed_results": [
+    {
+      "seed": 0,
+      "B_err": 0.00141,
+      "u_err": 0.00888,
+      "h_err": 0.0231,
+      "best_step": 18000,
+      "best_phase": "adam",
+      "lbfgs_outer_steps": 5662,
+      "termination_reason": "budget_exhausted"
+    },
+    {
+      "seed": 1,
+      "B_err": 0.000254,
+      "u_err": 0.00124,
+      "h_err": 0.0086,
+      "best_step": 27000,
+      "best_phase": "adam_fixed",
+      "lbfgs_outer_steps": 5477,
+      "termination_reason": "budget_exhausted"
+    },
+    {
+      "seed": 2,
+      "B_err": 0.000757,
+      "u_err": 0.0101,
+      "h_err": 0.0607,
+      "best_step": 1000,
+      "best_phase": "adam",
+      "lbfgs_outer_steps": 2412,
+      "termination_reason": "nan"
+    }
+  ],
+  "summary": {
+    "B_err_mean": 0.000806,
+    "B_err_std": 0.000471,
+    "u_err_mean": 0.00673,
+    "u_err_std": 0.00392,
+    "h_err_mean": 0.0308,
+    "h_err_std": 0.0220
+  },
+  "comparison_table": {
+    "methods": ["Adam + resampling", "Adam -> fixed L-BFGS", "Adam -> overlap-LBFGS (o=0.5, gamma=0.5, 3-phase)"],
+    "B_err_mean": [0.000863, 0.001147, 0.000806],
+    "B_err_std": [0.000610, 0.000538, 0.000471],
+    "u_err_mean": [0.01117, 0.00973, 0.00673],
+    "u_err_std": [0.00761, 0.00645, 0.00392],
+    "h_err_mean": [0.03833, 0.03982, 0.0308],
+    "h_err_std": [0.02071, 0.02346, 0.0220]
+  }
+}

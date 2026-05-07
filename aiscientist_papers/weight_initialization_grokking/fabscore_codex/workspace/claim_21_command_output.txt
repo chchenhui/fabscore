@@ -1,0 +1,1757 @@
+=== COMMAND: find raw results ===
+=== COMMAND: inspect plot.py ===
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import numpy as np
+import json
+import os
+import os.path as osp
+
+# LOAD FINAL RESULTS:
+datasets = ["x_div_y", "x_minus_y", "x_plus_y", "permutation"]
+folders = os.listdir("./")
+final_results = {}
+results_info = {}
+for folder in folders:
+    if folder.startswith("run") and osp.isdir(folder):
+        with open(osp.join(folder, "final_info.json"), "r") as f:
+            final_results[folder] = json.load(f)
+        results_dict = np.load(
+            osp.join(folder, "all_results.npy"), allow_pickle=True
+        ).item()
+        print(results_dict.keys())
+        run_info = {}
+        for dataset in datasets:
+            run_info[dataset] = {}
+            val_losses = []
+            train_losses = []
+            val_accs = []
+            train_accs = []
+            for k in results_dict.keys():
+                if dataset in k and "val_info" in k:
+                    run_info[dataset]["step"] = [
+                        info["step"] for info in results_dict[k]
+                    ]
+                    val_losses.append([info["val_loss"] for info in results_dict[k]])
+                    val_accs.append([info["val_accuracy"] for info in results_dict[k]])
+                if dataset in k and "train_info" in k:
+                    train_losses.append(
+                        [info["train_loss"] for info in results_dict[k]]
+                    )
+                    train_accs.append(
+                        [info["train_accuracy"] for info in results_dict[k]]
+                    )
+                mean_val_losses = np.mean(val_losses, axis=0)
+                mean_train_losses = np.mean(train_losses, axis=0)
+                mean_val_accs = np.mean(val_accs, axis=0)
+                mean_train_accs = np.mean(train_accs, axis=0)
+                if len(val_losses) > 0:
+                    sterr_val_losses = np.std(val_losses, axis=0) / np.sqrt(
+                        len(val_losses)
+                    )
+                    stderr_train_losses = np.std(train_losses, axis=0) / np.sqrt(
+                        len(train_losses)
+                    )
+                    sterr_val_accs = np.std(val_accs, axis=0) / np.sqrt(len(val_accs))
+                    stderr_train_accs = np.std(train_accs, axis=0) / np.sqrt(
+                        len(train_accs)
+                    )
+                else:
+                    sterr_val_losses = np.zeros_like(mean_val_losses)
+                    stderr_train_losses = np.zeros_like(mean_train_losses)
+                    sterr_val_accs = np.zeros_like(mean_val_accs)
+                    stderr_train_accs = np.zeros_like(mean_train_accs)
+                run_info[dataset]["val_loss"] = mean_val_losses
+                run_info[dataset]["train_loss"] = mean_train_losses
+                run_info[dataset]["val_loss_sterr"] = sterr_val_losses
+                run_info[dataset]["train_loss_sterr"] = stderr_train_losses
+                run_info[dataset]["val_acc"] = mean_val_accs
+                run_info[dataset]["train_acc"] = mean_train_accs
+                run_info[dataset]["val_acc_sterr"] = sterr_val_accs
+                run_info[dataset]["train_acc_sterr"] = stderr_train_accs
+        results_info[folder] = run_info
+
+# CREATE LEGEND -- ADD RUNS HERE THAT WILL BE PLOTTED
+labels = {
+    "run_0": "Baseline",
+    "run_1": "Xavier (Glorot)",
+    "run_2": "He",
+    "run_3": "Orthogonal",
+    "run_4": "Kaiming Normal",
+    "run_5": "Uniform",
+}
+
+
+# Create a programmatic color palette
+def generate_color_palette(n):
+    cmap = plt.get_cmap("tab20")
+    return [mcolors.rgb2hex(cmap(i)) for i in np.linspace(0, 1, n)]
+
+
+# Get the list of runs and generate the color palette
+runs = list(labels.keys())
+colors = generate_color_palette(len(runs))
+
+# Plot 1: Line plot of training loss for each dataset across the runs with labels
+for dataset in datasets:
+    plt.figure(figsize=(10, 6))
+    for i, run in enumerate(runs):
+        iters = results_info[run][dataset]["step"]
+        mean = results_info[run][dataset]["train_loss"]
+        sterr = results_info[run][dataset]["train_loss_sterr"]
+        plt.plot(iters, mean, label=labels[run], color=colors[i])
+        plt.fill_between(iters, mean - sterr, mean + sterr, color=colors[i], alpha=0.2)
+
+    plt.title(f"Training Loss Across Runs for {dataset} Dataset")
+    plt.xlabel("Update Steps")
+    plt.ylabel("Training Loss")
+    plt.legend()
+    plt.grid(True, which="both", ls="-", alpha=0.2)
+    plt.tight_layout()
+    plt.savefig(f"train_loss_{dataset}.png")
+    plt.close()
+
+# Plot 2: Line plot of validation loss for each dataset across the runs with labels
+for dataset in datasets:
+    plt.figure(figsize=(10, 6))
+    for i, run in enumerate(runs):
+        iters = results_info[run][dataset]["step"]
+        mean = results_info[run][dataset]["val_loss"]
+        sterr = results_info[run][dataset]["val_loss_sterr"]
+        plt.plot(iters, mean, label=labels[run], color=colors[i])
+        plt.fill_between(iters, mean - sterr, mean + sterr, color=colors[i], alpha=0.2)
+
+    plt.title(f"Validation Loss Across Runs for {dataset} Dataset")
+    plt.xlabel("Update Steps")
+    plt.ylabel("Validation Loss")
+    plt.legend()
+    plt.grid(True, which="both", ls="-", alpha=0.2)
+    plt.tight_layout()
+    plt.savefig(f"val_loss_{dataset}.png")
+    plt.close()
+
+
+# Plot 3: Line plot of training acc for each dataset across the runs with labels
+for dataset in datasets:
+    plt.figure(figsize=(10, 6))
+    for i, run in enumerate(runs):
+        iters = results_info[run][dataset]["step"]
+        mean = results_info[run][dataset]["train_acc"]
+        sterr = results_info[run][dataset]["train_acc_sterr"]
+        plt.plot(iters, mean, label=labels[run], color=colors[i])
+        plt.fill_between(iters, mean - sterr, mean + sterr, color=colors[i], alpha=0.2)
+
+    plt.title(f"Training Accuracy Across Runs for {dataset} Dataset")
+    plt.xlabel("Update Steps")
+    plt.ylabel("Training Acc")
+    plt.legend()
+    plt.grid(True, which="both", ls="-", alpha=0.2)
+    plt.tight_layout()
+    plt.savefig(f"train_acc_{dataset}.png")
+    plt.close()
+
+# Plot 2: Line plot of validation acc for each dataset across the runs with labels
+for dataset in datasets:
+    plt.figure(figsize=(10, 6))
+    for i, run in enumerate(runs):
+        iters = results_info[run][dataset]["step"]
+        mean = results_info[run][dataset]["val_acc"]
+        sterr = results_info[run][dataset]["val_acc_sterr"]
+        plt.plot(iters, mean, label=labels[run], color=colors[i])
+        plt.fill_between(iters, mean - sterr, mean + sterr, color=colors[i], alpha=0.2)
+
+    plt.title(f"Validation Loss Across Runs for {dataset} Dataset")
+    plt.xlabel("Update Steps")
+    plt.ylabel("Validation Acc")
+    plt.legend()
+    plt.grid(True, which="both", ls="-", alpha=0.2)
+    plt.tight_layout()
+    plt.savefig(f"val_acc_{dataset}.png")
+    plt.close()
+
+# Plot 5: Summary plot comparing all initialization methods across datasets
+def plot_summary(final_results, labels, datasets):
+    metrics = ['final_train_acc_mean', 'final_val_acc_mean', 'step_val_acc_99_mean']
+    fig, axs = plt.subplots(len(metrics), 1, figsize=(12, 5*len(metrics)), sharex=True)
+    
+    x = np.arange(len(datasets))
+    width = 0.15
+    n_runs = len(labels)
+    
+    for i, metric in enumerate(metrics):
+        for j, (run, label) in enumerate(labels.items()):
+            values = [final_results[run][dataset]['means'][metric] for dataset in datasets]
+            axs[i].bar(x + (j - n_runs/2 + 0.5) * width, values, width, label=label)
+        
+        axs[i].set_ylabel(metric.replace('_', ' ').title())
+        axs[i].set_xticks(x)
+        axs[i].set_xticklabels(datasets)
+        axs[i].legend(loc='upper left', bbox_to_anchor=(1, 1))
+        axs[i].grid(True, which="both", ls="-", alpha=0.2)
+    
+    plt.tight_layout()
+    plt.savefig("summary_plot.png", bbox_inches='tight')
+    plt.close()
+
+# Call the summary plot function
+plot_summary(final_results, labels, datasets)
+
+=== END COMMAND ===
+
+./run_0/final_info.json
+./run_1/final_info.json
+./run_2/final_info.json
+./run_3/final_info.json
+./run_4/final_info.json
+./run_5/final_info.json
+./summary_plot.png
+./train_acc_permutation.png
+./train_acc_x_div_y.png
+./train_acc_x_minus_y.png
+./train_acc_x_plus_y.png
+./train_loss_permutation.png
+./train_loss_x_div_y.png
+./train_loss_x_minus_y.png
+./train_loss_x_plus_y.png
+./val_acc_permutation.png
+./val_acc_x_div_y.png
+./val_acc_x_minus_y.png
+./val_acc_x_plus_y.png
+./val_loss_permutation.png
+./val_loss_x_div_y.png
+./val_loss_x_minus_y.png
+./val_loss_x_plus_y.png
+
+=== END COMMAND ===
+
+=== COMMAND: inspect experiment/run files ===
+import argparse
+import abc
+import random
+from itertools import permutations
+from typing import Set
+import os
+import json
+import numpy as np
+from einops import rearrange, repeat
+import torch
+from torch.utils.data import IterableDataset
+from torch import nn, Tensor
+
+
+class AbstractDataset(abc.ABC):
+    def __init__(self, group_elements1: Set, group_elements2: Set, frac_train: float):
+        self.frac_train = frac_train
+        self.group_elements1 = group_elements1
+        self.group_elements2 = group_elements2
+        self.ordered_group_elements1 = list(self.group_elements1)
+        self.ordered_group_elements2 = list(self.group_elements2)
+        self.idx2vocab = ["o", "="] + list(group_elements1.union(group_elements2))
+        self.vocab2idx = {vocab: idx for idx, vocab in enumerate(self.idx2vocab)}
+        self.n_vocab = len(self.idx2vocab)
+        self.n_out = len(group_elements1.union(group_elements2))
+        idxs = list(range(len(self.group_elements1) * len(self.group_elements2)))
+        random.shuffle(idxs)
+        self.train_pairs, self.val_pairs = (
+            idxs[: int(len(idxs) * frac_train)],
+            idxs[int(len(idxs) * frac_train) :],
+        )
+
+    @abc.abstractmethod
+    def fetch_output(self, a, b):
+        pass
+
+    def encode(self, sequence):
+        return [self.vocab2idx[item] for item in sequence]
+
+    def decode(self, sequence):
+        return [self.idx2vocab[item] for item in sequence]
+
+    def form_equation(self, a, b, c):
+        return [a, "o", b, "=", c]
+
+    def fetch_example(self, idx):
+        a = self.ordered_group_elements1[idx // len(self.group_elements2)]
+        b = self.ordered_group_elements2[idx % len(self.group_elements2)]
+        c = self.fetch_output(a, b)
+        equation = self.form_equation(a, b, c)
+        return self.encode(equation[:-1]), (self.vocab2idx[c] - 2), equation
+
+    def fetch_train_example(self):
+        idx = random.choice(self.train_pairs)
+        return self.fetch_example(idx)
+
+    def fetch_val_example(self):
+        idx = random.choice(self.val_pairs)
+        return self.fetch_example(idx)
+
+
+class ModSumDataset(AbstractDataset):
+    def __init__(self, p, frac_train):
+        super(ModSumDataset, self).__init__(set(range(p)), set(range(p)), frac_train)
+        self.p = p
+
+    def fetch_output(self, a, b):
+        return (a + b) % self.p
+
+
+class ModSubtractDataset(AbstractDataset):
+    def __init__(self, p, frac_train):
+        super(ModSubtractDataset, self).__init__(
+            set(range(p)), set(range(p)), frac_train
+        )
+        self.p = p
+
+    def fetch_output(self, a, b):
+        return (a - b) % self.p
+
+
+class ModDivisonDataset(AbstractDataset):
+    def __init__(self, p, frac_train):
+        super(ModDivisonDataset, self).__init__(
+            set(range(p)), set(range(1, p)), frac_train
+        )
+        self.p = p
+
+    def fetch_output(self, a, b):
+        return (a * pow(b, self.p - 2, self.p)) % self.p
+
+
+class PermutationGroup(AbstractDataset):
+    def __init__(self, k, frac_train):
+        perms = set(map(tuple, permutations(list(range(k)))))
+        super(PermutationGroup, self).__init__(perms, perms, frac_train)
+        self.k = k
+
+    def fetch_output(self, a, b):
+        return tuple([a[b[i]] for i in range(len(b))])
+
+
+class GroupDataset(IterableDataset):
+    def __init__(self, dataset: AbstractDataset, split: str):
+        super(GroupDataset, self).__init__()
+        assert split in {"train", "val"}
+        self.dataset = dataset
+        self.split = split
+        self.fetch_f = None
+        if self.split == "train":
+            self.fetch_f = self.dataset.fetch_train_example
+        elif self.split == "val":
+            self.fetch_f = self.dataset.fetch_val_example
+        else:
+            raise NotImplementedError
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        x, y, _ = self.fetch_f()
+        return torch.tensor(x), torch.tensor(y)
+
+
+def operation_mod_p_data(operation: str, p: int, frac_train: float):
+    """
+    x◦y (mod p) for 0 <= x < p, 1 <= y < p if operation in DIVISION_MODULO_OPERATIONS
+    x◦y (mod p) for 0 <= x, y < p otherwise
+    """
+    if operation == "x_plus_y":
+        data = ModSumDataset(p=p, frac_train=frac_train)
+    elif operation == "x_minus_y":
+        data = ModSubtractDataset(p=p, frac_train=frac_train)
+    elif operation == "x_div_y":
+        data = ModDivisonDataset(p=p, frac_train=frac_train)
+    elif operation == "permutation":
+        data = PermutationGroup(k=5, frac_train=frac_train)
+    return data
+
+
+def get_data(operation: str, prime: int, training_fraction: float, batch_size: int):
+    dataset = operation_mod_p_data(operation, prime, training_fraction)
+    train_dataset = GroupDataset(dataset, "train")
+    val_dataset = GroupDataset(dataset, "val")
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size)
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size)
+    return (
+        train_loader,
+        val_loader,
+        train_dataset.dataset.n_vocab,
+        train_dataset.dataset.n_out,
+    )
+
+
+class DecoderBlock(torch.nn.Module):
+    def __init__(self, dim_model: int, n_heads: int):
+        super().__init__()
+
+        self.self_attn = nn.MultiheadAttention(dim_model, n_heads)
+        self.self_attn_norm = nn.LayerNorm(dim_model)
+        self.ffn = nn.Sequential(
+            nn.Linear(dim_model, dim_model * 4),
+            nn.GELU(),
+            nn.Linear(dim_model * 4, dim_model),
+        )
+        self.ffn_norm = nn.LayerNorm(dim_model)
+
+    def forward(self, x: Tensor):
+        attn_mask = torch.full(
+            (len(x), len(x)), -float("Inf"), device=x.device, dtype=x.dtype
+        )
+        attn_mask = torch.triu(attn_mask, diagonal=1)
+
+        a1, _ = self.self_attn(x, x, x, attn_mask=attn_mask)
+        a1 = self.self_attn_norm(x + a1)
+        a2 = self.ffn(a1)
+        a2 = self.ffn_norm(a1 + a2)
+
+        return a2
+
+
+class Transformer(torch.nn.Module):
+    def __init__(
+        self,
+        num_layers: int,
+        dim_model: int,
+        num_heads: int,
+        vocab_size: int,
+        output_size: int,
+        seq_len: int,
+    ):
+        super().__init__()
+
+        self.token_embeddings = nn.Embedding(vocab_size, dim_model)
+        self.position_embeddings = nn.Embedding(seq_len, dim_model)
+        self.model = nn.Sequential(
+            *[DecoderBlock(dim_model, num_heads) for _ in range(num_layers)],
+            nn.LayerNorm(dim_model),
+            nn.Linear(dim_model, output_size),
+        )
+        
+        self._initialize_weights()
+
+    def _initialize_weights(self):
+        for module in self.modules():
+            if isinstance(module, (nn.Linear, nn.Embedding)):
+                nn.init.uniform_(module.weight, -0.1, 0.1)
+                if hasattr(module, 'bias') and module.bias is not None:
+                    nn.init.constant_(module.bias, 0)
+            elif isinstance(module, nn.LayerNorm):
+                nn.init.constant_(module.weight, 1.0)
+                nn.init.constant_(module.bias, 0.0)
+
+    def forward(self, inputs: Tensor):
+        batch_size, context_len = inputs.shape
+
+        token_embedding = self.token_embeddings(inputs)
+
+        positions = repeat(
+            torch.arange(context_len, device=inputs.device), "p -> b p", b=batch_size
+        )
+        position_embedding = self.position_embeddings(positions)
+
+        embedding = token_embedding + position_embedding
+
+        embedding = rearrange(embedding, "b s d -> s b d")
+
+        return self.model(embedding)
+
+
+def train(model, train_loader, optimizer, scheduler, device, num_train_batches):
+    # Set model to training mode
+    model.train()
+    criterion = torch.nn.CrossEntropyLoss()
+    loss_total, correct = 0.0, 0.0
+    total = 0
+
+    # Loop over each batch from the training set
+    count = 0
+    for batch in train_loader:
+        count += 1
+        # Copy data to device if needed
+        batch = tuple(t.to(device) for t in batch)
+
+        # Unpack the batch from the loader
+        inputs, labels = batch
+
+        # Zero gradient buffers
+        optimizer.zero_grad()
+
+        # Forward pass
+        output = model(inputs)[-1, :, :]
+        loss = criterion(output, labels)
+        correct += (torch.argmax(output, dim=1) == labels).sum()
+        loss_total += loss * len(labels)
+        total += len(labels)
+        # Backward pass
+        loss.backward()
+
+        # Update weights
+
+--- run_1.py ---
+import argparse
+import abc
+import random
+from itertools import permutations
+from typing import Set
+import os
+import json
+import numpy as np
+from einops import rearrange, repeat
+import torch
+from torch.utils.data import IterableDataset
+from torch import nn, Tensor
+
+
+class AbstractDataset(abc.ABC):
+    def __init__(self, group_elements1: Set, group_elements2: Set, frac_train: float):
+        self.frac_train = frac_train
+        self.group_elements1 = group_elements1
+        self.group_elements2 = group_elements2
+        self.ordered_group_elements1 = list(self.group_elements1)
+        self.ordered_group_elements2 = list(self.group_elements2)
+        self.idx2vocab = ["o", "="] + list(group_elements1.union(group_elements2))
+        self.vocab2idx = {vocab: idx for idx, vocab in enumerate(self.idx2vocab)}
+        self.n_vocab = len(self.idx2vocab)
+        self.n_out = len(group_elements1.union(group_elements2))
+        idxs = list(range(len(self.group_elements1) * len(self.group_elements2)))
+        random.shuffle(idxs)
+        self.train_pairs, self.val_pairs = (
+            idxs[: int(len(idxs) * frac_train)],
+            idxs[int(len(idxs) * frac_train) :],
+        )
+
+    @abc.abstractmethod
+    def fetch_output(self, a, b):
+        pass
+
+    def encode(self, sequence):
+        return [self.vocab2idx[item] for item in sequence]
+
+    def decode(self, sequence):
+        return [self.idx2vocab[item] for item in sequence]
+
+    def form_equation(self, a, b, c):
+        return [a, "o", b, "=", c]
+
+    def fetch_example(self, idx):
+        a = self.ordered_group_elements1[idx // len(self.group_elements2)]
+        b = self.ordered_group_elements2[idx % len(self.group_elements2)]
+        c = self.fetch_output(a, b)
+        equation = self.form_equation(a, b, c)
+        return self.encode(equation[:-1]), (self.vocab2idx[c] - 2), equation
+
+    def fetch_train_example(self):
+        idx = random.choice(self.train_pairs)
+        return self.fetch_example(idx)
+
+    def fetch_val_example(self):
+        idx = random.choice(self.val_pairs)
+        return self.fetch_example(idx)
+
+
+class ModSumDataset(AbstractDataset):
+    def __init__(self, p, frac_train):
+        super(ModSumDataset, self).__init__(set(range(p)), set(range(p)), frac_train)
+        self.p = p
+
+    def fetch_output(self, a, b):
+        return (a + b) % self.p
+
+
+class ModSubtractDataset(AbstractDataset):
+    def __init__(self, p, frac_train):
+        super(ModSubtractDataset, self).__init__(
+            set(range(p)), set(range(p)), frac_train
+        )
+        self.p = p
+
+    def fetch_output(self, a, b):
+        return (a - b) % self.p
+
+
+class ModDivisonDataset(AbstractDataset):
+    def __init__(self, p, frac_train):
+        super(ModDivisonDataset, self).__init__(
+            set(range(p)), set(range(1, p)), frac_train
+        )
+        self.p = p
+
+    def fetch_output(self, a, b):
+        return (a * pow(b, self.p - 2, self.p)) % self.p
+
+
+class PermutationGroup(AbstractDataset):
+    def __init__(self, k, frac_train):
+        perms = set(map(tuple, permutations(list(range(k)))))
+        super(PermutationGroup, self).__init__(perms, perms, frac_train)
+        self.k = k
+
+    def fetch_output(self, a, b):
+        return tuple([a[b[i]] for i in range(len(b))])
+
+
+class GroupDataset(IterableDataset):
+    def __init__(self, dataset: AbstractDataset, split: str):
+        super(GroupDataset, self).__init__()
+        assert split in {"train", "val"}
+        self.dataset = dataset
+        self.split = split
+        self.fetch_f = None
+        if self.split == "train":
+            self.fetch_f = self.dataset.fetch_train_example
+        elif self.split == "val":
+            self.fetch_f = self.dataset.fetch_val_example
+        else:
+            raise NotImplementedError
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+
+--- run_2.py ---
+import argparse
+import abc
+import random
+from itertools import permutations
+from typing import Set
+import os
+import json
+import numpy as np
+from einops import rearrange, repeat
+import torch
+from torch.utils.data import IterableDataset
+from torch import nn, Tensor
+
+
+class AbstractDataset(abc.ABC):
+    def __init__(self, group_elements1: Set, group_elements2: Set, frac_train: float):
+        self.frac_train = frac_train
+        self.group_elements1 = group_elements1
+        self.group_elements2 = group_elements2
+        self.ordered_group_elements1 = list(self.group_elements1)
+        self.ordered_group_elements2 = list(self.group_elements2)
+        self.idx2vocab = ["o", "="] + list(group_elements1.union(group_elements2))
+        self.vocab2idx = {vocab: idx for idx, vocab in enumerate(self.idx2vocab)}
+        self.n_vocab = len(self.idx2vocab)
+        self.n_out = len(group_elements1.union(group_elements2))
+        idxs = list(range(len(self.group_elements1) * len(self.group_elements2)))
+        random.shuffle(idxs)
+        self.train_pairs, self.val_pairs = (
+            idxs[: int(len(idxs) * frac_train)],
+            idxs[int(len(idxs) * frac_train) :],
+        )
+
+    @abc.abstractmethod
+    def fetch_output(self, a, b):
+        pass
+
+    def encode(self, sequence):
+        return [self.vocab2idx[item] for item in sequence]
+
+    def decode(self, sequence):
+        return [self.idx2vocab[item] for item in sequence]
+
+    def form_equation(self, a, b, c):
+        return [a, "o", b, "=", c]
+
+    def fetch_example(self, idx):
+        a = self.ordered_group_elements1[idx // len(self.group_elements2)]
+        b = self.ordered_group_elements2[idx % len(self.group_elements2)]
+        c = self.fetch_output(a, b)
+        equation = self.form_equation(a, b, c)
+        return self.encode(equation[:-1]), (self.vocab2idx[c] - 2), equation
+
+    def fetch_train_example(self):
+        idx = random.choice(self.train_pairs)
+        return self.fetch_example(idx)
+
+    def fetch_val_example(self):
+        idx = random.choice(self.val_pairs)
+        return self.fetch_example(idx)
+
+
+class ModSumDataset(AbstractDataset):
+    def __init__(self, p, frac_train):
+        super(ModSumDataset, self).__init__(set(range(p)), set(range(p)), frac_train)
+        self.p = p
+
+    def fetch_output(self, a, b):
+        return (a + b) % self.p
+
+
+class ModSubtractDataset(AbstractDataset):
+    def __init__(self, p, frac_train):
+        super(ModSubtractDataset, self).__init__(
+            set(range(p)), set(range(p)), frac_train
+        )
+        self.p = p
+
+    def fetch_output(self, a, b):
+        return (a - b) % self.p
+
+
+class ModDivisonDataset(AbstractDataset):
+    def __init__(self, p, frac_train):
+        super(ModDivisonDataset, self).__init__(
+            set(range(p)), set(range(1, p)), frac_train
+        )
+        self.p = p
+
+    def fetch_output(self, a, b):
+        return (a * pow(b, self.p - 2, self.p)) % self.p
+
+
+class PermutationGroup(AbstractDataset):
+    def __init__(self, k, frac_train):
+        perms = set(map(tuple, permutations(list(range(k)))))
+        super(PermutationGroup, self).__init__(perms, perms, frac_train)
+        self.k = k
+
+    def fetch_output(self, a, b):
+        return tuple([a[b[i]] for i in range(len(b))])
+
+
+class GroupDataset(IterableDataset):
+    def __init__(self, dataset: AbstractDataset, split: str):
+        super(GroupDataset, self).__init__()
+        assert split in {"train", "val"}
+        self.dataset = dataset
+        self.split = split
+        self.fetch_f = None
+        if self.split == "train":
+            self.fetch_f = self.dataset.fetch_train_example
+        elif self.split == "val":
+            self.fetch_f = self.dataset.fetch_val_example
+        else:
+            raise NotImplementedError
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+
+--- run_3.py ---
+import argparse
+import abc
+import random
+from itertools import permutations
+from typing import Set
+import os
+import json
+import numpy as np
+from einops import rearrange, repeat
+import torch
+from torch.utils.data import IterableDataset
+from torch import nn, Tensor
+
+
+class AbstractDataset(abc.ABC):
+    def __init__(self, group_elements1: Set, group_elements2: Set, frac_train: float):
+        self.frac_train = frac_train
+        self.group_elements1 = group_elements1
+        self.group_elements2 = group_elements2
+        self.ordered_group_elements1 = list(self.group_elements1)
+        self.ordered_group_elements2 = list(self.group_elements2)
+        self.idx2vocab = ["o", "="] + list(group_elements1.union(group_elements2))
+        self.vocab2idx = {vocab: idx for idx, vocab in enumerate(self.idx2vocab)}
+        self.n_vocab = len(self.idx2vocab)
+        self.n_out = len(group_elements1.union(group_elements2))
+        idxs = list(range(len(self.group_elements1) * len(self.group_elements2)))
+        random.shuffle(idxs)
+        self.train_pairs, self.val_pairs = (
+            idxs[: int(len(idxs) * frac_train)],
+            idxs[int(len(idxs) * frac_train) :],
+        )
+
+    @abc.abstractmethod
+    def fetch_output(self, a, b):
+        pass
+
+    def encode(self, sequence):
+        return [self.vocab2idx[item] for item in sequence]
+
+    def decode(self, sequence):
+        return [self.idx2vocab[item] for item in sequence]
+
+    def form_equation(self, a, b, c):
+        return [a, "o", b, "=", c]
+
+    def fetch_example(self, idx):
+        a = self.ordered_group_elements1[idx // len(self.group_elements2)]
+        b = self.ordered_group_elements2[idx % len(self.group_elements2)]
+        c = self.fetch_output(a, b)
+        equation = self.form_equation(a, b, c)
+        return self.encode(equation[:-1]), (self.vocab2idx[c] - 2), equation
+
+    def fetch_train_example(self):
+        idx = random.choice(self.train_pairs)
+        return self.fetch_example(idx)
+
+    def fetch_val_example(self):
+        idx = random.choice(self.val_pairs)
+        return self.fetch_example(idx)
+
+
+class ModSumDataset(AbstractDataset):
+    def __init__(self, p, frac_train):
+        super(ModSumDataset, self).__init__(set(range(p)), set(range(p)), frac_train)
+        self.p = p
+
+    def fetch_output(self, a, b):
+        return (a + b) % self.p
+
+
+class ModSubtractDataset(AbstractDataset):
+    def __init__(self, p, frac_train):
+        super(ModSubtractDataset, self).__init__(
+            set(range(p)), set(range(p)), frac_train
+        )
+        self.p = p
+
+    def fetch_output(self, a, b):
+        return (a - b) % self.p
+
+
+class ModDivisonDataset(AbstractDataset):
+    def __init__(self, p, frac_train):
+        super(ModDivisonDataset, self).__init__(
+            set(range(p)), set(range(1, p)), frac_train
+        )
+        self.p = p
+
+    def fetch_output(self, a, b):
+        return (a * pow(b, self.p - 2, self.p)) % self.p
+
+
+class PermutationGroup(AbstractDataset):
+    def __init__(self, k, frac_train):
+        perms = set(map(tuple, permutations(list(range(k)))))
+        super(PermutationGroup, self).__init__(perms, perms, frac_train)
+        self.k = k
+
+    def fetch_output(self, a, b):
+        return tuple([a[b[i]] for i in range(len(b))])
+
+
+class GroupDataset(IterableDataset):
+    def __init__(self, dataset: AbstractDataset, split: str):
+        super(GroupDataset, self).__init__()
+        assert split in {"train", "val"}
+        self.dataset = dataset
+        self.split = split
+        self.fetch_f = None
+        if self.split == "train":
+            self.fetch_f = self.dataset.fetch_train_example
+        elif self.split == "val":
+            self.fetch_f = self.dataset.fetch_val_example
+        else:
+            raise NotImplementedError
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+
+--- run_4.py ---
+import argparse
+import abc
+import random
+from itertools import permutations
+from typing import Set
+import os
+import json
+import numpy as np
+from einops import rearrange, repeat
+import torch
+from torch.utils.data import IterableDataset
+from torch import nn, Tensor
+
+
+class AbstractDataset(abc.ABC):
+    def __init__(self, group_elements1: Set, group_elements2: Set, frac_train: float):
+        self.frac_train = frac_train
+        self.group_elements1 = group_elements1
+        self.group_elements2 = group_elements2
+        self.ordered_group_elements1 = list(self.group_elements1)
+        self.ordered_group_elements2 = list(self.group_elements2)
+        self.idx2vocab = ["o", "="] + list(group_elements1.union(group_elements2))
+        self.vocab2idx = {vocab: idx for idx, vocab in enumerate(self.idx2vocab)}
+        self.n_vocab = len(self.idx2vocab)
+        self.n_out = len(group_elements1.union(group_elements2))
+        idxs = list(range(len(self.group_elements1) * len(self.group_elements2)))
+        random.shuffle(idxs)
+        self.train_pairs, self.val_pairs = (
+            idxs[: int(len(idxs) * frac_train)],
+            idxs[int(len(idxs) * frac_train) :],
+        )
+
+    @abc.abstractmethod
+    def fetch_output(self, a, b):
+        pass
+
+    def encode(self, sequence):
+        return [self.vocab2idx[item] for item in sequence]
+
+    def decode(self, sequence):
+        return [self.idx2vocab[item] for item in sequence]
+
+    def form_equation(self, a, b, c):
+        return [a, "o", b, "=", c]
+
+    def fetch_example(self, idx):
+        a = self.ordered_group_elements1[idx // len(self.group_elements2)]
+        b = self.ordered_group_elements2[idx % len(self.group_elements2)]
+        c = self.fetch_output(a, b)
+        equation = self.form_equation(a, b, c)
+        return self.encode(equation[:-1]), (self.vocab2idx[c] - 2), equation
+
+    def fetch_train_example(self):
+        idx = random.choice(self.train_pairs)
+        return self.fetch_example(idx)
+
+    def fetch_val_example(self):
+        idx = random.choice(self.val_pairs)
+        return self.fetch_example(idx)
+
+
+class ModSumDataset(AbstractDataset):
+    def __init__(self, p, frac_train):
+        super(ModSumDataset, self).__init__(set(range(p)), set(range(p)), frac_train)
+        self.p = p
+
+    def fetch_output(self, a, b):
+        return (a + b) % self.p
+
+
+class ModSubtractDataset(AbstractDataset):
+    def __init__(self, p, frac_train):
+        super(ModSubtractDataset, self).__init__(
+            set(range(p)), set(range(p)), frac_train
+        )
+        self.p = p
+
+    def fetch_output(self, a, b):
+        return (a - b) % self.p
+
+
+class ModDivisonDataset(AbstractDataset):
+    def __init__(self, p, frac_train):
+        super(ModDivisonDataset, self).__init__(
+            set(range(p)), set(range(1, p)), frac_train
+        )
+        self.p = p
+
+    def fetch_output(self, a, b):
+        return (a * pow(b, self.p - 2, self.p)) % self.p
+
+
+class PermutationGroup(AbstractDataset):
+    def __init__(self, k, frac_train):
+        perms = set(map(tuple, permutations(list(range(k)))))
+        super(PermutationGroup, self).__init__(perms, perms, frac_train)
+        self.k = k
+
+    def fetch_output(self, a, b):
+        return tuple([a[b[i]] for i in range(len(b))])
+
+
+class GroupDataset(IterableDataset):
+    def __init__(self, dataset: AbstractDataset, split: str):
+        super(GroupDataset, self).__init__()
+        assert split in {"train", "val"}
+        self.dataset = dataset
+        self.split = split
+        self.fetch_f = None
+        if self.split == "train":
+            self.fetch_f = self.dataset.fetch_train_example
+        elif self.split == "val":
+            self.fetch_f = self.dataset.fetch_val_example
+        else:
+            raise NotImplementedError
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+
+=== END COMMAND ===
+
+=== COMMAND: locate all_results generation ===
+run_5.py:1:import argparse
+run_5.py:130:    if operation == "x_plus_y":
+run_5.py:270:        "train_accuracy": float(acc),
+run_5.py:307:    metrics = {"val_accuracy": float(acc), "val_loss": float(loss)}
+run_5.py:311:def run(out_dir, dataset, seed_offset):
+run_5.py:322:    os.makedirs(out_dir, exist_ok=True)
+run_5.py:347:    final_info, train_log_info, val_log_info = [], [], []
+run_5.py:367:        if step_val_acc_99 == num_total_updates and val_metrics["val_accuracy"] > 0.99:
+run_5.py:372:    final_info = {
+run_5.py:375:        "final_train_acc": train_metrics["train_accuracy"],
+run_5.py:376:        "final_val_acc": val_metrics["val_accuracy"],
+run_5.py:379:    print(final_info)
+run_5.py:381:        os.path.join(out_dir, f"final_info_{dataset}_{seed_offset}.json"), "w"
+run_5.py:383:        json.dump(final_info, f)
+run_5.py:384:    return final_info, train_log_info, val_log_info
+run_5.py:387:parser = argparse.ArgumentParser(description="Run experiment")
+run_5.py:388:parser.add_argument("--out_dir", type=str, default="run_0", help="Output directory")
+run_5.py:395:        "x_plus_y": 3,
+run_5.py:400:    out_dir = args.out_dir
+run_5.py:401:    all_results = {}
+run_5.py:402:    final_infos = {}
+run_5.py:403:    for dataset in ["x_div_y", "x_minus_y", "x_plus_y", "permutation"]:
+run_5.py:404:        final_info_list = []
+run_5.py:407:            final_info, train_info, val_info = run(args.out_dir, dataset, seed_offset)
+run_5.py:408:            all_results[f"{dataset}_{seed_offset}_final_info"] = final_info
+run_5.py:409:            all_results[f"{dataset}_{seed_offset}_train_info"] = train_info
+run_5.py:410:            all_results[f"{dataset}_{seed_offset}_val_info"] = val_info
+run_5.py:411:            final_info_list.append(final_info)
+run_5.py:412:        final_info_dict = {
+run_5.py:413:            k: [d[k] for d in final_info_list] for k in final_info_list[0].keys()
+run_5.py:415:        means = {f"{k}_mean": np.mean(v) for k, v in final_info_dict.items()}
+run_5.py:417:            f"{k}_stderr": np.std(v) / len(v) for k, v in final_info_dict.items()
+run_5.py:419:        final_infos[dataset] = {
+run_5.py:422:            "final_info_dict": final_info_dict,
+run_5.py:425:    with open(os.path.join(out_dir, "final_info.json"), "w") as f:
+run_5.py:426:        json.dump(final_infos, f)
+run_5.py:428:    with open(os.path.join(out_dir, "all_results.npy"), "wb") as f:
+run_5.py:429:        np.save(f, all_results)
+run_4.py:1:import argparse
+run_4.py:130:    if operation == "x_plus_y":
+run_4.py:270:        "train_accuracy": float(acc),
+run_4.py:307:    metrics = {"val_accuracy": float(acc), "val_loss": float(loss)}
+run_4.py:311:def run(out_dir, dataset, seed_offset):
+run_4.py:322:    os.makedirs(out_dir, exist_ok=True)
+run_4.py:347:    final_info, train_log_info, val_log_info = [], [], []
+run_4.py:367:        if step_val_acc_99 == num_total_updates and val_metrics["val_accuracy"] > 0.99:
+run_4.py:372:    final_info = {
+run_4.py:375:        "final_train_acc": train_metrics["train_accuracy"],
+run_4.py:376:        "final_val_acc": val_metrics["val_accuracy"],
+run_4.py:379:    print(final_info)
+run_4.py:381:        os.path.join(out_dir, f"final_info_{dataset}_{seed_offset}.json"), "w"
+run_4.py:383:        json.dump(final_info, f)
+run_4.py:384:    return final_info, train_log_info, val_log_info
+run_4.py:387:parser = argparse.ArgumentParser(description="Run experiment")
+run_4.py:388:parser.add_argument("--out_dir", type=str, default="run_0", help="Output directory")
+run_4.py:395:        "x_plus_y": 3,
+run_4.py:400:    out_dir = args.out_dir
+run_4.py:401:    all_results = {}
+run_4.py:402:    final_infos = {}
+run_4.py:403:    for dataset in ["x_div_y", "x_minus_y", "x_plus_y", "permutation"]:
+run_4.py:404:        final_info_list = []
+run_4.py:407:            final_info, train_info, val_info = run(args.out_dir, dataset, seed_offset)
+run_4.py:408:            all_results[f"{dataset}_{seed_offset}_final_info"] = final_info
+run_4.py:409:            all_results[f"{dataset}_{seed_offset}_train_info"] = train_info
+run_4.py:410:            all_results[f"{dataset}_{seed_offset}_val_info"] = val_info
+run_4.py:411:            final_info_list.append(final_info)
+run_4.py:412:        final_info_dict = {
+run_4.py:413:            k: [d[k] for d in final_info_list] for k in final_info_list[0].keys()
+run_4.py:415:        means = {f"{k}_mean": np.mean(v) for k, v in final_info_dict.items()}
+run_4.py:417:            f"{k}_stderr": np.std(v) / len(v) for k, v in final_info_dict.items()
+run_4.py:419:        final_infos[dataset] = {
+run_4.py:422:            "final_info_dict": final_info_dict,
+run_4.py:425:    with open(os.path.join(out_dir, "final_info.json"), "w") as f:
+run_4.py:426:        json.dump(final_infos, f)
+run_4.py:428:    with open(os.path.join(out_dir, "all_results.npy"), "wb") as f:
+run_4.py:429:        np.save(f, all_results)
+run_3.py:1:import argparse
+run_3.py:130:    if operation == "x_plus_y":
+run_3.py:270:        "train_accuracy": float(acc),
+run_3.py:307:    metrics = {"val_accuracy": float(acc), "val_loss": float(loss)}
+run_3.py:311:def run(out_dir, dataset, seed_offset):
+run_3.py:322:    os.makedirs(out_dir, exist_ok=True)
+run_3.py:347:    final_info, train_log_info, val_log_info = [], [], []
+run_3.py:367:        if step_val_acc_99 == num_total_updates and val_metrics["val_accuracy"] > 0.99:
+run_3.py:372:    final_info = {
+run_3.py:375:        "final_train_acc": train_metrics["train_accuracy"],
+run_3.py:376:        "final_val_acc": val_metrics["val_accuracy"],
+run_3.py:379:    print(final_info)
+run_3.py:381:        os.path.join(out_dir, f"final_info_{dataset}_{seed_offset}.json"), "w"
+run_3.py:383:        json.dump(final_info, f)
+run_3.py:384:    return final_info, train_log_info, val_log_info
+run_3.py:387:parser = argparse.ArgumentParser(description="Run experiment")
+run_3.py:388:parser.add_argument("--out_dir", type=str, default="run_0", help="Output directory")
+run_3.py:395:        "x_plus_y": 3,
+run_3.py:400:    out_dir = args.out_dir
+run_3.py:401:    all_results = {}
+run_3.py:402:    final_infos = {}
+run_3.py:403:    for dataset in ["x_div_y", "x_minus_y", "x_plus_y", "permutation"]:
+run_3.py:404:        final_info_list = []
+run_3.py:407:            final_info, train_info, val_info = run(args.out_dir, dataset, seed_offset)
+run_3.py:408:            all_results[f"{dataset}_{seed_offset}_final_info"] = final_info
+run_3.py:409:            all_results[f"{dataset}_{seed_offset}_train_info"] = train_info
+run_3.py:410:            all_results[f"{dataset}_{seed_offset}_val_info"] = val_info
+run_3.py:411:            final_info_list.append(final_info)
+run_3.py:412:        final_info_dict = {
+run_3.py:413:            k: [d[k] for d in final_info_list] for k in final_info_list[0].keys()
+run_3.py:415:        means = {f"{k}_mean": np.mean(v) for k, v in final_info_dict.items()}
+run_3.py:417:            f"{k}_stderr": np.std(v) / len(v) for k, v in final_info_dict.items()
+run_3.py:419:        final_infos[dataset] = {
+run_3.py:422:            "final_info_dict": final_info_dict,
+run_3.py:425:    with open(os.path.join(out_dir, "final_info.json"), "w") as f:
+run_3.py:426:        json.dump(final_infos, f)
+run_3.py:428:    with open(os.path.join(out_dir, "all_results.npy"), "wb") as f:
+run_3.py:429:        np.save(f, all_results)
+run_2.py:1:import argparse
+run_2.py:130:    if operation == "x_plus_y":
+run_2.py:270:        "train_accuracy": float(acc),
+run_2.py:307:    metrics = {"val_accuracy": float(acc), "val_loss": float(loss)}
+run_2.py:311:def run(out_dir, dataset, seed_offset):
+run_2.py:322:    os.makedirs(out_dir, exist_ok=True)
+run_2.py:347:    final_info, train_log_info, val_log_info = [], [], []
+run_2.py:367:        if step_val_acc_99 == num_total_updates and val_metrics["val_accuracy"] > 0.99:
+run_2.py:372:    final_info = {
+run_2.py:375:        "final_train_acc": train_metrics["train_accuracy"],
+run_2.py:376:        "final_val_acc": val_metrics["val_accuracy"],
+run_2.py:379:    print(final_info)
+run_2.py:381:        os.path.join(out_dir, f"final_info_{dataset}_{seed_offset}.json"), "w"
+run_2.py:383:        json.dump(final_info, f)
+run_2.py:384:    return final_info, train_log_info, val_log_info
+run_2.py:387:parser = argparse.ArgumentParser(description="Run experiment")
+run_2.py:388:parser.add_argument("--out_dir", type=str, default="run_0", help="Output directory")
+run_2.py:395:        "x_plus_y": 3,
+run_2.py:400:    out_dir = args.out_dir
+run_2.py:401:    all_results = {}
+run_2.py:402:    final_infos = {}
+run_2.py:403:    for dataset in ["x_div_y", "x_minus_y", "x_plus_y", "permutation"]:
+run_2.py:404:        final_info_list = []
+run_2.py:407:            final_info, train_info, val_info = run(args.out_dir, dataset, seed_offset)
+run_2.py:408:            all_results[f"{dataset}_{seed_offset}_final_info"] = final_info
+run_2.py:409:            all_results[f"{dataset}_{seed_offset}_train_info"] = train_info
+run_2.py:410:            all_results[f"{dataset}_{seed_offset}_val_info"] = val_info
+run_2.py:411:            final_info_list.append(final_info)
+run_2.py:412:        final_info_dict = {
+run_2.py:413:            k: [d[k] for d in final_info_list] for k in final_info_list[0].keys()
+run_2.py:415:        means = {f"{k}_mean": np.mean(v) for k, v in final_info_dict.items()}
+run_2.py:417:            f"{k}_stderr": np.std(v) / len(v) for k, v in final_info_dict.items()
+run_2.py:419:        final_infos[dataset] = {
+run_2.py:422:            "final_info_dict": final_info_dict,
+run_2.py:425:    with open(os.path.join(out_dir, "final_info.json"), "w") as f:
+run_2.py:426:        json.dump(final_infos, f)
+run_2.py:428:    with open(os.path.join(out_dir, "all_results.npy"), "wb") as f:
+run_2.py:429:        np.save(f, all_results)
+run_1.py:1:import argparse
+run_1.py:130:    if operation == "x_plus_y":
+run_1.py:268:        "train_accuracy": float(acc),
+run_1.py:305:    metrics = {"val_accuracy": float(acc), "val_loss": float(loss)}
+run_1.py:309:def run(out_dir, dataset, seed_offset):
+run_1.py:320:    os.makedirs(out_dir, exist_ok=True)
+run_1.py:345:    final_info, train_log_info, val_log_info = [], [], []
+run_1.py:365:        if step_val_acc_99 == num_total_updates and val_metrics["val_accuracy"] > 0.99:
+run_1.py:370:    final_info = {
+run_1.py:373:        "final_train_acc": train_metrics["train_accuracy"],
+run_1.py:374:        "final_val_acc": val_metrics["val_accuracy"],
+run_1.py:377:    print(final_info)
+run_1.py:379:        os.path.join(out_dir, f"final_info_{dataset}_{seed_offset}.json"), "w"
+run_1.py:381:        json.dump(final_info, f)
+run_1.py:382:    return final_info, train_log_info, val_log_info
+run_1.py:385:parser = argparse.ArgumentParser(description="Run experiment")
+run_1.py:386:parser.add_argument("--out_dir", type=str, default="run_0", help="Output directory")
+run_1.py:393:        "x_plus_y": 3,
+run_1.py:398:    out_dir = args.out_dir
+run_1.py:399:    all_results = {}
+run_1.py:400:    final_infos = {}
+run_1.py:401:    for dataset in ["x_div_y", "x_minus_y", "x_plus_y", "permutation"]:
+run_1.py:402:        final_info_list = []
+run_1.py:405:            final_info, train_info, val_info = run(args.out_dir, dataset, seed_offset)
+run_1.py:406:            all_results[f"{dataset}_{seed_offset}_final_info"] = final_info
+run_1.py:407:            all_results[f"{dataset}_{seed_offset}_train_info"] = train_info
+run_1.py:408:            all_results[f"{dataset}_{seed_offset}_val_info"] = val_info
+run_1.py:409:            final_info_list.append(final_info)
+run_1.py:410:        final_info_dict = {
+run_1.py:411:            k: [d[k] for d in final_info_list] for k in final_info_list[0].keys()
+run_1.py:413:        means = {f"{k}_mean": np.mean(v) for k, v in final_info_dict.items()}
+run_1.py:415:            f"{k}_stderr": np.std(v) / len(v) for k, v in final_info_dict.items()
+run_1.py:417:        final_infos[dataset] = {
+run_1.py:420:            "final_info_dict": final_info_dict,
+run_1.py:423:    with open(os.path.join(out_dir, "final_info.json"), "w") as f:
+run_1.py:424:        json.dump(final_infos, f)
+run_1.py:426:    with open(os.path.join(out_dir, "all_results.npy"), "wb") as f:
+run_1.py:427:        np.save(f, all_results)
+experiment.py:1:import argparse
+experiment.py:130:    if operation == "x_plus_y":
+experiment.py:270:        "train_accuracy": float(acc),
+experiment.py:307:    metrics = {"val_accuracy": float(acc), "val_loss": float(loss)}
+experiment.py:311:def run(out_dir, dataset, seed_offset):
+experiment.py:322:    os.makedirs(out_dir, exist_ok=True)
+experiment.py:347:    final_info, train_log_info, val_log_info = [], [], []
+experiment.py:367:        if step_val_acc_99 == num_total_updates and val_metrics["val_accuracy"] > 0.99:
+experiment.py:372:    final_info = {
+experiment.py:375:        "final_train_acc": train_metrics["train_accuracy"],
+experiment.py:376:        "final_val_acc": val_metrics["val_accuracy"],
+experiment.py:379:    print(final_info)
+experiment.py:381:        os.path.join(out_dir, f"final_info_{dataset}_{seed_offset}.json"), "w"
+experiment.py:383:        json.dump(final_info, f)
+experiment.py:384:    return final_info, train_log_info, val_log_info
+experiment.py:387:parser = argparse.ArgumentParser(description="Run experiment")
+experiment.py:388:parser.add_argument("--out_dir", type=str, default="run_0", help="Output directory")
+experiment.py:395:        "x_plus_y": 3,
+experiment.py:400:    out_dir = args.out_dir
+experiment.py:401:    all_results = {}
+experiment.py:402:    final_infos = {}
+experiment.py:403:    for dataset in ["x_div_y", "x_minus_y", "x_plus_y", "permutation"]:
+experiment.py:404:        final_info_list = []
+experiment.py:407:            final_info, train_info, val_info = run(args.out_dir, dataset, seed_offset)
+experiment.py:408:            all_results[f"{dataset}_{seed_offset}_final_info"] = final_info
+experiment.py:409:            all_results[f"{dataset}_{seed_offset}_train_info"] = train_info
+experiment.py:410:            all_results[f"{dataset}_{seed_offset}_val_info"] = val_info
+experiment.py:411:            final_info_list.append(final_info)
+experiment.py:412:        final_info_dict = {
+experiment.py:413:            k: [d[k] for d in final_info_list] for k in final_info_list[0].keys()
+experiment.py:415:        means = {f"{k}_mean": np.mean(v) for k, v in final_info_dict.items()}
+experiment.py:417:            f"{k}_stderr": np.std(v) / len(v) for k, v in final_info_dict.items()
+experiment.py:419:        final_infos[dataset] = {
+experiment.py:422:            "final_info_dict": final_info_dict,
+experiment.py:425:    with open(os.path.join(out_dir, "final_info.json"), "w") as f:
+experiment.py:426:        json.dump(final_infos, f)
+experiment.py:428:    with open(os.path.join(out_dir, "all_results.npy"), "wb") as f:
+experiment.py:429:        np.save(f, all_results)
+
+=== END COMMAND ===
+
+=== COMMAND: inspect run_0 final_info and run dirs ===
+--- run_0 ---
+total 60
+drwxrwxr-x  2 chenhui chenhui 4096 Mar 12 21:34 .
+drwxrwxr-x 12 chenhui chenhui 4096 Apr  1 10:08 ..
+-rw-rw-r--  1 chenhui chenhui 3005 Mar 12 21:34 final_info.json
+-rw-rw-r--  1 chenhui chenhui  161 Mar 12 21:34 final_info_permutation_0.json
+-rw-rw-r--  1 chenhui chenhui  173 Mar 12 21:34 final_info_permutation_1.json
+-rw-rw-r--  1 chenhui chenhui  175 Mar 12 21:34 final_info_permutation_2.json
+-rw-rw-r--  1 chenhui chenhui  154 Mar 12 21:34 final_info_x_div_y_0.json
+-rw-rw-r--  1 chenhui chenhui  153 Mar 12 21:34 final_info_x_div_y_1.json
+-rw-rw-r--  1 chenhui chenhui  153 Mar 12 21:34 final_info_x_div_y_2.json
+-rw-rw-r--  1 chenhui chenhui  152 Mar 12 21:34 final_info_x_minus_y_0.json
+-rw-rw-r--  1 chenhui chenhui  153 Mar 12 21:34 final_info_x_minus_y_1.json
+-rw-rw-r--  1 chenhui chenhui  152 Mar 12 21:34 final_info_x_minus_y_2.json
+-rw-rw-r--  1 chenhui chenhui  155 Mar 12 21:34 final_info_x_plus_y_0.json
+-rw-rw-r--  1 chenhui chenhui  154 Mar 12 21:34 final_info_x_plus_y_1.json
+-rw-rw-r--  1 chenhui chenhui  154 Mar 12 21:34 final_info_x_plus_y_2.json
+
+{"x_div_y": {"means": {"final_train_loss_mean": 0.005800435319542885, "final_val_loss_mean": 0.006530226518710454, "final_train_acc_mean": 1.0, "final_val_acc_mean": 1.0, "step_val_acc_99_mean": 4200.0}, "stderrs": {"final_train_loss_stderr": 0.0003064869589511412, "final_val_loss_stderr": 0.0003625025024807662, "final_train_acc_stderr": 0.0, "final_val_acc_stderr": 0.0, "step_val_acc_99_stderr": 76.35201130048658}, "final_info_dict": {"final_train_loss": [0.0069169411435723305, 0.004664970561861992, 0.005819394253194332], "final_val_loss": [0.007497288752347231, 0.005011030472815037, 0.007082360330969095], "final_train_acc": [1.0, 1.0, 1.0], "final_val_acc": [1.0, 1.0, 1.0], "step_val_acc_99": [3910, 4220, 4470]}}, "x_minus_y": {"means": {"final_train_loss_mean": 0.014211568981409073, "final_val_loss_mean": 0.014943961674968401, "final_train_acc_mean": 1.0, "final_val_acc_mean": 1.0, "step_val_acc_99_mean": 4720.0}, "stderrs": {"final_train_loss_stderr": 0.0017479599883225827, "final_val_loss_stderr": 0.0015514786813701532, "final_train_acc_stderr": 0.0, "final_val_acc_stderr": 0.0, "step_val_acc_99_stderr": 87.2204529190683}, "final_info_dict": {"final_train_loss": [0.020942753180861473, 0.013541488908231258, 0.008150464855134487], "final_val_loss": [0.02065713331103325, 0.014918526634573936, 0.00925622507929802], "final_train_acc": [1.0, 1.0, 1.0], "final_val_acc": [1.0, 1.0, 1.0], "step_val_acc_99": [4910, 4350, 4900]}}, "x_plus_y": {"means": {"final_train_loss_mean": 0.003832749711970488, "final_val_loss_mean": 0.004045687771091859, "final_train_acc_mean": 1.0, "final_val_acc_mean": 1.0, "step_val_acc_99_mean": 2363.3333333333335}, "stderrs": {"final_train_loss_stderr": 0.0002880701741203037, "final_val_loss_stderr": 0.00033004621386109535, "final_train_acc_stderr": 0.0, "final_val_acc_stderr": 0.0, "step_val_acc_99_stderr": 185.59879735668255}, "final_info_dict": {"final_train_loss": [0.0028058786410838366, 0.0049201552756130695, 0.0037722152192145586], "final_val_loss": [0.0028463052585721016, 0.005271216854453087, 0.004019541200250387], "final_train_acc": [1.0, 1.0, 1.0], "final_val_acc": [1.0, 1.0, 1.0], "step_val_acc_99": [2960, 1620, 2510]}}, "permutation": {"means": {"final_train_loss_mean": 0.08011958096176386, "final_val_loss_mean": 6.804208914438884, "final_train_acc_mean": 0.9880208373069763, "final_val_acc_mean": 0.035888671875, "step_val_acc_99_mean": 7500.0}, "stderrs": {"final_train_loss_stderr": 0.03017692860217529, "final_val_loss_stderr": 0.5261453586085326, "final_train_acc_stderr": 0.005509507245478575, "final_val_acc_stderr": 0.01243600357740434, "step_val_acc_99_stderr": 0.0}, "final_info_dict": {"final_train_loss": [0.014027833007276058, 0.2081267386674881, 0.01820417121052742], "final_val_loss": [7.649890422821045, 4.592288017272949, 8.170448303222656], "final_train_acc": [1.0, 0.964648425579071, 0.9994140863418579], "final_val_acc": [0.010986328125, 0.088623046875, 0.008056640625], "step_val_acc_99": [7500, 7500, 7500]}}}
+--- run_1 ---
+total 60
+drwxrwxr-x  2 chenhui chenhui 4096 Mar 12 21:34 .
+drwxrwxr-x 12 chenhui chenhui 4096 Apr  1 10:08 ..
+-rw-rw-r--  1 chenhui chenhui 3029 Mar 12 21:34 final_info.json
+-rw-rw-r--  1 chenhui chenhui  154 Mar 12 21:34 final_info_permutation_0.json
+-rw-rw-r--  1 chenhui chenhui  152 Mar 12 21:34 final_info_permutation_1.json
+-rw-rw-r--  1 chenhui chenhui  153 Mar 12 21:34 final_info_permutation_2.json
+-rw-rw-r--  1 chenhui chenhui  152 Mar 12 21:34 final_info_x_div_y_0.json
+-rw-rw-r--  1 chenhui chenhui  152 Mar 12 21:34 final_info_x_div_y_1.json
+-rw-rw-r--  1 chenhui chenhui  154 Mar 12 21:34 final_info_x_div_y_2.json
+-rw-rw-r--  1 chenhui chenhui  174 Mar 12 21:34 final_info_x_minus_y_0.json
+-rw-rw-r--  1 chenhui chenhui  154 Mar 12 21:34 final_info_x_minus_y_1.json
+-rw-rw-r--  1 chenhui chenhui  153 Mar 12 21:34 final_info_x_minus_y_2.json
+-rw-rw-r--  1 chenhui chenhui  153 Mar 12 21:34 final_info_x_plus_y_0.json
+-rw-rw-r--  1 chenhui chenhui  152 Mar 12 21:34 final_info_x_plus_y_1.json
+-rw-rw-r--  1 chenhui chenhui  152 Mar 12 21:34 final_info_x_plus_y_2.json
+
+{"x_div_y": {"means": {"final_train_loss_mean": 0.00703450928752621, "final_val_loss_mean": 0.008110948217411837, "final_train_acc_mean": 1.0, "final_val_acc_mean": 1.0, "step_val_acc_99_mean": 2536.6666666666665}, "stderrs": {"final_train_loss_stderr": 0.0009716986425302297, "final_val_loss_stderr": 0.0011625268119899558, "final_train_acc_stderr": 0.0, "final_val_acc_stderr": 0.0, "step_val_acc_99_stderr": 132.22689067388657}, "final_info_dict": {"final_train_loss": [0.00588553911074996, 0.011037780903279781, 0.004180207848548889], "final_val_loss": [0.007015799637883902, 0.01282329298555851, 0.0044937520287930965], "final_train_acc": [1.0, 1.0, 1.0], "final_val_acc": [1.0, 1.0, 1.0], "step_val_acc_99": [3090, 2180, 2340]}}, "x_minus_y": {"means": {"final_train_loss_mean": 0.005914364087705811, "final_val_loss_mean": 1.4212849920925994, "final_train_acc_mean": 0.9999348918596903, "final_val_acc_mean": 0.7403157552083334, "step_val_acc_99_mean": 2346.6666666666665}, "stderrs": {"final_train_loss_stderr": 0.0006732335425040165, "final_val_loss_stderr": 0.6669281360856046, "final_train_acc_stderr": 3.069227168226661e-05, "final_val_acc_stderr": 0.1224163269729966, "step_val_acc_99_stderr": 42.19297232455006}, "final_info_dict": {"final_train_loss": [0.00581697141751647, 0.0034908808302134275, 0.008435240015387535], "final_val_loss": [4.250819683074951, 0.003788749221712351, 0.009246543981134892], "final_train_acc": [0.999804675579071, 1.0, 1.0], "final_val_acc": [0.220947265625, 1.0, 1.0], "step_val_acc_99": [2500, 2350, 2190]}}, "x_plus_y": {"means": {"final_train_loss_mean": 0.004743196380635102, "final_val_loss_mean": 0.0051032428940137224, "final_train_acc_mean": 1.0, "final_val_acc_mean": 1.0, "step_val_acc_99_mean": 863.3333333333334}, "stderrs": {"final_train_loss_stderr": 0.000368976125183432, "final_val_loss_stderr": 0.00045221059815281074, "final_train_acc_stderr": 0.0, "final_val_acc_stderr": 0.0, "step_val_acc_99_stderr": 29.979416807182314}, "final_info_dict": {"final_train_loss": [0.006307917181402445, 0.004001729190349579, 0.003919942770153284], "final_val_loss": [0.0070213512517511845, 0.004180520307272673, 0.004107857123017311], "final_train_acc": [1.0, 1.0, 1.0], "final_val_acc": [1.0, 1.0, 1.0], "step_val_acc_99": [790, 810, 990]}}, "permutation": {"means": {"final_train_loss_mean": 0.005184388952329755, "final_val_loss_mean": 0.008002187125384808, "final_train_acc_mean": 1.0, "final_val_acc_mean": 1.0, "step_val_acc_99_mean": 5066.666666666667}, "stderrs": {"final_train_loss_stderr": 0.0004350613406217204, "final_val_loss_stderr": 0.0010707666471540562, "final_train_acc_stderr": 0.0, "final_val_acc_stderr": 0.0, "step_val_acc_99_stderr": 122.63566435926991}, "final_info_dict": {"final_train_loss": [0.0035487834829837084, 0.006743038538843393, 0.005261344835162163], "final_val_loss": [0.003990378230810165, 0.00816219113767147, 0.011853992007672787], "final_train_acc": [1.0, 1.0, 1.0], "final_val_acc": [1.0, 1.0, 1.0], "step_val_acc_99": [4630, 5040, 5530]}}}
+--- run_2 ---
+total 60
+drwxrwxr-x  2 chenhui chenhui 4096 Mar 12 21:34 .
+drwxrwxr-x 12 chenhui chenhui 4096 Apr  1 10:08 ..
+-rw-rw-r--  1 chenhui chenhui 3193 Mar 12 21:34 final_info.json
+-rw-rw-r--  1 chenhui chenhui  173 Mar 12 21:34 final_info_permutation_0.json
+-rw-rw-r--  1 chenhui chenhui  154 Mar 12 21:34 final_info_permutation_1.json
+-rw-rw-r--  1 chenhui chenhui  174 Mar 12 21:34 final_info_permutation_2.json
+-rw-rw-r--  1 chenhui chenhui  152 Mar 12 21:34 final_info_x_div_y_0.json
+-rw-rw-r--  1 chenhui chenhui  152 Mar 12 21:34 final_info_x_div_y_1.json
+-rw-rw-r--  1 chenhui chenhui  152 Mar 12 21:34 final_info_x_div_y_2.json
+-rw-rw-r--  1 chenhui chenhui  175 Mar 12 21:34 final_info_x_minus_y_0.json
+-rw-rw-r--  1 chenhui chenhui  152 Mar 12 21:34 final_info_x_minus_y_1.json
+-rw-rw-r--  1 chenhui chenhui  153 Mar 12 21:34 final_info_x_minus_y_2.json
+-rw-rw-r--  1 chenhui chenhui  154 Mar 12 21:34 final_info_x_plus_y_0.json
+-rw-rw-r--  1 chenhui chenhui  152 Mar 12 21:34 final_info_x_plus_y_1.json
+-rw-rw-r--  1 chenhui chenhui  176 Mar 12 21:34 final_info_x_plus_y_2.json
+
+{"x_div_y": {"means": {"final_train_loss_mean": 0.0057101390945414705, "final_val_loss_mean": 0.006926700938493013, "final_train_acc_mean": 1.0, "final_val_acc_mean": 1.0, "step_val_acc_99_mean": 3463.3333333333335}, "stderrs": {"final_train_loss_stderr": 0.00024637054996993205, "final_val_loss_stderr": 0.0004400588723660869, "final_train_acc_stderr": 0.0, "final_val_acc_stderr": 0.0, "step_val_acc_99_stderr": 193.07134228019584}, "final_info_dict": {"final_train_loss": [0.006409990135580301, 0.004687840584665537, 0.0060325865633785725], "final_val_loss": [0.00859040580689907, 0.00536111555993557, 0.0068285814486444], "final_train_acc": [1.0, 1.0, 1.0], "final_val_acc": [1.0, 1.0, 1.0], "step_val_acc_99": [4260, 2900, 3230]}}, "x_minus_y": {"means": {"final_train_loss_mean": 0.07778730530602236, "final_val_loss_mean": 0.05283881491050124, "final_train_acc_mean": 0.9914713501930237, "final_val_acc_mean": 0.9942220052083334, "step_val_acc_99_mean": 3640.0}, "stderrs": {"final_train_loss_stderr": 0.03484569808351099, "final_val_loss_stderr": 0.022869637229507227, "final_train_acc_stderr": 0.004020444075252196, "final_val_acc_stderr": 0.0027237728658987023, "step_val_acc_99_stderr": 68.69147340477214}, "final_info_dict": {"final_train_loss": [0.22562138736248016, 0.0029651408549398184, 0.004775387700647116], "final_val_loss": [0.1498567909002304, 0.0031430684030056, 0.005516585428267717], "final_train_acc": [0.974414050579071, 1.0, 1.0], "final_val_acc": [0.982666015625, 1.0, 1.0], "step_val_acc_99": [3470, 3520, 3930]}}, "x_plus_y": {"means": {"final_train_loss_mean": 0.048976593650877476, "final_val_loss_mean": 0.03214737741897503, "final_train_acc_mean": 0.9975911577542623, "final_val_acc_mean": 0.9988606770833334, "step_val_acc_99_mean": 2136.6666666666665}, "stderrs": {"final_train_loss_stderr": 0.018798053515267314, "final_val_loss_stderr": 0.010472439053536479, "final_train_acc_stderr": 0.0011355391245131785, "final_val_acc_stderr": 0.0005370819735574906, "step_val_acc_99_stderr": 28.327886186626582}, "final_info_dict": {"final_train_loss": [0.006500091403722763, 0.01175749208778143, 0.12867219746112823], "final_val_loss": [0.0073015568777918816, 0.012670669704675674, 0.07646990567445755], "final_train_acc": [1.0, 1.0, 0.9927734732627869], "final_val_acc": [1.0, 1.0, 0.99658203125], "step_val_acc_99": [2220, 2020, 2170]}}, "permutation": {"means": {"final_train_loss_mean": 0.054390662194540106, "final_val_loss_mean": 2.36757427531605, "final_train_acc_mean": 0.9977213541666666, "final_val_acc_mean": 0.6680501302083334, "step_val_acc_99_mean": 6460.0}, "stderrs": {"final_train_loss_stderr": 0.01901582259256217, "final_val_loss_stderr": 1.0750489325424666, "final_train_acc_stderr": 0.0008963514008485644, "final_val_acc_stderr": 0.15355724839005652, "step_val_acc_99_stderr": 246.35114955869173}, "final_info_dict": {"final_train_loss": [0.025743449106812477, 0.0033987020142376423, 0.1340298354625702], "final_val_loss": [6.927606105804443, 0.004251229111105204, 0.1708654910326004], "final_train_acc": [0.999218761920929, 1.0, 0.993945300579071], "final_val_acc": [0.0166015625, 1.0, 0.987548828125], "step_val_acc_99": [7500, 5850, 6030]}}}
+--- run_3 ---
+total 60
+drwxrwxr-x  2 chenhui chenhui 4096 Mar 12 21:34 .
+drwxrwxr-x 12 chenhui chenhui 4096 Apr  1 10:08 ..
+-rw-rw-r--  1 chenhui chenhui 3110 Mar 12 21:34 final_info.json
+-rw-rw-r--  1 chenhui chenhui  155 Mar 12 21:34 final_info_permutation_0.json
+-rw-rw-r--  1 chenhui chenhui  153 Mar 12 21:34 final_info_permutation_1.json
+-rw-rw-r--  1 chenhui chenhui  164 Mar 12 21:34 final_info_permutation_2.json
+-rw-rw-r--  1 chenhui chenhui  153 Mar 12 21:34 final_info_x_div_y_0.json
+-rw-rw-r--  1 chenhui chenhui  174 Mar 12 21:34 final_info_x_div_y_1.json
+-rw-rw-r--  1 chenhui chenhui  153 Mar 12 21:34 final_info_x_div_y_2.json
+-rw-rw-r--  1 chenhui chenhui  153 Mar 12 21:34 final_info_x_minus_y_0.json
+-rw-rw-r--  1 chenhui chenhui  154 Mar 12 21:34 final_info_x_minus_y_1.json
+-rw-rw-r--  1 chenhui chenhui  152 Mar 12 21:34 final_info_x_minus_y_2.json
+-rw-rw-r--  1 chenhui chenhui  151 Mar 12 21:34 final_info_x_plus_y_0.json
+-rw-rw-r--  1 chenhui chenhui  152 Mar 12 21:34 final_info_x_plus_y_1.json
+-rw-rw-r--  1 chenhui chenhui  162 Mar 12 21:34 final_info_x_plus_y_2.json
+
+{"x_div_y": {"means": {"final_train_loss_mean": 0.5920290009429058, "final_val_loss_mean": 0.30291892828730244, "final_train_acc_mean": 0.8575520912806193, "final_val_acc_mean": 0.9386393229166666, "step_val_acc_99_mean": 1643.3333333333333}, "stderrs": {"final_train_loss_stderr": 0.27574581146960236, "final_val_loss_stderr": 0.13926347348128001, "final_train_acc_stderr": 0.06715058814754428, "final_val_acc_stderr": 0.02892570057588199, "step_val_acc_99_stderr": 93.74248941108645}, "final_info_dict": {"final_train_loss": [0.011260010302066803, 1.7619094848632812, 0.0029175076633691788], "final_val_loss": [0.011949137784540653, 0.8937415480613708, 0.00306609901599586], "final_train_acc": [1.0, 0.5726562738418579, 1.0], "final_val_acc": [1.0, 0.81591796875, 1.0], "step_val_acc_99": [1470, 1420, 2040]}}, "x_minus_y": {"means": {"final_train_loss_mean": 0.0039047593406091132, "final_val_loss_mean": 0.004387715288127462, "final_train_acc_mean": 1.0, "final_val_acc_mean": 1.0, "step_val_acc_99_mean": 1993.3333333333333}, "stderrs": {"final_train_loss_stderr": 0.00040021538402693367, "final_val_loss_stderr": 0.0003999421603025107, "final_train_acc_stderr": 0.0, "final_val_acc_stderr": 0.0, "step_val_acc_99_stderr": 90.60836905722272}, "final_info_dict": {"final_train_loss": [0.005594730842858553, 0.0029172112699598074, 0.00320233590900898], "final_val_loss": [0.006081835366785526, 0.003623379161581397, 0.003457931336015463], "final_train_acc": [1.0, 1.0, 1.0], "final_val_acc": [1.0, 1.0, 1.0], "step_val_acc_99": [1610, 2210, 2160]}}, "x_plus_y": {"means": {"final_train_loss_mean": 0.008580587338656187, "final_val_loss_mean": 0.009516028997798761, "final_train_acc_mean": 1.0, "final_val_acc_mean": 0.9998372395833334, "step_val_acc_99_mean": 836.6666666666666}, "stderrs": {"final_train_loss_stderr": 0.0011271093188512128, "final_val_loss_stderr": 0.0011608564749058818, "final_train_acc_stderr": 0.0, "final_val_acc_stderr": 7.672599622249864e-05, "step_val_acc_99_stderr": 29.855619650098674}, "final_info_dict": {"final_train_loss": [0.008156349882483482, 0.004667771514505148, 0.012917640618979931], "final_val_loss": [0.00896433275192976, 0.005553462542593479, 0.014030291698873043], "final_train_acc": [1.0, 1.0, 1.0], "final_val_acc": [1.0, 1.0, 0.99951171875], "step_val_acc_99": [750, 960, 800]}}, "permutation": {"means": {"final_train_loss_mean": 0.004259653855115175, "final_val_loss_mean": 0.08990247027638058, "final_train_acc_mean": 1.0, "final_val_acc_mean": 0.9829915364583334, "step_val_acc_99_mean": 4543.333333333333}, "stderrs": {"final_train_loss_stderr": 0.0004006592237000951, "final_val_loss_stderr": 0.040092644777651155, "final_train_acc_stderr": 0.0, "final_val_acc_stderr": 0.008017866605251108, "step_val_acc_99_stderr": 645.4532334284257}, "final_info_dict": {"final_train_loss": [0.0056626275181770325, 0.002726978622376919, 0.0043893554247915745], "final_val_loss": [0.0068047367967665195, 0.002916333032771945, 0.25998634099960327], "final_train_acc": [1.0, 1.0, 1.0], "final_val_acc": [1.0, 1.0, 0.948974609375], "step_val_acc_99": [4340, 2280, 7010]}}}
+--- run_4 ---
+total 60
+drwxrwxr-x  2 chenhui chenhui 4096 Mar 12 21:34 .
+drwxrwxr-x 12 chenhui chenhui 4096 Apr  1 10:08 ..
+-rw-rw-r--  1 chenhui chenhui 3088 Mar 12 21:34 final_info.json
+-rw-rw-r--  1 chenhui chenhui  153 Mar 12 21:34 final_info_permutation_0.json
+-rw-rw-r--  1 chenhui chenhui  155 Mar 12 21:34 final_info_permutation_1.json
+-rw-rw-r--  1 chenhui chenhui  175 Mar 12 21:34 final_info_permutation_2.json
+-rw-rw-r--  1 chenhui chenhui  151 Mar 12 21:34 final_info_x_div_y_0.json
+-rw-rw-r--  1 chenhui chenhui  154 Mar 12 21:34 final_info_x_div_y_1.json
+-rw-rw-r--  1 chenhui chenhui  154 Mar 12 21:34 final_info_x_div_y_2.json
+-rw-rw-r--  1 chenhui chenhui  166 Mar 12 21:34 final_info_x_minus_y_0.json
+-rw-rw-r--  1 chenhui chenhui  152 Mar 12 21:34 final_info_x_minus_y_1.json
+-rw-rw-r--  1 chenhui chenhui  153 Mar 12 21:34 final_info_x_minus_y_2.json
+-rw-rw-r--  1 chenhui chenhui  152 Mar 12 21:34 final_info_x_plus_y_0.json
+-rw-rw-r--  1 chenhui chenhui  154 Mar 12 21:34 final_info_x_plus_y_1.json
+-rw-rw-r--  1 chenhui chenhui  154 Mar 12 21:34 final_info_x_plus_y_2.json
+
+{"x_div_y": {"means": {"final_train_loss_mean": 0.006882136842856805, "final_val_loss_mean": 0.008419923096274337, "final_train_acc_mean": 1.0, "final_val_acc_mean": 1.0, "step_val_acc_99_mean": 3070.0}, "stderrs": {"final_train_loss_stderr": 0.001340192256270718, "final_val_loss_stderr": 0.0017459112452335706, "final_train_acc_stderr": 0.0, "final_val_acc_stderr": 0.0, "step_val_acc_99_stderr": 70.91988176547976}, "final_info_dict": {"final_train_loss": [0.0124443294480443, 0.0030792448669672012, 0.005122836213558912], "final_val_loss": [0.015694689005613327, 0.003574600676074624, 0.0059904796071350574], "final_train_acc": [1.0, 1.0, 1.0], "final_val_acc": [1.0, 1.0, 1.0], "step_val_acc_99": [3050, 3340, 2820]}}, "x_minus_y": {"means": {"final_train_loss_mean": 0.40684207854792476, "final_val_loss_mean": 0.18088411757101616, "final_train_acc_mean": 0.9046223958333334, "final_val_acc_mean": 0.9646809895833334, "step_val_acc_99_mean": 3546.6666666666665}, "stderrs": {"final_train_loss_stderr": 0.18933751976898483, "final_val_loss_stderr": 0.08244298474541334, "final_train_acc_stderr": 0.0449614337863842, "final_val_acc_stderr": 0.016649541180282206, "step_val_acc_99_stderr": 97.53758376602109}, "final_info_dict": {"final_train_loss": [1.210131287574768, 0.0037020505405962467, 0.006692897528409958], "final_val_loss": [0.530652642250061, 0.0040245670825243, 0.007975143380463123], "final_train_acc": [0.7138671875, 1.0, 1.0], "final_val_acc": [0.89404296875, 1.0, 1.0], "step_val_acc_99": [3490, 3930, 3220]}}, "x_plus_y": {"means": {"final_train_loss_mean": 0.005102624961485465, "final_val_loss_mean": 0.005619957422216733, "final_train_acc_mean": 1.0, "final_val_acc_mean": 1.0, "step_val_acc_99_mean": 1966.6666666666667}, "stderrs": {"final_train_loss_stderr": 0.000912625947902082, "final_val_loss_stderr": 0.0010545269466171253, "final_train_acc_stderr": 0.0, "final_val_acc_stderr": 0.0, "step_val_acc_99_stderr": 44.748956812449485}, "final_info_dict": {"final_train_loss": [0.00893277395516634, 0.0026961935218423605, 0.0036789074074476957], "final_val_loss": [0.010044500231742859, 0.002833289559930563, 0.003982082474976778], "final_train_acc": [1.0, 1.0, 1.0], "final_val_acc": [1.0, 1.0, 1.0], "step_val_acc_99": [2090, 2030, 1780]}}, "permutation": {"means": {"final_train_loss_mean": 0.15046238231783113, "final_val_loss_mean": 0.07921216955098014, "final_train_acc_mean": 0.981640636920929, "final_val_acc_mean": 0.9939778645833334, "step_val_acc_99_mean": 6296.666666666667}, "stderrs": {"final_train_loss_stderr": 0.06905425039083796, "final_val_loss_stderr": 0.03451140549992415, "final_train_acc_stderr": 0.008654686754318046, "final_val_acc_stderr": 0.0028388618602324498, "step_val_acc_99_stderr": 39.65904066127722}, "final_info_dict": {"final_train_loss": [0.005833627190440893, 0.0021265828981995583, 0.4434269368648529], "final_val_loss": [0.008916142396628857, 0.0031268589664250612, 0.22559350728988647], "final_train_acc": [1.0, 1.0, 0.9449219107627869], "final_val_acc": [1.0, 1.0, 0.98193359375], "step_val_acc_99": [6450, 6280, 6160]}}}
+--- run_5 ---
+total 60
+drwxrwxr-x  2 chenhui chenhui 4096 Mar 12 21:34 .
+drwxrwxr-x 12 chenhui chenhui 4096 Apr  1 10:08 ..
+-rw-rw-r--  1 chenhui chenhui 3304 Mar 12 21:34 final_info.json
+-rw-rw-r--  1 chenhui chenhui  174 Mar 12 21:34 final_info_permutation_0.json
+-rw-rw-r--  1 chenhui chenhui  152 Mar 12 21:34 final_info_permutation_1.json
+-rw-rw-r--  1 chenhui chenhui  175 Mar 12 21:34 final_info_permutation_2.json
+-rw-rw-r--  1 chenhui chenhui  151 Mar 12 21:34 final_info_x_div_y_0.json
+-rw-rw-r--  1 chenhui chenhui  175 Mar 12 21:34 final_info_x_div_y_1.json
+-rw-rw-r--  1 chenhui chenhui  164 Mar 12 21:34 final_info_x_div_y_2.json
+-rw-rw-r--  1 chenhui chenhui  154 Mar 12 21:34 final_info_x_minus_y_0.json
+-rw-rw-r--  1 chenhui chenhui  176 Mar 12 21:34 final_info_x_minus_y_1.json
+-rw-rw-r--  1 chenhui chenhui  153 Mar 12 21:34 final_info_x_minus_y_2.json
+-rw-rw-r--  1 chenhui chenhui  176 Mar 12 21:34 final_info_x_plus_y_0.json
+-rw-rw-r--  1 chenhui chenhui  152 Mar 12 21:34 final_info_x_plus_y_1.json
+-rw-rw-r--  1 chenhui chenhui  151 Mar 12 21:34 final_info_x_plus_y_2.json
+
+{"x_div_y": {"means": {"final_train_loss_mean": 0.025560980507483084, "final_val_loss_mean": 0.02391940789918105, "final_train_acc_mean": 0.999804695447286, "final_val_acc_mean": 0.9995930989583334, "step_val_acc_99_mean": 1683.3333333333333}, "stderrs": {"final_train_loss_stderr": 0.00529194898290667, "final_val_loss_stderr": 0.0042902823303866775, "final_train_acc_stderr": 9.206744908046408e-05, "final_val_acc_stderr": 0.0001383197567706376, "step_val_acc_99_stderr": 67.12803318663651}, "final_info_dict": {"final_train_loss": [0.02716146968305111, 0.04415513202548027, 0.005366339813917875], "final_val_loss": [0.02673843689262867, 0.03808319941163063, 0.006936587393283844], "final_train_acc": [1.0, 0.9994140863418579, 1.0], "final_val_acc": [1.0, 0.9990234375, 0.999755859375], "step_val_acc_99": [1850, 1400, 1800]}}, "x_minus_y": {"means": {"final_train_loss_mean": 0.041293362310777106, "final_val_loss_mean": 0.033894515906771026, "final_train_acc_mean": 0.9979166785875956, "final_val_acc_mean": 0.99853515625, "step_val_acc_99_mean": 1706.6666666666667}, "stderrs": {"final_train_loss_stderr": 0.01647359469010678, "final_val_loss_stderr": 0.011995044557591263, "final_train_acc_stderr": 0.0009820871320681812, "final_val_acc_stderr": 0.0006905339660024878, "step_val_acc_99_stderr": 155.78554426669098}, "final_info_dict": {"final_train_loss": [0.0050728172063827515, 0.11116921156644821, 0.0076380581595003605], "final_val_loss": [0.008845126256346703, 0.08478313684463501, 0.00805528461933136], "final_train_acc": [1.0, 0.9937500357627869, 1.0], "final_val_acc": [1.0, 0.99560546875, 1.0], "step_val_acc_99": [2100, 1970, 1050]}}, "x_plus_y": {"means": {"final_train_loss_mean": 0.04852975051229199, "final_val_loss_mean": 0.029622130716840427, "final_train_acc_mean": 0.997851570447286, "final_val_acc_mean": 0.9994303385416666, "step_val_acc_99_mean": 713.3333333333334}, "stderrs": {"final_train_loss_stderr": 0.02020861311366365, "final_val_loss_stderr": 0.011061371694122309, "final_train_acc_stderr": 0.001012779403750448, "final_val_acc_stderr": 0.0002685409867787453, "step_val_acc_99_stderr": 34.462360931712944}, "final_info_dict": {"final_train_loss": [0.13426189124584198, 0.004804245661944151, 0.006523114629089832], "final_val_loss": [0.07654082775115967, 0.005293793044984341, 0.00703177135437727], "final_train_acc": [0.9935547113418579, 1.0, 1.0], "final_val_acc": [0.998291015625, 1.0, 1.0], "step_val_acc_99": [810, 760, 570]}}, "permutation": {"means": {"final_train_loss_mean": 0.05940632630760471, "final_val_loss_mean": 3.655014871930083, "final_train_acc_mean": 0.9927083253860474, "final_val_acc_mean": 0.3810221354166667, "step_val_acc_99_mean": 7193.333333333333}, "stderrs": {"final_train_loss_stderr": 0.023268954836382763, "final_val_loss_stderr": 0.8724555320462222, "final_train_acc_stderr": 0.0033913941336530164, "final_val_acc_stderr": 0.1460979472903697, "step_val_acc_99_stderr": 144.56405304258303}, "final_info_dict": {"final_train_loss": [0.15794964134693146, 0.004995719995349646, 0.015273617580533028], "final_val_loss": [6.037981033325195, 0.01057112030684948, 4.916492462158203], "final_train_acc": [0.978320300579071, 1.0, 0.999804675579071], "final_val_acc": [0.043212890625, 1.0, 0.099853515625], "step_val_acc_99": [7500, 6580, 7500]}}}
+
+=== END COMMAND ===
+
+=== COMMAND: inspect bottom of experiment.py ===
+def run(out_dir, dataset, seed_offset):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    torch.manual_seed(1337 + seed_offset)
+    train_loader, val_loader, n_vocab, n_output = get_data(
+        operation=dataset,
+        prime=97,
+        training_fraction=0.5,
+        batch_size=512,
+    )
+
+    # Create the output directory if it doesn't exist
+    os.makedirs(out_dir, exist_ok=True)
+
+    model = Transformer(
+        num_layers=2,
+        dim_model=128,
+        num_heads=4,
+        vocab_size=n_vocab,
+        output_size=n_output,
+        seq_len=5,
+    ).to(device)
+
+    optimizer = torch.optim.AdamW(
+        model.parameters(),
+        lr=1e-3,
+        betas=(0.9, 0.98),
+        weight_decay=0.5,
+    )
+    num_train_batches = 10
+    num_eval_batches = 8
+    num_total_updates = 7500
+    warmup_steps = 50
+    scheduler = torch.optim.lr_scheduler.LambdaLR(
+        optimizer, lr_lambda=lambda s: min(s / warmup_steps, 1)
+    )
+
+    final_info, train_log_info, val_log_info = [], [], []
+    step_val_acc_99 = num_total_updates
+    for ep in range(num_total_updates // num_train_batches):
+        train_metrics = train(
+            model,
+            train_loader,
+            optimizer,
+            scheduler,
+            device,
+            num_train_batches,
+        )
+        val_metrics = evaluate(
+            model,
+            val_loader,
+            device,
+            num_eval_batches,
+        )
+        train_metrics["step"] = (ep + 1) * num_train_batches
+        val_metrics["step"] = (ep + 1) * num_train_batches
+
+        if step_val_acc_99 == num_total_updates and val_metrics["val_accuracy"] > 0.99:
+            step_val_acc_99 = val_metrics["step"]
+        train_log_info.append(train_metrics)
+        val_log_info.append(val_metrics)
+
+    final_info = {
+        "final_train_loss": train_metrics["train_loss"],
+        "final_val_loss": val_metrics["val_loss"],
+        "final_train_acc": train_metrics["train_accuracy"],
+        "final_val_acc": val_metrics["val_accuracy"],
+        "step_val_acc_99": step_val_acc_99,
+    }
+    print(final_info)
+    with open(
+        os.path.join(out_dir, f"final_info_{dataset}_{seed_offset}.json"), "w"
+    ) as f:
+        json.dump(final_info, f)
+    return final_info, train_log_info, val_log_info
+
+
+parser = argparse.ArgumentParser(description="Run experiment")
+parser.add_argument("--out_dir", type=str, default="run_0", help="Output directory")
+args = parser.parse_args()
+
+
+if __name__ == "__main__":
+    num_seeds = {
+        "x_div_y": 3,
+        "x_plus_y": 3,
+        "x_minus_y": 3,
+        "permutation": 3,
+    }
+
+    out_dir = args.out_dir
+    all_results = {}
+    final_infos = {}
+    for dataset in ["x_div_y", "x_minus_y", "x_plus_y", "permutation"]:
+        final_info_list = []
+        for seed_offset in range(num_seeds[dataset]):
+            print(f"Running {dataset} with seed offset {seed_offset}")
+            final_info, train_info, val_info = run(args.out_dir, dataset, seed_offset)
+            all_results[f"{dataset}_{seed_offset}_final_info"] = final_info
+            all_results[f"{dataset}_{seed_offset}_train_info"] = train_info
+            all_results[f"{dataset}_{seed_offset}_val_info"] = val_info
+            final_info_list.append(final_info)
+        final_info_dict = {
+            k: [d[k] for d in final_info_list] for k in final_info_list[0].keys()
+        }
+        means = {f"{k}_mean": np.mean(v) for k, v in final_info_dict.items()}
+        stderrs = {
+            f"{k}_stderr": np.std(v) / len(v) for k, v in final_info_dict.items()
+        }
+        final_infos[dataset] = {
+            "means": means,
+            "stderrs": stderrs,
+            "final_info_dict": final_info_dict,
+        }
+
+    with open(os.path.join(out_dir, "final_info.json"), "w") as f:
+        json.dump(final_infos, f)
+
+    with open(os.path.join(out_dir, "all_results.npy"), "wb") as f:
+        np.save(f, all_results)
+
+=== END COMMAND ===
+
+=== COMMAND: figure context in latex ===
+review.txt:2:    "Summary": "This paper investigates the impact of weight initialization strategies on the grokking phenomenon in Transformer models, focusing on four arithmetic tasks in finite fields. The study systematically compares five initialization methods (PyTorch default, Xavier, He, Orthogonal, and Kaiming Normal) using a controlled experimental setup with a small Transformer architecture. The results reveal significant differences in convergence speed and generalization capabilities, with Xavier initialization often outperforming others.",
+review.txt:5:        "Systematic comparison of five widely-used initialization strategies.",
+review.txt:7:        "Novel application of weight initialization strategies to study grokking in Transformer models."
+review.txt:22:        "Can the authors provide more details on the random seed initialization and how it affects the results?",
+review.txt:28:        "How do the initialization strategies interact with other hyperparameters like learning rate schedules?",
+review.txt:29:        "Can you provide more detailed explanations or visualizations of the learning dynamics associated with each initialization method?",
+review.txt:30:        "Are there any plans to explore adaptive initialization methods that evolve during training?"
+review.txt:35:        "Further investigation is needed to understand the underlying mechanisms of grokking and how weight initialization influences them.",
+latex/template.tex:160:This paper investigates the impact of weight initialization strategies on the grokking phenomenon in Transformer models, addressing the challenge of understanding and optimizing neural network learning dynamics. Grokking, where models suddenly generalize after prolonged training, remains poorly understood, hindering the development of efficient training strategies. We systematically compare five initialization methods (PyTorch default, Xavier, He, Orthogonal, and Kaiming Normal) across four arithmetic tasks in finite fields, using a controlled experimental setup with a small Transformer architecture. Our approach combines rigorous empirical analysis with statistical validation to quantify the effects of initialization on grokking. Results reveal significant differences in convergence speed and generalization capabilities across initialization strategies. Xavier initialization consistently outperformed others, reducing steps to 99\% validation accuracy by up to 63\% compared to the baseline. Orthogonal initialization showed task-dependent performance, excelling in some operations while struggling in others. These findings provide insights into the mechanisms underlying grokking and offer practical guidelines for initialization in similar learning scenarios. Our work contributes to the broader understanding of deep learning optimization and paves the way for developing more efficient training strategies in complex learning tasks.
+latex/template.tex:168:In this paper, we investigate the impact of weight initialization strategies on grokking in Transformer models \cite{vaswani2017attention}. While Transformers have become the de facto architecture for many natural language processing tasks, their behavior on arithmetic tasks provides a controlled environment to study fundamental learning dynamics. Understanding how different initialization methods affect grokking could provide valuable insights into optimizing model training and improving generalization performance.
+latex/template.tex:170:Studying the relationship between weight initialization and grokking presents several challenges:
+latex/template.tex:175:    \item The interplay between initialization, model architecture, and task complexity adds another layer of intricacy to the problem.
+latex/template.tex:178:To address these challenges, we conduct a systematic comparison of five widely-used initialization strategies: PyTorch default, Xavier (Glorot), He, Orthogonal, and Kaiming Normal. We evaluate these methods across four arithmetic operations in finite fields: modular addition, subtraction, division, and permutation composition. Our experimental setup employs a small Transformer architecture with 2 layers, 128 model dimensions, and 4 attention heads, allowing for controlled and reproducible investigations of grokking behavior.
+latex/template.tex:183:    \item We provide a comprehensive study of the effects of weight initialization strategies on grokking in Transformer models.
+latex/template.tex:184:    \item We demonstrate that different initialization methods can significantly influence grokking behavior, affecting both convergence speed and final generalization performance.
+latex/template.tex:185:    \item We offer insights into which initialization strategies are most effective for different arithmetic tasks, potentially guiding future research and practical applications.
+latex/template.tex:186:    \item We analyze the learning dynamics associated with each initialization method, shedding light on the mechanisms underlying grokking.
+latex/template.tex:189:Our experiments involve training Transformer models on each arithmetic task using different initialization strategies. We carefully monitor training and validation performance, paying particular attention to sudden improvements in generalization that characterize grokking. Our results reveal that Xavier initialization often leads to faster convergence, particularly for tasks like modular addition and permutation composition. For instance, in the modular addition task (x\_plus\_y), Xavier initialization achieved 99\% validation accuracy in just 863 steps, compared to 2363 steps for the baseline. Orthogonal initialization showed task-dependent performance, excelling in some operations but struggling in others.
+latex/template.tex:191:To verify our findings, we conduct multiple runs with different random seeds for each combination of task and initialization method. We perform statistical analysis, including calculating 95\% confidence intervals for key metrics such as steps to 99\% validation accuracy. This approach ensures the robustness and reliability of our results.
+latex/template.tex:193:These findings not only advance our understanding of grokking but also have practical implications for training deep learning models on algorithmic tasks. By optimizing weight initialization strategies, we may be able to induce grokking more reliably or accelerate the learning process. Our results suggest that the choice of initialization method can significantly impact both the speed of convergence and the final generalization performance, with some methods showing consistent advantages across multiple tasks.
+latex/template.tex:199:    \item Analyzing the interaction between initialization strategies and other hyperparameters, such as learning rate schedules or model architectures.
+latex/template.tex:200:    \item Exploring adaptive initialization methods that evolve during training, potentially leading to more robust and efficient learning algorithms.
+latex/template.tex:208:Our study intersects with several key areas of deep learning research: weight initialization strategies, the grokking phenomenon, and Transformer model training dynamics. This section compares and contrasts our approach with existing work in these domains.
+latex/template.tex:211:Weight initialization plays a crucial role in training deep neural networks, significantly impacting convergence speed and model performance. \citet{Glorot2010UnderstandingTD} introduced the Xavier initialization method, which aims to maintain the variance of activations and gradients across layers. While Xavier initialization has been widely adopted, our work extends its application to the specific context of grokking in Transformer models, an area previously unexplored.
+latex/template.tex:213:\citet{He2015DelvingDI} proposed He initialization, designed for rectified linear units (ReLU) activation functions. Unlike our study, which focuses on Transformer models typically using other activation functions, He initialization was primarily developed for convolutional neural networks. However, we include it in our comparison to assess its effectiveness in a different architectural context.
+latex/template.tex:215:Orthogonal initialization, proposed by \citet{Saxe2013ExactST}, initializes weight matrices as random orthogonal matrices. While Saxe et~al.\ focused on deep linear networks, our work applies this method to the non-linear Transformer architecture, providing new insights into its effectiveness in more complex models.
+latex/template.tex:217:Our study differs from these works by specifically examining the impact of these initialization strategies on the grokking phenomenon in Transformer models for arithmetic tasks. This unique focus allows us to draw connections between initialization methods and the sudden generalization characteristic of grokking, an aspect not addressed in previous initialization studies.
+latex/template.tex:220:The grokking phenomenon, first described by \citet{power2022grokking}, refers to a sudden improvement in generalization performance after prolonged training. While Power et~al.\ focused on demonstrating the existence of grokking in arithmetic tasks, our work takes a different approach by investigating how to influence or control this phenomenon through weight initialization.
+latex/template.tex:222:Unlike Power et al., who used a fixed initialization strategy, we systematically compare multiple initialization methods. This approach allows us to not only confirm the existence of grokking but also to identify strategies that can potentially accelerate or enhance this phenomenon. Our work thus provides a more nuanced understanding of the factors influencing grokking, extending beyond the initial observations of Power et al.
+latex/template.tex:227:Our work differs from typical Transformer studies by focusing on the interplay between weight initialization and grokking, rather than on architecture modifications or scaling properties. This unique perspective contributes to the understanding of Transformer behavior in scenarios where sudden generalization occurs, a aspect not typically addressed in broader Transformer research.
+latex/template.tex:229:In summary, our study bridges the gap between weight initialization strategies, the grokking phenomenon, and Transformer training dynamics. By systematically investigating the impact of various initialization methods on grokking in arithmetic tasks, we provide novel insights into the learning behavior of Transformer models. This approach distinguishes our work from previous studies that have typically focused on these areas in isolation, offering a more integrated understanding of these interconnected aspects of deep learning.
+latex/template.tex:236:Weight initialization plays a crucial role in training deep neural networks, significantly impacting convergence speed and model performance \cite{goodfellow2016deep}. Several strategies have been proposed to address the challenges of training deep networks:
+latex/template.tex:239:    \item Xavier (Glorot) initialization \cite{Glorot2010UnderstandingTD}: Aims to maintain the variance of activations and gradients across layers.
+latex/template.tex:240:    \item He initialization \cite{He2015DelvingDI}: Designed for ReLU activation functions, adjusting the variance based on the number of input connections.
+latex/template.tex:241:    \item Orthogonal initialization \cite{Saxe2013ExactST}: Initializes weight matrices as random orthogonal matrices, potentially improving gradient flow in deep networks.
+latex/template.tex:242:    \item Kaiming Normal initialization: A variant of He initialization using a normal distribution instead of uniform.
+latex/template.tex:264:We compare five initialization strategies: PyTorch default (uniform initialization), Xavier (Glorot), He, Orthogonal, and Kaiming Normal. These strategies are applied to the Linear and Embedding layers of the Transformer model, while LayerNorm layers are consistently initialized with weight 1.0 and bias 0.0 across all experiments.
+latex/template.tex:266:By systematically comparing these initialization methods across different arithmetic tasks, we aim to uncover insights into their impact on grokking behavior and overall model performance. This controlled experimental setup allows us to isolate the effects of weight initialization strategies and provide a comprehensive analysis of their influence on learning dynamics in Transformer models.
+latex/template.tex:271:Our method systematically investigates the impact of different weight initialization strategies on the grokking phenomenon in Transformer models. We build upon the problem setting and background introduced earlier, focusing on the arithmetic tasks $\mathcal{T} = \{T_1, \ldots, T_n\}$ over the finite field $\mathbb{F}_p$ with $p = 97$.
+latex/template.tex:275:We compare five initialization strategies $\mathcal{S} = \{S_1, \ldots, S_5\}$ for the Linear and Embedding layers:
+latex/template.tex:285:For all strategies, LayerNorm layers are initialized with weight 1.0 and bias 0.0. Each initialization strategy $S_j$ defines a probability distribution $P_j(\theta)$ over the initial parameter space.
+latex/template.tex:296:To evaluate the impact of each initialization strategy, we define the following metrics:
+latex/template.tex:314:    \For{each initialization strategy $S_j \in \mathcal{S}$}
+latex/template.tex:325:    \State Compare performance of different initialization strategies for task $T_i$
+latex/template.tex:327:\State Analyze trends and patterns across tasks and initialization strategies
+latex/template.tex:331:This systematic approach allows us to comprehensively analyze how initial weight distributions $P_j(\theta)$ influence learning trajectories $\{\theta_t\}_{t=1}^{7500}$ and final model performance. By comparing the performance of different initialization strategies across multiple tasks, we aim to uncover insights into the relationship between weight initialization, grokking, and generalization in Transformer models.
+latex/template.tex:336:Our experimental setup is designed to systematically evaluate the impact of different weight initialization strategies on the grokking phenomenon in Transformer models. We focus on four arithmetic tasks over finite fields, using a small Transformer architecture to ensure controlled and reproducible experiments.
+latex/template.tex:366:We compare five initialization strategies for the Linear and Embedding layers:
+latex/template.tex:394:Our experiments reveal significant differences in the performance of various weight initialization strategies across different arithmetic tasks. These results provide insights into the impact of initialization on grokking behavior and overall model performance.
+latex/template.tex:397:To ensure fair comparison, we maintained consistent hyperparameters across all experiments, including learning rate (1e-3), batch size (512), and total training steps (7,500). The only variable changed between runs was the weight initialization strategy. We conducted three runs for each combination of task and initialization method to account for variability due to random seed initialization.
+latex/template.tex:400:Figure \ref{fig:summary_plot} provides an overview of the performance metrics for each initialization strategy across all tasks. This summary reveals that Xavier initialization generally outperformed other methods in terms of convergence speed (measured by steps to 99\% validation accuracy) and final validation accuracy. However, the performance varied across different tasks, highlighting the task-dependent nature of initialization effectiveness.
+latex/template.tex:402:% Detailed analysis of x_plus_y task
+latex/template.tex:406:        \includegraphics[width=\textwidth]{train_acc_x_plus_y.png}
+latex/template.tex:408:        \label{fig:train_acc_x_plus_y}
+latex/template.tex:412:        \includegraphics[width=\textwidth]{val_acc_x_plus_y.png}
+latex/template.tex:414:        \label{fig:val_acc_x_plus_y}
+latex/template.tex:416:    \caption{Training and Validation Accuracy for x\_plus\_y task across different initialization methods}
+latex/template.tex:417:    \label{fig:acc_x_plus_y}
+latex/template.tex:420:For the x\_plus\_y task (modular addition), we observed distinct patterns in the learning dynamics across different initialization methods. As shown in Figure \ref{fig:acc_x_plus_y}, Xavier initialization demonstrated the fastest convergence, reaching 99\% validation accuracy in just 863 steps, compared to 2363 steps for the baseline (PyTorch default). Orthogonal initialization also performed well, achieving rapid initial progress but with slightly more variability in the final stages of training.
+latex/template.tex:436:    \caption{Training and Validation Loss for x\_minus\_y task across different initialization methods}
+latex/template.tex:440:The x\_minus\_y task (modular subtraction) revealed interesting differences in the learning dynamics. As illustrated in Figure \ref{fig:loss_x_minus_y}, Orthogonal initialization showed the best performance, achieving the lowest final training and validation losses. However, Xavier initialization demonstrated the fastest convergence, reaching 99\% validation accuracy in 2347 steps, compared to 4720 steps for the baseline.
+latex/template.tex:456:    \caption{Training and Validation Accuracy for x\_div\_y task across different initialization methods}
+latex/template.tex:460:The x\_div\_y task (modular division) proved to be the most challenging among the arithmetic operations. As shown in Figure \ref{fig:acc_x_div_y}, all initialization methods struggled to achieve high accuracy initially, but Xavier and He initializations eventually outperformed the others. Xavier initialization reached 99\% validation accuracy in 2537 steps, while the baseline required 4200 steps.
+latex/template.tex:476:    \caption{Training and Validation Loss for permutation task across different initialization methods}
+latex/template.tex:480:The permutation task exhibited unique learning dynamics compared to the arithmetic operations. Figure \ref{fig:loss_permutation} shows that Orthogonal initialization significantly outperformed other methods, achieving the lowest training and validation losses. It reached 99\% validation accuracy in 4543 steps, compared to 7500 steps (the maximum number of training steps) for the baseline.
+latex/template.tex:483:To quantify the significance of our results, we calculated 95\% confidence intervals for the steps to 99\% validation accuracy ($S_{99}$) metric across all tasks and initialization methods. Table \ref{tab:confidence_intervals} presents these results.
+latex/template.tex:502:These confidence intervals demonstrate that the differences in performance between initialization methods are statistically significant, particularly for Xavier and Orthogonal initializations compared to the baseline.
+latex/template.tex:505:To further validate the importance of initialization in grokking, we conducted an ablation study by comparing the best-performing initialization (Xavier) with a modified version where only the encoder layers were initialized using the Xavier method, while the rest of the network used the default PyTorch initialization. The results showed that full Xavier initialization consistently outperformed the partial initialization, highlighting the importance of proper initialization throughout the network for facilitating grokking.
+latex/template.tex:508:Despite the clear benefits of certain initialization strategies, our study has limitations. First, our experiments were conducted on a small Transformer architecture, and the results may not directly scale to larger models. Second, we focused on arithmetic tasks in finite fields, which may not fully represent the complexity of real-world problems. Finally, while we observed significant improvements in convergence speed and final performance, the underlying mechanisms of grokking remain not fully understood, requiring further investigation.
+latex/template.tex:510:In summary, our results demonstrate that weight initialization strategies play a crucial role in the grokking phenomenon and overall performance of Transformer models on arithmetic tasks. Xavier and Orthogonal initializations consistently outperformed other methods, suggesting that these strategies may be particularly well-suited for facilitating grokking in similar learning scenarios.
+latex/template.tex:515:This study investigated the impact of weight initialization strategies on the grokking phenomenon in Transformer models across various arithmetic tasks in finite fields. We compared five initialization methods: PyTorch default, Xavier (Glorot), He, Orthogonal, and Kaiming Normal, using a small Transformer architecture with 2 layers, 128 model dimensions, and 4 attention heads.
+latex/template.tex:519:1. Weight initialization significantly influences both the speed of convergence and the final performance of the models.
+latex/template.tex:520:2. Xavier and Orthogonal initializations consistently outperformed other methods, with Xavier showing the fastest convergence in most tasks.
+latex/template.tex:521:3. The choice of initialization strategy can dramatically affect the number of steps required to reach high validation accuracy, with Xavier reducing this by up to 63% compared to the baseline in some tasks.
+latex/template.tex:522:4. Full initialization throughout the network is crucial for facilitating grokking, as demonstrated by our ablation study.
+latex/template.tex:524:These results extend the work of \citet{power2022grokking} by demonstrating how the grokking phenomenon can be influenced by specific model design choices, particularly weight initialization. This connection opens new avenues for understanding and potentially controlling the learning dynamics of neural networks.
+latex/template.tex:531:2. Interaction between initialization strategies and other hyperparameters.
+latex/template.tex:532:3. Adaptive initialization methods that evolve during training.
+latex/template.tex:535:By shedding light on the relationship between weight initialization and grokking, this work contributes to our understanding of deep learning optimization. These insights could lead to more efficient training strategies, faster convergence, better generalization, and potentially reduced computational requirements for training large models.
+notes.txt:1:# Title: Weight Initialization Grokking: Assessing the impact of weight initialization strategies on the grokking phenomenon
+notes.txt:2:# Experiment description: Modify the `run` function to include different weight initialization strategies (Xavier, He, orthogonal) for the Transformer model. Specifically, adjust the model initialization phase in the `Transformer` class to apply these strategies. Compare these against the baseline (PyTorch default) by measuring the final training and validation accuracy, loss, and the number of steps to reach 99% validation accuracy. Evaluate the results for each dataset and seed combination.
+notes.txt:7:   These plots show the training loss across different initialization methods for each dataset. The x-axis represents the number of update steps, and the y-axis shows the training loss. Each line represents a different initialization method, allowing for easy comparison of how quickly and effectively each method reduces the training loss over time. The shaded areas around each line represent the standard error, giving an indication of the variability across different runs.
+notes.txt:10:   Similar to the training loss plots, these graphs display the validation loss for each initialization method across update steps. These plots are crucial for understanding how well the model generalizes to unseen data and for detecting potential overfitting. Lower validation loss generally indicates better generalization.
+notes.txt:13:   These plots illustrate the training accuracy over time for each initialization method. The x-axis shows the number of update steps, while the y-axis represents the training accuracy. These graphs help visualize how quickly and accurately each method learns the training data, with higher accuracy indicating better performance on the training set.
+notes.txt:16:   These graphs show the validation accuracy over time for each initialization method. They are crucial for understanding how well the model generalizes to unseen data. Higher validation accuracy suggests better performance on new, unseen examples. The comparison between different initialization methods can reveal which approach leads to better generalization.
+notes.txt:19:   This comprehensive plot compares all initialization methods across datasets for three key metrics:
+notes.txt:24:   This plot provides a high-level overview of the performance of each initialization method, allowing for quick comparisons across different datasets and metrics. It's particularly useful for identifying which initialization methods consistently perform well across various tasks.
+notes.txt:26:These plots collectively provide a comprehensive view of how different weight initialization strategies affect the learning process, generalization ability, and overall performance of the Transformer model across various arithmetic tasks. They allow for in-depth analysis of the grokking phenomenon and how it's influenced by different initialization approaches.
+notes.txt:28:Results: {'x_div_y': {'final_train_loss_mean': 0.005800435319542885, 'final_val_loss_mean': 0.006530226518710454, 'final_train_acc_mean': 1.0, 'final_val_acc_mean': 1.0, 'step_val_acc_99_mean': 4200.0}, 'x_minus_y': {'final_train_loss_mean': 0.014211568981409073, 'final_val_loss_mean': 0.014943961674968401, 'final_train_acc_mean': 1.0, 'final_val_acc_mean': 1.0, 'step_val_acc_99_mean': 4720.0}, 'x_plus_y': {'final_train_loss_mean': 0.003832749711970488, 'final_val_loss_mean': 0.004045687771091859, 'final_train_acc_mean': 1.0, 'final_val_acc_mean': 1.0, 'step_val_acc_99_mean': 2363.3333333333335}, 'permutation': {'final_train_loss_mean': 0.08011958096176386, 'final_val_loss_mean': 6.804208914438884, 'final_train_acc_mean': 0.9880208373069763, 'final_val_acc_mean': 0.035888671875, 'step_val_acc_99_mean': 7500.0}}
+notes.txt:32:Description: Implemented Xavier uniform initialization for Linear and Embedding layers in the Transformer model. The LayerNorm layers were initialized with weight 1.0 and bias 0.0.
+notes.txt:49:x_plus_y:
+notes.txt:63:Analysis: Xavier initialization showed improvements in convergence speed for most tasks compared to the baseline. The x_plus_y task saw a significant reduction in steps to reach 99% validation accuracy. However, the x_minus_y task showed some instability in validation performance, indicating that Xavier initialization might not be optimal for all arithmetic operations.
+notes.txt:66:Description: Implemented He initialization for Linear and Embedding layers in the Transformer model. The LayerNorm layers were initialized with weight 1.0 and bias 0.0.
+notes.txt:83:x_plus_y:
+notes.txt:97:Analysis: He initialization showed mixed results compared to Xavier initialization. For x_div_y, it performed slightly better in terms of convergence speed. However, for x_minus_y and x_plus_y, it showed slower convergence and slightly lower final accuracies. The permutation task saw a significant drop in validation accuracy, indicating that He initialization might not be suitable for this particular task. Overall, Xavier initialization still appears to be more robust across different arithmetic operations.
+notes.txt:100:Description: Implemented Orthogonal initialization for Linear and Embedding layers in the Transformer model. The LayerNorm layers were initialized with weight 1.0 and bias 0.0.
+notes.txt:117:x_plus_y:
+notes.txt:131:Analysis: Orthogonal initialization showed mixed results compared to Xavier and He initializations. It performed well on x_minus_y and x_plus_y tasks, achieving perfect or near-perfect accuracy with relatively fast convergence. However, it struggled with the x_div_y task, showing lower accuracy and higher loss compared to previous initializations. For the permutation task, it achieved high accuracy but took longer to converge compared to Xavier initialization. Overall, Orthogonal initialization seems to be effective for certain arithmetic operations but may not be the best choice for all tasks in this experiment.
+notes.txt:134:Description: Implemented Kaiming Normal initialization for Linear and Embedding layers in the Transformer model. The LayerNorm layers were initialized with weight 1.0 and bias 0.0.
+notes.txt:151:x_plus_y:
+notes.txt:165:Analysis: Kaiming Normal initialization showed mixed results compared to previous initializations. It performed well on x_div_y and x_plus_y tasks, achieving perfect accuracy with relatively fast convergence. However, it struggled more on the x_minus_y task, showing lower accuracies and higher losses. The permutation task saw good performance, with high accuracy but slower convergence compared to some previous initializations. Overall, Kaiming Normal initialization seems to be effective for certain arithmetic operations but may not be the best choice for all tasks in this experiment.
+notes.txt:168:Description: Implementing Uniform initialization for Linear and Embedding layers in the Transformer model. The LayerNorm layers will be initialized with weight 1.0 and bias 0.0.
+
+=== END COMMAND ===
+
+=== COMMAND: python plot.py ===
+=== COMMAND: python -c import torch,numpy,einops ===
+/home/chenhui/.config/matplotlib is not a writable directory
+Matplotlib created a temporary cache directory at /tmp/matplotlib-e7xunu6m because there was an issue with the default path (/home/chenhui/.config/matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+Traceback (most recent call last):
+  File "/home/chenhui/fabscore/aiscientist_papers/weight_initialization_grokking/plot.py", line 17, in <module>
+    results_dict = np.load(
+                   ~~~~~~~^
+        osp.join(folder, "all_results.npy"), allow_pickle=True
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ).item()
+    ^
+  File "/home/chenhui/fabscore/.venv/lib/python3.13/site-packages/numpy/lib/_npyio_impl.py", line 454, in load
+    fid = stack.enter_context(open(os.fspath(file), "rb"))
+                              ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'run_5/all_results.npy'
+
+=== EXIT CODE: 1 ===
+
+torch 2.10.0+cu128
+numpy 2.4.2
+einops 0.8.2
+cuda_available False
+
+=== EXIT CODE: 0 ===
+
+=== COMMAND: tail command output log ===
+latex/template.tex:178:To address these challenges, we conduct a systematic comparison of five widely-used initialization strategies: PyTorch default, Xavier (Glorot), He, Orthogonal, and Kaiming Normal. We evaluate these methods across four arithmetic operations in finite fields: modular addition, subtraction, division, and permutation composition. Our experimental setup employs a small Transformer architecture with 2 layers, 128 model dimensions, and 4 attention heads, allowing for controlled and reproducible investigations of grokking behavior.
+latex/template.tex:183:    \item We provide a comprehensive study of the effects of weight initialization strategies on grokking in Transformer models.
+latex/template.tex:184:    \item We demonstrate that different initialization methods can significantly influence grokking behavior, affecting both convergence speed and final generalization performance.
+latex/template.tex:185:    \item We offer insights into which initialization strategies are most effective for different arithmetic tasks, potentially guiding future research and practical applications.
+latex/template.tex:186:    \item We analyze the learning dynamics associated with each initialization method, shedding light on the mechanisms underlying grokking.
+latex/template.tex:189:Our experiments involve training Transformer models on each arithmetic task using different initialization strategies. We carefully monitor training and validation performance, paying particular attention to sudden improvements in generalization that characterize grokking. Our results reveal that Xavier initialization often leads to faster convergence, particularly for tasks like modular addition and permutation composition. For instance, in the modular addition task (x\_plus\_y), Xavier initialization achieved 99\% validation accuracy in just 863 steps, compared to 2363 steps for the baseline. Orthogonal initialization showed task-dependent performance, excelling in some operations but struggling in others.
+latex/template.tex:191:To verify our findings, we conduct multiple runs with different random seeds for each combination of task and initialization method. We perform statistical analysis, including calculating 95\% confidence intervals for key metrics such as steps to 99\% validation accuracy. This approach ensures the robustness and reliability of our results.
+latex/template.tex:193:These findings not only advance our understanding of grokking but also have practical implications for training deep learning models on algorithmic tasks. By optimizing weight initialization strategies, we may be able to induce grokking more reliably or accelerate the learning process. Our results suggest that the choice of initialization method can significantly impact both the speed of convergence and the final generalization performance, with some methods showing consistent advantages across multiple tasks.
+latex/template.tex:199:    \item Analyzing the interaction between initialization strategies and other hyperparameters, such as learning rate schedules or model architectures.
+latex/template.tex:200:    \item Exploring adaptive initialization methods that evolve during training, potentially leading to more robust and efficient learning algorithms.
+latex/template.tex:208:Our study intersects with several key areas of deep learning research: weight initialization strategies, the grokking phenomenon, and Transformer model training dynamics. This section compares and contrasts our approach with existing work in these domains.
+latex/template.tex:211:Weight initialization plays a crucial role in training deep neural networks, significantly impacting convergence speed and model performance. \citet{Glorot2010UnderstandingTD} introduced the Xavier initialization method, which aims to maintain the variance of activations and gradients across layers. While Xavier initialization has been widely adopted, our work extends its application to the specific context of grokking in Transformer models, an area previously unexplored.
+latex/template.tex:213:\citet{He2015DelvingDI} proposed He initialization, designed for rectified linear units (ReLU) activation functions. Unlike our study, which focuses on Transformer models typically using other activation functions, He initialization was primarily developed for convolutional neural networks. However, we include it in our comparison to assess its effectiveness in a different architectural context.
+latex/template.tex:215:Orthogonal initialization, proposed by \citet{Saxe2013ExactST}, initializes weight matrices as random orthogonal matrices. While Saxe et~al.\ focused on deep linear networks, our work applies this method to the non-linear Transformer architecture, providing new insights into its effectiveness in more complex models.
+latex/template.tex:217:Our study differs from these works by specifically examining the impact of these initialization strategies on the grokking phenomenon in Transformer models for arithmetic tasks. This unique focus allows us to draw connections between initialization methods and the sudden generalization characteristic of grokking, an aspect not addressed in previous initialization studies.
+latex/template.tex:220:The grokking phenomenon, first described by \citet{power2022grokking}, refers to a sudden improvement in generalization performance after prolonged training. While Power et~al.\ focused on demonstrating the existence of grokking in arithmetic tasks, our work takes a different approach by investigating how to influence or control this phenomenon through weight initialization.
+latex/template.tex:222:Unlike Power et al., who used a fixed initialization strategy, we systematically compare multiple initialization methods. This approach allows us to not only confirm the existence of grokking but also to identify strategies that can potentially accelerate or enhance this phenomenon. Our work thus provides a more nuanced understanding of the factors influencing grokking, extending beyond the initial observations of Power et al.
+latex/template.tex:227:Our work differs from typical Transformer studies by focusing on the interplay between weight initialization and grokking, rather than on architecture modifications or scaling properties. This unique perspective contributes to the understanding of Transformer behavior in scenarios where sudden generalization occurs, a aspect not typically addressed in broader Transformer research.
+latex/template.tex:229:In summary, our study bridges the gap between weight initialization strategies, the grokking phenomenon, and Transformer training dynamics. By systematically investigating the impact of various initialization methods on grokking in arithmetic tasks, we provide novel insights into the learning behavior of Transformer models. This approach distinguishes our work from previous studies that have typically focused on these areas in isolation, offering a more integrated understanding of these interconnected aspects of deep learning.
+latex/template.tex:236:Weight initialization plays a crucial role in training deep neural networks, significantly impacting convergence speed and model performance \cite{goodfellow2016deep}. Several strategies have been proposed to address the challenges of training deep networks:
+latex/template.tex:239:    \item Xavier (Glorot) initialization \cite{Glorot2010UnderstandingTD}: Aims to maintain the variance of activations and gradients across layers.
+latex/template.tex:240:    \item He initialization \cite{He2015DelvingDI}: Designed for ReLU activation functions, adjusting the variance based on the number of input connections.
+latex/template.tex:241:    \item Orthogonal initialization \cite{Saxe2013ExactST}: Initializes weight matrices as random orthogonal matrices, potentially improving gradient flow in deep networks.
+latex/template.tex:242:    \item Kaiming Normal initialization: A variant of He initialization using a normal distribution instead of uniform.
+latex/template.tex:264:We compare five initialization strategies: PyTorch default (uniform initialization), Xavier (Glorot), He, Orthogonal, and Kaiming Normal. These strategies are applied to the Linear and Embedding layers of the Transformer model, while LayerNorm layers are consistently initialized with weight 1.0 and bias 0.0 across all experiments.
+latex/template.tex:266:By systematically comparing these initialization methods across different arithmetic tasks, we aim to uncover insights into their impact on grokking behavior and overall model performance. This controlled experimental setup allows us to isolate the effects of weight initialization strategies and provide a comprehensive analysis of their influence on learning dynamics in Transformer models.
+latex/template.tex:271:Our method systematically investigates the impact of different weight initialization strategies on the grokking phenomenon in Transformer models. We build upon the problem setting and background introduced earlier, focusing on the arithmetic tasks $\mathcal{T} = \{T_1, \ldots, T_n\}$ over the finite field $\mathbb{F}_p$ with $p = 97$.
+latex/template.tex:275:We compare five initialization strategies $\mathcal{S} = \{S_1, \ldots, S_5\}$ for the Linear and Embedding layers:
+latex/template.tex:285:For all strategies, LayerNorm layers are initialized with weight 1.0 and bias 0.0. Each initialization strategy $S_j$ defines a probability distribution $P_j(\theta)$ over the initial parameter space.
+latex/template.tex:296:To evaluate the impact of each initialization strategy, we define the following metrics:
+latex/template.tex:314:    \For{each initialization strategy $S_j \in \mathcal{S}$}
+latex/template.tex:325:    \State Compare performance of different initialization strategies for task $T_i$
+latex/template.tex:327:\State Analyze trends and patterns across tasks and initialization strategies
+latex/template.tex:331:This systematic approach allows us to comprehensively analyze how initial weight distributions $P_j(\theta)$ influence learning trajectories $\{\theta_t\}_{t=1}^{7500}$ and final model performance. By comparing the performance of different initialization strategies across multiple tasks, we aim to uncover insights into the relationship between weight initialization, grokking, and generalization in Transformer models.
+latex/template.tex:336:Our experimental setup is designed to systematically evaluate the impact of different weight initialization strategies on the grokking phenomenon in Transformer models. We focus on four arithmetic tasks over finite fields, using a small Transformer architecture to ensure controlled and reproducible experiments.
+latex/template.tex:366:We compare five initialization strategies for the Linear and Embedding layers:
+latex/template.tex:394:Our experiments reveal significant differences in the performance of various weight initialization strategies across different arithmetic tasks. These results provide insights into the impact of initialization on grokking behavior and overall model performance.
+latex/template.tex:397:To ensure fair comparison, we maintained consistent hyperparameters across all experiments, including learning rate (1e-3), batch size (512), and total training steps (7,500). The only variable changed between runs was the weight initialization strategy. We conducted three runs for each combination of task and initialization method to account for variability due to random seed initialization.
+latex/template.tex:400:Figure \ref{fig:summary_plot} provides an overview of the performance metrics for each initialization strategy across all tasks. This summary reveals that Xavier initialization generally outperformed other methods in terms of convergence speed (measured by steps to 99\% validation accuracy) and final validation accuracy. However, the performance varied across different tasks, highlighting the task-dependent nature of initialization effectiveness.
+latex/template.tex:402:% Detailed analysis of x_plus_y task
+latex/template.tex:406:        \includegraphics[width=\textwidth]{train_acc_x_plus_y.png}
+latex/template.tex:408:        \label{fig:train_acc_x_plus_y}
+latex/template.tex:412:        \includegraphics[width=\textwidth]{val_acc_x_plus_y.png}
+latex/template.tex:414:        \label{fig:val_acc_x_plus_y}
+latex/template.tex:416:    \caption{Training and Validation Accuracy for x\_plus\_y task across different initialization methods}
+latex/template.tex:417:    \label{fig:acc_x_plus_y}
+latex/template.tex:420:For the x\_plus\_y task (modular addition), we observed distinct patterns in the learning dynamics across different initialization methods. As shown in Figure \ref{fig:acc_x_plus_y}, Xavier initialization demonstrated the fastest convergence, reaching 99\% validation accuracy in just 863 steps, compared to 2363 steps for the baseline (PyTorch default). Orthogonal initialization also performed well, achieving rapid initial progress but with slightly more variability in the final stages of training.
+latex/template.tex:436:    \caption{Training and Validation Loss for x\_minus\_y task across different initialization methods}
+latex/template.tex:440:The x\_minus\_y task (modular subtraction) revealed interesting differences in the learning dynamics. As illustrated in Figure \ref{fig:loss_x_minus_y}, Orthogonal initialization showed the best performance, achieving the lowest final training and validation losses. However, Xavier initialization demonstrated the fastest convergence, reaching 99\% validation accuracy in 2347 steps, compared to 4720 steps for the baseline.
+latex/template.tex:456:    \caption{Training and Validation Accuracy for x\_div\_y task across different initialization methods}
+latex/template.tex:460:The x\_div\_y task (modular division) proved to be the most challenging among the arithmetic operations. As shown in Figure \ref{fig:acc_x_div_y}, all initialization methods struggled to achieve high accuracy initially, but Xavier and He initializations eventually outperformed the others. Xavier initialization reached 99\% validation accuracy in 2537 steps, while the baseline required 4200 steps.
+latex/template.tex:476:    \caption{Training and Validation Loss for permutation task across different initialization methods}
+latex/template.tex:480:The permutation task exhibited unique learning dynamics compared to the arithmetic operations. Figure \ref{fig:loss_permutation} shows that Orthogonal initialization significantly outperformed other methods, achieving the lowest training and validation losses. It reached 99\% validation accuracy in 4543 steps, compared to 7500 steps (the maximum number of training steps) for the baseline.
+latex/template.tex:483:To quantify the significance of our results, we calculated 95\% confidence intervals for the steps to 99\% validation accuracy ($S_{99}$) metric across all tasks and initialization methods. Table \ref{tab:confidence_intervals} presents these results.
+latex/template.tex:502:These confidence intervals demonstrate that the differences in performance between initialization methods are statistically significant, particularly for Xavier and Orthogonal initializations compared to the baseline.
+latex/template.tex:505:To further validate the importance of initialization in grokking, we conducted an ablation study by comparing the best-performing initialization (Xavier) with a modified version where only the encoder layers were initialized using the Xavier method, while the rest of the network used the default PyTorch initialization. The results showed that full Xavier initialization consistently outperformed the partial initialization, highlighting the importance of proper initialization throughout the network for facilitating grokking.
+latex/template.tex:508:Despite the clear benefits of certain initialization strategies, our study has limitations. First, our experiments were conducted on a small Transformer architecture, and the results may not directly scale to larger models. Second, we focused on arithmetic tasks in finite fields, which may not fully represent the complexity of real-world problems. Finally, while we observed significant improvements in convergence speed and final performance, the underlying mechanisms of grokking remain not fully understood, requiring further investigation.
+latex/template.tex:510:In summary, our results demonstrate that weight initialization strategies play a crucial role in the grokking phenomenon and overall performance of Transformer models on arithmetic tasks. Xavier and Orthogonal initializations consistently outperformed other methods, suggesting that these strategies may be particularly well-suited for facilitating grokking in similar learning scenarios.
+latex/template.tex:515:This study investigated the impact of weight initialization strategies on the grokking phenomenon in Transformer models across various arithmetic tasks in finite fields. We compared five initialization methods: PyTorch default, Xavier (Glorot), He, Orthogonal, and Kaiming Normal, using a small Transformer architecture with 2 layers, 128 model dimensions, and 4 attention heads.
+latex/template.tex:519:1. Weight initialization significantly influences both the speed of convergence and the final performance of the models.
+latex/template.tex:520:2. Xavier and Orthogonal initializations consistently outperformed other methods, with Xavier showing the fastest convergence in most tasks.
+latex/template.tex:521:3. The choice of initialization strategy can dramatically affect the number of steps required to reach high validation accuracy, with Xavier reducing this by up to 63% compared to the baseline in some tasks.
+latex/template.tex:522:4. Full initialization throughout the network is crucial for facilitating grokking, as demonstrated by our ablation study.
+latex/template.tex:524:These results extend the work of \citet{power2022grokking} by demonstrating how the grokking phenomenon can be influenced by specific model design choices, particularly weight initialization. This connection opens new avenues for understanding and potentially controlling the learning dynamics of neural networks.
+latex/template.tex:531:2. Interaction between initialization strategies and other hyperparameters.
+latex/template.tex:532:3. Adaptive initialization methods that evolve during training.
+latex/template.tex:535:By shedding light on the relationship between weight initialization and grokking, this work contributes to our understanding of deep learning optimization. These insights could lead to more efficient training strategies, faster convergence, better generalization, and potentially reduced computational requirements for training large models.
+notes.txt:1:# Title: Weight Initialization Grokking: Assessing the impact of weight initialization strategies on the grokking phenomenon
+notes.txt:2:# Experiment description: Modify the `run` function to include different weight initialization strategies (Xavier, He, orthogonal) for the Transformer model. Specifically, adjust the model initialization phase in the `Transformer` class to apply these strategies. Compare these against the baseline (PyTorch default) by measuring the final training and validation accuracy, loss, and the number of steps to reach 99% validation accuracy. Evaluate the results for each dataset and seed combination.
+notes.txt:7:   These plots show the training loss across different initialization methods for each dataset. The x-axis represents the number of update steps, and the y-axis shows the training loss. Each line represents a different initialization method, allowing for easy comparison of how quickly and effectively each method reduces the training loss over time. The shaded areas around each line represent the standard error, giving an indication of the variability across different runs.
+notes.txt:10:   Similar to the training loss plots, these graphs display the validation loss for each initialization method across update steps. These plots are crucial for understanding how well the model generalizes to unseen data and for detecting potential overfitting. Lower validation loss generally indicates better generalization.
+notes.txt:13:   These plots illustrate the training accuracy over time for each initialization method. The x-axis shows the number of update steps, while the y-axis represents the training accuracy. These graphs help visualize how quickly and accurately each method learns the training data, with higher accuracy indicating better performance on the training set.
+notes.txt:16:   These graphs show the validation accuracy over time for each initialization method. They are crucial for understanding how well the model generalizes to unseen data. Higher validation accuracy suggests better performance on new, unseen examples. The comparison between different initialization methods can reveal which approach leads to better generalization.
+notes.txt:19:   This comprehensive plot compares all initialization methods across datasets for three key metrics:
+notes.txt:24:   This plot provides a high-level overview of the performance of each initialization method, allowing for quick comparisons across different datasets and metrics. It's particularly useful for identifying which initialization methods consistently perform well across various tasks.
+notes.txt:26:These plots collectively provide a comprehensive view of how different weight initialization strategies affect the learning process, generalization ability, and overall performance of the Transformer model across various arithmetic tasks. They allow for in-depth analysis of the grokking phenomenon and how it's influenced by different initialization approaches.
+notes.txt:28:Results: {'x_div_y': {'final_train_loss_mean': 0.005800435319542885, 'final_val_loss_mean': 0.006530226518710454, 'final_train_acc_mean': 1.0, 'final_val_acc_mean': 1.0, 'step_val_acc_99_mean': 4200.0}, 'x_minus_y': {'final_train_loss_mean': 0.014211568981409073, 'final_val_loss_mean': 0.014943961674968401, 'final_train_acc_mean': 1.0, 'final_val_acc_mean': 1.0, 'step_val_acc_99_mean': 4720.0}, 'x_plus_y': {'final_train_loss_mean': 0.003832749711970488, 'final_val_loss_mean': 0.004045687771091859, 'final_train_acc_mean': 1.0, 'final_val_acc_mean': 1.0, 'step_val_acc_99_mean': 2363.3333333333335}, 'permutation': {'final_train_loss_mean': 0.08011958096176386, 'final_val_loss_mean': 6.804208914438884, 'final_train_acc_mean': 0.9880208373069763, 'final_val_acc_mean': 0.035888671875, 'step_val_acc_99_mean': 7500.0}}
+notes.txt:32:Description: Implemented Xavier uniform initialization for Linear and Embedding layers in the Transformer model. The LayerNorm layers were initialized with weight 1.0 and bias 0.0.
+notes.txt:49:x_plus_y:
+notes.txt:63:Analysis: Xavier initialization showed improvements in convergence speed for most tasks compared to the baseline. The x_plus_y task saw a significant reduction in steps to reach 99% validation accuracy. However, the x_minus_y task showed some instability in validation performance, indicating that Xavier initialization might not be optimal for all arithmetic operations.
+notes.txt:66:Description: Implemented He initialization for Linear and Embedding layers in the Transformer model. The LayerNorm layers were initialized with weight 1.0 and bias 0.0.
+notes.txt:83:x_plus_y:
+notes.txt:97:Analysis: He initialization showed mixed results compared to Xavier initialization. For x_div_y, it performed slightly better in terms of convergence speed. However, for x_minus_y and x_plus_y, it showed slower convergence and slightly lower final accuracies. The permutation task saw a significant drop in validation accuracy, indicating that He initialization might not be suitable for this particular task. Overall, Xavier initialization still appears to be more robust across different arithmetic operations.
+notes.txt:100:Description: Implemented Orthogonal initialization for Linear and Embedding layers in the Transformer model. The LayerNorm layers were initialized with weight 1.0 and bias 0.0.
+notes.txt:117:x_plus_y:
+notes.txt:131:Analysis: Orthogonal initialization showed mixed results compared to Xavier and He initializations. It performed well on x_minus_y and x_plus_y tasks, achieving perfect or near-perfect accuracy with relatively fast convergence. However, it struggled with the x_div_y task, showing lower accuracy and higher loss compared to previous initializations. For the permutation task, it achieved high accuracy but took longer to converge compared to Xavier initialization. Overall, Orthogonal initialization seems to be effective for certain arithmetic operations but may not be the best choice for all tasks in this experiment.
+notes.txt:134:Description: Implemented Kaiming Normal initialization for Linear and Embedding layers in the Transformer model. The LayerNorm layers were initialized with weight 1.0 and bias 0.0.
+notes.txt:151:x_plus_y:
+notes.txt:165:Analysis: Kaiming Normal initialization showed mixed results compared to previous initializations. It performed well on x_div_y and x_plus_y tasks, achieving perfect accuracy with relatively fast convergence. However, it struggled more on the x_minus_y task, showing lower accuracies and higher losses. The permutation task saw good performance, with high accuracy but slower convergence compared to some previous initializations. Overall, Kaiming Normal initialization seems to be effective for certain arithmetic operations but may not be the best choice for all tasks in this experiment.
+notes.txt:168:Description: Implementing Uniform initialization for Linear and Embedding layers in the Transformer model. The LayerNorm layers will be initialized with weight 1.0 and bias 0.0.
+
+=== END COMMAND ===
+
+=== COMMAND: python plot.py ===
+=== COMMAND: python -c import torch,numpy,einops ===
+/home/chenhui/.config/matplotlib is not a writable directory
+Matplotlib created a temporary cache directory at /tmp/matplotlib-e7xunu6m because there was an issue with the default path (/home/chenhui/.config/matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+Traceback (most recent call last):
+  File "/home/chenhui/fabscore/aiscientist_papers/weight_initialization_grokking/plot.py", line 17, in <module>
+    results_dict = np.load(
+                   ~~~~~~~^
+        osp.join(folder, "all_results.npy"), allow_pickle=True
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ).item()
+    ^
+  File "/home/chenhui/fabscore/.venv/lib/python3.13/site-packages/numpy/lib/_npyio_impl.py", line 454, in load
+    fid = stack.enter_context(open(os.fspath(file), "rb"))
+                              ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'run_5/all_results.npy'
+
+=== EXIT CODE: 1 ===
+
+torch 2.10.0+cu128
+numpy 2.4.2
+einops 0.8.2
+cuda_available False
+
+=== EXIT CODE: 0 ===
+
+=== COMMAND: tail command output log ===
+
+=== END COMMAND ===
+
+=== COMMAND: /usr/bin/time -p python run_5.py --out_dir fabscore_codex/workspace/claim21_run_5 ===
+/home/chenhui/fabscore/aiscientist_papers/weight_initialization_grokking/run_5.py:271: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+  "train_loss": float(loss),
+=== COMMAND: inspect post-interrupt artifacts ===
+--- files in claim21_run_5 ---
+--- tail log ---
+
+=== END COMMAND ===
+
+=== COMMAND: python plot.py ===
+=== COMMAND: python -c import torch,numpy,einops ===
+/home/chenhui/.config/matplotlib is not a writable directory
+Matplotlib created a temporary cache directory at /tmp/matplotlib-e7xunu6m because there was an issue with the default path (/home/chenhui/.config/matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+Traceback (most recent call last):
+  File "/home/chenhui/fabscore/aiscientist_papers/weight_initialization_grokking/plot.py", line 17, in <module>
+    results_dict = np.load(
+                   ~~~~~~~^
+        osp.join(folder, "all_results.npy"), allow_pickle=True
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ).item()
+    ^
+  File "/home/chenhui/fabscore/.venv/lib/python3.13/site-packages/numpy/lib/_npyio_impl.py", line 454, in load
+    fid = stack.enter_context(open(os.fspath(file), "rb"))
+                              ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'run_5/all_results.npy'
+
+=== EXIT CODE: 1 ===
+
+torch 2.10.0+cu128
+numpy 2.4.2
+einops 0.8.2
+cuda_available False
+
+=== EXIT CODE: 0 ===
+
+=== COMMAND: tail command output log ===
+
+=== END COMMAND ===
+
+=== COMMAND: /usr/bin/time -p python run_5.py --out_dir fabscore_codex/workspace/claim21_run_5 ===
+/home/chenhui/fabscore/aiscientist_papers/weight_initialization_grokking/run_5.py:271: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+  "train_loss": float(loss),
+=== COMMAND: inspect post-interrupt artifacts ===
+--- files in claim21_run_5 ---
+--- tail log ---
+
+=== END COMMAND ===
+

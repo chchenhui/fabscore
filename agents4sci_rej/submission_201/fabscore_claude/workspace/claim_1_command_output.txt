@@ -1,0 +1,26 @@
+===== Command 1 =====
+python -c "
+import numpy as np
+d = np.load('logs/0-run/experiment_results/experiment_23b7cc9670dc469d91f273d62ad1176e_proc_1502176/experiment_data.npy', allow_pickle=True).item()
+print('Top-level keys:', list(d.keys()))
+if 'num_epochs_tuning' in d:
+    print('num_epochs_tuning keys:', list(d['num_epochs_tuning'].keys()))
+    for dataset in d['num_epochs_tuning']:
+        print(f'  Dataset: {dataset}')
+        for epoch_key in d['num_epochs_tuning'][dataset]:
+            val_acc = d['num_epochs_tuning'][dataset][epoch_key]['metrics']['val_acc']
+            train_acc = d['num_epochs_tuning'][dataset][epoch_key]['metrics'].get('train_acc', [])
+            print(f'    epoch_key={epoch_key}: final val_acc={val_acc[-1]:.4f}, train_acc_last={train_acc[-1] if train_acc else None:.4f}')
+            print(f'      val_acc curve: {[round(v,4) for v in val_acc]}')
+"
+
+===== Output =====
+Top-level keys: ['num_epochs_tuning']
+num_epochs_tuning keys: ['mnist_claims']
+  Dataset: mnist_claims
+    epoch_key=epochs_10: final val_acc=0.7183, train_acc_last=0.7017
+      val_acc curve: [0.6967, 0.6967, 0.7067, 0.6967, 0.6933, 0.6967, 0.6967, 0.7033, 0.7067, 0.7183]
+    epoch_key=epochs_20: final val_acc=0.6983, train_acc_last=0.7129
+      val_acc curve: [0.6967, 0.705, 0.7067, 0.7067, 0.6967, 0.7167, 0.7, 0.7033, 0.7083, 0.7117, 0.6967, 0.6933, 0.7033, 0.69, 0.6933, 0.695, 0.6917, 0.7083, 0.7017, 0.6983]
+    epoch_key=epochs_30: final val_acc=0.7100, train_acc_last=0.7508
+      val_acc curve: [0.6967, 0.705, 0.6967, 0.6933, 0.6967, 0.6967, 0.7167, 0.7083, 0.6933, 0.705, 0.7117, 0.71, 0.705, 0.6967, 0.695, 0.705, 0.71, 0.69, 0.6883, 0.6967, 0.685, 0.6983, 0.7017, 0.7, 0.6817, 0.6817, 0.7067, 0.6983, 0.7, 0.71]

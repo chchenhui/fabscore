@@ -1,0 +1,265 @@
+{
+    "no_code_files": [
+        {
+            "index": 3,
+            "category": "table",
+            "content": "3. Table 1, - Hierarchy, 5-shot Accuracy: 78.3%",
+            "reason": "No ablation implementation for the '-Hierarchy' variant exists in the repository. The full MAML code does not include a flag to disable the hierarchical structure entirely. No trained checkpoints, no evaluation results, and no ablation result files exist for this variant.",
+            "code_evidence": [
+                "SupplementaryMaterials/code/src/models/hierarchical_maml.py",
+                "SupplementaryMaterials/results/hierarchical_meta_learning_analysis.pkl"
+            ]
+        },
+        {
+            "index": 4,
+            "category": "table",
+            "content": "4. Table 1, - Hierarchy, 10-shot Accuracy: 86.1%",
+            "reason": "Same as claim 3: no '-Hierarchy' ablation code, checkpoints, or result artifacts exist. The hierarchical forward pass is always enabled; no configuration flag disables the full hierarchical structure.",
+            "code_evidence": [
+                "SupplementaryMaterials/code/src/models/hierarchical_maml.py"
+            ]
+        },
+        {
+            "index": 7,
+            "category": "table",
+            "content": "7. Table 1, - Multi-level Loss, 5-shot Accuracy: 82.9%",
+            "reason": "No ablation code or configuration flag to disable the multi-level loss exists in the repository. No result files, checkpoints, or evaluation logs for this variant.",
+            "code_evidence": [
+                "SupplementaryMaterials/code/src/models/hierarchical_maml.py",
+                "SupplementaryMaterials/code/hierarchical_meta_learning_pipeline.py"
+            ]
+        },
+        {
+            "index": 8,
+            "category": "table",
+            "content": "8. Table 1, - Multi-level Loss, 10-shot Accuracy: 90.1%",
+            "reason": "Same as claim 7: no '-Multi-level Loss' ablation implementation exists. No loss-masking flag found in training code or configs.",
+            "code_evidence": [
+                "SupplementaryMaterials/code/src/training/meta_trainer.py"
+            ]
+        },
+        {
+            "index": 9,
+            "category": "table",
+            "content": "9. Table 1, Flat MAML, 5-shot Accuracy: 72.1%",
+            "reason": "No 'Flat MAML' implementation or configuration exists in the repository. No result artifacts for this baseline variant.",
+            "code_evidence": [
+                "SupplementaryMaterials/code/src/models/hierarchical_maml.py",
+                "SupplementaryMaterials/code/src/training/baselines.py"
+            ]
+        },
+        {
+            "index": 10,
+            "category": "table",
+            "content": "10. Table 1, Flat MAML, 10-shot Accuracy: 79.8%",
+            "reason": "Same as claim 9: no Flat MAML implementation found. baselines.py contains standard ML baselines (RandomForest, SVM, etc.) but not a flat MAML variant.",
+            "code_evidence": [
+                "SupplementaryMaterials/code/src/training/baselines.py"
+            ]
+        },
+        {
+            "index": 18,
+            "category": "results_section",
+            "content": "4. High transferability (similarity > 0.8): Metabolic pathways (oxphos_program, glycolysis) show universal importance",
+            "reason": "The pathway-level transferability formula (eq. 8 in paper: rank-based comparison across cancer types) is not implemented anywhere in the repository. The only transferability code (simple_meta_learning_analysis.py) computes cancer-type cosine similarity, not pathway-level rank-based transferability. No result artifact contains pathway-level transferability scores.",
+            "code_evidence": [
+                "SupplementaryMaterials/code/simple_meta_learning_analysis.py",
+                "SupplementaryMaterials/results/hierarchical_meta_learning_analysis.pkl"
+            ]
+        },
+        {
+            "index": 19,
+            "category": "results_section",
+            "content": "5. Moderate transferability (0.5-0.8): Immune pathways (JAK-STAT, interferon response) vary by tissue context",
+            "reason": "Same as claim 18: pathway-level rank-based transferability (eq. 8) is not implemented. The repository only computes cancer-type-level cosine similarity, not pathway-level transferability thresholds.",
+            "code_evidence": [
+                "SupplementaryMaterials/code/simple_meta_learning_analysis.py"
+            ]
+        },
+        {
+            "index": 20,
+            "category": "results_section",
+            "content": "6. Low transferability (< 0.5): Developmental pathways show cancer-type specificity",
+            "reason": "Same as claims 18-19: no pathway-level transferability computation exists in the repository.",
+            "code_evidence": [
+                "SupplementaryMaterials/code/simple_meta_learning_analysis.py"
+            ]
+        },
+        {
+            "index": 22,
+            "category": "results_section",
+            "content": "8. All components contribute significantly to performance, with hierarchy providing the largest single contribution (7.4% improvement in 5-shot setting).",
+            "reason": "7.4% = 85.7% - 78.3% (Full Model - (-Hierarchy) in Table 1). Since the '-Hierarchy' ablation has no code implementation, no checkpoints, and no result artifacts, this derived metric is also unsupported.",
+            "code_evidence": [
+                "SupplementaryMaterials/code/src/models/hierarchical_maml.py"
+            ]
+        }
+    ],
+    "obvious_hallucination": [
+        {
+            "index": 11,
+            "category": "figure",
+            "content": "1. Figure 1: Few-shot learning performance comparison across different methods and shot settings. Our hierarchical meta-learning approach (red) consistently outperforms baselines, with particularly strong performance in low-data regimes.",
+            "reason": "The figure in the paper is generated by create_publication_figures.py using data from the pkl file (hierarchical_meta_learning_analysis.pkl). However: (1) the pkl's few_shot_results come from simple_meta_learning_analysis.py which implements a NEAREST-NEIGHBOR classifier, not the hierarchical MAML described; (2) Panel B (confusion matrix) is synthetically generated with np.random.seed(42), not from a real evaluation; (3) Panel C (learning curves) is synthetically generated using exponential functions with np.random.normal noise. The figure caption claims 'hierarchical meta-learning approach (red) consistently outperforms baselines' but no MAML model was ever trained and no baselines are compared in the actual figure code.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "SupplementaryMaterials/code/create_publication_figures.py:349-396",
+                "SupplementaryMaterials/code/simple_meta_learning_analysis.py:113-202",
+                "SupplementaryMaterials/results/hierarchical_meta_learning_analysis.pkl"
+            ]
+        },
+        {
+            "index": 12,
+            "category": "figure",
+            "content": "2. Figure 2: Pathway importance rankings derived from attention weights. Top pathways show high discriminative power across cancer types, with oxphos_program, Jak1_vivo_ko, and proliferating emerging as key signatures.",
+            "reason": "The paper claims pathway importance was 'derived from attention weights' (from the trained hierarchical MAML model). In reality, pathway_importance in the pkl is computed by simple_meta_learning_analysis.py using an F-ratio statistic (between-cancer variance / within-cancer variance), not attention weights from a neural network. No MAML model was trained, so no attention weights exist. The experimental method claimed (attention-weight-based importance from MAML) fundamentally conflicts with the actual implementation (F-ratio from raw data statistics).",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "SupplementaryMaterials/code/simple_meta_learning_analysis.py:61-111",
+                "SupplementaryMaterials/code/create_publication_figures.py:196-311"
+            ]
+        },
+        {
+            "index": 13,
+            "category": "figure",
+            "content": "3. Figure 3: Cross-cancer transferability matrix showing pathway conservation patterns. Warm colors indicate high transferability, while cool colors show cancer-specific pathway importance.",
+            "reason": "While Panels A and B of this figure use real cosine similarity data from the pkl, Panel C (Transfer Learning Performance Matrix) is explicitly fabricated: create_publication_figures.py line 471 shows 'transfer_performance = np.random.rand(n_cancers, n_cancers)' with values then modified by adding random normal noise. The figure presents this randomly-generated matrix as actual transfer learning performance results.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "SupplementaryMaterials/code/create_publication_figures.py:469-503"
+            ]
+        },
+        {
+            "index": 14,
+            "category": "figure",
+            "content": "4. Figure 4: Biological validation of pathway importance rankings through literature comparison and external dataset validation. High concordance with established cancer biology knowledge validates our approach.",
+            "reason": "The 'external dataset validation' is entirely fabricated: (1) Panel B (Clinical Relevance Analysis) generates scores using np.random.beta(2, 1, len(top_pathways)) * 100 - pure random numbers, not real clinical data; (2) Panel C (comparison with literature) uses hardcoded synthetic 'literature evidence scores' (e.g., oxphos_program: 85, Jak1_vivo_ko: 78, proliferating: 82) that are not from real literature - these are made-up values in the code. The 'independent cohort' external validation does not exist.",
+            "fabrication_type": "data_fabrication",
+            "code_evidence": [
+                "SupplementaryMaterials/code/create_publication_figures.py:558-625"
+            ]
+        },
+        {
+            "index": 21,
+            "category": "results_section",
+            "content": "7. External validation on independent cohorts shows consistent pathway rankings (Pearson correlation = 0.78, p < 0.001).",
+            "reason": "Two levels of fabrication: (1) The 'independent cohort' data is fabricated - the code uses hardcoded synthetic 'literature_evidence' scores (oxphos_program: 85, Jak1_vivo_ko: 78, etc.) that are not from real external datasets; (2) The reported r=0.78 conflicts with the code output: the figure shows 'Best Fit (R²≈0.27)' which implies r≈0.52, not r=0.78. If r=0.78 then R²=0.61, but the code itself shows R²≈0.27.",
+            "fabrication_type": "data_fabrication",
+            "code_evidence": [
+                "SupplementaryMaterials/code/create_publication_figures.py:588-625"
+            ]
+        }
+    ],
+    "static_verifiable": [],
+    "insufficient_evidence": [],
+    "execution_required": [
+        {
+            "index": 1,
+            "category": "table",
+            "content": "1. Table 1, Full Model, 5-shot Accuracy: 85.7%",
+            "reason": "The full hierarchical MAML pipeline code exists (hierarchical_meta_learning_pipeline.py, src/models/hierarchical_maml.py, src/training/meta_trainer.py) and the TCGA data appears to be present (pkl was generated from actual data). However, no trained model checkpoints or evaluation result files exist. The only existing few-shot results (pkl) come from a simple nearest-neighbor classifier, not the hierarchical MAML. Execution of the full pipeline is required to determine if MAML achieves 85.7% 5-shot accuracy.",
+            "candidate_files": [
+                "SupplementaryMaterials/code/hierarchical_meta_learning_pipeline.py",
+                "SupplementaryMaterials/code/src/models/hierarchical_maml.py",
+                "SupplementaryMaterials/code/src/training/meta_trainer.py",
+                "SupplementaryMaterials/code/src/analysis/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python hierarchical_meta_learning_pipeline.py --data_dir ../data --results_dir ./results --config configs/default_config.yaml"
+            ]
+        },
+        {
+            "index": 2,
+            "category": "table",
+            "content": "2. Table 1, Full Model, 10-shot Accuracy: 92.4%",
+            "reason": "Same as claim 1: the full MAML pipeline code exists but no trained checkpoints or 10-shot evaluation results are present. Execution required.",
+            "candidate_files": [
+                "SupplementaryMaterials/code/hierarchical_meta_learning_pipeline.py",
+                "SupplementaryMaterials/code/src/analysis/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python hierarchical_meta_learning_pipeline.py --data_dir ../data --results_dir ./results --config configs/default_config.yaml"
+            ]
+        },
+        {
+            "index": 5,
+            "category": "table",
+            "content": "5. Table 1, - Attention, 5-shot Accuracy: 81.2%",
+            "reason": "The HierarchicalMAML class has an explicit use_attention=False parameter that would disable attention for ablation. A plausible code path exists by running the pipeline with use_attention: false in the config. No trained checkpoint or result file for this configuration exists.",
+            "candidate_files": [
+                "SupplementaryMaterials/code/hierarchical_meta_learning_pipeline.py",
+                "SupplementaryMaterials/code/src/models/hierarchical_maml.py",
+                "SupplementaryMaterials/code/configs/default_config.yaml"
+            ],
+            "suggested_entrypoints": [
+                "python hierarchical_meta_learning_pipeline.py --data_dir ../data --results_dir ./results_no_attention --config configs/default_config.yaml (with use_attention: false)"
+            ]
+        },
+        {
+            "index": 6,
+            "category": "table",
+            "content": "6. Table 1, - Attention, 10-shot Accuracy: 88.7%",
+            "reason": "Same as claim 5: use_attention=False is a supported configuration in hierarchical_maml.py. Execution required to obtain 10-shot accuracy without attention.",
+            "candidate_files": [
+                "SupplementaryMaterials/code/hierarchical_meta_learning_pipeline.py",
+                "SupplementaryMaterials/code/src/models/hierarchical_maml.py"
+            ],
+            "suggested_entrypoints": [
+                "python hierarchical_meta_learning_pipeline.py --data_dir ../data --results_dir ./results_no_attention --config configs/default_config.yaml (with use_attention: false)"
+            ]
+        },
+        {
+            "index": 15,
+            "category": "results_section",
+            "content": "1. 1-shot learning: 70.2% accuracy (vs. 45.1% for standard MAML)",
+            "reason": "The MAML pipeline code and baselines code (baselines.py) both exist. TCGA data is present. The 1-shot accuracy requires running the full evaluation with k_shot=1. No execution artifacts exist for 1-shot evaluation or standard MAML baseline comparison. Execution of the pipeline with k_shot=1 would determine if MAML achieves 70.2%.",
+            "candidate_files": [
+                "SupplementaryMaterials/code/hierarchical_meta_learning_pipeline.py",
+                "SupplementaryMaterials/code/src/training/baselines.py",
+                "SupplementaryMaterials/code/src/analysis/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python hierarchical_meta_learning_pipeline.py --data_dir ../data --results_dir ./results --config configs/default_config.yaml (with k_shot: 1)"
+            ]
+        },
+        {
+            "index": 16,
+            "category": "results_section",
+            "content": "2. 5-shot learning: 85.7% accuracy (vs. 62.3% for transfer learning)",
+            "reason": "Same code path as claims 1-2. The transfer learning baseline (BaselineComparator in baselines.py) exists but no execution results. Execution required.",
+            "candidate_files": [
+                "SupplementaryMaterials/code/hierarchical_meta_learning_pipeline.py",
+                "SupplementaryMaterials/code/src/training/baselines.py"
+            ],
+            "suggested_entrypoints": [
+                "python hierarchical_meta_learning_pipeline.py --data_dir ../data --results_dir ./results --config configs/default_config.yaml"
+            ]
+        },
+        {
+            "index": 17,
+            "category": "results_section",
+            "content": "3. 10-shot learning: 92.4% accuracy (vs. 71.8% for prototypical networks)",
+            "reason": "Prototypical Networks are implemented in baselines.py. The MAML 10-shot evaluation code path exists. No execution artifacts for either. Execution required to verify both MAML 10-shot and prototypical network baseline results.",
+            "candidate_files": [
+                "SupplementaryMaterials/code/hierarchical_meta_learning_pipeline.py",
+                "SupplementaryMaterials/code/src/training/baselines.py"
+            ],
+            "suggested_entrypoints": [
+                "python hierarchical_meta_learning_pipeline.py --data_dir ../data --results_dir ./results --config configs/default_config.yaml (with k_shot: 10)"
+            ]
+        }
+    ],
+    "error": [],
+    "summary": {
+        "total_claims": 22,
+        "no_code_files": 10,
+        "obvious_hallucination": 5,
+        "data_fabrication": 2,
+        "experiment_fabrication": 3,
+        "result_fabrication": 0,
+        "static_verifiable": 0,
+        "insufficient_evidence": 0,
+        "execution_required": 7,
+        "error": 0
+    }
+}

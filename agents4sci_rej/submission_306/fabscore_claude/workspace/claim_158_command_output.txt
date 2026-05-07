@@ -1,0 +1,31 @@
+============================================================
+COMMAND: python3 BCR pipeline script for P37902 (claim 158: Table 1, P37902, pperm: 0.0293)
+============================================================
+P37902 length=302, source=api
+
+--- k=2 ---
+  k=2 blocks: [(0, 302)], len=1
+  SKIPPED: < 2 blocks (pipeline would skip this k, as per __main__.py line 160)
+
+--- k=3 ---
+  k=3 blocks: [(0, 60), (60, 302)], len=2
+  k=3: bcr_q_ratio=2.397895, z=11.409694, p_perm=0.069268
+  hinge_len=0 (only 2 blocks returned for k=3, not 3 — no central hinge block)
+
+--- Summary ---
+Paper claims: P37902, k=3, bcr_q_effect=2.15, pperm=0.0293, hinge_len=145
+k=2 skipped (only 1 block), code selects k=3 (only viable option)
+
+DISCREPANCIES FOUND:
+- bcr_q_effect: paper=2.15, code=2.397895 (significant discrepancy)
+- pperm: paper=0.0293, code=0.069268 (2.37x difference; code value above alpha=0.05)
+- hinge_len: paper=145, code=0 (partition_k_spectral returns only 2 blocks for k=3, so no central hinge)
+
+NOTES:
+- Paper Eq.2 BCR = Q75_inter/(Q25_intra+eps) (simple ratio)
+- Code formula: log((Q75_inter+eps)/(Q25_intra+eps)) with eps=max(Q05_intra,1e-3), normalized by Q95
+- BCR formula discrepancy established in prior sessions (claims 1-151) applies here
+- partition_k_spectral fails to produce 3 blocks for P37902 (k=3 request gives only 2 blocks)
+- This means paper's claimed hinge_len=145 cannot be reproduced at all
+- p_perm=0.069268 is well above alpha=0.05 threshold (paper claims 0.0293 which is below threshold)
+============================================================

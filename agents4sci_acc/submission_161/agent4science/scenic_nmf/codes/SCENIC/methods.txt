@@ -1,0 +1,180 @@
+METHODS DOCUMENTATION - SCENIC ANALYSIS OF ENTEROENDOCRINE CELLS
+=================================================================
+
+This document describes the computational methods used for Single-Cell Regulatory Network Inference and Clustering (SCENIC) analysis of enteroendocrine cells.
+
+1. DATA PREPARATION AND PREPROCESSING
+--------------------------------------
+Dataset Processing:
+- Analyzed single-cell RNA-seq data from enteroendocrine cells
+- Converted ENSEMBL gene IDs to gene symbols using the MyGene API
+- Implemented batch processing (1000 genes per batch) to avoid API timeouts
+- Handled gene duplicates by concatenating with unique suffixes
+- Created subsets for testing (1% sampling) and full dataset analysis
+
+Cell Filtering and Quality Control:
+- Applied standard scanpy preprocessing pipeline
+- Filtered cells based on mitochondrial content and gene expression thresholds
+- Normalized and log-transformed expression data
+- Performed highly variable gene selection for downstream analysis
+
+2. SCENIC REGULATORY NETWORK ANALYSIS
+--------------------------------------
+SCENIC Pipeline Implementation:
+- Used pySCENIC version for gene regulatory network (GRN) inference
+- Three main steps executed:
+  a) GRN inference using GRNBoost2/GENIE3
+  b) Regulon prediction (cisTarget)
+  c) AUCell scoring for regulon activity
+
+GRN Inference (Step 1):
+- Applied GRNBoost2 algorithm for network inference
+- Generated adjacency matrix linking transcription factors to target genes
+- Used importance scores to rank regulatory relationships
+- Output: adjacency matrix (CSV format)
+
+Regulon Prediction (Step 2):
+- Performed motif enrichment analysis using cisTarget databases
+- Human genome databases used:
+  * hg38_10kbp_up_10kbp_down_full_tx_v10_clust.genes_vs_motifs.rankings.feather
+  * hg38_500bp_up_100bp_down_full_tx_v10_clust.genes_vs_motifs.rankings.feather
+- Motif annotations from: motifs-v10nr_clust-nr.hgnc-m0.001-o0.0.tbl
+- Filtered regulons based on motif enrichment scores
+- Output: refined regulons with direct targets (CSV format)
+
+AUCell Scoring (Step 3):
+- Calculated regulon activity scores for each cell
+- Used Area Under the Curve (AUC) method to assess regulon enrichment
+- Generated binary activity matrix through adaptive thresholding
+- Output: AUC matrix (cells × regulons)
+
+3. TISSUE-SPECIFIC REGULON ANALYSIS
+------------------------------------
+Tissue Specificity Metrics:
+- Calculated mean regulon activity per tissue type
+- Computed fold change between tissues
+- Applied Cohen's d for effect size measurement
+- Performed Mann-Whitney U tests for statistical significance
+- Used AUC-ROC as discrimination metric
+
+Specificity Score Calculation:
+- Specificity score = (mean_tissue - mean_other) / pooled_std
+- Filtered regulons with specificity > 0.1 or > 0.05 (two thresholds)
+- Ranked regulons by tissue-specific activity
+
+Statistical Analysis:
+- P-value correction using Benjamini-Hochberg method
+- Multiple testing correction across all regulons and tissues
+- Significance threshold: adjusted p-value < 0.05
+
+4. VISUALIZATION AND CLUSTERING
+--------------------------------
+UMAP Dimensionality Reduction:
+- Performed UMAP on regulon activity matrix
+- Parameters: n_neighbors=15, min_dist=0.1
+- Generated separate UMAPs for metadata and regulon activities
+- Created individual UMAP plots for 400+ regulons
+
+Heatmap Generation:
+- Multiple heatmap types created:
+  * Top 50 variable regulons
+  * Tissue-specific regulons (clustered)
+  * Cell type-specific regulons
+  * Disease-associated regulons
+  * Z-score normalized activities
+- Hierarchical clustering using Ward's method
+- Color scaling: viridis and RdBu colormaps
+
+Correlation Analysis:
+- Computed Pearson correlation between tissue regulon profiles
+- Generated tissue-tissue correlation heatmaps
+- Identified co-regulated modules
+
+5. COMPARATIVE ANALYSES
+------------------------
+Normal vs Disease Comparison:
+- Separate SCENIC runs for normal enteroendocrine cells
+- Compared regulon activities between conditions
+- Identified disease-specific regulatory programs
+
+Fold Change vs Specificity Analysis:
+- Plotted relationship between fold change and specificity scores
+- Identified regulons with high discrimination power
+- Generated scatter plots with significance thresholds
+
+6. OUTPUT FILES AND DATA PRODUCTS
+----------------------------------
+Core SCENIC Outputs:
+- Adjacency matrices: *_adj_full.csv
+- Regulon definitions: *_reg_full.csv
+- AUCell scores: *_aucell_full.csv
+- Loom files: *_scenic_full.loom
+- Annotated h5ad: *_scenic_full_results.h5ad
+
+Analysis Results:
+- Tissue-specific regulon summaries (CSV)
+- Regulon activity statistics by tissue (CSV)
+- Correlation matrices (CSV)
+- Specificity scores and rankings (CSV)
+- Comprehensive analysis summaries (JSON, TXT)
+
+Visualization Outputs:
+- UMAP plots for each regulon (PNG format)
+- Heatmaps in PDF and PNG formats
+- Grid plots for top regulons
+- Comparison plots (fold change vs specificity)
+
+7. COMPUTATIONAL RESOURCES
+---------------------------
+Software Dependencies:
+- Python 3.x
+- pySCENIC (latest version)
+- scanpy for single-cell analysis
+- pandas, numpy for data manipulation
+- matplotlib, seaborn for visualization
+- scipy for statistical tests
+- scikit-learn for metrics (AUC-ROC)
+- loompy for data storage
+
+Hardware Requirements:
+- High-memory computing nodes (>64GB RAM for full dataset)
+- Multi-core processors for parallel GRN inference
+- SLURM job submission for HPC clusters
+- Typical runtime: 4-8 hours for full analysis
+
+8. QUALITY CONTROL AND VALIDATION
+----------------------------------
+Validation Steps:
+- Verified regulon counts and distributions
+- Checked for batch effects in activity scores
+- Validated tissue annotations against original metadata
+- Cross-referenced regulons with known TF databases
+- Ensured reproducibility through fixed random seeds
+
+Error Handling:
+- Comprehensive logging system with timestamps
+- Try-except blocks for robust execution
+- Fallback options for failed gene conversions
+- Validation of input data formats
+
+9. REPRODUCIBILITY
+-------------------
+Code Organization:
+- Modular Python scripts for each analysis step
+- SLURM batch scripts for cluster execution
+- Clear file naming conventions
+- Version control of all analysis code
+
+Parameter Documentation:
+- All parameters explicitly defined in scripts
+- Configuration sections at script beginning
+- Detailed comments for complex operations
+- Output of parameter settings in log files
+
+NOTES:
+------
+- All analysis code stored in paper_analysis folder
+- Original data files preserved in parent directories
+- Three analysis branches: trial (testing), normal_entero, and entero (full)
+- Comprehensive plots and figures in designated folders
+- Analysis can be reproduced using provided Python scripts and SLURM batch files

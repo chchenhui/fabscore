@@ -1,0 +1,77 @@
+{
+    "no_code_files": [
+        {
+            "index": 5,
+            "category": "results_section",
+            "content": "3. ≈ 15% increase in Likert trust scores, p<0.01",
+            "reason": "This result comes from the paper's user study (N=30 participants, grid-world planning task). The repository contains only codex/experiment.py which implements a simulated recommendation experiment, with no user study code, participant data, statistical analysis scripts, or survey results anywhere in the repository. There is no implementation path or claim-relevant artifact for this result.",
+            "code_evidence": [
+                "codex/experiment.py (recommendation simulation only, no user study)"
+            ]
+        }
+    ],
+    "obvious_hallucination": [],
+    "static_verifiable": [
+        {
+            "index": 1,
+            "category": "figure",
+            "content": "1. decision_quality.png: Decision Quality over Time",
+            "reason": "The figure results/decision_quality.png exists. The underlying data used to generate it is stored in codex/results.json, which contains three arrays of 100 per-iteration utility values (static, passive, udca). The plotting code in codex/experiment.py (lines 73-82) computes cumulative average utility from these same arrays and saves the plot. The data arrays in results.json correspond directly to the data plotted in decision_quality.png, satisfying the requirement for underlying data files matching the figure.",
+            "code_evidence": [
+                "results/decision_quality.png",
+                "codex/results.json (keys: results.static, results.passive, results.udca — 100 utility values each)",
+                "codex/experiment.py:73-82 (plotting code)"
+            ]
+        },
+        {
+            "index": 4,
+            "category": "results_section",
+            "content": "2. Query Efficiency: static issues 0 queries, passive 100, UDCA fewer than 100 (adaptive).",
+            "reason": "The query counts are directly stored in codex/results.json under the 'queries' key: {\"static\": 0, \"passive\": 100, \"udca\": 50}. This exactly matches the paper claim (static=0, passive=100, UDCA<100). The experiment.py implements the logic that produces these counts: static never queries, passive queries every iteration (100 total), and UDCA queries only when max variance exceeds threshold (resulting in 50 queries in this run).",
+            "code_evidence": [
+                "codex/results.json: queries.static=0, queries.passive=100, queries.udca=50",
+                "codex/experiment.py:54-69 (query logic for each method)"
+            ]
+        }
+    ],
+    "insufficient_evidence": [],
+    "execution_required": [
+        {
+            "index": 2,
+            "category": "figure",
+            "content": "2. pce.png: Final Preference Calibration Error",
+            "reason": "The figure results/pce.png exists, but the underlying PCE values are NOT stored in codex/results.json (which only stores utility arrays and query counts). The PCE computation in experiment.py (lines 84-96) uses the final model.mu states of each method at the end of the run — these model states are never serialized to disk. Without the stored model parameters or intermediate PCE data, static inspection cannot verify whether the pce.png image reflects the correct PCE values. The experiment.py script provides the full regeneration path.",
+            "candidate_files": [
+                "codex/experiment.py"
+            ],
+            "suggested_entrypoints": [
+                "python codex/experiment.py"
+            ]
+        },
+        {
+            "index": 3,
+            "category": "results_section",
+            "content": "1. UDCA achieves a PCE of ≈1.5 versus 6.4 (static) and 0.3 (passive).",
+            "reason": "PCE values are not stored in any artifact in the repository. The experiment.py computes PCE inline at the end of the run from model.mu states (lines 85-88), but neither these model states nor the PCE values themselves are saved to results.json or any other file. The paper claims UDCA PCE ≈1.5, static 6.4, passive 0.3 — these can only be verified by running experiment.py. Note: the experiment has no fixed random seed, so results will vary across runs.",
+            "candidate_files": [
+                "codex/experiment.py"
+            ],
+            "suggested_entrypoints": [
+                "python codex/experiment.py"
+            ]
+        }
+    ],
+    "error": [],
+    "summary": {
+        "total_claims": 5,
+        "no_code_files": 1,
+        "obvious_hallucination": 0,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "static_verifiable": 2,
+        "insufficient_evidence": 0,
+        "execution_required": 2,
+        "error": 0
+    }
+}

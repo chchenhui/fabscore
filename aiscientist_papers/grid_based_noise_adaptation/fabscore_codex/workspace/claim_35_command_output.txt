@@ -1,0 +1,227 @@
+===== COMMAND: nl -ba plot.py | sed -n '1,130p' =====
+     1	import matplotlib.pyplot as plt
+     2	import matplotlib.colors as mcolors
+     3	import numpy as np
+     4	import json
+     5	import os
+     6	import os.path as osp
+     7	import pickle
+     8	
+     9	# LOAD FINAL RESULTS:
+    10	datasets = ["circle", "dino", "line", "moons"]
+    11	folders = os.listdir("./")
+    12	final_results = {}
+    13	train_info = {}
+    14	
+    15	
+    16	def smooth(x, window_len=10, window='hanning'):
+    17	    s = np.r_[x[window_len - 1:0:-1], x, x[-2:-window_len - 1:-1]]
+    18	    if window == 'flat':  # moving average
+    19	        w = np.ones(window_len, 'd')
+    20	    else:
+    21	        w = getattr(np, window)(window_len)
+    22	    y = np.convolve(w / w.sum(), s, mode='valid')
+    23	    return y
+    24	
+    25	
+    26	for folder in folders:
+    27	    if folder.startswith("run") and osp.isdir(folder):
+    28	        with open(osp.join(folder, "final_info.json"), "r") as f:
+    29	            final_results[folder] = json.load(f)
+    30	        all_results = pickle.load(open(osp.join(folder, "all_results.pkl"), "rb"))
+    31	        train_info[folder] = all_results
+    32	
+    33	# Create a programmatic color palette
+    34	def generate_color_palette(n):
+    35	    cmap = plt.get_cmap('tab20')  # You can change 'tab20' to other colormaps like 'Set1', 'Set2', 'Set3', etc.
+    36	    return [mcolors.rgb2hex(cmap(i)) for i in np.linspace(0, 1, n)]
+    37	
+    38	# CREATE LEGEND
+    39	labels = {
+    40	    "run_0": "Baseline",
+    41	    "run_1": "10x10 Grid",
+    42	    "run_2": "20x20 Grid",
+    43	    "run_3": "Multi-scale Grid",
+    44	    "run_4": "Multi-scale + L1 Reg",
+    45	    "run_5": "Adjusted L1 Reg"
+    46	}
+    47	
+    48	# Only plot the runs that are both in the labels dictionary and in the final_results
+    49	runs = [run for run in final_results.keys() if run in labels]
+    50	colors = generate_color_palette(len(runs))
+    51	
+    52	
+    53	# CREATE PLOTS
+    54	
+    55	
+    56	# Get the list of runs and generate the color palette
+    57	runs = list(final_results.keys())
+    58	colors = generate_color_palette(len(runs))
+    59	
+    60	# Plot 1: Line plot of training loss for each dataset across the runs with labels
+    61	fig, axs = plt.subplots(2, 2, figsize=(14, 8), sharex=True)
+    62	
+    63	for j, dataset in enumerate(datasets):
+    64	    row = j // 2
+    65	    col = j % 2
+    66	    for i, run in enumerate(runs):
+    67	        mean = train_info[run][dataset]["train_losses"]
+    68	        mean = smooth(mean, window_len=25)
+    69	        axs[row, col].plot(mean, label=labels[run], color=colors[i])
+    70	        axs[row, col].set_title(dataset)
+    71	        axs[row, col].legend()
+    72	        axs[row, col].set_xlabel("Training Step")
+    73	        axs[row, col].set_ylabel("Loss")
+    74	
+    75	plt.tight_layout()
+    76	plt.savefig("train_loss.png")
+    77	plt.show()
+    78	
+    79	# Plot 2: Visualize generated samples
+    80	# If there is more than 1 run, these are added as extra rows.
+    81	num_runs = len(runs)
+    82	fig, axs = plt.subplots(num_runs, 4, figsize=(14, 3 * num_runs))
+    83	
+    84	for i, run in enumerate(runs):
+    85	    for j, dataset in enumerate(datasets):
+    86	        images = train_info[run][dataset]["images"]
+    87	        if num_runs == 1:
+    88	            axs[j].scatter(images[:, 0], images[:, 1], alpha=0.2, color=colors[i])
+    89	            axs[j].set_title(dataset)
+    90	        else:
+    91	            axs[i, j].scatter(images[:, 0], images[:, 1], alpha=0.2, color=colors[i])
+    92	            axs[i, j].set_title(dataset)
+    93	    if num_runs == 1:
+    94	        axs[0].set_ylabel(labels[run])
+    95	    else:
+    96	        axs[i, 0].set_ylabel(labels[run])
+    97	
+    98	plt.tight_layout()
+    99	plt.savefig("generated_images.png")
+   100	plt.show()
+   101	
+   102	# Plot 3: Bar plot of evaluation metrics
+   103	metrics = ['eval_loss', 'kl_divergence', 'training_time', 'inference_time']
+   104	fig, axs = plt.subplots(2, 2, figsize=(16, 12))
+   105	fig.suptitle("Evaluation Metrics Across Runs", fontsize=16)
+   106	
+   107	for i, metric in enumerate(metrics):
+   108	    row = i // 2
+   109	    col = i % 2
+   110	    data = [final_results[run][dataset][metric] for run in runs for dataset in datasets]
+   111	    x = np.arange(len(datasets) * len(runs))
+   112	    axs[row, col].bar(x, data, color=colors)
+   113	    axs[row, col].set_title(metric.replace('_', ' ').title())
+   114	    axs[row, col].set_xticks(x + 0.5 * (len(runs) - 1))
+   115	    axs[row, col].set_xticklabels(datasets * len(runs), rotation=45)
+   116	    axs[row, col].legend(labels.values(), loc='upper left', bbox_to_anchor=(1, 1))
+   117	
+   118	plt.tight_layout()
+   119	plt.savefig("evaluation_metrics.png")
+   120	plt.show()
+   121	
+   122	# Plot 4: Grid variance comparison (for runs 3 and 4)
+   123	if 'run_3' in runs and 'run_4' in runs:
+   124	    fig, axs = plt.subplots(1, 2, figsize=(14, 6))
+   125	    fig.suptitle("Grid Variance Comparison", fontsize=16)
+   126	
+   127	    for i, grid_type in enumerate(['coarse_grid_variance', 'fine_grid_variance']):
+   128	        data_run3 = [final_results['run_3'][dataset][grid_type] for dataset in datasets]
+   129	        data_run4 = [final_results['run_4'][dataset][grid_type] for dataset in datasets]
+   130	
+===== EXIT STATUS: 0 =====
+
+===== COMMAND: nl -ba latex/template.tex | sed -n '420,434p' =====
+   420	
+   421	% Discussion of training and inference times
+   422	As shown in Table \ref{tab:results_summary}, our proposed models incur increased training times compared to the baseline DDPM. The multi-scale grid approach with L1 regularization takes approximately 79\% longer to train. However, this increased training time is offset by the significant improvements in sample quality and distribution matching. Inference times remain comparable across all models, with only a slight increase (7.9\% for our full model) relative to the baseline.
+   423	
+   424	% Analysis of grid variance and noise adaptation effectiveness
+   425	Figure \ref{fig:train_loss} shows the training loss over time for each dataset across all model configurations.
+   426	
+   427	\begin{figure}[ht]
+   428	    \centering
+   429	    \includegraphics[width=0.9\textwidth]{train_loss.png}
+   430	    \caption{Training loss over time for each dataset (circle, dino, line, and moons) across all runs.}
+   431	    \label{fig:train_loss}
+   432	\end{figure}
+   433	
+   434	The training loss curves demonstrate consistent convergence across all datasets, with our multi-scale grid approaches showing faster initial decreases in loss compared to the baseline DDPM. The L1-regularized version exhibits slightly higher final training loss, which aligns with our observations of improved generalization and sample quality despite the potential for a less tight fit to the training data.
+===== EXIT STATUS: 0 =====
+
+===== COMMAND: python - <<'PY'
+import pickle
+from pathlib import Path
+base = Path('/home/chenhui/fabscore/aiscientist_papers/grid_based_noise_adaptation')
+paths = [
+    base/'fabscore_claude/workspace/run_1_fresh/all_results.pkl',
+    base/'fabscore_codex/workspace/claim_33_run_2_fresh/all_results.pkl',
+    base/'fabscore_claude/workspace/run_3_fresh/all_results.pkl',
+    base/'fabscore_codex/workspace/claim_33_run_4_fresh/all_results.pkl',
+    base/'fabscore_codex/workspace/claim_33_run_5_fresh/all_results.pkl',
+]
+for p in paths:
+    data = pickle.load(open(p,'rb'))
+    lens = {ds: len(data[ds]['train_losses']) for ds in ['circle','dino','line','moons']}
+    print(p)
+    print(lens)
+print('train_loss_png_exists', (base/'fabscore_codex/workspace/claim_33_plot_env_no_baseline/train_loss.png').exists())
+PY =====
+/home/chenhui/fabscore/aiscientist_papers/grid_based_noise_adaptation/fabscore_claude/workspace/run_1_fresh/all_results.pkl
+{'circle': 10000, 'dino': 10000, 'line': 10000, 'moons': 10000}
+/home/chenhui/fabscore/aiscientist_papers/grid_based_noise_adaptation/fabscore_codex/workspace/claim_33_run_2_fresh/all_results.pkl
+{'circle': 10000, 'dino': 10000, 'line': 10000, 'moons': 10000}
+/home/chenhui/fabscore/aiscientist_papers/grid_based_noise_adaptation/fabscore_claude/workspace/run_3_fresh/all_results.pkl
+{'circle': 10000, 'dino': 10000, 'line': 10000, 'moons': 10000}
+/home/chenhui/fabscore/aiscientist_papers/grid_based_noise_adaptation/fabscore_codex/workspace/claim_33_run_4_fresh/all_results.pkl
+{'circle': 10000, 'dino': 10000, 'line': 10000, 'moons': 10000}
+/home/chenhui/fabscore/aiscientist_papers/grid_based_noise_adaptation/fabscore_codex/workspace/claim_33_run_5_fresh/all_results.pkl
+{'circle': 10000, 'dino': 10000, 'line': 10000, 'moons': 10000}
+train_loss_png_exists True
+===== EXIT STATUS: 0 =====
+
+===== COMMAND: python - <<'PY'
+from pathlib import Path
+p = Path('/home/chenhui/fabscore/aiscientist_papers/grid_based_noise_adaptation/fabscore_codex/workspace/claim_33_plot_env_full/run_0/all_results.pkl')
+print('run_0_all_results_exists', p.exists())
+print('run_0_all_results_path', p)
+PY =====
+run_0_all_results_exists False
+run_0_all_results_path /home/chenhui/fabscore/aiscientist_papers/grid_based_noise_adaptation/fabscore_codex/workspace/claim_33_plot_env_full/run_0/all_results.pkl
+===== EXIT STATUS: 0 =====
+
+===== COMMAND: rg -n "claim_33_plot_env_full|claim_33_plot_env_no_baseline|FileNotFoundError|KeyError|EXIT STATUS" fabscore_codex/workspace/claim_33_command_output.txt =====
+13:===== EXIT STATUS: 0 =====
+27:===== EXIT STATUS: 0 =====
+41:===== EXIT STATUS: 0 =====
+43:===== COMMAND: cd fabscore_codex/workspace/claim_33_plot_env_full && MPLBACKEND=Agg python plot.py =====
+47:  File "/home/chenhui/fabscore/aiscientist_papers/grid_based_noise_adaptation/fabscore_codex/workspace/claim_33_plot_env_full/plot.py", line 30, in <module>
+50:FileNotFoundError: [Errno 2] No such file or directory: 'run_0/all_results.pkl'
+52:===== EXIT STATUS: 1 =====
+54:===== COMMAND: cd fabscore_codex/workspace/claim_33_plot_env_no_baseline && MPLBACKEND=Agg python plot.py =====
+58:  File "/home/chenhui/fabscore/aiscientist_papers/grid_based_noise_adaptation/fabscore_codex/workspace/claim_33_plot_env_no_baseline/plot.py", line 110, in <module>
+61:KeyError: 'eval_loss'
+63:===== EXIT STATUS: 1 =====
+===== EXIT STATUS: 0 =====
+
+===== COMMAND: sed -n '43,61p' fabscore_codex/workspace/claim_33_command_output.txt =====
+===== COMMAND: cd fabscore_codex/workspace/claim_33_plot_env_full && MPLBACKEND=Agg python plot.py =====
+/home/chenhui/.config/matplotlib is not a writable directory
+Matplotlib created a temporary cache directory at /tmp/matplotlib-w32nbivz because there was an issue with the default path (/home/chenhui/.config/matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+Traceback (most recent call last):
+  File "/home/chenhui/fabscore/aiscientist_papers/grid_based_noise_adaptation/fabscore_codex/workspace/claim_33_plot_env_full/plot.py", line 30, in <module>
+    all_results = pickle.load(open(osp.join(folder, "all_results.pkl"), "rb"))
+                              ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'run_0/all_results.pkl'
+
+===== EXIT STATUS: 1 =====
+
+===== COMMAND: cd fabscore_codex/workspace/claim_33_plot_env_no_baseline && MPLBACKEND=Agg python plot.py =====
+/home/chenhui/.config/matplotlib is not a writable directory
+Matplotlib created a temporary cache directory at /tmp/matplotlib-wclitehr because there was an issue with the default path (/home/chenhui/.config/matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+Traceback (most recent call last):
+  File "/home/chenhui/fabscore/aiscientist_papers/grid_based_noise_adaptation/fabscore_codex/workspace/claim_33_plot_env_no_baseline/plot.py", line 110, in <module>
+    data = [final_results[run][dataset][metric] for run in runs for dataset in datasets]
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+KeyError: 'eval_loss'
+===== EXIT STATUS: 0 =====

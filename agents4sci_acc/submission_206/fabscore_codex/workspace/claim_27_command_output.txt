@@ -1,0 +1,152 @@
+===== COMMAND =====
+python - <<'PY'
+from PyPDF2 import PdfReader
+reader = PdfReader('206_Self_Spec_Model_Authored_S.pdf')
+for i, page in enumerate(reader.pages, 1):
+    text = page.extract_text() or ''
+    if 'Table 3' in text or '141' in text or 'unique among the three self-spec logs' in text:
+        print(f'===== PAGE {i} =====')
+        print(text)
+PY
+===== STDOUT =====
+===== PAGE 6 =====
+Model Native Self-Spec∆
+GPT-4o 87% 92% +5
+Claude 3.7 92% 94% +2
+Claude 3.5 90% 89%−1
+Table 1:HumanEval pass@1 (single sample, T= 0 ).Each model is evaluated on 164 HumanEval
+problems under two conditions: direct code generation (Native) vs. the Self-Spec pipeline. ∆denotes
+the percentage point difference. GPT-4o and Claude 3.7 clearly benefit from Self-Spec, while Claude
+3.5 sees a negligible drop.
+guiding their solution. In contrast, Claude 3.5 shows a slight decrease in performance with Self-Spec
+(90% down to 89%, i.e. −1 point). In absolute terms, this drop is very small (essentially one fewer
+problem solved) and suggests that for this less capable model, the additional spec process did not
+yield an immediate benefit. We analyze these patterns further in the next section.
+Overall, two out of three models saw an accuracy gain by using Self-Spec, highlighting the potential
+of the approach for state-of-the-art LLMs. The slight regression for Claude 3.5 points to differences
+in how smaller/older models handle the spec process.
+6 Analysis
+Category Task IDs
+Persistent across all three 75, 145, 160
+Shared (Claude 3.7 & GPT-4o) 65, 134, 163
+Shared (Claude 3.7 & Claude 3.5) 92, 146
+Shared (GPT-4o & Claude 3.5) 50, 83
+Table 2: Common errors across models (self-spec only)
+Model Task IDs (unique among the three self-spec logs)
+Claude 3.7 10, 116
+GPT-4o 74, 91, 102, 115, 132, 141
+Claude 3.5 9, 14, 17, 19, 32, 112, 113, 125, 126, 129, 135, 138, 153
+Table 3: Model-unique failure candidates (potential regressions; baseline not provided)
+Error analysis.Baseline runs often fail for orchestration reasons—entry-point hijacking, template
+bleed, helper-bridging failures, or environment drift—but these largely vanish under Self-Spec,
+which pins entry points, fixes helper usage, and enforces return types and operation order. The
+remaining errors are genuine specification-following mistakes. We observe three persistent classes:
+(i)constraint misreads, where models over-interpret bounds (e.g., HE/75, treating “ a <100 ” as
+a hard precondition and rejecting larger cases); (ii)tie-break and sign semantics, where sorting or
+aggregation misaligns with hidden conventions (e.g., HE/145, mishandling negatives in digit-sum
+tie-breaking); and (iii)operator precedence, where left-to-right folding replaces standard rules (e.g.,
+HE/160, producing 15instead of the expected 9for “+,∗,− ”). Two-model overlaps further reveal
+systematic pitfalls: HE/65 (rule-priority mistakes in circular shifts and leading zeros), HE/134
+(single-letter tail cases), HE/163 (misreading “even digits” as characters rather than integers), HE/50
+(dependency coupling on helpers), and HE/83 (tokenization/case-sensitivity for sentence starts).
+Model-specific errors suggest characteristic tendencies: Claude 3.5 often inserts over-strict “defensive”
+guards (e.g., raising on empty input in HE/9/14/17/19/112/125), a side-effect of self-specification;
+GPT-4o shows localized logic slips (per-row vs. global accounting in HE/115, filename rules in
+HE/141); Claude 3.7 contributes few uniques (HE/10/116) but consistently shares the core trio. In
+sum, persistent failures cluster on compressed prompts with multiple constraints or counter-intuitive
+exceptions, making them prime candidates for templated Self-Spec guidance. Without baseline error
+IDs, model-unique failures are conservatively treated as regression candidates.
+6
+===== STDERR =====
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+python - <<'PY'
+import json
+paths = [
+    'A4S_update/failed_spec_gpt_4o.jsonl',
+    'A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl',
+]
+needle = 'HumanEval/141'
+for path in paths:
+    hits = []
+    with open(path) as f:
+        for lineno, line in enumerate(f, 1):
+            obj = json.loads(line)
+            if (obj.get('task_id') or obj.get('HumanEval_ID')) == needle:
+                hits.append((lineno, obj.get('task_id'), obj.get('error')))
+    print(f'===== {path} =====')
+    if hits:
+        for lineno, task_id, error in hits:
+            print('line', lineno, 'task_id', task_id, 'error', error)
+    else:
+        print('NOT FOUND')
+PY
+===== STDOUT =====
+===== A4S_update/failed_spec_gpt_4o.jsonl =====
+line 11 task_id HumanEval/141 error AssertionError: 
+===== A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl =====
+NOT FOUND
+===== STDERR =====
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+python - <<'PY'
+from pathlib import Path
+for p in sorted(Path('A4S_update').glob('*claude_3_5*')):
+    print(p)
+PY
+===== STDOUT =====
+A4S_update/all_baseline_claude_3_5_sonnet_20241022.jsonl
+A4S_update/failed_baseline_claude_3_5_sonnet_20241022.jsonl
+A4S_update/results_summary_baseline_claude_3_5_sonnet_20241022.txt
+===== STDERR =====
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+sed -n '1,120p' fabscore_codex/workspace/claim_8_command_output.txt
+===== STDOUT =====
+===== COMMAND =====
+cd A4S_update && python3 spec_result_generation.py
+===== STDOUT =====
+===== STDERR =====
+Traceback (most recent call last):
+  File "/home/chenhui/fabscore/agent4sci_acc/submission_206/A4S_update/spec_result_generation.py", line 545, in <module>
+    asyncio.run(async_main())
+    ~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/home/chenhui/miniconda3/lib/python3.13/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/home/chenhui/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/chenhui/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/chenhui/fabscore/agent4sci_acc/submission_206/A4S_update/spec_result_generation.py", line 533, in async_main
+    orch = config.build()
+  File "/home/chenhui/fabscore/agent4sci_acc/submission_206/A4S_update/spec_result_generation.py", line 471, in build
+    llm = GPT5LLM(api_key=self.api_key, default_model=self.model, base_url=self.base_url,concurrency=self.concurrency)
+  File "<string>", line 7, in __init__
+  File "/home/chenhui/fabscore/agent4sci_acc/submission_206/A4S_update/spec_result_generation.py", line 46, in __post_init__
+    raise RuntimeError("NO API Key：")
+RuntimeError: NO API Key：
+===== EXIT CODE: 1 =====
+
+===== STDERR =====
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+rg -n 'API_KEY|NO API Key' A4S_update/spec_result_generation.py fabscore_codex/workspace/claim_8_command_output.txt
+===== STDOUT =====
+fabscore_codex/workspace/claim_8_command_output.txt:24:    raise RuntimeError("NO API Key：")
+fabscore_codex/workspace/claim_8_command_output.txt:25:RuntimeError: NO API Key：
+A4S_update/spec_result_generation.py:43:        API_KEY = ""
+A4S_update/spec_result_generation.py:45:        if not API_KEY:
+A4S_update/spec_result_generation.py:46:            raise RuntimeError("NO API Key：")
+A4S_update/spec_result_generation.py:48:            self.client = AsyncOpenAI(api_key=API_KEY, base_url=self.base_url)
+A4S_update/spec_result_generation.py:50:            self.client = AsyncOpenAI(api_key=API_KEY)
+A4S_update/spec_result_generation.py:521:        # api_key=os.getenv("OPENAI_API_KEY"),
+===== STDERR =====
+===== EXIT CODE: 0 =====
+

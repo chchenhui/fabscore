@@ -1,0 +1,20 @@
+{
+  "optimize_index": 0,
+  "issues": [
+    {
+      "title": "Probability renormalization for P(TIE) clipping",
+      "description": "P(TIE) = 1 - P(A) - P(B) - P(BOTH_BAD) could be clipped to epsilon without renormalizing the other probabilities, breaking the probability simplex. Fixed by normalizing all 4 probabilities to sum to 1 after clipping."
+    },
+    {
+      "title": "Per-system tie propensity (gamma extension)",
+      "description": "The original model uses a single global lambda for tie probability. Extended with per-system gamma_k parameters: lam_ij = base_lam * exp(gamma_i + gamma_j), with L2 regularization on gamma (tuned via 5-fold CV, best l2_gamma=0.1). This allows different systems to have different tie tendencies while preserving the grounded BOTH_BAD structure. CV NLL improved from 1.0355 to 1.0340."
+    },
+    {
+      "title": "Optimizer convergence and initialization",
+      "description": "Improved L-BFGS-B convergence with tighter tolerances (ftol=1e-14, gtol=1e-10, maxiter=10000) and better lambda initialization (log(0.3) starting near the fitted value instead of log(1)=0 starting at lambda=2). Multi-restart analysis confirmed unique global optimum."
+    }
+  ],
+  "experiment_result_path": "EXPERIMENT_RESULTS/optimize_trace/iteration_0/",
+  "success": true,
+  "summary": "Optimized GRK model by extending with per-system tie propensity parameters (gamma_k) and probability renormalization. Global test NLL improved from 0.9556 to 0.9526, ECE from 0.1542 to 0.1502. Improvement consistent across all three test splits (global/instrumental/vocal). GRK vs AB-MNL advantage widened from -0.0789 to -0.0819 NLL. All pairwise significance tests remain strongly significant."
+}

@@ -1,0 +1,42 @@
+=== CLAIM 214 VERIFICATION: Table 1, P0AF06, qbh: 0.00281 ===
+
+--- CONTEXT REUSE: claim_211_command_output.txt (same protein P0AF06) ---
+From prior session (claim_211):
+  PAE shape: (308, 308)
+  k=2: blocks=[(0, 101), (101, 308)], bcr_q_ratio=2.063693, z=4.248718, p_perm=0.087805
+  k=3: blocks=[(0, 102), (102, 201), (201, 308)], bcr_q_ratio=1.840550, z=0.674486, p_perm=0.430244
+  Selected k=2 (smallest p_perm=0.087805)
+
+--- COMMAND: Verify mathematical compatibility of p_perm=0.087805 with qbh=0.00281 ---
+python3 -c "
+import sys; sys.path.insert(0, 'for_submission')
+from common.stats import benjamini_hochberg
+...
+"
+OUTPUT:
+Scenario 1 (m=1): p_perm=0.087805, q_bh=0.087805
+Scenario 2 (m=1476, P0AF06 smallest): p_perm=0.087805, q_bh=0.997834
+Scenario 3 (m=1476, P0AF06 largest): p_perm=0.087805, q_bh=0.087805
+
+Mathematical minimum q_bh for p_perm=0.087805: 0.087805
+Paper claims: q_bh=0.00281
+Conflict: 0.087805 > 0.00281 (q_bh cannot be smaller than p_perm under BH)
+
+For q_bh=0.00281 with m=1476: needed p_perm <= 0.00281 (if largest rank)
+But code produces p_perm=0.087805 >> 0.00281
+
+BCR formula in code: log((Q_inter + eps) / (Q_intra + eps))
+Paper Eq.2: Q75_inter / (Q25_intra + eps)
+These are different formulas (log-ratio vs simple ratio)
+
+KEY FINDINGS:
+1. p_perm=0.087805 computed for P0AF06 (k=2) from prior session
+2. BH correction verified: q_bh >= p_perm ALWAYS (mathematical property)
+3. Paper's qbh=0.00281 << p_perm=0.087805: IMPOSSIBLE under BH
+4. BCR formula conflict: code uses log-ratio, paper uses simple ratio (Eq.2)
+5. Cohorts/evidence_ready.csv absent - full pipeline unrunnable, but math confirms conflict
+
+VERDICT: Experiment Fabrication
+- BCR formula in code (log-ratio) differs from paper Eq.2 (simple ratio)
+- p_perm=0.087805 computed for P0AF06; qbh=0.00281 is mathematically impossible
+- Same classification as all other Table 1 claims

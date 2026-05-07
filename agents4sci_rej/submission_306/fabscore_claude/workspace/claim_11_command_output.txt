@@ -1,0 +1,23 @@
+=== CLAIM 11 VERIFICATION: Table 1, P0ABK9, k: 3 ===
+
+--- COMMAND 1: Fetch P0ABK9 AlphaFold PAE and check k-selection ---
+python3 -c "... fetch P0ABK9 PAE, run bcr_q_ratio for k=2,3 with n_perm=1024, null_mode=rotation ..."
+OUTPUT:
+P0ABK9: PAE shape=(478, 478)
+k=2: bcr_q_ratio=2.319114, z=10.261073, p_perm=0.051707
+  blocks=Blocks(blocks=[(0, 37), (37, 478)])
+k=3: bcr_q_ratio=2.501436, z=12.677108, p_perm=0.031220
+  blocks=Blocks(blocks=[(0, 37), (37, 328), (328, 478)])
+  hinge_len=291
+Selected k=3
+
+KEY FINDINGS:
+1. Code (n_perm=1024, null_mode=rotation) selects k=3 for P0ABK9 (p_perm=0.031220 < k=2 p_perm=0.051707)
+2. Paper claims k=3 for P0ABK9 — k-selection result matches the paper's claim.
+3. However, the BCR formula in code (log-ratio: log((Q75_inter+eps)/(Q25_intra+eps))) is still different
+   from paper Eq.2 (simple ratio: Q75_inter/(Q25_intra+eps)) — same systemic discrepancy established
+   in prior sessions (claims 1-10).
+4. hinge_len=291 (central block from residue 37 to 328) — paper value for P0ABK9 hinge_len is not
+   the focus of this claim (claim_11 is specifically about k=3).
+5. The BCR formula discrepancy means the experiment cannot be fully reproduced as described in the paper,
+   even though k=3 happens to be selected here.

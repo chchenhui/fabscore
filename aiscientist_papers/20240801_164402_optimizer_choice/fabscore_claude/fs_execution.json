@@ -1,0 +1,71 @@
+{
+    "tables": [],
+    "figures": [
+        {
+            "claim_index": 49,
+            "claim": "1. Figure 1(a): Training Accuracy for x_div_y",
+            "verdict": "Verified",
+            "explanation": "Execution stage: The experiment code (experiment.py run() function) was successfully executed for AdamW/x_div_y/seed0. The resulting training accuracy time-series confirms the grokking behavior depicted in Figure 1(a): training accuracy rises quickly to 1.0 while validation accuracy lags behind (grokking). The code correctly produces training accuracy curves for x_div_y, consistent with what Figure 1(a) would show. Final results match stored final_info.json values (final_train_acc=1.0).",
+            "evidence": "Fresh execution of AdamW on x_div_y for 1 seed (7500 steps, GPU): training accuracy rises to ~0.98 by step 500, reaches 1.0 by step 1000, stays at 1.0 through step 7500. Validation accuracy shows grokking pattern (near 0 until ~3500 steps, then rises to 1.0 by ~5000). final_train_acc=1.0, final_val_acc=1.0, step_val_acc_99=4970. Time-series data saved to workspace/minimal_run/minimal_x_div_y_adamw_seed0.npy. | Code: experiment.py:299 run(), experiment.py:383 __main__ loop, experiment.py:421 all_results.npy save",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "experiment.py:299 run(), experiment.py:383 __main__ loop, experiment.py:421 all_results.npy save"
+                ],
+                "commands_executed": [
+                    "python fabscore_claude/workspace/run_minimal_x_div_y.py (from repo root; script calls experiment.run(out_dir, 'x_div_y', 0, 'AdamW') for 7500 steps)"
+                ]
+            }
+        },
+        {
+            "claim_index": 50,
+            "claim": "2. Figure 1(b): Training Loss for x_div_y",
+            "verdict": "Verified",
+            "explanation": "Execution stage: The npy artifact from the prior session's fresh run of experiment.py (AdamW, x_div_y, seed 0) contains training loss time-series. Training loss starts high (~4.7) and drops to near zero by step 1000, consistent with the grokking training loss curve shown in Figure 1(b). The underlying data is real and reproducible from the code.",
+            "evidence": "Reused fabscore_claude/workspace/minimal_run/minimal_x_div_y_adamw_seed0.npy from prior session. train_log_info contains 750 entries with fields [train_accuracy, train_loss, step]. Training loss values: step 10=4.70, step 100=4.28, step 500=0.35, step 1000=0.011, step 1500=0.009, stabilizes <0.015 through step 7500. This matches the rapid decrease pattern expected in Figure 1(b). | Code: experiment.py:257-261 (train() returns train_loss per step); experiment.py:360 (appended to train_log_info); experiment.py:375 (returned to caller)",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "experiment.py:257-261 (train() returns train_loss per step)",
+                    "experiment.py:360 (appended to train_log_info)",
+                    "experiment.py:375 (returned to caller)"
+                ],
+                "commands_executed": [
+                    "python3 -c \"import numpy as np; data=np.load('fabscore_claude/workspace/minimal_run/minimal_x_div_y_adamw_seed0.npy', allow_pickle=True).item(); train_log=data['train_log_info']; [print(e) for e in train_log if e['step']%500==0]\" (artifact inspection only, no new experiment.py run)"
+                ]
+            }
+        },
+        {
+            "claim_index": 51,
+            "claim": "3. Figure 1: Training performance for the x_div_y dataset using different optimizers.",
+            "verdict": "Verified",
+            "explanation": "Execution stage: Claim 51 is the combined Figure 1 caption: 'Training performance for the x_div_y dataset using different optimizers.' Prior session (claim 49) successfully executed AdamW/x_div_y and saved real time-series data. Run directories (run_0 through run_5) contain final_info.json with results for multiple optimizers (AdamW, SGD, RMSprop, Adagrad) on x_div_y. The plot.py script correctly aggregates per-run optimizer curves for x_div_y. The figure caption accurately describes the figure content — real experimental results from multiple optimizer runs on the x_div_y dataset.",
+            "evidence": "Prior session artifact `minimal_x_div_y_adamw_seed0.npy` confirmed real training performance time-series for x_div_y (AdamW). run_1/final_info.json keys include x_div_y_SGD, x_div_y_RMSprop confirming multiple optimizers were tested. plot.py produces per-run training curves for x_div_y. PNG files train_acc_x_div_y.png and train_loss_x_div_y.png exist in repository root. | Code: plot.py:73-167 (labels dict maps run_0-run_4 to optimizer experiments; training curves plotted per dataset including x_div_y); run_1/final_info.json (keys: x_div_y_SGD, x_div_y_RMSprop etc.)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "plot.py:73-167 (labels dict maps run_0-run_4 to optimizer experiments",
+                    "training curves plotted per dataset including x_div_y)",
+                    "run_1/final_info.json (keys: x_div_y_SGD, x_div_y_RMSprop etc.)"
+                ],
+                "commands_executed": [
+                    "No new commands run; reused artifacts from prior sessions: minimal_x_div_y_adamw_seed0.npy (claim 49 execution) and run_1/final_info.json inspection (claim 49/50 analysis)"
+                ]
+            }
+        }
+    ],
+    "results_section": [],
+    "summary": {
+        "total": 3,
+        "verified": 3,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 0,
+        "error": 0
+    }
+}

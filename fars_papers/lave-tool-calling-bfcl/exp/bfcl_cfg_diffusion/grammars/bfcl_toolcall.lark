@@ -1,0 +1,51 @@
+// Syntax-only BFCL tool-call grammar for LAVE constrained diffusion decoding.
+// Accepts Python expressions: a bracketed list of function calls with keyword args
+// and Python/Java/JS literals. Does NOT restrict function/argument names.
+// Supports bare identifiers (e.g. progressMonitor), dotted names (e.g. TimeUnit.SECONDS),
+// and expression-like values (e.g. builder -> builder.value) for Java/JS compatibility.
+// Also accepts empty list [] for Irrelevance category.
+
+start: call_list
+
+call_list: "[" "]" | "[" call ("," call)* "]"
+
+call: dotted_name "(" kwargs? ")"
+
+dotted_name: IDENT ("." IDENT)*
+
+kwargs: kwarg ("," kwarg)*
+
+kwarg: IDENT "=" value
+
+value: string | number | boolean | none | list_lit | tuple_lit | dict_lit | expr_val
+
+expr_val: dotted_name ( "(" args_list? ")" )?
+
+args_list: value ("," value)*
+
+string: DOUBLE_QUOTED | SINGLE_QUOTED
+
+number: SIGNED_FLOAT | SIGNED_INT | FLOAT | INT
+
+boolean: "True" | "False"
+
+none: "None"
+
+list_lit: "[" "]" | "[" value ("," value)* "]"
+
+tuple_lit: "(" ")" | "(" value "," ")" | "(" value ("," value)+ ")"
+
+dict_lit: "{" "}" | "{" dict_pair ("," dict_pair)* "}"
+
+dict_pair: value ":" value
+
+IDENT: /[a-zA-Z_][a-zA-Z0-9_]*/
+DOUBLE_QUOTED: /\"([^\"\\]|\\.)*\"/
+SINGLE_QUOTED: /'([^'\\]|\\.)*'/
+SIGNED_FLOAT: /[+-]?(\d+\.\d*|\.\d+)([eE][+-]?\d+)?|\d+[eE][+-]?\d+/
+SIGNED_INT: /[+-]?(0|[1-9]\d*)/
+FLOAT: /(\d+\.\d*|\.\d+)([eE][+-]?\d+)?|\d+[eE][+-]?\d+/
+INT: /0|[1-9]\d*/
+
+%import common.WS
+%ignore WS

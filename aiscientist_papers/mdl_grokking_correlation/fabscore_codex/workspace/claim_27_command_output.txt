@@ -1,0 +1,158 @@
+===== COMMAND =====
+python - <<'PY'
+import json
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+import experiment
+
+repo = '/home/chenhui/fabscore/aiscientist_papers/mdl_grokking_correlation'
+workspace = os.path.join(repo, 'fabscore_codex', 'workspace')
+out_dir = os.path.join(workspace, 'claim_27_permutation')
+os.makedirs(out_dir, exist_ok=True)
+
+# Regenerate only the missing permutation artifact via the repo-native path.
+all_results = {}
+final_info_list = []
+for seed_offset in range(3):
+    print(f'Running permutation with seed offset {seed_offset}')
+    final_info, train_info, val_info, mdl_info = experiment.run(out_dir, 'permutation', seed_offset)
+    all_results[f'permutation_{seed_offset}_final_info'] = final_info
+    all_results[f'permutation_{seed_offset}_train_info'] = train_info
+    all_results[f'permutation_{seed_offset}_val_info'] = val_info
+    all_results[f'permutation_{seed_offset}_mdl_info'] = mdl_info
+    final_info_list.append(final_info)
+
+with open(os.path.join(out_dir, 'all_results.npy'), 'wb') as f:
+    np.save(f, all_results)
+
+with open(os.path.join(out_dir, 'summary.json'), 'w') as f:
+    json.dump({
+        'seed_final_info': final_info_list,
+        'mean_final_val_acc': float(np.mean([x['final_val_acc'] for x in final_info_list])),
+        'mean_step_val_acc_95': float(np.mean([x['step_val_acc_95'] for x in final_info_list]))
+    }, f, indent=2)
+
+# Reproduce Figure-3-style correlations using fresh/reused raw artifacts.
+dataset_paths = {
+    'x_div_y': os.path.join(workspace, 'claim_25_x_div_y', 'all_results.npy'),
+    'x_minus_y': os.path.join(workspace, 'claim_26_cross_dataset', 'x_minus_y', 'all_results.npy'),
+    'x_plus_y': os.path.join(workspace, 'claim_26_cross_dataset', 'x_plus_y', 'all_results.npy'),
+    'permutation': os.path.join(out_dir, 'all_results.npy'),
+}
+
+summary = {}
+plt.figure(figsize=(10, 6))
+for dataset, path in dataset_paths.items():
+    results_dict = np.load(path, allow_pickle=True).item()
+    val_accs = []
+    train_accs = []
+    mdl_data = []
+    steps = None
+    for k, info in results_dict.items():
+        if dataset in k and 'val_info' in k:
+            steps = [item['step'] for item in info]
+            val_accs.append([item['val_accuracy'] for item in info])
+        if dataset in k and 'train_info' in k:
+            train_accs.append([item['train_accuracy'] for item in info])
+        if dataset in k and 'mdl_info' in k:
+            mdl_data.append(info)
+    mean_val_acc = np.mean(val_accs, axis=0)
+    mean_train_acc = np.mean(train_accs, axis=0)
+    mdl_step = np.array([item['step'] for item in mdl_data[0]])
+    mdl = np.array([item['mdl'] for item in mdl_data[0]])
+    mdl_normalized = (mdl - np.min(mdl)) / (np.max(mdl) - np.min(mdl))
+    val_acc_interp = np.interp(mdl_step, steps, mean_val_acc)
+    train_acc_interp = np.interp(mdl_step, steps, mean_train_acc)
+    correlation = float(np.corrcoef(mdl_normalized, val_acc_interp)[0, 1])
+    summary[dataset] = {
+        'artifact_used': path,
+        'val_step_count': len(steps),
+        'mdl_step_count': len(mdl_step),
+        'mean_final_val_acc': float(mean_val_acc[-1]),
+        'max_mean_val_acc': float(np.max(mean_val_acc)),
+        'mdl_first': float(mdl[0]),
+        'mdl_last': float(mdl[-1]),
+        'correlation': correlation,
+        'grokking_point_95': next((int(step) for step, acc in zip(steps, mean_val_acc) if acc >= 0.95), None),
+        'generalization_gap_last_mdl_step': float((train_acc_interp - val_acc_interp)[-1]),
+    }
+    plt.bar(dataset, correlation)
+    print(dataset, summary[dataset])
+
+plt.xlabel('Dataset')
+plt.ylabel('Correlation')
+plt.title('Correlation between MDL Reduction and Validation Accuracy Improvement')
+plt.tight_layout()
+plot_path = os.path.join(workspace, 'claim_27_mdl_val_acc_correlation_reproduced.png')
+plt.savefig(plot_path)
+plt.close()
+
+summary_path = os.path.join(workspace, 'claim_27_summary.json')
+with open(summary_path, 'w') as f:
+    json.dump(summary, f, indent=2)
+
+print('WROTE', out_dir)
+print('WROTE', summary_path)
+print('WROTE', plot_path)
+PY
+----- OUTPUT -----
+/home/chenhui/.config/matplotlib is not a writable directory
+Matplotlib created a temporary cache directory at /tmp/matplotlib-b03_ifg_ because there was an issue with the default path (/home/chenhui/.config/matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+/home/chenhui/fabscore/aiscientist_papers/mdl_grokking_correlation/experiment.py:260: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+  "train_loss": float(loss),
+[The CLI session continued running after repeated polling; only `final_info_permutation_0.json` appeared on disk during this session.]
+
+===== COMMAND =====
+python - <<'PY'
+import experiment
+out_dir = 'fabscore_codex/workspace/claim_27_permutation'
+final_info, train_info, val_info, mdl_info = experiment.run(out_dir, 'permutation', 1)
+print(final_info)
+print('train_points', len(train_info), 'val_points', len(val_info), 'mdl_points', len(mdl_info))
+PY
+----- OUTPUT -----
+/home/chenhui/fabscore/aiscientist_papers/mdl_grokking_correlation/experiment.py:260: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+  "train_loss": float(loss),
+[The CLI session continued running after repeated polling and did not yield further stdout/stderr within this session.]
+
+===== COMMAND =====
+python - <<'PY'
+import numpy as np, os, json
+workspace='fabscore_codex/workspace'
+dataset_paths={
+ 'x_div_y': os.path.join(workspace,'claim_25_x_div_y','all_results.npy'),
+ 'x_minus_y': os.path.join(workspace,'claim_26_cross_dataset','x_minus_y','all_results.npy'),
+ 'x_plus_y': os.path.join(workspace,'claim_26_cross_dataset','x_plus_y','all_results.npy'),
+}
+for dataset,path in dataset_paths.items():
+    d=np.load(path, allow_pickle=True).item()
+    val_accs=[]; steps=None; mdl_data=[]
+    for k,info in d.items():
+        if dataset in k and 'val_info' in k:
+            steps=[x['step'] for x in info]
+            val_accs.append([x['val_accuracy'] for x in info])
+        if dataset in k and 'mdl_info' in k:
+            mdl_data.append(info)
+    mean_val=np.mean(val_accs, axis=0)
+    mdl_step=np.array([x['step'] for x in mdl_data[0]])
+    mdl=np.array([x['mdl'] for x in mdl_data[0]])
+    mdl_norm=(mdl-mdl.min())/(mdl.max()-mdl.min())
+    val_interp=np.interp(mdl_step, steps, mean_val)
+    corr=float(np.corrcoef(mdl_norm, val_interp)[0,1])
+    corr_reduction=float(np.corrcoef(1-mdl_norm, val_interp)[0,1])
+    print(dataset, json.dumps({
+        'corr_mdl_vs_val_acc': corr,
+        'corr_mdl_reduction_vs_val_acc': corr_reduction,
+        'mdl_first': int(mdl[0]),
+        'mdl_last': int(mdl[-1]),
+        'val_acc_first_interp': float(val_interp[0]),
+        'val_acc_last_interp': float(val_interp[-1]),
+    }))
+PY
+----- OUTPUT -----
+x_div_y {"corr_mdl_vs_val_acc": -0.9481545313043281, "corr_mdl_reduction_vs_val_acc": 0.9481545313043281, "mdl_first": 362329, "mdl_last": 256227, "val_acc_first_interp": 0.01416015625, "val_acc_last_interp": 1.0}
+x_minus_y {"corr_mdl_vs_val_acc": -0.9483057217195509, "corr_mdl_reduction_vs_val_acc": 0.9483057217195507, "mdl_first": 362884, "mdl_last": 268694, "val_acc_first_interp": 0.0037434895833333335, "val_acc_last_interp": 1.0}
+x_plus_y {"corr_mdl_vs_val_acc": -0.8676820293275824, "corr_mdl_reduction_vs_val_acc": 0.8676820293275825, "mdl_first": 361527, "mdl_last": 251167, "val_acc_first_interp": 0.16129557291666666, "val_acc_last_interp": 0.7230631510416666}

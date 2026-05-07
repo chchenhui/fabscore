@@ -1,0 +1,51 @@
+{
+    "tables": [],
+    "figures": [
+        {
+            "claim_index": 2,
+            "claim": "2. pce.png: Final Preference Calibration Error",
+            "verdict": "Verified",
+            "explanation": "Execution stage: The experiment.py script (lines 84-96) correctly computes Final Preference Calibration Error as mean((phi @ theta_true - phi @ model.mu)^2) for each method (static, passive, udca) and generates a bar chart saved as pce.png. The script ran successfully and produced a valid pce.png. The claim that 'pce.png: Final Preference Calibration Error' is confirmed by the code and fresh execution.",
+            "evidence": "Successfully ran `python codex/experiment.py` from repo root, generating `codex/pce.png`. Also ran seeded reproduction (seed=42) capturing PCE values: {'static': 9.74, 'passive': 2.07, 'udca': 3.76}. Fresh `pce.png` saved to `fabscore_claude/workspace/claim_2_pce.png` with bar chart titled 'Final PCE' with ylabel 'Preference Calibration Error'. | Code: codex/experiment.py:84-96",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "codex/experiment.py:84-96"
+                ],
+                "commands_executed": [
+                    "python codex/experiment.py; python3 (inline reproduction with seed=42 to capture PCE values)"
+                ]
+            }
+        }
+    ],
+    "results_section": [
+        {
+            "claim_index": 3,
+            "claim": "1. UDCA achieves a PCE of ≈1.5 versus 6.4 (static) and 0.3 (passive).",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The experiment has no fixed random seed, so the exact triple (6.4, 1.5, 0.3) cannot be reproduced deterministically. Across 200 seeded runs, UDCA mean (~1.43) matches the paper's '≈1.5' closely, passive median (~0.38) is close to the claimed 0.3, and static 6.4 is within the observed distribution (p75=7.7). The expected ordering (passive<udca<static) holds 84% of the time, supporting the qualitative finding. However, the specific combination cannot be definitively verified without knowing the original seed, and static=6.4 is substantially above the median. No fabrication is evident — values are plausible outcomes of the stochastic simulation.",
+            "evidence": "200-run distribution: UDCA mean=1.428 (median 0.885, std 1.412), static mean=5.460 (median 4.631, std 3.390), passive mean=0.747 (median 0.381, std 0.842). Ordering passive<udca<static holds in 84% of runs. Paper's claimed UDCA≈1.5 matches empirical mean; passive 0.3 near median (0.381); static 6.4 above median but in upper quartile. | Code: codex/experiment.py:84-96 (PCE computation: mean((phi @ theta_true - phi @ model.mu)^2))",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "codex/experiment.py:84-96 (PCE computation: mean((phi @ theta_true - phi @ model.mu)^2))"
+                ],
+                "commands_executed": [
+                    "python3 -c '[50-run and 200-run seeded inline simulations of experiment.py logic to assess PCE distribution]'"
+                ]
+            }
+        }
+    ],
+    "summary": {
+        "total": 2,
+        "verified": 1,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 1,
+        "error": 0
+    }
+}

@@ -1,0 +1,524 @@
+{
+  "domain": "Sociology",
+  "scene_name": "dynamic_culture_dissemination",
+  "odd_protocol": {
+    "overview": {
+      "system_goal": "To study the simplified process of cultural dissemination using cultural traits as markers, exploring the dynamics of cultural spread in social networks.",
+      "agent_types": "Single type of agent, each possessing preferences across five cultural dimensions: music preference, culinary preference, fashion style, political orientation, and leisure activity.",
+      "environment_description": "A social network with connections between agents, where each agent interacts with others to recommend cultural traits.",
+      "workflow_structure": "Linear workflow that begins at Start, proceeds through sequential agent interactions, and ends at Terminate when conditions are met."
+    },
+    "design_concepts": {
+      "interaction_patterns": "Sequential direct recommendation mechanism where agents process one after another in a fixed order within each round.",
+      "communication_protocols": "Agents recommend their preferred cultural trait to exactly one known individual each round with a message: 'I like [trait] because [brief reason]'.",
+      "decision_mechanisms": "Decision considerations include basic acceptance probability, influence from the social environment (number of people sharing the same trait), and personal stability (duration of current trait usage).",
+      "execution_flow": "Start → Agent1 → Agent2 → Terminate, with each agent completing its recommendation and decision process before moving to the next agent."
+    },
+    "details": {
+      "agent_behaviors": "In strict sequence, each agent selects one acquaintance to send a recommendation for their preferred cultural trait. The receiving agent immediately decides whether to adopt the recommended trait before the next agent acts.",
+      "decision_algorithms": "Algorithms account for acceptance probability, social influence, and personal stability to determine whether an agent changes its cultural trait.",
+      "specific_constraints": "Initialization involves creating a specified number of agents with randomly assigned initial cultural traits and establishing social network connections. The cultural traits are designed to be similar in content but differ in style to avoid obvious preference differences.",
+      "process_sequence": "1) Start initialization, 2) First agent selects target and sends recommendation, 3) Target decides whether to adopt, 4) Move to next agent, 5) After all agents have acted, check termination conditions, 6) Either terminate or start next round."
+    }
+  },
+  "agent_types": {
+    "IndividualAgent": "An agent representing a single individual in the social network, possessing preferences across five cultural dimensions and capable of recommending and adopting cultural traits.",
+    "SocialNetworkAgent": "An agent responsible for managing the social network connections and facilitating interactions between IndividualAgents, ensuring the sequential recommendation and decision-making processes occur as defined."
+  },
+  "portrait": {
+    "IndividualAgent": 3,
+    "SocialNetworkAgent": 2
+  },
+  "metrics": [
+    {
+      "id": "cultural_distribution",
+      "name": "Cultural Traits Distribution", 
+      "description": "Tracks the distribution of different cultural traits across five dimensions over time.",
+      "visualization_type": "bar",
+      "update_interval": 5,
+      "variables": [
+        {
+          "name": "music_preference",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.music_preference",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "culinary_preference",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.culinary_preference",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "fashion_style",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.fashion_style",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "political_orientation",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.political_orientation",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "leisure_activity",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.leisure_activity",
+          "required": true,
+          "is_list": true
+        }
+      ],
+      "calculation_logic": "Count the number of agents having each cultural trait value across all five dimensions and return a nested dictionary with dimensions as keys and value counts as values.",
+      "function_name": "calculate_cultural_distribution"
+    },
+    {
+      "id": "cultural_homogeneity",
+      "name": "Cultural Homogeneity Index",
+      "description": "Measures how uniform the culture is across the network, ranging from 0 (complete diversity) to 1 (complete homogeneity).",
+      "visualization_type": "line",
+      "update_interval": 5,
+      "variables": [
+        {
+          "name": "music_preference",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.music_preference",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "culinary_preference",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.culinary_preference",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "fashion_style",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.fashion_style",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "political_orientation",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.political_orientation",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "leisure_activity",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.leisure_activity",
+          "required": true,
+          "is_list": true
+        }
+      ],
+      "calculation_logic": "Calculate the average proportion of agents sharing the most common trait value across all five dimensions. A value of 1 indicates complete cultural uniformity; values closer to 0.2 (for 5 options per dimension) indicate perfect diversity.",
+      "function_name": "calculate_cultural_homogeneity"
+    },
+    {
+      "id": "adoption_rate",
+      "name": "Cultural Trait Adoption Rate",
+      "description": "Percentage of recommendations that result in cultural trait adoption per round.",
+      "visualization_type": "line",
+      "update_interval": 5,
+      "variables": [
+        {
+          "name": "adoption_history",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.adoption_history",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "round_number",
+          "source_type": "environment",
+          "path": "round_number",
+          "required": true
+        }
+      ],
+      "calculation_logic": "For each round, count the number of successful adoptions (where 'adopted' is true) and divide by the total number of recommendations to calculate the adoption rate.",
+      "function_name": "calculate_adoption_rate"
+    },
+    {
+      "id": "cultural_regions",
+      "name": "Cultural Regions by Dimension",
+      "description": "Counts the number of connected agent groups that share the same cultural trait in each dimension.",
+      "visualization_type": "bar", 
+      "update_interval": 5,
+      "variables": [
+        {
+          "name": "music_preference",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.music_preference",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "culinary_preference",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.culinary_preference",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "fashion_style",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.fashion_style",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "political_orientation",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.political_orientation",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "leisure_activity",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.leisure_activity",
+          "required": true,
+          "is_list": true
+        }
+      ],
+      "calculation_logic": "For each cultural dimension, identify connected groups of agents sharing the same trait value. Return a dictionary with dimensions as keys and the count of distinct cultural regions as values.",
+      "function_name": "calculate_cultural_regions"
+    },
+    {
+      "id": "influence_distribution",
+      "name": "Agent Influence Distribution",
+      "description": "Visualizes which agents have successfully influenced others to adopt their cultural traits.",
+      "visualization_type": "bar",
+      "update_interval": 5,
+      "variables": [
+        {
+          "name": "adoption_history",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.adoption_history",
+          "required": true,
+          "is_list": true
+        }
+      ],
+      "calculation_logic": "Count how many times each agent has successfully convinced others to adopt their cultural traits, based on the 'recommender' field in adoption histories.",
+      "function_name": "calculate_influence_distribution"
+    },
+    {
+      "id": "dimension_influence",
+      "name": "Dimension Adoption Frequency",
+      "description": "Analyzes which cultural dimensions are more readily transmitted and adopted.",
+      "visualization_type": "bar",
+      "update_interval": 5,
+      "variables": [
+        {
+          "name": "adoption_history",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.adoption_history",
+          "required": true,
+          "is_list": true
+        }
+      ],
+      "calculation_logic": "Count how many times each cultural dimension has been successfully adopted, based on the 'dimension' field in adoption histories.",
+      "function_name": "calculate_dimension_influence"
+    },
+    {
+      "id": "num_cultural_regions",
+      "name": "Number of Cultural Regions",
+      "description": "Number of distinct contiguous cultural regions at simulation end",
+      "visualization_type": "line",
+      "update_interval": 5,
+      "variables": [
+        {
+          "name": "music_preference",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.music_preference",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "culinary_preference",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.culinary_preference",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "fashion_style",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.fashion_style",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "political_orientation",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.political_orientation",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "leisure_activity",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.leisure_activity",
+          "required": true,
+          "is_list": true
+        }
+      ],
+      "calculation_logic": "Calculate the total number of distinct contiguous cultural regions across all dimensions by reusing the cultural_regions calculation.",
+      "function_name": "calculate_num_cultural_regions"
+    },
+    {
+      "id": "region_size_distribution",
+      "name": "Region Size Distribution",
+      "description": "Distribution of sizes (number of agents) of all cultural regions at simulation end",
+      "visualization_type": "bar",
+      "update_interval": 5,
+      "variables": [
+        {
+          "name": "music_preference",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.music_preference",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "culinary_preference",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.culinary_preference",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "fashion_style",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.fashion_style",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "political_orientation",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.political_orientation",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "leisure_activity",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.leisure_activity",
+          "required": true,
+          "is_list": true
+        }
+      ],
+      "calculation_logic": "Count regions of each size across all dimensions and return a distribution of region sizes.",
+      "function_name": "calculate_region_size_distribution"
+    },
+    {
+      "id": "average_trait_adoption_rate",
+      "name": "Average Trait Adoption Rate",
+      "description": "Average number of trait adoptions per agent per step",
+      "visualization_type": "line",
+      "update_interval": 5,
+      "variables": [
+        {
+          "name": "adoption_history",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.adoption_history",
+          "required": true,
+          "is_list": true
+        }
+      ],
+      "calculation_logic": "Calculate the average number of successful trait adoptions per agent per simulation step.",
+      "function_name": "calculate_average_trait_adoption_rate"
+    },
+    {
+      "id": "final_trait_diversity",
+      "name": "Final Trait Diversity Index",
+      "description": "Shannon entropy of trait vectors across all agents at simulation end",
+      "visualization_type": "line",
+      "update_interval": 5,
+      "variables": [
+        {
+          "name": "music_preference",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.music_preference",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "culinary_preference",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.culinary_preference",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "fashion_style",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.fashion_style",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "political_orientation",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.political_orientation",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "leisure_activity",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.leisure_activity",
+          "required": true,
+          "is_list": true
+        }
+      ],
+      "calculation_logic": "Calculate Shannon entropy of complete trait vectors across all agents to measure overall cultural diversity.",
+      "function_name": "calculate_final_trait_diversity"
+    },
+    {
+      "id": "local_convergence_index",
+      "name": "Local Convergence Index",
+      "description": "Measures local cultural convergence by calculating the average size of cultural regions normalized by total population",
+      "visualization_type": "line",
+      "update_interval": 5,
+      "variables": [
+        {
+          "name": "music_preference",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.music_preference",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "culinary_preference",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.culinary_preference",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "fashion_style",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.fashion_style",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "political_orientation",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.political_orientation",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "leisure_activity",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.leisure_activity",
+          "required": true,
+          "is_list": true
+        }
+      ],
+      "calculation_logic": "Calculate the average size of cultural regions normalized by total population to measure local convergence. Higher values indicate stronger local convergence.",
+      "function_name": "calculate_local_convergence_index"
+    },
+    {
+      "id": "global_polarization_index",
+      "name": "Global Polarization Index",
+      "description": "Measures global cultural polarization by calculating the number of distinct cultural regions normalized by total population",
+      "visualization_type": "line",
+      "update_interval": 5,
+      "variables": [
+        {
+          "name": "music_preference",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.music_preference",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "culinary_preference",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.culinary_preference",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "fashion_style",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.fashion_style",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "political_orientation",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.political_orientation",
+          "required": true,
+          "is_list": true
+        },
+        {
+          "name": "leisure_activity",
+          "source_type": "agent",
+          "agent_type": "CulturalAgent",
+          "path": "profile.leisure_activity",
+          "required": true,
+          "is_list": true
+        }
+      ],
+      "calculation_logic": "Calculate the number of distinct cultural regions normalized by total population to measure global polarization. Higher values indicate stronger global polarization.",
+      "function_name": "calculate_global_polarization_index"
+    }
+  ]
+}

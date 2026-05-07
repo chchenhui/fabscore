@@ -1,0 +1,77 @@
+## Claim 5 Verification: Figure 3(a) - Training Loss Across Runs for text8 Dataset
+
+### Setup
+- Workspace: /home/chenhui/fabscore/aiscientist_papers/20240726_003808_temporal_dynamic_capacity/fabscore_claude/workspace/
+- No existing text8 all_results.npy files found (only shakespeare_char and enwik8 from prior sessions)
+- Created run_text8_runN.py to run each run script for text8 (1 seed, 100k iters)
+
+### Commands Run
+1. CUDA_VISIBLE_DEVICES=1 python fabscore_claude/workspace/run_text8_runN.py --run run_1
+2. CUDA_VISIBLE_DEVICES=3 python fabscore_claude/workspace/run_text8_runN.py --run run_2
+3. CUDA_VISIBLE_DEVICES=1 python fabscore_claude/workspace/run_text8_runN.py --run run_3 (after run_1)
+4. CUDA_VISIBLE_DEVICES=3 python fabscore_claude/workspace/run_text8_runN.py --run run_4 (after run_2)
+5. CUDA_VISIBLE_DEVICES=3 python fabscore_claude/workspace/run_text8_runN.py --run run_5 (after run_4)
+
+### Results - run_1 (Basic Gating Mechanism)
+Done in 1566.3s
+Final train loss: 1.0229
+Best val loss: 0.9926
+Eval points: 101
+Saved to: workspace/run_1_text8/all_results.npy
+
+### Results - run_2 (Enhanced Gating Mechanism)
+Done in 1861.0s
+Final train loss: 0.9973
+Best val loss: 0.9799
+Eval points: 101
+Saved to: workspace/run_2_text8/all_results.npy
+
+### Results - run_3 (Advanced Gating with Derivatives)
+Done in 1563.2s
+Final train loss: 1.0049
+Best val loss: 0.9798
+Eval points: 101
+Saved to: workspace/run_3_text8/all_results.npy
+
+### Results - run_4 (Complex Gating with 2nd Derivatives)
+Done in 1827.8s
+Final train loss: 0.9947
+Best val loss: 0.9801
+Eval points: 101
+Saved to: workspace/run_4_text8/all_results.npy
+
+### Results - run_5 (Dynamic Neuron Adjustment)
+Done in 2623.5s
+Final train loss: 0.9544
+Best val loss: 0.9481
+Eval points: 101
+Saved to: workspace/run_5_text8/all_results.npy
+
+### Figure Generation
+python fabscore_claude/workspace/generate_figure3a.py
+Figure saved to: workspace/figure3a_reproduced.png
+
+### Comparison with Original
+Original: train_loss_text8.png (Figure 3a)
+Reproduced: workspace/figure3a_reproduced.png
+
+Visual comparison: Nearly identical
+- Title: "Training Loss Across Runs for text8 Dataset" ✓
+- X-axis: Iteration (0 to 100000) ✓
+- Y-axis: Training Loss (starting ~3.45, converging to ~1.0) ✓
+- 101 eval points (iter 0, 1000, 2000, ..., 100000) ✓
+- All curves show same convergence pattern ✓
+- Dynamic Neuron Adjustment (run_5) achieves lowest final loss ✓
+- Only difference: Baseline (run_0) absent (run_0.py doesn't exist)
+
+### Reference vs Reproduced Final Train Loss
+run_1: orig=0.9983, repro=1.0229 (small diff due to stochasticity/GPU)
+run_2: orig=1.0035, repro=0.9973 (within range)
+run_3: orig=1.0013, repro=1.0049 (within range)
+run_4: orig=0.9944, repro=0.9947 (near identical)
+run_5: orig=0.9567, repro=0.9544 (near identical)
+
+### Verdict
+VERIFIED - The training code executes successfully for text8 and produces per-iteration
+training loss trajectories consistent with Figure 3(a). The reproduced figure (5 of 6 lines)
+closely matches the original train_loss_text8.png.

@@ -1,0 +1,200 @@
+===== COMMAND: python - <<'PY' [paper context via pypdf] =====
+needle Figure 3 idx 18678
+er, the model for CGAS inhibition yielded an
+AUPRC of only 0.60, a performance level slightly better than random chance (Fig. 2A). This failure
+is likely attributable to the limited and heterogeneous nature of publicly available data for CGAS with
+5
+Figure 3:IterativeDe NovoDesign of Potent Inhibitors via Agent-Driven Generation and
+Evaluation.(A) A pool of known inhibitors for each target (CGAS, DYRK1A, HDAC, SEH,
+SGLT2), from which the Medicinal Chemist Agent selects three seeds to initiate the generative drug
+design process. (B) Top three novel molecules produced by the Molecule Generation Engine and
+successfully passed through the ADME/Tox and potency filtering cascade managed by theMolecule
+Evaluator Agent. The parenthetical value repr
+
+---
+
+needle Figure 3B idx 22714
+igure 2B, D), which would have added noise rather than value.
+Though its predictions are shown in Table 4.1, this decision highlights the framework’s logic of only
+using models that meet a required performance threshold.
+7
+The results, summarized in Figure 3B, show the framework consistently produced novel molecules
+with high predicted bioactivity scores, often exceeding 0.90. A key success was its ability to perform
+scaffold hopping—generating molecules with core structures distinct from the initial seed, as seen
+when a complex HDAC seed inspired simpler, potent indole-based scaffolds. However, for the
+CGAS target, the low reliability of the bioactivity model (AUPRC=0.60) renders the generated hits
+highly speculative. This outcome confirms
+
+---
+
+needle 0.90 idx 22838
+ighlights the framework’s logic of only
+using models that meet a required performance threshold.
+7
+The results, summarized in Figure 3B, show the framework consistently produced novel molecules
+with high predicted bioactivity scores, often exceeding 0.90. A key success was its ability to perform
+scaffold hopping—generating molecules with core structures distinct from the initial seed, as seen
+when a complex HDAC seed inspired simpler, potent indole-based scaffolds. However, for the
+CGAS target, the low reliability of the bioactivity model (AUPRC=0.60) renders the generated hits
+highly speculative. This outcome confirms a core principle: the quality of generated candidates is
+fundamentally limited by the predictive models guiding the design.
+
+---
+
+
+===== COMMAND: sed -n '1,220p' fabscore_codex/workspace/claim_58_evidence.json =====
+{
+  "claim_index": 58,
+  "paper_caption_confirmed": true,
+  "seed_rows": 15,
+  "summary_pred_rows": 15,
+  "targets": [
+    "CGAS",
+    "DYRK1A",
+    "HDAC",
+    "SEH",
+    "SGLT2"
+  ],
+  "notebook_generation_loop_source": "for TARGET in [\"SGLT2\"]:  # notebook also contains commented alternative: # for TARGET in TARGETS:",
+  "notebook_generation_constants": {
+    "SEED_TH": 0.6,
+    "CANDIDATE_TH": 0.9
+  },
+  "figure_3b_scores_visible_in_result_mols_png": {
+    "CGAS": [0.96, 0.96, 0.96],
+    "DYRK1A": [0.92, 0.94, 0.90],
+    "HDAC": [0.96, 0.95, 0.96],
+    "SEH": [0.98, 0.96, 0.95],
+    "SGLT2": [0.91, 0.90, 0.91]
+  },
+  "notebook_embedded_output_with_explicit_picked_smiles_and_scores": {
+    "target": "SGLT2",
+    "scores": [0.9054189, 0.9005101, 0.90543234]
+  },
+  "local_execution_blocker": [
+    "rdkit missing",
+    "mordred missing",
+    "xgboost missing"
+  ]
+}
+
+===== COMMAND: python - <<'PY' [summary_pred inspection] =====
+rows 15
+columns ['Target', 'SMILES', 'Solubility_Prediction', 'HalfLife_Prediction', 'hERG_Prediction', 'hERG_Pred_Proba']
+targets Counter({'SGLT2': 3, 'CGAS': 3, 'SEH': 3, 'HDAC': 3, 'DYRK1A': 3})
+[
+  {
+    "Target": "SGLT2",
+    "SMILES": "O[C@@H]1[C@H](O)CC[C@]2(CCCc3ccc(OCc4ccc(Br)cc4)cc32)[C@@H]1O",
+    "Solubility_Prediction": "-3.99",
+    "HalfLife_Prediction": "0.65",
+    "hERG_Prediction": "1",
+    "hERG_Pred_Proba": "0.67"
+  },
+  {
+    "Target": "SGLT2",
+    "SMILES": "C[C@@]1(O)[C@@H](O)[C@H](O)CCC12CCc1cc(COc3ccc(Br)cc3)ccc1O2",
+    "Solubility_Prediction": "-4.11",
+    "HalfLife_Prediction": "0.65",
+    "hERG_Prediction": "0",
+    "hERG_Pred_Proba": "0.45"
+  }
+]
+
+===== COMMAND: python - <<'PY' [notebook logic and embedded outputs] =====
+--- CELL 21 OUTPUT ---
+['O=c1oc2cc(O)ccc2c2c1[nH]c1ccc(O)cc12', 'COC(=N)c1nc2ccc3ncnc(Nc4ccc(C)cc4)c3c2s1', 'COC(=N)c1nc2ccc3ncnc(Nc4ccc(OC)cc4F)c3c2s1'] [0.82 0.98 0.99]
+
+--- CELL 24 SOURCE ---
+TARGETS = ['SGLT2', 'CGAS', 'SEH', 'HDAC', 'DYRK1A']
+SEED_TH = 0.60
+CANDIDATE_TH = 0.90
+
+for TARGET in ["SGLT2"]:
+# for TARGET in TARGETS:
+    metric_df = pd.read_csv(f"StanfordAI/results/{TARGET}_inhibition_classification_metrics.csv")
+    max_f1_index = metric_df["f1"].idxmax()
+    best_split_seed = metric_df.loc[max_f1_index, "split_seed"]
+    print(TARGET, best_split_seed)
+
+    all_seed_smiles = seeds_df[seeds_df["Target"]==TARGET]["SMILES"].values
+    _, proba = inference(all_seed_smiles, f"{TARGET}_inhibition", best_split_seed)
+    print(proba)
+
+    revised_seed = [smi for smi, p in zip(all_seed_smiles, proba) if p > 0.55]
+    seed_scores = sorted(zip(revised_seed, [0.55]*len(revised_seed)), key=lambda x: x[1], reverse=True)
+    print(seed_scores)
+
+    iter, high_conf_smis = 0, []
+
+    while len(high_conf_smis) < 10 and iter < 10:
+        gen_results = []
+        for seed_smi in revised_seed:
+            gen_smis = generate_molecule(seed_smi, n_mol=30, min_sim=0.70)
+            gen_smis = [smi["sample"] for smi in gen_smis[0]]
+            _, proba = inference(gen_smis, f"{TARGET}_inhibition", best_split_seed)
+            gen_results.extend(zip(gen_smis, proba))
+
+        for s, p in gen_results:
+            if p > CANDIDATE_TH:
+                print(f"{s[:10]}... {p:.2f}")
+
+        # store high-confidence (CANDIDATE_TH) molecules
+        high_conf_smis.extend([(s, p) for s, p in gen_results if p >= CANDIDATE_TH])
+
+        # update revised_seed if any gen_smi has >= SEED_TH
+        top_candidates = [(s, p) for s, p in gen_results if p >= SEED_TH]
+        if top_candidates:
+            combined = seed_scores + top_candidates
+            seed_scores = sorted(combined, key=lambda x: x[1], reverse=True)[:3]
+            revised_seed = [s for s, _ in seed_scores]
+            if iter >= 5: iter -= 5
+            else: iter = 0
+
+        iter += 1
+        print(f"{iter} {len(revised_seed)}")
+
+    print(f"Finished {TARGET}, kept {len(high_conf_smis)} high-confidence molecules.")
+    all_high_conf_smis[TARGET] = high_conf_smis
+--- CELL 25 SOURCE ---
+from rdkit import Chem
+from rdkit.Chem import AllChem, DataStructs
+from rdkit.SimDivFilters import rdSimDivPickers
+
+def pick_diverse_smiles_rdkit(smiles_list, n):
+    unique, seen = [], set()
+    for smi, val in smiles_list:
+        mol = Chem.MolFromSmiles(smi)
+        if mol:
+            can_smi = Chem.MolToSmiles(mol, canonical=True)
+            if can_smi not in seen:
+                seen.add(can_smi)
+                unique.append((can_smi, val, mol))
+    fps = [AllChem.GetMorganFingerprintAsBitVect(m, 2, 2048) for _,_,m in unique]
+
+    def distij(i, j, fps=fps):
+        return 1 - DataStructs.TanimotoSimilarity(fps[i], fps[j])
+
+    picker = rdSimDivPickers.MaxMinPicker()
+    picks = picker.LazyPick(distij, len(fps), min(n, len(fps)), seed=0)
+
+    return [(unique[i][0], unique[i][1]) for i in picks]
+
+smis = [smi for smi, p in all_high_conf_smis[TARGET]]
+picked_smis = pick_diverse_smiles_rdkit(all_high_conf_smis[TARGET], n=3)
+all_high_conf_smis[f"{TARGET}_picked"] = picked_smis
+picked_smis
+--- CELL 25 OUTPUT ---
+[('O[C@@H]1[C@H](O)CC[C@]2(CCCc3ccc(OCc4ccc(Br)cc4)cc32)[C@@H]1O',
+  np.float32(0.9054189)),
+ ('C[C@@]1(O)[C@@H](O)[C@H](O)CCC12CCc1cc(COc3ccc(Br)cc3)ccc1O2',
+  np.float32(0.9005101)),
+ ('O[C@H]1[C@H](O)CCC[C@@]2(CCCc3cc(OCc4ccc(Br)cc4)ccc32)[C@@H]1O',
+  np.float32(0.90543234))]
+--- CELL 30 SOURCE ---
+summary_df.to_csv("summary_pred.csv", index=False)
+
+===== COMMAND: python - <<'PY' [dependency blocker check] =====
+rdkit ModuleNotFoundError No module named 'rdkit'
+mordred ModuleNotFoundError No module named 'mordred'
+xgboost ModuleNotFoundError No module named 'xgboost'

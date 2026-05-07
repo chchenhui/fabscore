@@ -1,0 +1,93 @@
+{
+  "evaluation": "DUT Effectiveness Evaluation (Task 10)",
+  "decision": "Proceed",
+  "verdict": "good",
+  "summary": "The Definition Unit Tests (Condition C) method is effective. On both base models, C improves main accuracy over the engagement-matched neutral-checks baseline (B) by a statistically significant margin, and C > B holds in all 3 convention families.",
+
+  "consolidated_results": {
+    "qwen25_math_7b": {
+      "model": "Qwen/Qwen2.5-Math-7B-Instruct",
+      "overall_accuracy": {"A": 0.903, "B": 0.900, "C": 0.950, "A@5": 0.413, "B@5": 0.507},
+      "per_family_accuracy": {
+        "asymptotics": {"A": 0.99, "B": 0.97, "C": 0.99, "A@5": 0.43, "B@5": 0.51},
+        "completeness": {"A": 0.80, "B": 0.79, "C": 0.91, "A@5": 0.06, "B@5": 0.22},
+        "convolution": {"A": 0.92, "B": 0.94, "C": 0.95, "A@5": 0.75, "B@5": 0.79}
+      },
+      "alternate_convention_rate": {"A": 0.063, "B": 0.070, "C": 0.013}
+    },
+    "llama31_8b": {
+      "model": "meta-llama/Llama-3.1-8B-Instruct",
+      "overall_accuracy": {"A": 0.567, "B": 0.587, "C": 0.813, "A@5": 0.587, "B@5": 0.607},
+      "per_family_accuracy": {
+        "asymptotics": {"A": 0.74, "B": 0.92, "C": 0.96, "A@5": 0.75, "B@5": 0.88},
+        "completeness": {"A": 0.30, "B": 0.21, "C": 0.82, "A@5": 0.19, "B@5": 0.24},
+        "convolution": {"A": 0.66, "B": 0.63, "C": 0.66, "A@5": 0.82, "B@5": 0.70}
+      },
+      "alternate_convention_rate": {"A": 0.110, "B": 0.093, "C": 0.020}
+    }
+  },
+
+  "primary_criterion": {
+    "description": "C improves main accuracy over B by >= 5pp (or paired bootstrap 95% CI excluding 0) on BOTH models, AND C > B in >= 2 of 3 families",
+    "qwen25_math_7b": {
+      "c_minus_b_overall": 0.050,
+      "bootstrap_ci": {"lower": 0.020, "upper": 0.083, "excludes_zero": true, "n_resamples": 10000},
+      "meets_5pp_threshold": true,
+      "per_family_c_minus_b": {"asymptotics": 0.02, "completeness": 0.12, "convolution": 0.01},
+      "families_where_c_gt_b": 3,
+      "families_required": 2,
+      "criterion_met": true
+    },
+    "llama31_8b": {
+      "c_minus_b_overall": 0.227,
+      "bootstrap_ci": {"lower": 0.160, "upper": 0.293, "excludes_zero": true, "n_resamples": 10000},
+      "meets_5pp_threshold": true,
+      "per_family_c_minus_b": {"asymptotics": 0.04, "completeness": 0.61, "convolution": 0.03},
+      "families_where_c_gt_b": 3,
+      "families_required": 2,
+      "criterion_met": true
+    },
+    "both_models_pass": true
+  },
+
+  "secondary_comparisons": {
+    "c_vs_a": {
+      "description": "Does DUT improve over plain glossary injection?",
+      "qwen25_math_7b": {
+        "c_minus_a_overall": 0.047,
+        "bootstrap_ci": {"lower": 0.013, "upper": 0.080, "excludes_zero": true},
+        "families_where_c_gt_a": 2,
+        "note": "Asymptotics tied at 99%. Largest gain in completeness (+11pp)."
+      },
+      "llama31_8b": {
+        "c_minus_a_overall": 0.247,
+        "families_where_c_gt_a": 2,
+        "note": "Convolution tied at 66%. Largest gain in completeness (+52pp) and asymptotics (+22pp)."
+      }
+    },
+    "c_vs_majority_vote": {
+      "description": "Does single-sample DUT outperform 5-sample majority vote?",
+      "qwen25_math_7b": {
+        "c_minus_a5": {"diff": 0.537, "ci_lower": 0.480, "ci_upper": 0.593, "excludes_zero": true},
+        "c_minus_b5": {"diff": 0.443, "ci_lower": 0.387, "ci_upper": 0.500, "excludes_zero": true},
+        "note": "C massively outperforms majority vote. A@5 and B@5 degraded by shorter max_tokens (512 vs 2048)."
+      },
+      "llama31_8b": {
+        "c_minus_a5": {"diff": 0.227, "ci_lower": 0.160, "ci_upper": 0.293, "excludes_zero": true},
+        "c_minus_b5": {"diff": 0.207, "ci_lower": 0.140, "ci_upper": 0.273, "excludes_zero": true},
+        "note": "C significantly outperforms majority vote on Llama as well."
+      }
+    },
+    "alternate_convention_reduction": {
+      "description": "Does C reduce alternate-convention match rate?",
+      "qwen25_math_7b": {"A": 0.063, "B": 0.070, "C": 0.013, "reduction_vs_B": "81% relative reduction"},
+      "llama31_8b": {"A": 0.110, "B": 0.093, "C": 0.020, "reduction_vs_B": "78% relative reduction"}
+    }
+  },
+
+  "decision_rule_applied": {
+    "rule": "Proceed if both models show C > B by >= 5pp (or CI excluding 0) AND C > B in >= 2/3 families. Pivot if only 1 family. Refute if C <= B on both models.",
+    "result": "PROCEED",
+    "justification": "On Qwen2.5-Math-7B, C - B = +5.0pp (CI [+2.0%, +8.3%]), C > B in 3/3 families. On Llama-3.1-8B, C - B = +22.7pp (CI [+16.0%, +29.3%]), C > B in 3/3 families. Both models exceed the 5pp threshold with CIs excluding zero. The engagement-matched control (B) rules out the extra-computation confound: B performs comparably to A (Qwen: -0.3pp; Llama: +2.0pp), while C provides a large additional boost."
+  }
+}

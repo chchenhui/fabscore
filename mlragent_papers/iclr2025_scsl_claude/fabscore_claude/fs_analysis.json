@@ -1,0 +1,169 @@
+{
+    "no_code_files": [],
+    "obvious_hallucination": [
+        {
+            "index": 1,
+            "category": "table",
+            "content": "1. Table 1, CIMRL, In-Distribution Accuracy: 1.0000",
+            "reason": "The paper describes CIMRL using ViT/ResNet vision encoder, BERT/RoBERTa text encoder (198M parameters), and a combined loss with contrastive invariance (L_CI), modality disentanglement (L_MD), and intervention-based fine-tuning (L_IF). However, results/log.txt (lines 43-46) shows the reported values come from demo.py's SimpleCIMLRModel — a toy model with 10-dimensional linear layers (input_dim=10, hidden_dim=20), NO pretrained encoders, and only cross-entropy loss. The SimpleCIMLRModel.forward() in demo.py computes only CE loss on combined_pred with no CIMRL-specific loss components. The reported 1.0000 in-distribution accuracy matches the demo.py run output, not any full CIMRL model run.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "results/log.txt:43 (demo - INFO - CIMRL model test accuracy: 1.0000)",
+                "claude_code/demo.py:42-132 (SimpleCIMLRModel with input_dim=10, linear layers, CE loss only)",
+                "claude_code/demo.py:127-130 (loss = cross_entropy only, no L_CI/L_MD/L_IF)",
+                "claude_code/demo.py:579-582 (models = {'CIMRL': SimpleCIMLRModel(...), 'Baseline': SimpleBaselineModel(...)})",
+                "results/log.txt:7 (main - INFO - Initialized CIMRL model with 198,110,473 trainable parameters — full model never reported results)"
+            ]
+        },
+        {
+            "index": 2,
+            "category": "table",
+            "content": "2. Table 1, CIMRL, In-Distribution Worst-Group Acc: 1.0000",
+            "reason": "Same as claim 1. results/log.txt line 44 shows 'CIMRL model test worst-group accuracy: 1.0000' produced by demo.py's SimpleCIMLRModel, not the full CIMRL with ViT+BERT and causal loss components described in the paper.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "results/log.txt:44 (demo - INFO - CIMRL model test worst-group accuracy: 1.0000)",
+                "claude_code/demo.py:42-132 (SimpleCIMLRModel with input_dim=10 linear layers)",
+                "claude_code/demo.py:579-582 (models dict uses SimpleCIMLRModel as 'CIMRL')"
+            ]
+        },
+        {
+            "index": 3,
+            "category": "table",
+            "content": "3. Table 1, CIMRL, OOD Accuracy: 0.9880",
+            "reason": "results/log.txt line 45 shows 'CIMRL model OOD test accuracy: 0.9880' produced by demo.py's SimpleCIMLRModel (10-dim linear toy model with CE loss only). The paper claims this is from a full CIMRL with ViT/BERT encoders and three causal loss components (L_CI + L_MD + L_IF), which is a fundamentally different model.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "results/log.txt:45 (demo - INFO - CIMRL model OOD test accuracy: 0.9880)",
+                "claude_code/demo.py:42-132 (SimpleCIMLRModel definition — toy linear model)",
+                "claude_code/demo.py:127-130 (only cross-entropy loss in forward())"
+            ]
+        },
+        {
+            "index": 4,
+            "category": "table",
+            "content": "4. Table 1, CIMRL, OOD Worst-Group Acc: 0.9829",
+            "reason": "results/log.txt line 46 shows 'CIMRL model OOD test worst-group accuracy: 0.9829' produced by demo.py's SimpleCIMLRModel. The paper describes CIMRL with ViT/BERT and causal losses; the actual run used a toy 10-dim linear model with no CIMRL-specific components.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "results/log.txt:46 (demo - INFO - CIMRL model OOD test worst-group accuracy: 0.9829)",
+                "claude_code/demo.py:42-132 (SimpleCIMLRModel)",
+                "claude_code/demo.py:127-130 (CE loss only)"
+            ]
+        },
+        {
+            "index": 5,
+            "category": "table",
+            "content": "5. Table 1, Baseline, In-Distribution Accuracy: 1.0000",
+            "reason": "results/log.txt line 79 shows 'Baseline model test accuracy: 1.0000' produced by demo.py's SimpleBaselineModel (10-dim linear fusion model). The paper describes 'Baseline' as a standard multi-modal model using the same underlying ViT/BERT architecture as CIMRL, but the actual run used a tiny linear model. Same experiment_fabrication issue applies.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "results/log.txt:79 (demo - INFO - Baseline model test accuracy: 1.0000)",
+                "claude_code/demo.py:134-193 (SimpleBaselineModel with input_dim=10)",
+                "claude_code/demo.py:579-582 (models dict uses SimpleBaselineModel as 'Baseline')"
+            ]
+        },
+        {
+            "index": 6,
+            "category": "table",
+            "content": "6. Table 1, Baseline, In-Distribution Worst-Group Acc: 1.0000",
+            "reason": "Same as claim 5. results/log.txt line 80 shows 'Baseline model test worst-group accuracy: 1.0000' from demo.py's SimpleBaselineModel.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "results/log.txt:80 (demo - INFO - Baseline model test worst-group accuracy: 1.0000)",
+                "claude_code/demo.py:134-193 (SimpleBaselineModel)"
+            ]
+        },
+        {
+            "index": 7,
+            "category": "table",
+            "content": "7. Table 1, Baseline, OOD Accuracy: 0.9920",
+            "reason": "results/log.txt line 81 shows 'Baseline model OOD test accuracy: 0.9920' from demo.py's SimpleBaselineModel. This is a toy 10-dim linear model, not the ViT+BERT multi-modal baseline described in the paper.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "results/log.txt:81 (demo - INFO - Baseline model OOD test accuracy: 0.9920)",
+                "claude_code/demo.py:134-193 (SimpleBaselineModel)"
+            ]
+        },
+        {
+            "index": 8,
+            "category": "table",
+            "content": "8. Table 1, Baseline, OOD Worst-Group Acc: 0.9911",
+            "reason": "results/log.txt line 82 shows 'Baseline model OOD test worst-group accuracy: 0.9911' from demo.py's SimpleBaselineModel. Same experiment_fabrication as claims 5-7.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "results/log.txt:82 (demo - INFO - Baseline model OOD test worst-group accuracy: 0.9911)",
+                "claude_code/demo.py:134-193 (SimpleBaselineModel)",
+                "claude_code/demo.py:579-582"
+            ]
+        },
+        {
+            "index": 9,
+            "category": "figure",
+            "content": "1. figures/model_comparison.png: Comparison of model performance on in-distribution and out-of-distribution test sets.",
+            "reason": "The figure file results/figures/model_comparison.png exists and was generated by demo.py (plot_model_comparison function, line 629-632). However, it visualizes results from SimpleCIMLRModel vs SimpleBaselineModel (toy 10-dim linear models), not from the full CIMRL with ViT/BERT encoders described in the paper. No underlying data files (JSON/CSV/NPY) were found in results/. The figure represents a fundamentally different experiment than claimed in the paper.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "results/figures/model_comparison.png (file exists)",
+                "claude_code/demo.py:461-501 (plot_model_comparison function)",
+                "claude_code/demo.py:629-632 (saves to figures_dir / 'model_comparison.png')",
+                "claude_code/demo.py:579-582 (models are SimpleCIMLRModel and SimpleBaselineModel)"
+            ]
+        },
+        {
+            "index": 10,
+            "category": "figure",
+            "content": "2. figures/group_metrics.png: Group-wise accuracy for each model on in-distribution and out-of-distribution test sets. Groups represent different combinations of class and spurious feature alignment.",
+            "reason": "The figure results/figures/group_metrics.png exists, generated by demo.py (plot_group_metrics, line 635-638). Same experiment_fabrication issue: visualizes SimpleCIMLRModel vs SimpleBaselineModel (toy linear models), not the full CIMRL framework described in the paper. No underlying data files found.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "results/figures/group_metrics.png (file exists)",
+                "claude_code/demo.py:503-542 (plot_group_metrics function)",
+                "claude_code/demo.py:635-638 (saves to figures_dir / 'group_metrics.png')",
+                "claude_code/demo.py:579-582 (models are toy SimpleCIMLRModel/SimpleBaselineModel)"
+            ]
+        },
+        {
+            "index": 11,
+            "category": "figure",
+            "content": "3. figures/CIMRL_training_curves.png: Training curves for the CIMRL model.",
+            "reason": "The figure results/figures/CIMRL_training_curves.png exists, generated by demo.py (plot_training_curves for 'CIMRL' model, line 605-608). The training curves shown are for SimpleCIMLRModel (toy 10-dim linear model with CE loss), not the full CIMRL with ViT/BERT and causal loss components. The paper implies this figure shows the full CIMRL model's training dynamics.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "results/figures/CIMRL_training_curves.png (file exists)",
+                "claude_code/demo.py:435-459 (plot_training_curves function)",
+                "claude_code/demo.py:605-608 (saves CIMRL training curves)",
+                "claude_code/demo.py:580 (CIMRL is SimpleCIMLRModel)"
+            ]
+        },
+        {
+            "index": 12,
+            "category": "figure",
+            "content": "4. figures/Baseline_training_curves.png: Training curves for the Baseline model.",
+            "reason": "The figure results/figures/Baseline_training_curves.png exists, generated by demo.py (plot_training_curves for 'Baseline' model, line 605-608). The training curves shown are for SimpleBaselineModel (toy linear model), not the full ViT+BERT baseline described in the paper.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "results/figures/Baseline_training_curves.png (file exists)",
+                "claude_code/demo.py:435-459 (plot_training_curves function)",
+                "claude_code/demo.py:605-608 (saves Baseline training curves)",
+                "claude_code/demo.py:581 (Baseline is SimpleBaselineModel)"
+            ]
+        }
+    ],
+    "static_verifiable": [],
+    "insufficient_evidence": [],
+    "execution_required": [],
+    "error": [],
+    "summary": {
+        "total_claims": 12,
+        "no_code_files": 0,
+        "obvious_hallucination": 12,
+        "data_fabrication": 0,
+        "experiment_fabrication": 12,
+        "result_fabrication": 0,
+        "static_verifiable": 0,
+        "insufficient_evidence": 0,
+        "execution_required": 0,
+        "error": 0
+    }
+}

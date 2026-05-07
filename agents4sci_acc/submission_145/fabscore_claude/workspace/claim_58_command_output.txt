@@ -1,0 +1,60 @@
+## Command 1: Generate error band figures for Rastrigin and Rosenbrock
+cd /home/chenhui/fabscore/agent4sci_acc/submission_145/anon-submission-1-main && python3 -c "
+import sys
+sys.path.insert(0, '.')
+import json, os, numpy as np
+from greenhouse.figures import plot_bench_with_err
+from greenhouse.dsl import Rule
+
+ART = 'artifacts'
+best = json.load(open(os.path.join(ART, 'best_rule_v02.json')))
+best_rule = Rule(**best['best_rule'])
+
+OUT = '../fabscore_claude/workspace'
+plot_bench_with_err(best_rule, 'rastrigin', os.path.join(OUT, 'claim_58_bench_rastrigin_err.png'))
+print('Rastrigin error band figure generated')
+plot_bench_with_err(best_rule, 'rosenbrock', os.path.join(OUT, 'claim_58_bench_rosenbrock_err.png'))
+print('Rosenbrock error band figure generated')
+"
+
+## Output:
+Rastrigin error band figure generated
+Rosenbrock error band figure generated
+
+## Command 2: Compute error band values (mean and std) for both benchmarks
+python3 -c "
+...
+rules = baseline_rules(); rules['Evolved_v02'] = best_rule
+
+print('Rastrigin error band values (seeds=(0,1,2)):')
+for name, r in rules.items():
+    val, stack = eval_rule(r, 'rastrigin', dim=10, steps=300, seeds=(0,1,2))
+    mean = stack.mean(axis=0)
+    std = stack.std(axis=0)
+    print(f'  {name}: final_mean={mean[-1]:.4f}, final_std={std[-1]:.4f}')
+
+print()
+print('Rosenbrock error band values (seeds=(0,1,2)):')
+for name, r in rules.items():
+    val, stack = eval_rule(r, 'rosenbrock', dim=10, steps=300, seeds=(0,1,2))
+    mean = stack.mean(axis=0)
+    std = stack.std(axis=0)
+    print(f'  {name}: final_mean={mean[-1]:.4f}, final_std={std[-1]:.4f}')
+"
+
+## Output:
+Rastrigin error band values (seeds=(0,1,2)):
+  SGD: final_mean=34.1602, final_std=5.2229
+  Momentum: final_mean=34.1602, final_std=5.2229
+  Adam-ish: final_mean=36.2231, final_std=5.3901
+  Evolved_v02: final_mean=34.1602, final_std=5.2229
+
+Rosenbrock error band values (seeds=(0,1,2)):
+  SGD: final_mean=28.5243, final_std=30.4737
+  Momentum: final_mean=18.8326, final_std=17.8240
+  Adam-ish: final_mean=10846.4046, final_std=696.9135
+  Evolved_v02: final_mean=28.7478, final_std=30.4196
+
+## File sizes:
+-rw-rw-r-- 1 chenhui chenhui 117816 Apr 23 00:32 claim_58_bench_rastrigin_err.png
+-rw-rw-r-- 1 chenhui chenhui 132944 Apr 23 00:32 claim_58_bench_rosenbrock_err.png

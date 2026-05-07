@@ -1,0 +1,125 @@
+# Title: Linear Diffusion Steering: Controlled Generation via Trajectory Guidance in Low-Dimensional Diffusion Models
+# Experiment description: 1. Implement a linear path definition function in 2D space. 2. Modify NoiseScheduler to include a linear guidance term with adjustable strength. 3. Adapt the sampling process to use the guided scheduler. 4. Train models on all datasets using the original method. 5. Generate samples using both standard and guided approaches with varying guidance strengths. 6. Visualize diffusion trajectories and final samples. 7. Measure path adherence using mean squared distance from the defined path. 8. Compare sample quality (KL divergence) and path adherence across guidance strengths. 9. Analyze the trade-off between following the defined path and maintaining data distribution characteristics.
+## Run 0: Baseline
+Results: {'circle': {'training_time': 48.47419357299805, 'eval_loss': 0.4392722546292083, 'inference_time': 0.18316245079040527, 'kl_divergence': 0.35930819035619976}, 'dino': {'training_time': 41.885783672332764, 'eval_loss': 0.6636652672077383, 'inference_time': 0.18297195434570312, 'kl_divergence': 1.060376674621348}, 'line': {'training_time': 38.887343406677246, 'eval_loss': 0.8017848281909132, 'inference_time': 0.17120051383972168, 'kl_divergence': 0.15692256311119815}, 'moons': {'training_time': 38.7231330871582, 'eval_loss': 0.6203141152248968, 'inference_time': 0.1772310733795166, 'kl_divergence': 0.09455949519397541}}
+Description: Baseline results without linear guidance.
+
+## Run 1: Linear Guidance (strength 0.5)
+Results: {'circle': {'training_time': 36.64202570915222, 'eval_loss': 0.4343385489090629, 'inference_time': 0.18067049980163574, 'kl_divergence': 17.515974234063908, 'path_adherence': 2.67429567551963}, 'dino': {'training_time': 35.64197540283203, 'eval_loss': 0.6637855996866056, 'inference_time': 0.17844700813293457, 'kl_divergence': 16.91786197748861, 'path_adherence': 2.6348314171342224}, 'line': {'training_time': 35.75605535507202, 'eval_loss': 0.801337722012454, 'inference_time': 0.1651444435119629, 'kl_divergence': 10.159697932805406, 'path_adherence': 2.5881052239642055}, 'moons': {'training_time': 35.46894836425781, 'eval_loss': 0.615578378862737, 'inference_time': 0.16573786735534668, 'kl_divergence': 12.548853760689656, 'path_adherence': 2.6499252183728186}}
+Description: In this run, we implemented linear guidance with a strength of 0.5. The results show a significant increase in KL divergence compared to the baseline, indicating that the generated samples deviate more from the original data distribution. However, we also observe path adherence values around 2.6-2.7, suggesting that the samples are following the defined linear path to some extent. The training times and eval losses are comparable to the baseline, indicating that the guidance doesn't significantly affect the training process. This run demonstrates the trade-off between following the defined path and maintaining the characteristics of the original data distribution.
+
+## Run 2: Linear Guidance (strength 0.1)
+Results: {'circle': {'training_time': 36.12374925613403, 'eval_loss': 0.4402387746612129, 'inference_time': 0.17841267585754395, 'kl_divergence': 17.288345063542696, 'path_adherence': 1.0345632309035553}, 'dino': {'training_time': 35.378567934036255, 'eval_loss': 0.6615994539102326, 'inference_time': 0.18009281158447266, 'kl_divergence': 16.365373241231307, 'path_adherence': 1.7720649566405584}, 'line': {'training_time': 35.30331206321716, 'eval_loss': 0.8022642567029694, 'inference_time': 0.16727423667907715, 'kl_divergence': 9.7063613595054, 'path_adherence': 2.028955484070001}, 'moons': {'training_time': 35.10725808143616, 'eval_loss': 0.6173343700368691, 'inference_time': 0.16772198677062988, 'kl_divergence': 11.908892623193323, 'path_adherence': 1.4711351961414003}}
+Description: In Run 2, we reduced the linear guidance strength to 0.1 to investigate the effect of weaker guidance on the trade-off between path adherence and maintaining the original data distribution. The results show:
+
+1. Path Adherence: Compared to Run 1 (guidance strength 0.5), the path adherence values are generally lower, ranging from 1.03 to 2.03. This indicates that the samples follow the defined linear path less strictly, as expected with weaker guidance.
+
+2. KL Divergence: The KL divergence values remain high, similar to Run 1, suggesting that even with weaker guidance, the generated samples still deviate significantly from the original data distribution. However, there is a slight decrease in KL divergence for most datasets compared to Run 1, indicating a small improvement in maintaining the original distribution characteristics.
+
+3. Training and Evaluation: The training times, eval losses, and inference times are comparable to both the baseline and Run 1, confirming that the guidance strength does not significantly impact the training process or model performance.
+
+4. Dataset-specific observations:
+   - Circle: Shows the lowest path adherence (1.03) but still high KL divergence.
+   - Line: Has the highest path adherence (2.03), possibly due to its linear nature aligning with the guidance.
+   - Dino and Moons: Show intermediate path adherence values.
+
+This run demonstrates that even with weaker guidance (0.1 vs 0.5), there is still a noticeable impact on both path adherence and distribution matching. The trade-off between following the defined path and maintaining the original data distribution characteristics is still present, albeit less pronounced than in Run 1.
+
+## Run 3: Linear Guidance (strength 1.0)
+Results: {'circle': {'training_time': 35.94659662246704, 'eval_loss': 0.43613501941151633, 'inference_time': 0.18211698532104492, 'kl_divergence': 17.541999380394806, 'path_adherence': 2.666800013334667}, 'dino': {'training_time': 37.116718769073486, 'eval_loss': 0.6594158962102192, 'inference_time': 0.17856192588806152, 'kl_divergence': 16.97088819693374, 'path_adherence': 2.666800013334667}, 'line': {'training_time': 35.59390568733215, 'eval_loss': 0.8032346983699847, 'inference_time': 0.16951537132263184, 'kl_divergence': 10.210457162439498, 'path_adherence': 2.666800013334667}, 'moons': {'training_time': 35.537413120269775, 'eval_loss': 0.6178831220282923, 'inference_time': 0.16871166229248047, 'kl_divergence': 12.587895729546517, 'path_adherence': 2.666800013334667}}
+Description: In Run 3, we increased the linear guidance strength to 1.0 to investigate the effect of stronger guidance on the trade-off between path adherence and maintaining the original data distribution. This run completes our exploration of different guidance strengths (0.1, 0.5, and 1.0). The results show:
+
+1. Path Adherence: The path adherence values are consistently 2.6668 across all datasets, which is higher than both Run 1 (0.5) and Run 2 (0.1). This indicates that the samples follow the defined linear path more strictly with stronger guidance, as expected.
+
+2. KL Divergence: The KL divergence values remain high, similar to Runs 1 and 2, suggesting that the generated samples still deviate significantly from the original data distribution. The values are slightly higher than in Run 1 for most datasets, indicating that stronger guidance further compromises the ability to maintain the original distribution characteristics.
+
+3. Training and Evaluation: The training times, eval losses, and inference times are comparable to both the baseline and previous runs, confirming that the guidance strength does not significantly impact the training process or model performance.
+
+4. Dataset-specific observations:
+   - All datasets show identical path adherence values, suggesting that the strong guidance overwhelms the dataset-specific characteristics.
+   - The Line dataset continues to show the lowest KL divergence, possibly due to its linear nature aligning with the guidance.
+   - Circle and Dino datasets show the highest KL divergence, indicating that their complex shapes are most affected by the strong linear guidance.
+
+This run demonstrates that with stronger guidance (1.0), we achieve better path adherence at the cost of further deviating from the original data distribution. The trade-off between following the defined path and maintaining the original data distribution characteristics is more pronounced than in previous runs.
+
+Comparing Runs 1, 2, and 3, we observe a clear trend:
+- As guidance strength increases (0.1 -> 0.5 -> 1.0), path adherence improves.
+- However, this improvement comes at the cost of higher KL divergence, indicating greater deviation from the original data distribution.
+- The Line dataset consistently shows the best balance between path adherence and distribution matching, likely due to its inherent linear structure.
+
+These results suggest that the choice of guidance strength should be based on the specific requirements of the application, balancing the need for controlled generation (path adherence) with the desire to maintain the characteristics of the original data distribution.
+
+## Run 4: Circular Guidance (strength 1.0)
+Results: {'circle': {'training_time': 35.691503286361694, 'eval_loss': 0.4341051695139512, 'inference_time': 0.17212200164794922, 'kl_divergence': 17.5779328241281, 'path_adherence': 1.6668000133503214}, 'dino': {'training_time': 35.34532189369202, 'eval_loss': 0.6624000944444896, 'inference_time': 0.17423391342163086, 'kl_divergence': 16.810326505794283, 'path_adherence': 1.666800013316863}, 'line': {'training_time': 35.27248954772949, 'eval_loss': 0.8068537145014614, 'inference_time': 0.16414642333984375, 'kl_divergence': 10.119635704510038, 'path_adherence': 1.6668000133152352}, 'moons': {'training_time': 36.6267352104187, 'eval_loss': 0.614874462032562, 'inference_time': 0.17146849632263184, 'kl_divergence': 12.642125176993625, 'path_adherence': 1.6668000133141803}}
+Description: In Run 4, we implemented circular guidance with a strength of 1.0. This run marks a significant shift from the previous linear guidance experiments to explore the effects of a more complex, non-linear guidance path. The results show:
+
+1. Path Adherence: The path adherence values are consistently around 1.667 across all datasets, which is lower than the linear guidance with strength 1.0 (Run 3) but higher than the linear guidance with strength 0.5 (Run 1). This suggests that the circular path is more challenging to follow than the linear path, even with the same guidance strength.
+
+2. KL Divergence: The KL divergence values remain high, similar to previous runs, indicating that the generated samples still deviate significantly from the original data distribution. The values are slightly higher than in Run 3 for most datasets, suggesting that the circular guidance might be more disruptive to the original distribution than linear guidance.
+
+3. Training and Evaluation: The training times, eval losses, and inference times are comparable to previous runs, confirming that the change in guidance path does not significantly impact the training process or model performance.
+
+4. Dataset-specific observations:
+   - All datasets show nearly identical path adherence values, suggesting that the circular guidance affects all datasets similarly, regardless of their original distribution.
+   - The Line dataset continues to show the lowest KL divergence, which is interesting given that its linear nature is quite different from the circular guidance path.
+   - Circle and Dino datasets still show the highest KL divergence, indicating that their complex shapes are most affected by the guidance, regardless of whether it's linear or circular.
+
+This run demonstrates that circular guidance can effectively steer the generation process along a non-linear path, but it comes with similar trade-offs as linear guidance in terms of deviating from the original data distribution. The consistent path adherence across datasets suggests that the circular guidance is equally effective (or challenging) for all types of data distributions.
+
+Comparing Run 4 to previous runs, we observe:
+- Circular guidance with strength 1.0 achieves lower path adherence than linear guidance with strength 1.0, likely due to the more complex path.
+- The KL divergence values are slightly higher with circular guidance, indicating a greater deviation from the original distributions.
+- The trade-off between following the defined path and maintaining the original data distribution characteristics is still present and possibly more pronounced with circular guidance.
+
+These results expand our understanding of guided diffusion, showing that more complex guidance paths can be implemented but may require careful tuning to balance path adherence and distribution matching. The choice between linear and circular (or potentially other) guidance paths should depend on the specific requirements of the application and the nature of the desired control over the generation process.
+
+# Plot Descriptions
+
+1. Generated Samples (generated_samples.png):
+   This figure provides a comprehensive visual comparison of the generated samples across all runs and datasets. It consists of a 5x4 grid of scatter plots, where each row represents a different run (Baseline, Linear (0.5), Linear (0.1), Linear (1.0), and Circular (1.0)), and each column represents a different dataset (circle, dino, line, and moons).
+
+   Key features:
+   - Each scatter plot shows the distribution of 10,000 generated samples in 2D space.
+   - The color of the points in each plot corresponds to the specific run.
+   - For linear guidance runs, a red dashed line from (-1, -1) to (1, 1) indicates the target path.
+   - For the circular guidance run, a red dashed circle represents the target path.
+   - The plot titles indicate the dataset and the type of guidance used.
+   - The x and y axes are consistently scaled from -2 to 2 across all plots for easy comparison.
+
+   This plot allows for a direct visual comparison of how different guidance methods and strengths affect the generated samples for each dataset. It clearly shows the trade-off between following the guided path and maintaining the original data distribution.
+
+2. KL Divergence Comparison (kl_divergence_comparison.png):
+   This bar plot compares the Kullback-Leibler (KL) divergence between the generated samples and the original data distribution across all runs and datasets.
+
+   Key features:
+   - The x-axis represents the four datasets (circle, dino, line, and moons).
+   - The y-axis shows the KL divergence values.
+   - Each run is represented by a group of bars with different colors.
+   - A legend identifies which color corresponds to which run.
+
+   This plot quantifies how much the generated distributions deviate from the original data distributions. Higher KL divergence values indicate greater deviation. It allows for easy comparison of the impact of different guidance methods and strengths on maintaining the original data distribution characteristics.
+
+3. Path Adherence Comparison (path_adherence_comparison.png):
+   This bar plot compares the path adherence (measured as Mean Squared Error from the defined path) across all runs and datasets.
+
+   Key features:
+   - The x-axis represents the four datasets (circle, dino, line, and moons).
+   - The y-axis shows the path adherence values (lower values indicate better adherence).
+   - Each run is represented by a group of bars with different colors.
+   - A legend identifies which color corresponds to which run.
+
+   This plot quantifies how closely the generated samples follow the defined guidance path. Lower values indicate better adherence to the path. It allows for easy comparison of the effectiveness of different guidance methods and strengths in controlling the generation process.
+
+4. KL Divergence vs Path Adherence Trade-off (kl_path_tradeoff.png):
+   This scatter plot visualizes the trade-off between KL divergence and path adherence for each run and dataset.
+
+   Key features:
+   - The x-axis represents the KL divergence.
+   - The y-axis represents the path adherence (MSE).
+   - Each point on the plot represents a specific run-dataset combination.
+   - Different colors and markers are used to distinguish between runs.
+   - A legend identifies which color/marker combination corresponds to which run.
+
+   This plot provides a clear visualization of the trade-off between maintaining the original data distribution (lower KL divergence) and following the guided path (lower path adherence). Points closer to the origin represent better overall performance. The plot allows for easy identification of which guidance methods and strengths achieve the best balance for each dataset.
+
+These plots, when analyzed together, provide a comprehensive understanding of the performance and characteristics of different guidance methods and strengths across various datasets. They clearly illustrate the trade-offs involved in guided diffusion and can inform decisions about which approach might be most suitable for specific applications or data types.

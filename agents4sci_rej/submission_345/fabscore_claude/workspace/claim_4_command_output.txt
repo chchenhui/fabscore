@@ -1,0 +1,70 @@
+==== COMMAND 1: python src/data/build_dataset.py ====
+[INFO] ==================================================
+[INFO] Building Pharmaceutical Launch Dataset
+[INFO] ==================================================
+[INFO] Loading raw data from data_raw
+[INFO] Loaded 60 launches, 360 revenue records
+[INFO] Schema validation passed
+[INFO] Created 840 analog mappings
+[INFO] Saved datasets to data_proc
+[INFO] Saved profile to results/data_profile.json
+[WARNING] ✗ Gate G1 FAILED: Insufficient data
+
+==== COMMAND 2: python validation/phase5_historical_validation.py ====
+(partial output - tail)
+--- Drug 8: Repatha ---
+Actual peak revenue: $358,533,239
+peak_heuristic: Peak $4,021,289,462, MAPE 1110.4%
+ensemble: Peak $3,182,406,606, MAPE 647.2%
+analog_enhanced: Peak $259,118,994, MAPE 32.5%
+Multi-agent: Peak $2,000,000,000, MAPE 402.8%
+
+--- Drug 9: Keytruda ---
+Actual peak revenue: $190,757,458
+peak_heuristic: Peak $2,690,198,786, MAPE 1694.7%
+ensemble: Peak $2,376,819,917, MAPE 1165.6%
+analog_enhanced: Peak $187,160,886, MAPE 13.3%
+Multi-agent: Peak $20,000,000,000, MAPE 10347.3%
+
+--- Drug 10: Repatha ---
+Actual peak revenue: $245,402,056
+peak_heuristic: Peak $2,318,061,874, MAPE 1161.0%
+ensemble: Peak $1,949,820,623, MAPE 711.6%
+analog_enhanced: Peak $260,034,623, MAPE 21.1%
+Multi-agent: Peak $2,000,000,000, MAPE 822.5%
+
+============================================================
+PHASE 5 VALIDATION SUMMARY
+============================================================
+
+ANALOG_ENHANCED:
+  Average MAPE: 16.4%
+  Average Peak Accuracy: 12.0%
+  Average Y2 Accuracy: 17.0%
+  Valid predictions: 10/10
+
+MULTI_AGENT:
+  Average MAPE: 443.6%
+  Average Peak Accuracy: 457.8%
+  Average Y2 Accuracy: 422.6%
+  Valid predictions: 2/10
+
+CONSULTANT BASELINE COMPARISON:
+  Consultant baseline: 40.0% MAPE
+  Multi-agent system: 443.6% MAPE
+  Beat consultant baseline: False
+  Achieved target (25%): False
+
+Detailed results saved to: results/phase5_validation_results.json
+
+PHASE 5 VALIDATION: NEEDS IMPROVEMENT
+Some success criteria not met
+
+==== NOTES ====
+- peak_heuristic MAPEs ranged from 1110% to 2307% across 10 drugs
+- No drug produced peak_heuristic MAPE anywhere near the claimed 71.2%
+- peak_heuristic results were ALL filtered out of the summary (> 500% threshold)
+- build_dataset.py uses _create_synthetic_launches() and _create_synthetic_revenues()
+  (explicitly labeled as synthetic data in code comments)
+- Paper claims "Historical Validation Against Reality" with real 2015-2020 launch data
+  but data is synthetically generated

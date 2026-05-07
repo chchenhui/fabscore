@@ -1,0 +1,226 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{geometry}
+\geometry{margin=1in}
+
+\title{Mathematical Formulation for Intelligent Document Processing in Graduate Admissions}
+\author{AI System (First Author)}
+\date{\today}
+
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+
+\begin{document}
+
+\maketitle
+
+\section{Signal and Data Representation}
+
+\subsection{Document Token Representation}
+Let $\mathcal{D} = \{d_1, d_2, \ldots, d_n\}$ represent a set of application documents where each document $d_i$ is tokenized into a sequence of tokens with spatial coordinates:
+
+\begin{equation}
+d_i = \{(t_{i,j}, b_{i,j})\}_{j=1}^{|d_i|}
+\end{equation}
+
+where $t_{i,j}$ is the $j$-th token text in document $i$, and $b_{i,j} = (x_1, y_1, x_2, y_2)$ represents the bounding box coordinates.
+
+\subsection{Transcript Data Structure}
+A transcript document $T$ contains course records represented as:
+
+\begin{equation}
+T = \{r_k\}_{k=1}^{|T|}, \quad r_k = (\text{course}_k, \text{credits}_k, \text{grade}_k, \text{span}_k)
+\end{equation}
+
+where $\text{span}_k = [s_k, e_k]$ denotes the character-level span in the original document for evidence grounding.
+
+\subsection{Feature Vector Construction}
+For each application, we construct a feature vector $\mathbf{x} \in \mathbb{R}^d$ combining:
+
+\begin{align}
+\mathbf{x} &= [\mathbf{x}_{\text{academic}}, \mathbf{x}_{\text{experience}}, \mathbf{x}_{\text{narrative}}]^T \\
+\mathbf{x}_{\text{academic}} &= [\text{gpa}_{\text{norm}}, \text{credits}_{\text{norm}}, \text{major}_{\text{relevance}}] \\
+\mathbf{x}_{\text{experience}} &= [\text{years}_{\text{exp}}, \text{skill}_{\text{count}}, \text{industry}_{\text{match}}] \\
+\mathbf{x}_{\text{narrative}} &= [\text{research}_{\text{score}}, \text{goal}_{\text{clarity}}, \text{writing}_{\text{quality}}]
+\end{align}
+
+\section{Core Algorithm}
+
+\subsection{Grade Point Average Computation}
+Given a set of course records $\{r_k\}_{k=1}^{|T|}$, the cumulative GPA is computed as:
+
+\begin{equation}
+\text{GPA} = \frac{\sum_{k=1}^{|T|} \text{grade\_points}(\text{grade}_k) \cdot \text{credits}_k}{\sum_{k=1}^{|T|} \text{credits}_k}
+\end{equation}
+
+where $\text{grade\_points}: \{\text{A}, \text{A-}, \text{B+}, \ldots\} \rightarrow [0, 4]$ maps letter grades to numerical values:
+
+\begin{equation}
+\text{grade\_points}(g) = \begin{cases}
+4.0 & \text{if } g = \text{A} \\
+3.7 & \text{if } g = \text{A-} \\
+3.3 & \text{if } g = \text{B+} \\
+3.0 & \text{if } g = \text{B} \\
+\vdots
+\end{cases}
+\end{equation}
+
+\subsection{Academic Readiness Score}
+We define an optional readiness score function $f: \mathbb{R}^d \rightarrow [0, 1]$ using logistic regression:
+
+\begin{equation}
+f(\mathbf{x}) = \sigma(\mathbf{w}^T\mathbf{x} + b) = \frac{1}{1 + \exp(-\mathbf{w}^T\mathbf{x} - b)}
+\end{equation}
+
+where $\mathbf{w} \in \mathbb{R}^d$ and $b \in \mathbb{R}$ are learned parameters.
+
+\section{Decision Rule Framework}
+
+\subsection{Primary Decision Logic}
+The academic decision function $\mathcal{A}: (\text{GPA}, \text{credits}, \text{program}) \rightarrow \mathcal{Y}$ is defined as:
+
+\begin{equation}
+\mathcal{A}(\text{gpa}, c, p) = \begin{cases}
+\text{ACCEPT\_ACADEMIC} & \text{if } \text{gpa} \geq \tau_{\text{gpa}}(p) \land c \geq \tau_{\text{credits}}(p) \\
+\text{REJECT\_ACADEMIC} & \text{if } \text{gpa} < \tau_{\text{gpa}}^{\text{min}}(p) \lor c < \tau_{\text{credits}}^{\text{min}}(p) \\
+\text{REVIEW} & \text{otherwise}
+\end{cases}
+\end{equation}
+
+where $\tau_{\text{gpa}}(p)$, $\tau_{\text{credits}}(p)$ are program-specific thresholds.
+
+\subsection{Confidence-Based Abstention}
+Let $\text{conf}(\mathbf{x})$ represent the confidence score for a decision. The abstention mechanism is:
+
+\begin{equation}
+\mathcal{D}_{\text{final}}(\mathbf{x}) = \begin{cases}
+\mathcal{A}(\mathbf{x}) & \text{if } \text{conf}(\mathbf{x}) \geq \tau_{\text{conf}} \\
+\text{ABSTAIN} & \text{otherwise}
+\end{cases}
+\end{equation}
+
+where $\tau_{\text{conf}}$ is the confidence threshold for human escalation.
+
+\section{Optimization and Training}
+
+\subsection{Loss Function}
+For the readiness score model, we optimize the binary cross-entropy loss:
+
+\begin{equation}
+\mathcal{L}(\mathbf{w}, b) = -\frac{1}{N} \sum_{i=1}^{N} \left[ y_i \log f(\mathbf{x}_i) + (1-y_i) \log(1-f(\mathbf{x}_i)) \right]
+\end{equation}
+
+where $y_i \in \{0, 1\}$ indicates academic readiness.
+
+\subsection{Temperature Scaling for Calibration}
+To improve confidence calibration, we apply temperature scaling:
+
+\begin{equation}
+p_{\text{calibrated}}(\mathbf{x}) = \sigma\left(\frac{\mathbf{w}^T\mathbf{x} + b}{T}\right)
+\end{equation}
+
+where $T > 0$ is the temperature parameter optimized on a validation set to minimize:
+
+\begin{equation}
+\mathcal{L}_{\text{calib}}(T) = -\sum_{i=1}^{N_{\text{val}}} \left[ \hat{y}_i \log p_{\text{calibrated}}(\mathbf{x}_i) + (1-\hat{y}_i) \log(1-p_{\text{calibrated}}(\mathbf{x}_i)) \right]
+\end{equation}
+
+\section{Evaluation Framework}
+
+\subsection{Extraction Accuracy Metrics}
+Let $\hat{\text{GPA}}$ and $\text{GPA}_{\text{true}}$ denote predicted and ground truth GPAs. We measure:
+
+\begin{align}
+\text{MAE}_{\text{GPA}} &= \frac{1}{N} \sum_{i=1}^{N} |\hat{\text{GPA}}_i - \text{GPA}_{\text{true},i}| \\
+\text{RMSE}_{\text{GPA}} &= \sqrt{\frac{1}{N} \sum_{i=1}^{N} (\hat{\text{GPA}}_i - \text{GPA}_{\text{true},i})^2}
+\end{align}
+
+\subsection{Classification Performance}
+For multi-class decisions $\mathcal{Y} = \{\text{ACCEPT}, \text{REVIEW}, \text{REJECT}, \text{ABSTAIN}\}$:
+
+\begin{align}
+\text{Precision}_c &= \frac{\text{TP}_c}{\text{TP}_c + \text{FP}_c} \\
+\text{Recall}_c &= \frac{\text{TP}_c}{\text{TP}_c + \text{FN}_c} \\
+\text{F1}_c &= \frac{2 \cdot \text{Precision}_c \cdot \text{Recall}_c}{\text{Precision}_c + \text{Recall}_c}
+\end{align}
+
+\subsection{Calibration Quality}
+Expected Calibration Error (ECE) measures the difference between confidence and accuracy:
+
+\begin{equation}
+\text{ECE} = \sum_{m=1}^{M} \frac{|B_m|}{N} \left| \text{acc}(B_m) - \text{conf}(B_m) \right|
+\end{equation}
+
+where $B_m$ is the set of samples with confidence in bin $m$, and:
+\begin{align}
+\text{acc}(B_m) &= \frac{1}{|B_m|} \sum_{i \in B_m} \mathbf{1}[\hat{y}_i = y_i] \\
+\text{conf}(B_m) &= \frac{1}{|B_m|} \sum_{i \in B_m} \hat{p}_i
+\end{align}
+
+\subsection{Ranking Correlation}
+For ordinal decision quality, we compute Kendall's $\tau$:
+
+\begin{equation}
+\tau = \frac{P - Q}{\sqrt{(P + Q + T_{\hat{y}})(P + Q + T_y)}}
+\end{equation}
+
+where $P$ and $Q$ are the numbers of concordant and discordant pairs respectively.
+
+\section{Theoretical Properties}
+
+\subsection{Complexity Analysis}
+The computational complexity of the pipeline is:
+\begin{align}
+\text{OCR} &: O(|T|) \text{ for token extraction} \\
+\text{Parsing} &: O(|T| \log |T|) \text{ for pattern matching} \\
+\text{Feature Extraction} &: O(d) \text{ for } d \text{-dimensional features} \\
+\text{Decision} &: O(1) \text{ for threshold comparison}
+\end{align}
+
+Total complexity: $O(|T| \log |T| + d)$ per document.
+
+\subsection{Robustness Properties}
+
+\begin{theorem}[Monotonicity]
+The academic decision function $\mathcal{A}$ satisfies monotonicity: if $\text{gpa}_1 \geq \text{gpa}_2$ and $c_1 \geq c_2$, then $\mathcal{A}(\text{gpa}_1, c_1, p) \succeq \mathcal{A}(\text{gpa}_2, c_2, p)$ where $\succeq$ denotes the decision ordering: ACCEPT $\succ$ REVIEW $\succ$ REJECT.
+\end{theorem}
+
+\begin{theorem}[Abstention Coverage]
+Given confidence threshold $\tau_{\text{conf}}$, the abstention mechanism guarantees that the fraction of abstained cases $\rho = P(\text{conf}(\mathbf{x}) < \tau_{\text{conf}})$ can be controlled by adjusting $\tau_{\text{conf}}$.
+\end{theorem}
+
+\subsection{Fairness Constraints}
+To ensure threshold transparency and fairness, we require:
+
+\begin{equation}
+\forall p_1, p_2 \in \mathcal{P}: |\tau_{\text{gpa}}(p_1) - \tau_{\text{gpa}}(p_2)| \leq \epsilon_{\text{fair}}
+\end{equation}
+
+where $\mathcal{P}$ is the set of programs and $\epsilon_{\text{fair}}$ bounds cross-program threshold variation.
+
+\section{Implementation Considerations}
+
+\subsection{Numerical Stability}
+To prevent numerical issues in GPA computation:
+\begin{equation}
+\text{GPA}_{\text{stable}} = \begin{cases}
+\text{GPA} & \text{if } \sum \text{credits} > 0 \\
+0.0 & \text{otherwise}
+\end{cases}
+\end{equation}
+
+\subsection{Missing Data Handling}
+For incomplete transcripts, we define:
+\begin{equation}
+\text{completeness}(T) = \frac{|\{r_k : r_k \text{ has all fields}\}|}{|T|}
+\end{equation}
+
+Applications with completeness $< \tau_{\text{complete}}$ are automatically escalated.
+
+\section{Conclusion}
+
+This mathematical framework provides a rigorous foundation for intelligent document processing in graduate admissions, combining classical information extraction with modern calibration techniques to ensure reliable, transparent, and fair automated decision-making with appropriate human oversight mechanisms.
+
+\end{document>

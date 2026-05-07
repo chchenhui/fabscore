@@ -1,0 +1,52 @@
+{
+    "tables": [],
+    "figures": [
+        {
+            "claim_index": 61,
+            "claim": "1. Figure 1: Training loss over iterations for different datasets.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The training pipeline is plausible and runs correctly (confirmed via partial execution), and the pre-existing PNG figures exist. However, the all_results.npy intermediate files required by plot.py to generate per-iteration training loss curves are absent from the repository. Full regeneration requires ~31 minutes per run (5 runs total = ~2.5 hours), which exceeded feasible timeout constraints. Per classification rules, a plausible but incomplete plotting pipeline with missing generated inputs is Insufficient Evidence, not fabrication.",
+            "evidence": "Training script run_1.py executed successfully for ~850 iterations of shakespeare_char (decreasing loss: iter 0: 4.27, iter 250: val 2.39, iter 750: val 1.82). Pre-existing PNG files (train_loss_shakespeare_char.png, train_loss_enwik8.png, train_loss_text8.png) and final_info.json files confirmed in repo. No all_results.npy files found in any run directory. Workspace file: fabscore_claude/workspace/claim_61_command_output.txt. | Code: run_1.py:701 — np.save(f, all_results); plot.py:17 — np.load(osp.join(folder, 'all_results.npy'), allow_pickle=True)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "run_1.py:701 — np.save(f, all_results)",
+                    "plot.py:17 — np.load(osp.join(folder, 'all_results.npy'), allow_pickle=True)"
+                ],
+                "commands_executed": [
+                    "timeout 90 python run_1.py --out_dir fabscore_claude/workspace/run_1_test"
+                ]
+            }
+        },
+        {
+            "claim_index": 62,
+            "claim": "2. Figure 2: Validation loss over iterations for different datasets.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: Figure 2's validation loss curves require all_results.npy from each run directory (run_0 through run_5). These .npy files are absent from the repository. The plotting code in plot.py is plausible and the training scripts work correctly (confirmed in claim 61 session), but full regeneration would require ~2.5+ hours of compute (5 runs × ~31 min each). Pre-existing PNG images are insufficient for Verified per classification rules. Per the rule: 'A plotting script is plausible, but the required generated input such as all_results.npy is missing and reasonable repo-native attempts still do not produce enough evidence to verify the plotted claim => Insufficient Evidence.'",
+            "evidence": "plot.py lines 80-97 implement validation loss curve plotting from all_results.npy files; pre-existing PNG files (val_loss_shakespeare_char.png, val_loss_enwik8.png, val_loss_text8.png) exist in repo root; no all_results.npy files found anywhere in repository; prior session (claim 61) confirmed training pipeline is functional but takes ~31 min per run | Code: plot.py:80-97 (validation loss plotting loop); plot.py:17 (all_results.npy load)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "plot.py:80-97 (validation loss plotting loop)",
+                    "plot.py:17 (all_results.npy load)"
+                ],
+                "commands_executed": [
+                    "None (reused findings from claim 61 execution session; Glob search confirmed no .npy files exist)"
+                ]
+            }
+        }
+    ],
+    "results_section": [],
+    "summary": {
+        "total": 2,
+        "verified": 0,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 2,
+        "error": 0
+    }
+}

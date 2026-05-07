@@ -1,0 +1,16 @@
+{
+  "optimize_index": 0,
+  "issues": [
+    {
+      "title": "Noisy CA mask selection boundary",
+      "description": "180/288 (62.5%) of (layer, KV-head) pairs had CA score gap < 0.005 between the 8th and 9th ranked RoPE pairs. With only 4 calibration sequences x 4096 tokens x 256 sampled positions, the top-8 selection was unreliable (~20% of selections were noisy). Fixed by running CA profiling with 16 sequences x 8192 tokens x 512 sample positions (4x more data), producing v2 masks with 80.6% overlap with v1."
+    },
+    {
+      "title": "Value cache not benefiting from channel boosting",
+      "description": "Both Kitty and FCBoost v1 only applied mixed-precision boosting (INT2->INT4) to key cache channels. Value cache was always quantized to flat INT2 without any channel boosting. Implemented value cache boosting in FCBoostKVCache that applies the same static CA-derived promote_mask to value cache quantization in both prefill and decode paths. This required handling non-divisible token counts by processing in group_size chunks with remainder handling."
+    }
+  ],
+  "experiment_result_path": "EXPERIMENT_RESULTS/optimize_trace/iteration_0/",
+  "success": true,
+  "summary": "FCBoost v2 with improved CA masks (4x more calibration data) and value cache boosting achieves 71.11% average accuracy on AIME24+AIME25, a +5.00pp improvement over FCBoost v1 (66.11%) and +4.44pp over Kitty (66.67%). AIME24 improved dramatically from 65.56% to 74.44% (+8.88pp). AIME25 improved modestly from 66.67% to 67.78% (+1.11pp). All three seeds show consistent improvement."
+}

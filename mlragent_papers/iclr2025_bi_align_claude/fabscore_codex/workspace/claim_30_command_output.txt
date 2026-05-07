@@ -1,0 +1,99 @@
+===== COMMAND: sed -n '344,352p' results/paper.md =====
+
+In this scenario, the adaptive models quickly adjusted to the sudden value shifts, maintaining high alignment scores, while the static_alignment model experienced significant drops in alignment following each shift.
+
+The human value evolution in this scenario (Figure 10) shows several abrupt changes in value priorities.
+
+![Human Value Evolution](./figures/human_value_evolution_rapid_shift.png)
+*Figure 10: Evolution of human values in rapid_shift scenario*
+
+Figures 11-14 show how each model's value representation responded to these rapid shifts.
+
+===== COMMAND: nl -ba claude_code/evaluation.py | sed -n '120,155p' =====
+   120	            
+   121	            # Record human values for each agent
+   122	            human_values_at_t = []
+   123	            for agent in self.simulation.agents:
+   124	                human_values_at_t.append(agent.value_system.values.copy())
+   125	            results["raw_data"]["human_values"].append(human_values_at_t)
+   126	            
+   127	            # Update each model with current human values
+   128	            for model in models:
+   129	                # We'll use the first agent's values for simplicity
+   130	                # In a more complex evaluation, we might consider aggregating across agents
+   131	                human_values = self.simulation.agents[0].value_system
+   132	                
+   133	                # Generate a query for response time measurement
+   134	                # (This is a placeholder - in a real system, we'd have actual queries)
+   135	                query = f"Query at time {t}"
+   136	                
+   137	                # Measure response time
+   138	                start_time = time.time()
+   139	                response = model.generate_response(query, human_values)
+   140	                end_time = time.time()
+   141	                response_time = end_time - start_time
+   142	                
+   143	                # Update model based on human values
+   144	                model.update(human_values)
+   145	                
+   146	                # Record model values and metrics
+   147	                if model.name not in results["raw_data"]["model_values"]:
+   148	                    results["raw_data"]["model_values"][model.name] = []
+   149	                    results["raw_data"]["alignment_scores"][model.name] = []
+   150	                    results["raw_data"]["response_times"][model.name] = []
+   151	                    results["raw_data"]["responses"][model.name] = []
+   152	                
+   153	                results["raw_data"]["model_values"][model.name].append(model.value_system.values.copy())
+   154	                results["raw_data"]["alignment_scores"][model.name].append(model.alignment_scores[-1])
+   155	                results["raw_data"]["response_times"][model.name].append(response_time)
+
+===== COMMAND: nl -ba claude_code/visualization.py | sed -n '360,386p' =====
+   360	    
+   361	    # Plot individual scenario results
+   362	    for scenario_name, scenario_results in results['scenarios'].items():
+   363	        # Plot alignment comparison for this scenario
+   364	        figure_paths[f'alignment_{scenario_name}'] = plot_comparative_alignment(
+   365	            scenario_results,
+   366	            f'alignment_comparison_{scenario_name}',
+   367	            figures_dir,
+   368	            config,
+   369	            title="Alignment Score Comparison"
+   370	        )
+   371	        
+   372	        # Plot human value evolution
+   373	        human_values = np.array(scenario_results['raw_data']['human_values'])[:, 0, :]  # First agent only
+   374	        human_df = pd.DataFrame(
+   375	            human_values,
+   376	            columns=results['overall']['value_dimensions']
+   377	        )
+   378	        
+   379	        figure_paths[f'human_values_{scenario_name}'] = plot_value_evolution(
+   380	            human_df,
+   381	            f'human_value_evolution_{scenario_name}',
+   382	            figures_dir,
+   383	            config,
+   384	            title="Human Value Evolution"
+   385	        )
+   386	        
+
+===== COMMAND: python - <<'PY'
+import json
+from pathlib import Path
+p = Path('fabscore_codex/workspace/claim_23_run_json/results/results.json')
+obj = json.loads(p.read_text())
+vals = obj['overall']['value_dimensions']
+hv = obj['scenarios']['rapid_shift']['raw_data']['human_values']
+print('value_dimensions=', vals)
+print('human_steps=', len(hv))
+for idx in [0, 29, 30, 59, 60, 99]:
+    print(idx, hv[idx][0])
+PY =====
+value_dimensions= ['autonomy', 'benevolence', 'security', 'achievement', 'conformity']
+human_steps= 100
+0 [0.057990753398844665, 0.38391388425207135, 0.16385039614194224, 0.1950492393828843, 0.1991957268242574]
+29 [0.10358890598449107, 0.1682552036178337, 0.05597172950376112, 0.19294486276838568, 0.47923929812552846]
+30 [0.09771034017395352, 0.18953317357234675, 0.09861854631953577, 0.15941708759537115, 0.45472085233879295]
+59 [0.2489781376887249, 0.41058314248170896, 0.18945550940993602, 0.06927942706653173, 0.08170378335309861]
+60 [0.2306772765648238, 0.42064321054218007, 0.31344737170787956, 0.009165085951294243, 0.026067055233822408]
+99 [0.32171771967420865, 0.029076460970525318, 0.23466567519861037, 0.00794912895707989, 0.4065910151995757]
+

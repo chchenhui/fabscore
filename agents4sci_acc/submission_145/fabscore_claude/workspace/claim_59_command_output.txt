@@ -1,0 +1,63 @@
+== Command ==
+cd /home/chenhui/fabscore/agent4sci_acc/submission_145/anon-submission-1-main && python3 -c "
+import sys, json, os
+sys.path.insert(0, '.')
+from greenhouse.figures import plot_bench_with_err, plot_linreg_with_err
+from greenhouse.dsl import Rule
+
+ART = os.path.abspath('artifacts')
+best = json.load(open(os.path.join(ART, 'best_rule_v02.json')))
+best_rule = Rule(**best['best_rule'])
+
+WORKSPACE = '/home/chenhui/fabscore/agent4sci_acc/submission_145/fabscore_claude/workspace'
+
+print('Generating Ackley error-band plot...')
+plot_bench_with_err(best_rule, 'ackley', os.path.join(WORKSPACE, 'claim_59_bench_ackley_err.png'))
+print('Ackley done.')
+
+print('Generating linreg error-band plot...')
+plot_linreg_with_err(best_rule, os.path.join(WORKSPACE, 'claim_59_bench_linreg_err.png'))
+print('Linreg done.')
+
+# Also print the actual values
+import numpy as np
+from greenhouse.runners import eval_rule, eval_rule_linreg
+from greenhouse.optimizers import baseline_rules
+
+rules = baseline_rules()
+rules['Evolved_v02'] = best_rule
+
+print('\n=== Ackley final values (mean ± std over seeds=(0,1,2)) ===')
+for name, r in rules.items():
+    final, stack = eval_rule(r, 'ackley', dim=10, steps=300, seeds=(0,1,2))
+    std = stack.std(axis=0)[-1]
+    print(f'{name}: final_mean={final:.4f}, final_std={std:.4f}')
+
+print('\n=== LinReg final values (mean ± std over seeds=(0,1,2)) ===')
+for name, r in rules.items():
+    final, stack = eval_rule_linreg(r, steps=300, seeds=(0,1,2))
+    std = stack.std(axis=0)[-1]
+    print(f'{name}: final_mean={final:.4f}, final_std={std:.4f}')
+"
+
+== Output ==
+Generating Ackley error-band plot...
+Ackley done.
+Generating linreg error-band plot...
+Linreg done.
+
+=== Ackley final values (mean ± std over seeds=(0,1,2)) ===
+SGD: final_mean=7.8258, final_std=0.2670
+Momentum: final_mean=7.8293, final_std=0.2672
+Adam-ish: final_mean=7.7486, final_std=0.2779
+Evolved_v02: final_mean=7.6918, final_std=0.2486
+
+=== LinReg final values (mean ± std over seeds=(0,1,2)) ===
+SGD: final_mean=1.8126, final_std=0.1878
+Momentum: final_mean=1.7738, final_std=0.1882
+Adam-ish: final_mean=13.4219, final_std=1.3871
+Evolved_v02: final_mean=0.5980, final_std=0.0633
+
+== Artifacts created ==
+/home/chenhui/fabscore/agent4sci_acc/submission_145/fabscore_claude/workspace/claim_59_bench_ackley_err.png (116KB)
+/home/chenhui/fabscore/agent4sci_acc/submission_145/fabscore_claude/workspace/claim_59_bench_linreg_err.png (153KB)

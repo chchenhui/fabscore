@@ -1,0 +1,24 @@
+{
+  "optimize_index": 0,
+  "issues": [
+    {
+      "title": "Low retry budget causes AR fallback garbage",
+      "description": "max_retry_num_total=5 was too low. After 5 rejected tokens, LAVE enters AR fallback mode producing trailing/garbage content. 85/350 examples hit AR fallback; 53% produced corrupt output. Increased to 30 retries to give the constraint algorithm more chances before fallback."
+    },
+    {
+      "title": "No output truncation after grammar completion",
+      "description": "LAVE outputs contained trailing text after the first valid [...] expression in 37/350 examples (vs 3/350 for unconstrained). Added truncate_to_bracket() post-processing to strip content after first balanced bracket pair."
+    },
+    {
+      "title": "Beam search too narrow for complex string arguments",
+      "description": "top_k_per_mask=5, top_n_beam=5, random_n_beam=5 was insufficient for Java/JS categories with complex string arguments (66% AR fallback rate vs 16% for simple_python). Increased all to 10 to provide more candidate sequences for validation."
+    },
+    {
+      "title": "Insufficient generation length for long outputs",
+      "description": "max_tokens=256, steps=128 was too short for Java/JS function calls with long string arguments, and for parallel/parallel_multiple with multiple calls. Increased to max_tokens=512, steps=256."
+    }
+  ],
+  "experiment_result_path": "EXPERIMENT_RESULTS/optimize_trace/iteration_0/",
+  "success": false,
+  "summary": "Applied four fixes (higher retry budget, wider beam search, output truncation, longer generation). The optimized LAVE achieved 27.71% success rate (+0.19pp over 27.52% original), which is within noise and not a meaningful improvement. The parallel category improved +7.3pp from longer gen_length, but irrelevance degraded -5.3pp and AST parse rates for Java/JS worsened because more beam search substitutions corrupted string content. Fundamental finding: LAVE's token-level constraint enforcement hurts more than it helps for BFCL tool-calling since the unconstrained model already achieves ~92% parse rate, and every LAVE intervention on the remaining errors introduces more damage than it fixes."
+}

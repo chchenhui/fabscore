@@ -1,0 +1,124 @@
+{
+  "Experiment_description": "We implemented and stabilized a leakage-aware next-activity predictive process monitoring baseline using local XES logs (primarily BPI2017 and BPI2012, plus ROAD). All nodes used prefix-to-next-event samples with an activity-embedding 1-layer LSTM augmented by simple temporal features. We enforced case-level time-based splits (70/15/15), normalized numeric features on training only, and evaluated top-1 accuracy, macro-F1, and Top-3 next-activity accuracy. Early nodes established the end-to-end pipeline; later nodes introduced robustness fixes (timestamp positional indexing, strict T-1 prefix cutoff) without changing the core design, and reported cross-dataset performance.",
+  "Significance": "This stage delivers a correct, reproducible, and temporally realistic PPM baseline for next-activity prediction. It demonstrates that implementation correctness (e.g., eliminating off-by-one and indexing issues) can materially impact measured performance, notably improving BPI2017 accuracy. Across datasets, the model consistently attains very high Top-3 accuracy, indicating strong practical utility in ranking the next activity. However, macro-F1 gaps reveal class imbalance and minority-class challenges, guiding future work toward class weighting or advanced loss functions to improve fairness and robustness across activities.",
+  "Description": "Methods and steps: (1) Load local event logs via pm4py; prefer BPI2017, then BPI2012, then ROAD. (2) Construct case traces and generate prefix\u2013target pairs up to T-1 to ensure a valid next-event label. (3) Build inputs comprising activity tokens (embedded) and temporal features (time since start, time since previous event, hour-of-day, weekday, working-time flag), normalized using training statistics only. (4) Enforce strict time-based splits at the case level (70/15/15 by case start time) to prevent leakage. (5) Model: a 1-layer LSTM over per-step features; the final hidden state feeds a softmax classifier over activities. (6) Train for a small number of epochs, track train/val loss, and compute validation metrics per epoch. (7) Evaluate on the held-out test set and report accuracy, macro-F1, and Top-3 accuracy; persist metrics, losses, predictions, and ground truths. Implementation stabilization (later nodes): convert per-case timestamp Series to numpy arrays for positional indexing and enforce T-1 cutoff for prefixes to avoid off-by-one and KeyErrors. Observations: losses generally decrease with training; validation loss can be slightly below training loss; Top-3 accuracy saturates near 0.99 across datasets, while macro-F1 remains lower due to class imbalance. Confusion matrices and PR curves corroborate stronger performance on frequent classes.",
+  "List_of_included_plots": [
+    {
+      "path": "experiments/2025-09-13_11-32-42_resource_centric_ppm_agents_attempt_0/logs/0-run/experiment_results/experiment_ea3c544524e64e3fbd193a8593b37724_proc_332088/BPI2017_nextact_confusion_matrix_test.png",
+      "description": "The confusion matrix displays a concentration of correct predictions, especially in the lower indices which likely represent the most frequent events. However, there is some dispersion in predictions for less frequent events, indicating room for improvement in handling less common activities.",
+      "analysis": "The diagonal concentration indicates the model learns dominant transitions well; off-diagonal spread for rare classes aligns with lower macro-F1, emphasizing class imbalance effects and motivating class-aware training strategies."
+    },
+    {
+      "path": "experiments/2025-09-13_11-32-42_resource_centric_ppm_agents_attempt_0/logs/0-run/experiment_results/experiment_ea3c544524e64e3fbd193a8593b37724_proc_332088/BPI2017_nextact_loss_curves.png",
+      "description": "The loss curves for training and validation show a typical decline over the epochs, indicating effective learning. The validation loss being consistently lower than the training loss suggests good generalization and no signs of overfitting.",
+      "analysis": "Converging losses with validation slightly below training suggest benign regularization effects (e.g., dropout, batch norm absent but data noise) or batch-level dynamics; no overfitting is evident in this run."
+    },
+    {
+      "path": "experiments/2025-09-13_11-32-42_resource_centric_ppm_agents_attempt_0/logs/0-run/experiment_results/experiment_da7f619dc6be4f5fa90081d392370f2d_proc_332089/BPI2012_next_activity_val_metrics.png",
+      "description": "The validation metrics plot shows three key performance metrics: Validation Accuracy, Macro-F1, and Top-3 Accuracy. The validation accuracy is consistently high, around 80%, indicating that the model is performing well in predicting the next activity correctly most of the time. However, the Macro-F1 score is lower, starting around 65% and slightly increasing, suggesting that the class distribution might be imbalanced, affecting the harmonic mean of precision and recall. The Top-3 Accuracy remains constant at 100%, indicating that the correct next activity is almost always within the top three predicted activities.",
+      "analysis": "The divergence between high Top-3 and lower macro-F1 highlights that while rankings are strong, per-class performance varies; this underscores the need to target minority-class recall to increase macro-F1."
+    },
+    {
+      "path": "experiments/2025-09-13_11-32-42_resource_centric_ppm_agents_attempt_0/logs/0-run/experiment_results/experiment_da7f619dc6be4f5fa90081d392370f2d_proc_332089/BPI2012_next_activity_pr_curves.png",
+      "description": "The precision-recall curves plot shows high precision across different recall levels for micro-average, with an average precision (AP) of 0.927, which is excellent. The macro-average precision is lower (AP=0.724), indicating variability in model performance across different classes. This suggests that while the model is good at predicting the positive class, it might struggle with less frequent classes, highlighting the need for class balancing or additional feature engineering to improve predictions for minority classes.",
+      "analysis": "Micro vs macro AP gap quantitatively confirms imbalance effects; this diagnostic supports prioritizing class weighting or focal losses in future iterations."
+    },
+    {
+      "path": "experiments/2025-09-13_11-32-42_resource_centric_ppm_agents_attempt_0/logs/0-run/experiment_results/experiment_9a2ff2eda58e4ea8966e9f8f6f6ba8c5_proc_332087/val_top3_BPI2017.png",
+      "description": "The validation Top-3 accuracy on the BPI2017 dataset shows a general upward trend over the epochs, indicating that the model is improving its predictive performance over time. The fluctuations suggest that while the model is learning effectively, there may be room for optimization in terms of stability or learning rate adjustments.",
+      "analysis": "Consistent Top-3 improvements align with the strong final test Top-3 (\u22480.991) reported later, supporting that the stabilized pipeline learns robust ranking signals on BPI2017."
+    },
+    {
+      "path": "experiments/2025-09-13_11-32-42_resource_centric_ppm_agents_attempt_0/logs/0-run/experiment_results/experiment_9a2ff2eda58e4ea8966e9f8f6f6ba8c5_proc_332087/val_top3_BPI2012.png",
+      "description": "The validation Top-3 accuracy for BPI2012 shows a peak early in the training process, followed by slight oscillations, and then a decline towards the end. This pattern may suggest overfitting or that further fine-tuning is required to maintain the model's performance across all epochs.",
+      "analysis": "Early peaking suggests potential for early stopping or learning rate scheduling to preserve peak validation performance and improve generalization stability."
+    }
+  ],
+  "Key_numerical_results": [
+    {
+      "result": 0.6696,
+      "description": "BPI2017 test accuracy (early baseline in node ea3c)",
+      "analysis": "Establishes an initial performance level on BPI2017; serves as a reference for subsequent improvements after stability fixes."
+    },
+    {
+      "result": 0.3637,
+      "description": "BPI2017 test macro-F1 (early baseline in node ea3c)",
+      "analysis": "Low macro-F1 indicates difficulty with minority classes in the early implementation; later nodes show improvement."
+    },
+    {
+      "result": 0.9784,
+      "description": "BPI2017 test Top-3 accuracy (early baseline in node ea3c)",
+      "analysis": "Even the initial baseline reliably ranks the correct next activity in the top three most of the time."
+    },
+    {
+      "result": 0.8332,
+      "description": "BPI2017 test accuracy (stabilized baseline in nodes 9a2f/74c75)",
+      "analysis": "Substantial improvement over the earlier BPI2017 result, suggesting that implementation correctness and stability can materially affect top-1 accuracy."
+    },
+    {
+      "result": 0.571,
+      "description": "BPI2017 test macro-F1 (stabilized baseline in nodes 9a2f/74c75)",
+      "analysis": "Improved per-class performance compared to the early run, though still below accuracy, reflecting class imbalance."
+    },
+    {
+      "result": 0.9906,
+      "description": "BPI2017 test Top-3 accuracy (stabilized baseline in nodes 9a2f/74c75)",
+      "analysis": "Near-saturated Top-3 accuracy indicates highly reliable ranking of the next activity."
+    },
+    {
+      "result": 0.7569,
+      "description": "BPI2012 test accuracy (nodes 9a2f/74c75)",
+      "analysis": "Demonstrates solid generalization on BPI2012 with the same baseline and split protocol."
+    },
+    {
+      "result": 0.5872,
+      "description": "BPI2012 test macro-F1 (nodes 9a2f/74c75)",
+      "analysis": "Per-class performance is moderate; opportunities remain to improve minority class predictions."
+    },
+    {
+      "result": 0.9874,
+      "description": "BPI2012 test Top-3 accuracy (nodes 9a2f/74c75)",
+      "analysis": "Confirms strong ranking capability across datasets."
+    },
+    {
+      "result": 0.802,
+      "description": "ROAD test accuracy (nodes 9a2f/74c75)",
+      "analysis": "Shows the baseline transfers well to the ROAD dataset."
+    },
+    {
+      "result": 0.474,
+      "description": "ROAD test macro-F1 (nodes 9a2f/74c75)",
+      "analysis": "Lower macro-F1 highlights pronounced class imbalance or challenging minority classes in ROAD."
+    },
+    {
+      "result": 0.9936,
+      "description": "ROAD test Top-3 accuracy (nodes 9a2f/74c75)",
+      "analysis": "Despite macro-F1 challenges, the correct next activity is almost always in the top three predictions."
+    },
+    {
+      "result": 0.7938,
+      "description": "BPI_base test accuracy (node da7f)",
+      "analysis": "Independent run corroborates strong top-1 performance for the stabilized baseline on a BPI-like dataset."
+    },
+    {
+      "result": 0.6294,
+      "description": "BPI_base test macro-F1 (node da7f)",
+      "analysis": "Higher macro-F1 than some other runs indicates variability across datasets or splits but consistently shows class imbalance effects."
+    },
+    {
+      "result": 0.994,
+      "description": "BPI_base test Top-3 accuracy (node da7f)",
+      "analysis": "Reinforces that Top-3 is consistently near-perfect across runs/datasets."
+    },
+    {
+      "result": 0.927,
+      "description": "Micro-average AP on PR curves (node da7f)",
+      "analysis": "High micro-AP indicates overall strong precision-recall when weighting by frequency."
+    },
+    {
+      "result": 0.724,
+      "description": "Macro-average AP on PR curves (node da7f)",
+      "analysis": "Lower macro-AP quantifies the gap for minority classes, aligning with macro-F1 findings."
+    }
+  ]
+}

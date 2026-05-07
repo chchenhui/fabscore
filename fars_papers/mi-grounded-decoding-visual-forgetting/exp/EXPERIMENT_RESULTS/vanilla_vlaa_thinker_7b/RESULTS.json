@@ -1,0 +1,35 @@
+{
+  "experiment": "vanilla_vlaa_thinker_7b",
+  "model": "UCSC-VLAA/VLAA-Thinker-Qwen2.5VL-7B",
+  "decoding": "greedy",
+  "max_new_tokens": 1000,
+  "system_prompt": "VLAA-Thinker thinking system prompt",
+  "benchmarks": {
+    "mmstar": {
+      "total": 1500,
+      "accuracy": 62.13,
+      "published_reference": 49.7,
+      "published_source": "VAPO paper (arXiv 2509.25848), Table 1"
+    },
+    "hallusionbench": {
+      "total": 1129,
+      "correct": 748,
+      "aAcc": 66.25,
+      "vd_acc": 60.24,
+      "vs_acc": 72.86,
+      "published_reference": 54.7,
+      "published_source": "VAPO paper (arXiv 2509.25848), Table 1"
+    }
+  },
+  "discrepancy_notes": "Our results are ~12pp above published values. The VAPO paper evaluates using VLMEvalKit which uses different prompt formatting (adds 'Please select the correct answer from the options above.' suffix, reformats options as 'A. text' vs 'A: text'), different answer extraction (option matching on last 5 tokens, GPT-based fallback), and HallusionBench uses GPT-4 judge for Yes/No evaluation. Our pipeline uses raw HuggingFace questions, regex-based answer extraction from <answer> tags, and regex Yes/No extraction. The discrepancy is expected and documented. Our pipeline is internally consistent for comparing decoding strategies.",
+  "gpu_config": {
+    "num_gpus": 4,
+    "gpu_type": "A100-80GB",
+    "precision": "bfloat16",
+    "data_parallel_shards": 4
+  },
+  "runtime": {
+    "mmstar_seconds": 2605,
+    "hallusionbench_seconds": 2106
+  }
+}

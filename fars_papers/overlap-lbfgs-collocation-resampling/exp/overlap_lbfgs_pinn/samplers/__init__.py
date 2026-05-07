@@ -1,0 +1,1 @@
+# Collocation point sampling strategies

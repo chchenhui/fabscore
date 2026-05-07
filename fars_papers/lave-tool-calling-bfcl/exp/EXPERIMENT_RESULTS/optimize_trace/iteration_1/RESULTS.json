@@ -1,0 +1,105 @@
+{
+  "condition": "C_lave_cfg_v3",
+  "description": "LAVE CFG-constrained diffusion decoding with extended grammar (bare identifiers), irrelevance bypass, and reduced retry budget",
+  "dataset": "BFCL-v3 Non-Live (350 examples, 7 categories x 50)",
+  "seeds": [42, 123, 456],
+  "model": "GSAI-ML/LLaDA-8B-Instruct",
+  "fixes_applied": [
+    "Extended grammar: added bare identifier support (expr_val rule) for Java/JS compatibility",
+    "Category-aware irrelevance bypass: unconstrained generation for irrelevance category",
+    "Reduced max_retry_num_total from 30 to 10"
+  ],
+  "hyperparameters": {
+    "max_tokens": 512,
+    "steps": 256,
+    "block_length": 32,
+    "temperature": 0.2,
+    "change_logits": true,
+    "top_k_per_mask": 10,
+    "top_n_beam": 10,
+    "random_n_beam": 10,
+    "max_retry_num_total": 10,
+    "truncation": "truncate_to_bracket post-processing",
+    "skip_lave_categories": ["irrelevance"]
+  },
+  "overall": {
+    "success_rate_mean": 0.3676,
+    "success_rate_std": 0.0012,
+    "ast_parse_rate_mean": 0.9667,
+    "ast_parse_rate_std": 0.0027,
+    "mean_inference_time_sec": 9.13
+  },
+  "per_seed": {
+    "42": {
+      "success_rate": 0.3657,
+      "ast_parse_rate": 0.9686,
+      "mean_inference_time_sec": 8.88
+    },
+    "123": {
+      "success_rate": 0.3686,
+      "ast_parse_rate": 0.9686,
+      "mean_inference_time_sec": 8.86
+    },
+    "456": {
+      "success_rate": 0.3686,
+      "ast_parse_rate": 0.9629,
+      "mean_inference_time_sec": 9.54
+    }
+  },
+  "per_category": {
+    "simple_python": {
+      "success_rate_mean": 0.5000,
+      "success_rate_std": 0.0000,
+      "ast_parse_rate_mean": 1.0000,
+      "ast_parse_rate_std": 0.0000
+    },
+    "simple_java": {
+      "success_rate_mean": 0.0133,
+      "success_rate_std": 0.0094,
+      "ast_parse_rate_mean": 0.9133,
+      "ast_parse_rate_std": 0.0094
+    },
+    "simple_javascript": {
+      "success_rate_mean": 0.6867,
+      "success_rate_std": 0.0094,
+      "ast_parse_rate_mean": 0.9533,
+      "ast_parse_rate_std": 0.0094
+    },
+    "multiple": {
+      "success_rate_mean": 0.3600,
+      "success_rate_std": 0.0000,
+      "ast_parse_rate_mean": 0.9733,
+      "ast_parse_rate_std": 0.0094
+    },
+    "parallel": {
+      "success_rate_mean": 0.5333,
+      "success_rate_std": 0.0094,
+      "ast_parse_rate_mean": 0.9733,
+      "ast_parse_rate_std": 0.0094
+    },
+    "parallel_multiple": {
+      "success_rate_mean": 0.1400,
+      "success_rate_std": 0.0000,
+      "ast_parse_rate_mean": 1.0000,
+      "ast_parse_rate_std": 0.0000
+    },
+    "irrelevance": {
+      "success_rate_mean": 0.3400,
+      "success_rate_std": 0.0000,
+      "ast_parse_rate_mean": 0.9533,
+      "ast_parse_rate_std": 0.0094
+    }
+  },
+  "comparison": {
+    "vs_unconstrained_A": {
+      "success_delta": "+0.57pp (36.76% vs 36.19%)",
+      "parse_delta": "+4.96pp (96.67% vs 91.71%)",
+      "time_delta": "-2.3s (9.1s vs 11.4s)"
+    },
+    "vs_lave_v2_iter0": {
+      "success_delta": "+9.05pp (36.76% vs 27.71%)",
+      "parse_delta": "+10.19pp (96.67% vs 86.48%)",
+      "time_delta": "-5.2s (9.1s vs 14.3s)"
+    }
+  }
+}

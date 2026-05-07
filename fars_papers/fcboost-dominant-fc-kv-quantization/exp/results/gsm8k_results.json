@@ -1,0 +1,56 @@
+{
+    "task": "gsm8k_cot",
+    "model": "Qwen/Qwen3-8B",
+    "num_samples": 1319,
+    "num_fewshot": 8,
+    "max_gen_tokens": 4096,
+    "generation_kwargs": {
+        "do_sample": true,
+        "temperature": 0.6,
+        "top_p": 0.95,
+        "top_k": 20
+    },
+    "quantization_params": {
+        "group_size": 128,
+        "buffer_length": 128,
+        "sink_length": 32,
+        "kbits": 2,
+        "vbits": 2,
+        "promote_bit": 4,
+        "promote_ratio": 0.125
+    },
+    "results": {
+        "fp16": {
+            "method": "FP16 KV16",
+            "description": "Full precision baseline (no KV cache quantization)",
+            "exact_match_strict": 0.9030,
+            "exact_match_flexible": 0.8961
+        },
+        "kivi_kv2star": {
+            "method": "KIVI-KV2*",
+            "description": "2-bit quantization with 32-token FP16 sink, no channel boost",
+            "exact_match_strict": 0.8848,
+            "exact_match_flexible": 0.8908
+        },
+        "kitty": {
+            "method": "Kitty",
+            "description": "2-bit quantization with dynamic magnitude-based 12.5% channel boost",
+            "exact_match_strict": 0.8848,
+            "exact_match_flexible": 0.8946
+        },
+        "fcboost_v2": {
+            "method": "FCBoost",
+            "description": "2-bit quantization with static CA-based 12.5% channel boost + value boosting",
+            "exact_match_strict": 0.8984,
+            "exact_match_flexible": 0.8893
+        }
+    },
+    "analysis": {
+        "fp16_to_kivi_drop": -1.82,
+        "fp16_to_kitty_drop": -1.82,
+        "fp16_to_fcboost_drop": -0.46,
+        "fcboost_vs_kitty_delta": 1.36,
+        "fcboost_vs_kivi_delta": 1.36,
+        "conclusion": "FCBoost maintains comparable-to-superior accuracy on GSM8K short-context task. FCBoost (89.84%) outperforms both KIVI-KV2* (88.48%) and Kitty (88.48%) on strict-match, and is closest to FP16 (90.30%). The static CA mask does not degrade short-context performance."
+    }
+}

@@ -1,0 +1,49 @@
+{
+    "Summary": "The paper argues that case-centric predictive process monitoring (PPM) ignores resource contention and concurrency, leading to limited operational relevance. It contributes: (C1) a leakage-safe, deterministic, and reproducible protocol with chronological splits, train-only normalization, fixed seeds, and artifact logging; (C2) a compact, transparent LSTM baseline for next-activity prediction on BPI 2012, BPI 2017, and Road Traffic logs; (C3) a blueprint for resource-centric agents with per-resource multinomial policies integrated into a discrete-event simulator, along with proposed evaluation metrics (global next-event accuracy, per-resource next-task precision, workload MAPE); and (C4) practical pitfalls and checklists (e.g., lifecycle handling, class imbalance back-offs, indexing issues). Empirically, only the case-centric LSTM baseline is evaluated, with high Top-3 accuracy and analysis of confusion matrices; the resource-centric simulator and policies are not evaluated in this version.",
+    "Strengths": [
+        "Strong emphasis on reproducibility: chronological case splits, train-only normalization, fixed seeds, explicit artifact logging; these are valuable guardrails for PPM studies.",
+        "A compact, transparent LSTM baseline with sensible temporal features and clear training protocol, achieving strong Top-3 results on three public logs.",
+        "Thoughtful error analysis via confusion matrices, with observations that plausibly motivate including resource and queue signals.",
+        "Useful practical guidance: cautions around lifecycle pairing, class imbalance handling with back-off to global policies, and robustness to indexing bugs.",
+        "Clear writing and modular organization; code and splits (as claimed) would facilitate replication and future ablations."
+    ],
+    "Weaknesses": [
+        "The central proposed contribution\u2014resource-centric agent policies embedded in a discrete-event simulator\u2014is not empirically evaluated. No end-to-end results are provided for the resource-centric approach.",
+        "Lack of comparisons to resource-aware baselines (e.g., FIFO dispatching, global policies, queue-aware case-centric models) under the proposed simulator metrics. Without these, the claimed benefits remain speculative.",
+        "Novelty is moderate: the LSTM baseline is standard; reproducibility practices are commendable but not research contributions by themselves; the simulator blueprint uses conventional multinomial policies and log-normal durations without validation.",
+        "Proposed evaluation metrics (global next-event accuracy, per-resource next-task precision, workload MAPE) are not instantiated; it is unclear if they are reliable or discriminative in practice.",
+        "Scope of datasets, while common in PPM, is limited and lacks stress tests for resource contention (e.g., varying staffing, dynamic arrivals) that would make the resource-centric angle compelling.",
+        "No ablations on key design choices: policy features, duration modeling assumptions, FIFO vs learned policies, impact of using only lifecycle 'complete' on downstream duration estimation.",
+        "Calibration, uncertainty, and cost-sensitive early stopping are discussed but not measured; reporting focuses on Top-k accuracy and macro-F1 without per-class breakdowns or calibration metrics."
+    ],
+    "Originality": 2,
+    "Quality": 2,
+    "Clarity": 3,
+    "Significance": 2,
+    "Questions": [
+        "Can you provide end-to-end results for the resource-centric simulator and per-resource policies on the same splits, using the proposed metrics (global next-event accuracy, per-resource next-task precision, workload MAPE)? Include a FIFO ablation and a global policy baseline.",
+        "How do the proposed per-resource multinomial policies compare to queue-aware case-centric predictors (e.g., adding live queue features to the LSTM) without DES integration? This would isolate the value of DES vs richer features.",
+        "Please report per-class precision/recall and calibration metrics (e.g., ECE) alongside Top-k. Do confusion band observations correlate with calibrated uncertainty?",
+        "How sensitive are the results to prefix length (max 10), feature set, and early stopping criteria? Do longer prefixes or alternative selection criteria (e.g., calibration loss) change Top-1/Top-3 or macro-F1 substantially?",
+        "Duration modeling: why log-normal per activity, and how do you handle instantaneous transitions and unmatched start/complete pairs? Can you provide goodness-of-fit checks or alternative distributions?",
+        "Lifecycle filtering: restricting to 'complete' stabilizes supervision for next-activity, but how does it affect simulator duration estimation? Do you evaluate robustness to missing/partial lifecycles?",
+        "Class imbalance: beyond back-off thresholds, did you try reweighting, focal loss, or hierarchical label smoothing for tail activities? Any quantitative evidence these strategies help?",
+        "Reproducibility: will you release the code, fixed splits, and all artifact logs (including per-sample prefix lengths and probability matrices)? Are there exact dataset hashes or commit IDs to ensure bitwise replication?",
+        "External validity: can you add a dataset or synthetic benchmark with controlled resource contention (e.g., varying staffing levels) to stress-test the proposed resource-centric evaluation?"
+    ],
+    "Limitations": [
+        "No empirical validation of the core resource-centric contribution in this version; conclusions about resource-aware benefits remain hypothetical.",
+        "Assumption of queue observability and stable activity taxonomies may not hold in real deployments with drift, ad-hoc tasks, or partial logging.",
+        "Lifecycle filtering to 'complete' may bias downstream duration modeling; matching start/complete pairs is nontrivial in noisy logs.",
+        "Per-resource multinomial policies and log-normal durations are simplistic and may be insufficient in settings with complex prioritization, preemption, or multi-skill resources.",
+        "Generalization beyond the three public logs is unproven, particularly in domains with dynamic staffing, strict SLAs, or volatile arrivals.",
+        "Potential privacy concerns and governance issues around releasing detailed resource-level logs are not discussed; while the paper uses public logs, deployment may face constraints."
+    ],
+    "Ethical Concerns": false,
+    "Soundness": 2,
+    "Presentation": 3,
+    "Contribution": 2,
+    "Overall": 3,
+    "Confidence": 4,
+    "Decision": "Reject"
+}

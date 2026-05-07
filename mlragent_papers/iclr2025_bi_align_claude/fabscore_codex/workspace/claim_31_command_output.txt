@@ -1,0 +1,166 @@
+===== COMMAND: sed -n '340,356p' results/paper.md =====
+Figure 9 shows the alignment scores for the rapid_shift scenario, which features sudden changes in value priorities.
+
+![Alignment Comparison](./figures/alignment_comparison_rapid_shift.png)
+*Figure 9: Comparison of alignment scores for rapid_shift scenario*
+
+In this scenario, the adaptive models quickly adjusted to the sudden value shifts, maintaining high alignment scores, while the static_alignment model experienced significant drops in alignment following each shift.
+
+The human value evolution in this scenario (Figure 10) shows several abrupt changes in value priorities.
+
+![Human Value Evolution](./figures/human_value_evolution_rapid_shift.png)
+*Figure 10: Evolution of human values in rapid_shift scenario*
+
+Figures 11-14 show how each model's value representation responded to these rapid shifts.
+
+![static_alignment Value Evolution](./figures/model_value_evolution_static_alignment_rapid_shift.png)
+*Figure 11: Evolution of static_alignment values in rapid_shift scenario*
+
+
+===== COMMAND: nl -ba claude_code/evaluation.py | sed -n '100,160p' =====
+   100	        """
+   101	        # Initialize results dictionary
+   102	        results = {
+   103	            "scenario_name": self.name,
+   104	            "scenario_description": self.description,
+   105	            "duration": self.duration,
+   106	            "models": {},
+   107	            "raw_data": {
+   108	                "human_values": [],
+   109	                "model_values": {},
+   110	                "alignment_scores": {},
+   111	                "response_times": {},
+   112	                "responses": {}
+   113	            }
+   114	        }
+   115	        
+   116	        # Run simulation step by step
+   117	        for t in range(self.duration):
+   118	            # Step the human value simulation forward
+   119	            self.simulation.step()
+   120	            
+   121	            # Record human values for each agent
+   122	            human_values_at_t = []
+   123	            for agent in self.simulation.agents:
+   124	                human_values_at_t.append(agent.value_system.values.copy())
+   125	            results["raw_data"]["human_values"].append(human_values_at_t)
+   126	            
+   127	            # Update each model with current human values
+   128	            for model in models:
+   129	                # We'll use the first agent's values for simplicity
+   130	                # In a more complex evaluation, we might consider aggregating across agents
+   131	                human_values = self.simulation.agents[0].value_system
+   132	                
+   133	                # Generate a query for response time measurement
+   134	                # (This is a placeholder - in a real system, we'd have actual queries)
+   135	                query = f"Query at time {t}"
+   136	                
+   137	                # Measure response time
+   138	                start_time = time.time()
+   139	                response = model.generate_response(query, human_values)
+   140	                end_time = time.time()
+   141	                response_time = end_time - start_time
+   142	                
+   143	                # Update model based on human values
+   144	                model.update(human_values)
+   145	                
+   146	                # Record model values and metrics
+   147	                if model.name not in results["raw_data"]["model_values"]:
+   148	                    results["raw_data"]["model_values"][model.name] = []
+   149	                    results["raw_data"]["alignment_scores"][model.name] = []
+   150	                    results["raw_data"]["response_times"][model.name] = []
+   151	                    results["raw_data"]["responses"][model.name] = []
+   152	                
+   153	                results["raw_data"]["model_values"][model.name].append(model.value_system.values.copy())
+   154	                results["raw_data"]["alignment_scores"][model.name].append(model.alignment_scores[-1])
+   155	                results["raw_data"]["response_times"][model.name].append(response_time)
+   156	                results["raw_data"]["responses"][model.name].append(response)
+   157	                
+   158	        # Calculate evaluation metrics for each model
+   159	        for model in models:
+   160	            model_metrics = self._calculate_metrics(model, results["raw_data"])
+
+===== COMMAND: nl -ba claude_code/alignment_models.py | sed -n '120,150p' =====
+   120	    Once initial alignment is established, the model's values remain fixed.
+   121	    """
+   122	    def __init__(
+   123	        self,
+   124	        value_dimensions: List[str],
+   125	        name: str = "static_alignment",
+   126	        description: str = "Traditional static alignment model - no adaptation",
+   127	        random_seed: Optional[int] = None
+   128	    ):
+   129	        """Initialize a static alignment model."""
+   130	        super().__init__(value_dimensions, name, description, random_seed)
+   131	        self.initialized = False
+   132	    
+   133	    def update(self, human_values: ValueSystem) -> None:
+   134	        """
+   135	        Update the model's value system based on human values.
+   136	        For static alignment, this only happens once at initialization.
+   137	        
+   138	        Args:
+   139	            human_values: Human value system to align with
+   140	        """
+   141	        # Only align once at the beginning
+   142	        if not self.initialized:
+   143	            # Copy human values exactly
+   144	            for dim in self.value_dimensions:
+   145	                self.value_system.set_value(dim, human_values.get_value(dim))
+   146	            self.initialized = True
+   147	            
+   148	        # Record current values in history
+   149	        self.value_history.append(self.value_system.values.copy())
+   150	        
+
+===== COMMAND: nl -ba claude_code/visualization.py | sed -n '387,400p' =====
+   387	        # Plot model value evolution for each model
+   388	        for model_name in scenario_results['models']:
+   389	            model_values = np.array(scenario_results['raw_data']['model_values'][model_name])
+   390	            model_df = pd.DataFrame(
+   391	                model_values,
+   392	                columns=results['overall']['value_dimensions']
+   393	            )
+   394	            
+   395	            figure_paths[f'model_values_{model_name}_{scenario_name}'] = plot_value_evolution(
+   396	                model_df,
+   397	                f'model_value_evolution_{model_name}_{scenario_name}',
+   398	                figures_dir,
+   399	                config,
+   400	                title=f"{model_name} Value Evolution"
+
+===== COMMAND: python - <<'PY'
+import json
+from pathlib import Path
+p = Path('fabscore_codex/workspace/claim_23_run_json/results/results.json')
+obj = json.loads(p.read_text())
+series = obj['scenarios']['rapid_shift']['raw_data']['model_values']['static_alignment']
+dims = obj['overall']['value_dimensions']
+print('artifact=', p)
+print('num_steps=', len(series))
+print('num_dims=', len(series[0]) if series else 0)
+print('dims=', dims)
+print('first=', series[0])
+print('step_30=', series[30])
+print('step_60=', series[60])
+print('last=', series[-1])
+print('all_steps_identical=', all(step == series[0] for step in series))
+for i, dim in enumerate(dims):
+    vals = [step[i] for step in series]
+    print(dim, 'first=', vals[0], 'step_30=', vals[30], 'step_60=', vals[60], 'last=', vals[-1], 'min=', min(vals), 'max=', max(vals))
+PY =====
+artifact= fabscore_codex/workspace/claim_23_run_json/results/results.json
+num_steps= 100
+num_dims= 5
+dims= ['autonomy', 'benevolence', 'security', 'achievement', 'conformity']
+first= [0.057990753398844665, 0.38391388425207135, 0.16385039614194224, 0.1950492393828843, 0.1991957268242574]
+step_30= [0.057990753398844665, 0.38391388425207135, 0.16385039614194224, 0.1950492393828843, 0.1991957268242574]
+step_60= [0.057990753398844665, 0.38391388425207135, 0.16385039614194224, 0.1950492393828843, 0.1991957268242574]
+last= [0.057990753398844665, 0.38391388425207135, 0.16385039614194224, 0.1950492393828843, 0.1991957268242574]
+all_steps_identical= True
+autonomy first= 0.057990753398844665 step_30= 0.057990753398844665 step_60= 0.057990753398844665 last= 0.057990753398844665 min= 0.057990753398844665 max= 0.057990753398844665
+benevolence first= 0.38391388425207135 step_30= 0.38391388425207135 step_60= 0.38391388425207135 last= 0.38391388425207135 min= 0.38391388425207135 max= 0.38391388425207135
+security first= 0.16385039614194224 step_30= 0.16385039614194224 step_60= 0.16385039614194224 last= 0.16385039614194224 min= 0.16385039614194224 max= 0.16385039614194224
+achievement first= 0.1950492393828843 step_30= 0.1950492393828843 step_60= 0.1950492393828843 last= 0.1950492393828843 min= 0.1950492393828843 max= 0.1950492393828843
+conformity first= 0.1991957268242574 step_30= 0.1991957268242574 step_60= 0.1991957268242574 last= 0.1991957268242574 min= 0.1991957268242574 max= 0.1991957268242574
+

@@ -1,0 +1,77 @@
+# Title: Impact of Input Encodings on Grokking Dynamics in Mathematical Operations
+# Experiment description: Modify AbstractDataset to support two encoding schemes: one-hot and binary. Update the Transformer class to handle these new input formats and output attention weights. Implement a new function select_encoding(encoding_type) to switch between encodings. Run experiments for each encoding across all datasets. Track training accuracy, validation accuracy, and loss. Define the 'grokking point' as the step where validation accuracy exceeds 95%. Compare grokking points, final accuracies, and learning curve shapes between encodings. Plot learning curves with grokking points marked for each encoding scheme side by side. Analyze attention patterns at the grokking point for each encoding. Evaluate how different encodings affect grokking speed, final performance, and internal representations across operation types.
+## Run 0: Baseline
+Results: {'x_div_y': {'final_train_loss_mean': 0.005800435319542885, 'final_val_loss_mean': 0.006530226518710454, 'final_train_acc_mean': 1.0, 'final_val_acc_mean': 1.0, 'step_val_acc_99_mean': 4200.0}, 'x_minus_y': {'final_train_loss_mean': 0.014211568981409073, 'final_val_loss_mean': 0.014943961674968401, 'final_train_acc_mean': 1.0, 'final_val_acc_mean': 1.0, 'step_val_acc_99_mean': 4720.0}, 'x_plus_y': {'final_train_loss_mean': 0.003832749711970488, 'final_val_loss_mean': 0.004045687771091859, 'final_train_acc_mean': 1.0, 'final_val_acc_mean': 1.0, 'step_val_acc_99_mean': 2363.3333333333335}, 'permutation': {'final_train_loss_mean': 0.08011958096176386, 'final_val_loss_mean': 6.804208914438884, 'final_train_acc_mean': 0.9880208373069763, 'final_val_acc_mean': 0.035888671875, 'step_val_acc_99_mean': 7500.0}}
+Description: Baseline results using default encoding (integer indices).
+
+## Run 1: One-Hot Encoding
+Results: {'x_div_y': {'final_train_loss_mean': 0.013241691825290522, 'final_val_loss_mean': 0.019271023261050384, 'final_train_acc_mean': 1.0, 'final_val_acc_mean': 0.9986979166666666, 'step_val_acc_99_mean': 2250.0}, 'x_minus_y': {'final_train_loss_mean': 0.18608033657073975, 'final_val_loss_mean': 0.526949374936521, 'final_train_acc_mean': 0.959375003973643, 'final_val_acc_mean': 0.8518880208333334, 'step_val_acc_99_mean': 1270.0}, 'x_plus_y': {'final_train_loss_mean': 0.006793896512438853, 'final_val_loss_mean': 0.007043579593300819, 'final_train_acc_mean': 1.0, 'final_val_acc_mean': 1.0, 'step_val_acc_99_mean': 1173.3333333333333}, 'permutation': {'final_train_loss_mean': 0.006218063412234187, 'final_val_loss_mean': 0.3574418742209673, 'final_train_acc_mean': 1.0, 'final_val_acc_mean': 0.8992513020833334, 'step_val_acc_99_mean': 6456.666666666667}}
+Description: This run implemented one-hot encoding for input representation. Compared to the baseline:
+1. x_div_y: Slightly higher final losses, but faster grokking (2250 vs 4200 steps).
+2. x_minus_y: Significantly higher losses and lower accuracies, but faster grokking (1270 vs 4720 steps).
+3. x_plus_y: Similar performance, with slightly faster grokking (1173 vs 2363 steps).
+4. permutation: Lower training loss, higher validation loss, slightly lower validation accuracy, and slightly faster grokking (6457 vs 7500 steps).
+
+Overall, one-hot encoding seems to speed up grokking across all operations, but with some trade-offs in final performance, especially for x_minus_y. The permutation task shows improved training performance but slightly worse generalization.
+
+## Run 2: Binary Encoding
+Results: {'x_div_y': {'final_train_loss_mean': 0.021965698649485905, 'final_val_loss_mean': 10.310584704081217, 'final_train_acc_mean': 0.9996744990348816, 'final_val_acc_mean': 0.0244140625, 'step_val_acc_99_mean': 7500.0}, 'x_minus_y': {'final_train_loss_mean': 0.546358955403169, 'final_val_loss_mean': 0.3532165785630544, 'final_train_acc_mean': 0.8316406309604645, 'final_val_acc_mean': 0.887939453125, 'step_val_acc_99_mean': 916.6666666666666}, 'x_plus_y': {'final_train_loss_mean': 0.0963193429633975, 'final_val_loss_mean': 0.08551622182130814, 'final_train_acc_mean': 0.9916666746139526, 'final_val_acc_mean': 0.9950358072916666, 'step_val_acc_99_mean': 876.6666666666666}, 'permutation': {'final_train_loss_mean': 0.1236920952796936, 'final_val_loss_mean': 10.90841007232666, 'final_train_acc_mean': 0.9847656488418579, 'final_val_acc_mean': 0.001708984375, 'step_val_acc_99_mean': 7500.0}}
+Description: This run implemented binary encoding for input representation. Compared to the baseline and one-hot encoding:
+1. x_div_y: Significantly worse performance. High validation loss and very low validation accuracy. No grokking observed within the given steps.
+2. x_minus_y: Higher losses compared to baseline, but better validation accuracy than one-hot encoding. Fastest grokking among all runs (917 vs 1270 vs 4720 steps).
+3. x_plus_y: Higher losses compared to both baseline and one-hot, but still high accuracy. Fastest grokking among all runs (877 vs 1173 vs 2363 steps).
+4. permutation: Poor performance. High validation loss and extremely low validation accuracy. No grokking observed within the given steps.
+
+Overall, binary encoding shows mixed results. It significantly speeds up grokking for x_minus_y and x_plus_y operations, but at the cost of slightly lower final performance. However, it performs poorly on x_div_y and permutation tasks, showing no signs of grokking. This suggests that binary encoding might be beneficial for simpler arithmetic operations but struggles with more complex tasks like division and permutations.
+
+## Run 4: Larger Model with Hybrid Encoding
+Results: {'x_div_y': {'final_train_loss_mean': 4.56920862197876, 'final_val_loss_mean': 4.589495023091634, 'final_train_acc_mean': 0.014583333395421505, 'final_val_acc_mean': 0.006184895833333333, 'step_val_acc_99_mean': 3000.0}, 'x_minus_y': {'final_train_loss_mean': 4.568751335144043, 'final_val_loss_mean': 4.587419350941976, 'final_train_acc_mean': 0.014843750124176344, 'final_val_acc_mean': 0.007161458333333333, 'step_val_acc_99_mean': 3000.0}, 'x_plus_y': {'final_train_loss_mean': 4.571380456288655, 'final_val_loss_mean': 4.583195209503174, 'final_train_acc_mean': 0.012499999875823656, 'final_val_acc_mean': 0.00927734375, 'step_val_acc_99_mean': 3000.0}, 'permutation': {'final_train_loss_mean': 4.783309618631999, 'final_val_loss_mean': 4.797783533732097, 'final_train_acc_mean': 0.008723958550641933, 'final_val_acc_mean': 0.007486979166666667, 'step_val_acc_99_mean': 3000.0}}
+Description: This run used a larger model with the hybrid encoding scheme. The changes included:
+1. Increased number of layers from 4 to 6
+2. Increased model dimension from 256 to 512
+3. Increased number of attention heads from 8 to 16
+4. Reduced number of training steps from 7500 to 3000 to address timeout issues
+
+Results analysis:
+1. Performance across all tasks: The larger model with hybrid encoding performed poorly across all tasks. Both training and validation losses were high, and accuracies were extremely low (around 1% or less) for all tasks.
+2. Grokking: No grokking was observed for any task. The 'step_val_acc_99_mean' value of 3000.0 for all tasks indicates that the model never reached 99% validation accuracy within the given number of steps.
+3. Task-specific performance: There was no significant difference in performance across tasks. All tasks, including the previously better-performing ones like x_plus_y, showed equally poor results.
+
+Conclusions:
+1. The larger model size did not improve performance with the hybrid encoding scheme. In fact, it performed significantly worse than previous runs.
+2. The reduced number of training steps (3000 instead of 7500) might have contributed to the poor performance, as the model may not have had enough time to learn.
+3. The combination of a larger model and hybrid encoding might have led to optimization difficulties, possibly due to the increased number of parameters and the complexity of the input representation.
+
+Next steps:
+Given these results, we need to reconsider our approach. We should try to isolate the factors that led to this poor performance. Possible next steps include:
+1. Reverting to the original model size while keeping the hybrid encoding to see if the larger model was the issue.
+2. Increasing the number of training steps to give the model more time to learn.
+3. Adjusting the learning rate or other hyperparameters to help with optimization.
+4. Considering a different approach to combining the benefits of one-hot and binary encodings.
+
+## Run 5: Original Model Size with Hybrid Encoding and Increased Training Steps
+Description: For this run, we will revert to the original model size while keeping the hybrid encoding scheme. We will also increase the number of training steps back to 7500 to give the model more time to learn. This will help us determine if the poor performance in Run 4 was due to the larger model size or the reduced training time.
+
+Changes for this run:
+1. Revert to original model size: 4 layers, 256 dim_model, 8 attention heads
+2. Keep the hybrid encoding scheme
+3. Increase training steps back to 7500
+4. Adjust batch sizes and evaluation frequency to accommodate the increased steps
+
+We will run this experiment using the command:
+python experiment.py --out_dir=run_5
+
+After this experiment, we will analyze the results to see if the original model size with hybrid encoding and more training steps can achieve better performance than what we observed in Run 4.
+
+## Plot Descriptions
+
+1. Combined Validation Accuracy Plot (combined_val_acc.png):
+   This figure shows the validation accuracy over time for all datasets and encoding schemes in a single, multi-panel plot. Each subplot represents a different dataset (x_div_y, x_minus_y, x_plus_y, and permutation), and within each subplot, different lines represent different encoding schemes (Baseline, One-Hot, Binary, and Hybrid). The x-axis shows the number of update steps, while the y-axis shows the validation accuracy from 0 to 1. This plot allows for easy comparison of how different encoding schemes perform across various datasets throughout the training process. It helps identify which encoding schemes lead to faster learning or higher final accuracy for each dataset.
+
+2. Grokking Points Comparison (grokking_points_comparison.png):
+   This bar chart compares the "grokking points" across different datasets and encoding schemes. The grokking point is defined as the number of steps required to reach 99% validation accuracy. The x-axis shows the different datasets, while the y-axis represents the number of steps. Each group of bars corresponds to a dataset, and different colored bars within each group represent different encoding schemes. This visualization helps identify which encoding schemes lead to faster grokking (i.e., sudden understanding) for each dataset. Lower bars indicate faster grokking, which is generally desirable.
+
+3. Final Validation Accuracy Comparison (final_val_acc_comparison.png):
+   This bar chart compares the final validation accuracies achieved by different encoding schemes across all datasets. The x-axis shows the different datasets, while the y-axis represents the final validation accuracy (from 0 to 1). Similar to the grokking points comparison, each group of bars corresponds to a dataset, with different colored bars representing different encoding schemes. This plot helps evaluate the ultimate performance of each encoding scheme on different datasets, regardless of how quickly they reached their final accuracy. Higher bars indicate better final performance.
+
+These plots collectively provide a comprehensive view of the performance differences between various encoding schemes across all datasets. They allow for analysis of both the learning dynamics (through the combined validation accuracy plot) and the final results (through the grokking points and final accuracy comparisons). This information is crucial for determining which encoding scheme is most effective for each type of mathematical operation, considering both the speed of learning and the ultimate accuracy achieved.

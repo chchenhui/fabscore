@@ -1,0 +1,83 @@
+{
+  "task": "In-Domain Drift Adapter Training and Evaluation",
+  "task_index": 2,
+  "models": {
+    "f_old": "sentence-transformers/all-distilroberta-v1",
+    "f_new": "sentence-transformers/all-mpnet-base-v2"
+  },
+  "adapter": {
+    "type": "ResidualMLPAdapter",
+    "embed_dim": 768,
+    "hidden_dim": 256
+  },
+  "training_config": {
+    "n_p": 5000,
+    "seeds": [0, 1, 2],
+    "lr": 3e-4,
+    "weight_decay": 0.01,
+    "batch_size": 256,
+    "max_epochs": 50,
+    "patience": 5,
+    "train_val_split": "80/20"
+  },
+  "results": {
+    "scifact": {
+      "nDCG@10_mean": 0.44378,
+      "nDCG@10_std": 0.00586,
+      "Recall@10_mean": 0.59733,
+      "Recall@10_std": 0.01061,
+      "per_seed": {
+        "seed_0": {"nDCG@10": 0.45052, "Recall@10": 0.61233},
+        "seed_1": {"nDCG@10": 0.44458, "Recall@10": 0.59011},
+        "seed_2": {"nDCG@10": 0.43623, "Recall@10": 0.58956}
+      }
+    },
+    "trec-covid": {
+      "nDCG@10_mean": 0.33651,
+      "nDCG@10_std": 0.00644,
+      "Recall@10_mean": 0.00831,
+      "Recall@10_std": 0.00021,
+      "per_seed": {
+        "seed_0": {"nDCG@10": 0.34073, "Recall@10": 0.00859},
+        "seed_1": {"nDCG@10": 0.34138, "Recall@10": 0.00827},
+        "seed_2": {"nDCG@10": 0.32741, "Recall@10": 0.00807}
+      }
+    },
+    "fiqa": {
+      "nDCG@10_mean": 0.23026,
+      "nDCG@10_std": 0.00364,
+      "Recall@10_mean": 0.30496,
+      "Recall@10_std": 0.00808,
+      "per_seed": {
+        "seed_0": {"nDCG@10": 0.22537, "Recall@10": 0.29753},
+        "seed_1": {"nDCG@10": 0.23131, "Recall@10": 0.30116},
+        "seed_2": {"nDCG@10": 0.23411, "Recall@10": 0.31620}
+      }
+    },
+    "arguana": {
+      "nDCG@10_mean": 0.39003,
+      "nDCG@10_std": 0.00090,
+      "Recall@10_mean": 0.67710,
+      "Recall@10_std": 0.00406,
+      "per_seed": {
+        "seed_0": {"nDCG@10": 0.38876, "Recall@10": 0.67141},
+        "seed_1": {"nDCG@10": 0.39053, "Recall@10": 0.68065},
+        "seed_2": {"nDCG@10": 0.39080, "Recall@10": 0.67923}
+      }
+    }
+  },
+  "reference_baselines": {
+    "oracle": {
+      "scifact": 0.6557,
+      "trec-covid": 0.51326,
+      "fiqa": 0.49963,
+      "arguana": 0.46521
+    },
+    "misaligned": {
+      "scifact": 0.0,
+      "trec-covid": 0.0,
+      "fiqa": 0.0,
+      "arguana": 0.00093
+    }
+  }
+}

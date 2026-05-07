@@ -1,0 +1,422 @@
+{
+    "no_code_files": [],
+    "obvious_hallucination": [
+        {
+            "index": 1,
+            "category": "table",
+            "content": "1. Table 1, PyTorch default, x_plus_y: 2363 ± 215",
+            "reason": "The paper presents this as a 95% confidence interval for the PyTorch-default condition, but the available baseline code path forcibly reinitializes Linear and Embedding weights with `uniform_(-0.1, 0.1)` rather than using a true PyTorch default, and the summary code only computes `np.std(v) / len(v)` under a `stderrs` key instead of a 95% confidence interval. The saved `run_0/final_info.json` artifact contains the mean `step_val_acc_99_mean=2363.333...`, so the reported statistic is tied to an experiment/aggregation procedure that the repository does not implement.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "latex/template.tex:483-499",
+                "latex/template.tex:264",
+                "experiment.py:204-212",
+                "experiment.py:313",
+                "experiment.py:416-418",
+                "run_0/final_info.json:1",
+                "plot.py:73-79"
+            ]
+        },
+        {
+            "index": 2,
+            "category": "table",
+            "content": "2. Table 1, PyTorch default, x_minus_y: 4720 ± 312",
+            "reason": "The table labels this as a 95% confidence interval for the PyTorch-default baseline, but the repository baseline path is a custom uniform reinitialization and the summary code computes `stderrs` as `np.std(v) / len(v)` rather than a confidence interval. `run_0/final_info.json` stores the mean `step_val_acc_99_mean=4720.0`, so the experiment label/statistic in the paper is not the one implemented by the code.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "latex/template.tex:483-499",
+                "latex/template.tex:264",
+                "experiment.py:204-212",
+                "experiment.py:313",
+                "experiment.py:416-418",
+                "run_0/final_info.json:1",
+                "plot.py:73-79"
+            ]
+        },
+        {
+            "index": 3,
+            "category": "table",
+            "content": "3. Table 1, PyTorch default, x_div_y: 4200 ± 287",
+            "reason": "This claim depends on a baseline described as PyTorch default and on a reported 95% confidence interval, but the code path for the baseline uses `uniform_(-0.1, 0.1)` and the aggregation code writes `stderrs = np.std(v) / len(v)` instead of any confidence interval computation. The artifact `run_0/final_info.json` does contain `step_val_acc_99_mean=4200.0`, so the mismatch is experiment-side rather than a missing artifact.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "latex/template.tex:483-499",
+                "latex/template.tex:264",
+                "experiment.py:204-212",
+                "experiment.py:313",
+                "experiment.py:416-418",
+                "run_0/final_info.json:1",
+                "plot.py:73-79"
+            ]
+        },
+        {
+            "index": 4,
+            "category": "table",
+            "content": "4. Table 1, PyTorch default, permutation: 7500 ± 0",
+            "reason": "Even though `run_0/final_info.json` contains `step_val_acc_99_mean=7500.0`, the paper still frames this entry as a PyTorch-default 95% confidence interval. The repository baseline path is a custom uniform reinitialization rather than an actual PyTorch default, and the metric aggregation code computes `stderrs` as `np.std(v) / len(v)` instead of a 95% confidence interval. The claim therefore conflicts with the implemented experimental procedure.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "latex/template.tex:483-499",
+                "latex/template.tex:264",
+                "experiment.py:204-212",
+                "experiment.py:313",
+                "experiment.py:416-418",
+                "run_0/final_info.json:1",
+                "plot.py:73-79"
+            ]
+        },
+        {
+            "index": 5,
+            "category": "table",
+            "content": "5. Table 1, Xavier, x_plus_y: 863 ± 98",
+            "reason": "The repository has a Xavier run and `run_1/final_info.json` contains the matching mean `step_val_acc_99_mean=863.333...`, but the paper claims Table 1 reports 95% confidence intervals while the code only computes `stderrs = np.std(v) / len(v)` and never implements a confidence-interval calculation. The paper also states Python, NumPy, and PyTorch seeds are all set, but the run script only calls `torch.manual_seed`, so the implemented procedure does not match the paper's experimental description.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "latex/template.tex:385-388",
+                "latex/template.tex:483-499",
+                "run_1.py:204",
+                "run_1.py:311",
+                "run_1.py:414-415",
+                "run_1/final_info.json:1"
+            ]
+        },
+        {
+            "index": 6,
+            "category": "table",
+            "content": "6. Table 1, Xavier, x_minus_y: 2347 ± 178",
+            "reason": "The stored artifact `run_1/final_info.json` supports the mean `step_val_acc_99_mean=2346.666...`, but Table 1 is explicitly described as 95% confidence intervals and the code never computes those intervals, only `stderrs = np.std(v) / len(v)`. The paper's implementation description also claims Python/NumPy/PyTorch seeding, while the run script sets only `torch.manual_seed`, so the experiment protocol behind the claim conflicts with the repository.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "latex/template.tex:385-388",
+                "latex/template.tex:483-499",
+                "run_1.py:204",
+                "run_1.py:311",
+                "run_1.py:414-415",
+                "run_1/final_info.json:1"
+            ]
+        },
+        {
+            "index": 7,
+            "category": "table",
+            "content": "7. Table 1, Xavier, x_div_y: 2537 ± 203",
+            "reason": "The repository artifact `run_1/final_info.json` contains the mean `step_val_acc_99_mean=2536.666...`, but the paper's table is labeled as 95% confidence intervals even though the run script only saves `stderrs = np.std(v) / len(v)` and does not implement confidence-interval computation. The paper's seeding description is also stronger than the code path, which sets only `torch.manual_seed`.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "latex/template.tex:385-388",
+                "latex/template.tex:483-499",
+                "run_1.py:204",
+                "run_1.py:311",
+                "run_1.py:414-415",
+                "run_1/final_info.json:1"
+            ]
+        },
+        {
+            "index": 8,
+            "category": "table",
+            "content": "8. Table 1, Xavier, permutation: 5067 ± 342",
+            "reason": "The mean aligns with `run_1/final_info.json` (`step_val_acc_99_mean=5066.666...`), but the paper presents this entry as a 95% confidence interval and the available code never computes one, instead writing `stderrs = np.std(v) / len(v)`. Because the implemented metric/statistical procedure does not match the paper, the claim is contradicted at the experiment-procedure level.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "latex/template.tex:385-388",
+                "latex/template.tex:483-499",
+                "run_1.py:204",
+                "run_1.py:311",
+                "run_1.py:414-415",
+                "run_1/final_info.json:1"
+            ]
+        },
+        {
+            "index": 9,
+            "category": "table",
+            "content": "9. Table 1, He, x_plus_y: 2137 ± 187",
+            "reason": "The repository contains a He/Kaiming-uniform run and `run_2/final_info.json` records the mean `step_val_acc_99_mean=2136.666...`, but Table 1 is framed as 95% confidence intervals while the script only computes `stderrs = np.std(v) / len(v)`. The run script also seeds only PyTorch, not Python and NumPy as stated in the paper, so the implemented protocol does not match the reported one.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "latex/template.tex:385-388",
+                "latex/template.tex:483-499",
+                "run_2.py:204",
+                "run_2.py:313",
+                "run_2.py:416-417",
+                "run_2/final_info.json:1"
+            ]
+        },
+        {
+            "index": 10,
+            "category": "table",
+            "content": "10. Table 1, He, x_minus_y: 3640 ± 256",
+            "reason": "The artifact `run_2/final_info.json` supports the mean `step_val_acc_99_mean=3640.0`, but the paper reports a 95% confidence interval even though the repository's summary code only saves `stderrs = np.std(v) / len(v)` and never computes a confidence interval. The paper's stated seeding procedure is also not implemented in the run script.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "latex/template.tex:385-388",
+                "latex/template.tex:483-499",
+                "run_2.py:204",
+                "run_2.py:313",
+                "run_2.py:416-417",
+                "run_2/final_info.json:1"
+            ]
+        },
+        {
+            "index": 11,
+            "category": "table",
+            "content": "11. Table 1, He, x_div_y: 3463 ± 231",
+            "reason": "The mean value is traceable to `run_2/final_info.json` (`step_val_acc_99_mean=3463.333...`), but the paper's statistic is a 95% confidence interval and the code path only computes `stderrs = np.std(v) / len(v)`. Because the reported metric procedure is not implemented, the claim is contradicted by static inspection of the experiment code.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "latex/template.tex:385-388",
+                "latex/template.tex:483-499",
+                "run_2.py:204",
+                "run_2.py:313",
+                "run_2.py:416-417",
+                "run_2/final_info.json:1"
+            ]
+        },
+        {
+            "index": 12,
+            "category": "table",
+            "content": "12. Table 1, He, permutation: 6460 ± 389",
+            "reason": "The stored mean in `run_2/final_info.json` is `step_val_acc_99_mean=6460.0`, but Table 1 claims a 95% confidence interval and the repository never computes one, only `stderrs = np.std(v) / len(v)`. The paper's description of seed control also exceeds what the code does, so the experiment procedure does not support the reported claim.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "latex/template.tex:385-388",
+                "latex/template.tex:483-499",
+                "run_2.py:204",
+                "run_2.py:313",
+                "run_2.py:416-417",
+                "run_2/final_info.json:1"
+            ]
+        },
+        {
+            "index": 13,
+            "category": "table",
+            "content": "13. Table 1, Orthogonal, x_plus_y: 837 ± 89",
+            "reason": "The repository artifact `run_3/final_info.json` contains the matching mean `step_val_acc_99_mean=836.666...`, but Table 1 is explicitly presented as 95% confidence intervals and the code only computes `stderrs = np.std(v) / len(v)`. The run script also seeds only PyTorch even though the paper states Python/NumPy/PyTorch seeds are all set, so the implemented experiment differs from the reported one.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "latex/template.tex:385-388",
+                "latex/template.tex:483-499",
+                "run_3.py:204",
+                "run_3.py:313",
+                "run_3.py:416-417",
+                "run_3/final_info.json:1"
+            ]
+        },
+        {
+            "index": 14,
+            "category": "table",
+            "content": "14. Table 1, Orthogonal, x_minus_y: 1993 ± 165",
+            "reason": "The mean aligns with `run_3/final_info.json` (`step_val_acc_99_mean=1993.333...`), but the paper claims a 95% confidence interval whereas the repository summary code only computes `stderrs = np.std(v) / len(v)`. This is a direct experiment-side mismatch between the paper's stated statistic and the implemented aggregation procedure.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "latex/template.tex:385-388",
+                "latex/template.tex:483-499",
+                "run_3.py:204",
+                "run_3.py:313",
+                "run_3.py:416-417",
+                "run_3/final_info.json:1"
+            ]
+        },
+        {
+            "index": 15,
+            "category": "table",
+            "content": "15. Table 1, Orthogonal, x_div_y: 1643 ± 143",
+            "reason": "The saved run artifact contains the mean `step_val_acc_99_mean=1643.333...`, but Table 1 is labeled as 95% confidence intervals and the code never computes them, only `stderrs = np.std(v) / len(v)`. The run script also does not implement the full seeding procedure described in the paper, so the experimental protocol is inconsistent with the claim.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "latex/template.tex:385-388",
+                "latex/template.tex:483-499",
+                "run_3.py:204",
+                "run_3.py:313",
+                "run_3.py:416-417",
+                "run_3/final_info.json:1"
+            ]
+        },
+        {
+            "index": 16,
+            "category": "table",
+            "content": "16. Table 1, Orthogonal, permutation: 4543 ± 298",
+            "reason": "The mean maps to `run_3/final_info.json` (`step_val_acc_99_mean=4543.333...`), but the paper reports a 95% confidence interval while the repository only computes `stderrs = np.std(v) / len(v)` and does not implement any confidence-interval calculation. This is a concrete experiment/metric conflict visible from static inspection.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "latex/template.tex:385-388",
+                "latex/template.tex:483-499",
+                "run_3.py:204",
+                "run_3.py:313",
+                "run_3.py:416-417",
+                "run_3/final_info.json:1"
+            ]
+        },
+        {
+            "index": 17,
+            "category": "table",
+            "content": "17. Table 1, Kaiming Normal, x_plus_y: 1967 ± 176",
+            "reason": "The repository artifact `run_4/final_info.json` supports the mean `step_val_acc_99_mean=1966.666...`, but Table 1 is stated to contain 95% confidence intervals and the implemented aggregation only computes `stderrs = np.std(v) / len(v)`. The code also seeds only PyTorch, not Python and NumPy as the paper claims, so the experimental procedure does not match the paper.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "latex/template.tex:385-388",
+                "latex/template.tex:483-499",
+                "run_4.py:204",
+                "run_4.py:313",
+                "run_4.py:416-417",
+                "run_4/final_info.json:1"
+            ]
+        },
+        {
+            "index": 18,
+            "category": "table",
+            "content": "18. Table 1, Kaiming Normal, x_minus_y: 3547 ± 243",
+            "reason": "The mean is traceable to `run_4/final_info.json` (`step_val_acc_99_mean=3546.666...`), but the table's statistic is reported as a 95% confidence interval even though the code only computes `stderrs = np.std(v) / len(v)` and never implements a CI calculation. That is a direct conflict between the reported metric procedure and the repository.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "latex/template.tex:385-388",
+                "latex/template.tex:483-499",
+                "run_4.py:204",
+                "run_4.py:313",
+                "run_4.py:416-417",
+                "run_4/final_info.json:1"
+            ]
+        },
+        {
+            "index": 19,
+            "category": "table",
+            "content": "19. Table 1, Kaiming Normal, x_div_y: 3070 ± 219",
+            "reason": "The stored mean in `run_4/final_info.json` is `step_val_acc_99_mean=3070.0`, but the paper labels the accompanying statistic as a 95% confidence interval while the code only saves `stderrs = np.std(v) / len(v)`. Static inspection therefore shows the reported experimental summary procedure is not what the repository implements.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "latex/template.tex:385-388",
+                "latex/template.tex:483-499",
+                "run_4.py:204",
+                "run_4.py:313",
+                "run_4.py:416-417",
+                "run_4/final_info.json:1"
+            ]
+        },
+        {
+            "index": 20,
+            "category": "table",
+            "content": "20. Table 1, Kaiming Normal, permutation: 6297 ± 376",
+            "reason": "The run artifact contains the matching mean `step_val_acc_99_mean=6296.666...`, but Table 1 claims a 95% confidence interval and the repository only computes `stderrs = np.std(v) / len(v)` rather than any CI. Because the metric aggregation procedure described in the paper is not implemented by the code, this claim is contradicted at the experiment-procedure level.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "latex/template.tex:385-388",
+                "latex/template.tex:483-499",
+                "run_4.py:204",
+                "run_4.py:313",
+                "run_4.py:416-417",
+                "run_4/final_info.json:1"
+            ]
+        }
+    ],
+    "static_verifiable": [],
+    "insufficient_evidence": [],
+    "execution_required": [
+        {
+            "index": 21,
+            "category": "figure",
+            "content": "1. Figure 1: Training and Validation Accuracy for x_plus_y task across different initialization methods",
+            "reason": "Static inspection is not enough because the repository only has the final PNG figure artifact and is missing the underlying `all_results.npy` metrics that `plot.py` requires to reconstruct the plotted curves. The repo still has a plausible regeneration path: the run scripts write `all_results.npy`, and `plot.py` consumes those files to build the figure. Execution must first regenerate those plotting inputs before any figure-level verdict is made.",
+            "candidate_files": [
+                "plot.py",
+                "experiment.py",
+                "run_1.py",
+                "run_2.py",
+                "run_3.py",
+                "run_4.py",
+                "train_acc_x_plus_y.png",
+                "val_acc_x_plus_y.png"
+            ],
+            "suggested_entrypoints": [
+                "python experiment.py --out_dir run_0",
+                "python run_1.py --out_dir run_1",
+                "python run_2.py --out_dir run_2",
+                "python run_3.py --out_dir run_3",
+                "python run_4.py --out_dir run_4",
+                "python plot.py"
+            ]
+        },
+        {
+            "index": 22,
+            "category": "figure",
+            "content": "2. Figure 2: Training and Validation Loss for x_minus_y task across different initialization methods",
+            "reason": "The repository contains the final PNGs but not the underlying `all_results.npy` data arrays that `plot.py` loads to produce the train/validation loss curves. Because the run scripts can still generate those missing intermediates and `plot.py` is the repo-native plotting path, this claim remains execution-dependent rather than statically verifiable.",
+            "candidate_files": [
+                "plot.py",
+                "experiment.py",
+                "run_1.py",
+                "run_2.py",
+                "run_3.py",
+                "run_4.py",
+                "train_loss_x_minus_y.png",
+                "val_loss_x_minus_y.png"
+            ],
+            "suggested_entrypoints": [
+                "python experiment.py --out_dir run_0",
+                "python run_1.py --out_dir run_1",
+                "python run_2.py --out_dir run_2",
+                "python run_3.py --out_dir run_3",
+                "python run_4.py --out_dir run_4",
+                "python plot.py"
+            ]
+        },
+        {
+            "index": 23,
+            "category": "figure",
+            "content": "3. Figure 3: Training and Validation Accuracy for x_div_y task across different initialization methods",
+            "reason": "Only the rendered figure PNGs are present; the repository is missing the `all_results.npy` metric traces that `plot.py` needs to regenerate and validate the accuracy curves. Since the run scripts still provide a plausible repo-native path for rebuilding those artifacts, execution is required before this figure claim can be verified.",
+            "candidate_files": [
+                "plot.py",
+                "experiment.py",
+                "run_1.py",
+                "run_2.py",
+                "run_3.py",
+                "run_4.py",
+                "train_acc_x_div_y.png",
+                "val_acc_x_div_y.png"
+            ],
+            "suggested_entrypoints": [
+                "python experiment.py --out_dir run_0",
+                "python run_1.py --out_dir run_1",
+                "python run_2.py --out_dir run_2",
+                "python run_3.py --out_dir run_3",
+                "python run_4.py --out_dir run_4",
+                "python plot.py"
+            ]
+        },
+        {
+            "index": 24,
+            "category": "figure",
+            "content": "4. Figure 4: Training and Validation Loss for permutation task across different initialization methods",
+            "reason": "This figure is not statically verifiable because the repository lacks the underlying `all_results.npy` time-series inputs that `plot.py` expects, and a final PNG alone is insufficient. The repository does retain a plausible execution path through the run scripts plus `plot.py`, so the correct next step is to regenerate those inputs and then compare the resulting figure.",
+            "candidate_files": [
+                "plot.py",
+                "experiment.py",
+                "run_1.py",
+                "run_2.py",
+                "run_3.py",
+                "run_4.py",
+                "train_loss_permutation.png",
+                "val_loss_permutation.png"
+            ],
+            "suggested_entrypoints": [
+                "python experiment.py --out_dir run_0",
+                "python run_1.py --out_dir run_1",
+                "python run_2.py --out_dir run_2",
+                "python run_3.py --out_dir run_3",
+                "python run_4.py --out_dir run_4",
+                "python plot.py"
+            ]
+        }
+    ],
+    "error": [],
+    "summary": {
+        "total_claims": 24,
+        "no_code_files": 0,
+        "obvious_hallucination": 20,
+        "data_fabrication": 0,
+        "experiment_fabrication": 20,
+        "result_fabrication": 0,
+        "static_verifiable": 0,
+        "insufficient_evidence": 0,
+        "execution_required": 4,
+        "error": 0
+    }
+}

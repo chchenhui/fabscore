@@ -1,0 +1,51 @@
+{
+  "experiment": "Kitty Baseline",
+  "model": "Qwen/Qwen3-8B",
+  "method": "Kitty",
+  "method_description": "2-bit KV cache quantization with dynamic channel-wise precision boost. Per-page magnitude-based heuristic selects top-K=16 channels (out of D=128) for INT4 boosting; all other channels remain INT2. S=32 sink tokens in FP16.",
+  "config": {
+    "sink_length": 32,
+    "buffer_length": 128,
+    "group_size": 128,
+    "kbits": 2,
+    "vbits": 2,
+    "promote_ratio": 0.125,
+    "promote_bit": 4,
+    "channel_selection": 1
+  },
+  "evaluation_params": {
+    "temperature": 0.6,
+    "top_p": 0.95,
+    "top_k": 20,
+    "max_gen_toks": 32768,
+    "num_fewshot": 0,
+    "num_repeats": 3,
+    "seed_protocol": "base_random_seed=0+i, base_numpy_seed=1234+i, base_torch_seed=1234+i, base_fewshot_seed=1234+i"
+  },
+  "results": {
+    "aime24": {
+      "per_seed": [76.67, 63.33, 76.67],
+      "mean": 72.22,
+      "max_deviation": 8.89,
+      "num_problems": 30
+    },
+    "aime25": {
+      "per_seed": [66.67, 63.33, 53.33],
+      "mean": 61.11,
+      "max_deviation": 7.78,
+      "num_problems": 30
+    },
+    "average": 66.67
+  },
+  "published_reference": {
+    "source": "Kitty Table 4",
+    "aime24": {"mean": 70.67, "max_deviation": 7.33},
+    "aime25": {"mean": 59.67, "max_deviation": 10.33},
+    "average": 65.17
+  },
+  "deviation_from_published": {
+    "aime24": 1.55,
+    "aime25": 1.44,
+    "average": 1.50
+  }
+}

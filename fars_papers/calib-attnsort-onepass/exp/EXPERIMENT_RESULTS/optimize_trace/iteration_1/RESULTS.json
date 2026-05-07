@@ -1,0 +1,47 @@
+{
+  "experiment": "optimization_iteration_1",
+  "model": "togethercomputer/LLaMA-2-7B-32K-Instruct",
+  "benchmark": "SynthWiki",
+  "context_length_tokens": 28000,
+  "num_examples_per_seed": 200,
+  "seeds": [42, 123, 456],
+  "method": "minimal_swap_debiased_k1",
+  "config": {
+    "alpha": 0.05,
+    "num_bins": 20,
+    "aggregation": "median",
+    "sorting": "raw_attention_ascending_with_debiased_top1_swap",
+    "best_doc_last": true
+  },
+  "results": {
+    "accuracy_per_seed": {"42": 0.94, "123": 0.965, "456": 0.94},
+    "mean_accuracy": 0.9483,
+    "std_accuracy": 0.0144,
+    "swap_count_per_seed": {"42": 4, "123": 4, "456": 2},
+    "total_swap_count": 10,
+    "prefill_passes_per_query": 2
+  },
+  "comparison": {
+    "original_debiased_k1": {
+      "accuracy_per_seed": {"42": 0.945, "123": 0.955, "456": 0.93},
+      "mean_accuracy": 0.9433,
+      "delta": 0.005
+    },
+    "attnsort_k1_uncalibrated": {
+      "accuracy_per_seed": {"42": 0.94, "123": 0.965, "456": 0.94},
+      "mean_accuracy": 0.9483,
+      "delta": 0.0
+    },
+    "attnsort_k5": {
+      "accuracy_per_seed": {"42": 0.965, "123": 0.95, "456": 0.95},
+      "mean_accuracy": 0.955,
+      "delta": -0.0067
+    }
+  },
+  "per_example_comparison_vs_k1": {
+    "wins": 0,
+    "ties": 600,
+    "losses": 0,
+    "note": "Minimal-swap produces identical answers to k=1 uncalibrated on all 600 examples"
+  }
+}

@@ -1,0 +1,62 @@
+============================================================
+COMMAND 1: Extract val_logic metrics from random_claim_text experiment
+============================================================
+python3 -c "
+import numpy as np
+d = np.load('logs/0-run/experiment_results/experiment_308a27ddfc324b599284897fa2919013_proc_1522608/experiment_data.npy', allow_pickle=True).item()
+print('Top-level keys:', list(d.keys()))
+rct = d['random_claim_text']
+print('Sub-keys:', list(rct.keys()))
+for ds in ['mnist', 'fashion_mnist', 'svhn']:
+    metrics = rct[ds]['metrics']
+    print(f'\n{ds} metrics keys:', list(metrics.keys()))
+    val_logic = metrics.get('val_logic', metrics.get('val_logic_acc', None))
+    if val_logic:
+        arr = np.array(val_logic)
+        print(f'  val_logic: len={len(arr)}, first5={arr[:5]}, last5={arr[-5:]}, max={arr.max():.4f}')
+"
+
+OUTPUT:
+Top-level keys: ['random_claim_text']
+Sub-keys: ['mnist', 'fashion_mnist', 'svhn']
+
+mnist metrics keys: ['train', 'val', 'train_logic', 'val_logic']
+  val_logic: len=50, first5=[0.57916667 0.57916667 0.57916667 0.57916667 0.53333333], last5=[0.54583333 0.54583333 0.5375     0.54375    0.54375   ], max=0.5833
+
+fashion_mnist metrics keys: ['train', 'val', 'train_logic', 'val_logic']
+  val_logic: len=50, first5=[0.58541667 0.58541667 0.58541667 0.58541667 0.63958333], last5=[0.56875    0.55833333 0.6125     0.575      0.55833333], max=0.6479
+
+svhn metrics keys: ['train', 'val', 'train_logic', 'val_logic']
+  val_logic: len=50, first5=[0.58541667 0.58541667 0.58541667 0.58541667 0.58541667], last5=[0.53958333 0.53333333 0.52916667 0.54791667 0.54375   ], max=0.5854
+
+============================================================
+COMMAND 2: Final stats and directory listing
+============================================================
+ls logs/0-run/experiment_results/experiment_308a27ddfc324b599284897fa2919013_proc_1522608/
+python3 -c "... final val_logic stats ..."
+
+OUTPUT:
+Files: experiment_code.py, experiment_data.npy, plotting_code.py,
+  random_claim_text_fashion_mnist_acc.png, random_claim_text_fashion_mnist_accuracy_curve.png,
+  random_claim_text_fashion_mnist_logic_consistency_curve.png, random_claim_text_fashion_mnist_loss_curve.png,
+  random_claim_text_fashion_mnist_val_vs_logic_overlay.png, random_claim_text_final_acc_comparison.png,
+  random_claim_text_mnist_acc.png, random_claim_text_mnist_accuracy_curve.png,
+  random_claim_text_mnist_logic_consistency_curve.png, random_claim_text_mnist_loss_curve.png,
+  random_claim_text_mnist_val_vs_logic_overlay.png, random_claim_text_svhn_acc.png,
+  random_claim_text_svhn_accuracy_curve.png, random_claim_text_svhn_logic_consistency_curve.png,
+  random_claim_text_svhn_loss_curve.png, random_claim_text_svhn_val_vs_logic_overlay.png,
+  random_claim_text_val_acc_compare.png, random_claim_text_val_logic_acc_compare.png
+
+mnist: final=0.5437, max=0.5833, min=0.5083
+fashion_mnist: final=0.5583, max=0.6479, min=0.5521
+svhn: final=0.5437, max=0.5854, min=0.4833
+
+============================================================
+SUMMARY FOR CLAIM 7 (Figure 5):
+- File `random_claim_text_val_logic_acc_compare.png` EXISTS in experiment directory
+- experiment_data.npy contains `random_claim_text` → per-dataset `val_logic` curves (50 epochs each)
+- experiment_code.py lines 518-523: calls plot_metric_curve("val_logic", "Logical Consistency Accuracy",
+  f"{ablation_key}_val_logic_acc_compare.png", ablation_key) — generates the Figure 5 file
+- Claim: "Figure 5: Validation logical consistency accuracy with random adversarial claims across datasets"
+- Data confirms: val_logic metrics for all 3 datasets under random_claim_text adversarial condition
+- VERDICT: Verified

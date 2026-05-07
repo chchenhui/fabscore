@@ -1,0 +1,51 @@
+{
+  "task": "Token-Presence Privacy Probe Evaluation",
+  "task_index": 10,
+  "description": "Binary MLP probe predicting concept-token presence from sanitized embeddings under each noise condition",
+  "model": "2-layer MLP (768->256->128->1, sigmoid)",
+  "training": {
+    "optimizer": "Adam",
+    "lr": 1e-3,
+    "batch_size": 128,
+    "epochs": 50,
+    "loss": "BCE",
+    "early_stopping": "best val AUC"
+  },
+  "embedding_model": "sentence-transformers/gtr-t5-base",
+  "epsilon": 10.0,
+  "concepts": ["weekdays", "months", "countries", "gender", "cities"],
+  "seeds": [42, 123, 456],
+  "conditions": {
+    "clean": "No noise (upper bound)",
+    "isotropic": "Condition B: IsotropicNoiseSampler(epsilon=10.0)",
+    "anisotropic": "Condition A: MahalanobisNoiseSampler with concept-specific sigma",
+    "smoothed": "Condition C: MahalanobisNoiseSampler with smoothed sigma (lambda=0.2)"
+  },
+  "results_summary": {
+    "clean": {
+      "auc_mean": 0.8648,
+      "auc_std": 0.0578,
+      "acc_mean": 0.7836,
+      "acc_std": 0.0555
+    },
+    "isotropic": {
+      "auc_mean": 0.5174,
+      "auc_std": 0.0290,
+      "acc_mean": 0.5116,
+      "acc_std": 0.0175
+    },
+    "anisotropic": {
+      "auc_mean": 0.5193,
+      "auc_std": 0.0277,
+      "acc_mean": 0.5154,
+      "acc_std": 0.0182
+    },
+    "smoothed": {
+      "auc_mean": 0.5160,
+      "auc_std": 0.0302,
+      "acc_mean": 0.5107,
+      "acc_std": 0.0221
+    }
+  },
+  "key_finding": "All noise conditions reduce token-presence leakage to near chance (AUC ~0.52, accuracy ~0.51), while clean embeddings allow AUC=0.86. Anisotropic noise provides equivalent token-level privacy to isotropic noise, confirming that concept-choice leakage does NOT compromise per-document token-level privacy."
+}

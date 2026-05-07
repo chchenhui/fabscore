@@ -1,0 +1,20 @@
+{
+  "optimize_index": 0,
+  "issues": [
+    {
+      "title": "Smoothing lambda=0.2 is far too weak to mitigate the fingerprint attack",
+      "description": "Lambda=0.2 only reduces per-concept sigma std by ~20% (template L2 distances reduced by ~17%). This is insufficient to disrupt the template-matching attack. Fixed by running a comprehensive lambda sweep {0.2, 0.5, 0.7, 0.9, 0.95, 0.99} to find the threshold. Result: even lambda=0.95 gives 100% attack accuracy; lambda=0.99 gives 63.3%. Mitigation only approaches chance at lambda=1.0 (isotropic)."
+    },
+    {
+      "title": "Inconsistent attacker strength between Condition A (N=10) and Condition C (N=2)",
+      "description": "The original smoothed attack used N=2 releases while the anisotropic attack used N=10. This makes the comparison unfair because the attacker is weaker for the smoothed condition. Fixed by using N=10 releases for all smoothed experiments, matching the Condition A attacker."
+    },
+    {
+      "title": "No lambda sweep performed - only single lambda=0.2 tested",
+      "description": "The original experiment only tested lambda=0.2 without exploring other values. This gives incomplete information about the mitigation's potential. Fixed by testing 6 lambda values {0.2, 0.5, 0.7, 0.9, 0.95, 0.99} with STS12 utility evaluation at key points. The sweep reveals a sharp phase transition: accuracy stays at 1.0 up to lambda=0.95, drops to 0.633 at lambda=0.99, and reaches chance only at lambda=1.0."
+    }
+  ],
+  "experiment_result_path": "EXPERIMENT_RESULTS/optimize_trace/iteration_0/",
+  "success": true,
+  "summary": "Optimized Condition C (covariance smoothing mitigation) by fixing the attacker strength (N=2->N=10) and running a comprehensive lambda sweep {0.2-0.99}. The optimization provides a significantly more complete characterization: the attack maintains 100% accuracy up to lambda=0.95, drops to 63.3% only at lambda=0.99, and reaches chance only at lambda=1.0 (isotropic). STS12 utility is invariant to lambda (~0.028-0.030). This demonstrates a fundamental limitation: any meaningful concept-specific covariance structure enables the fingerprint attack with sufficient releases. The mitigation decision rule (accuracy<=0.30, STS12 drop<=0.02) is never satisfied for any lambda<1.0."
+}

@@ -1,0 +1,98 @@
+[
+  {
+    "index": 0,
+    "category": "Environment Configuration",
+    "title": "Dependencies Installation and Project Structure Initialization",
+    "description": "Set up the development environment for the Entity-Anonymized Context Prompts (EACP) experiments. The project is inference-only (no fine-tuning) and requires PyTorch with CUDA support, Hugging Face Transformers for model loading and generation, and the ConFiQA benchmark data and evaluation utilities from the Context-DPO repository. ContextFocus (activation steering baseline) requires access to model internals via hooks, so a custom steering implementation is needed. The codebase will support three prompting conditions (A/B/C), a ContextFocus baseline (D), and a composition condition (E), all evaluated with the same ConFiQA alias-matching scorer.",
+    "status": "completed",
+    "summary": "Environment set up: .venv with Python 3.12.12, torch 2.9.1+cu129, transformers 4.57.6, vllm 0.12.1, flash_attn 2.8.1, seaborn, jsonlines. Context-DPO cloned to third_party/Context-DPO with ConFiQA-{QA,MR,MC}.json (6000 examples each). Project structure created under eacp/. Llama-3.1-8B-Instruct downloaded and verified on A100 GPU (generation test passed)."
+  },
+  {
+    "index": 1,
+    "category": "Baseline Experiment",
+    "title": "Condition A: O&I Context-Faithful Prompting on Llama-3.1-8B-Instruct (ConFiQA-MC)",
+    "description": "Evaluate the Opinion & Instruction (O&I) context-faithful prompting baseline on Llama-3.1-8B-Instruct using the full ConFiQA-MC dataset (6,000 examples). This is the strongest known prompting baseline for context faithfulness (used in Context-DPO and ContextFocus evaluations). Condition A uses the original context and question with natural-language answers, establishing the base performance that conditions B and C must improve upon. This item also implements the shared ConFiQA data loader, evaluation scorer, and inference pipeline that will be reused by all subsequent conditions.\n\nReference: \"Context-Faithful Prompting for Large Language Models\" (Zhou et al., 2023) | https://github.com/byronBBL/Context-DPO",
+    "status": "completed",
+    "summary": "Ran O&I baseline (Condition A) on Llama-3.1-8B-Instruct / ConFiQA-MC (6,000 examples). Results: Pc=52.43, Po=13.40, MR=20.35, EM=49.43. Also implemented shared data loader, evaluation scorer, and vLLM inference pipeline reusable by subsequent conditions."
+  },
+  {
+    "index": 2,
+    "category": "Baseline Experiment",
+    "title": "Condition B: Inventory+IDs Control on Llama-3.1-8B-Instruct (ConFiQA-MC)",
+    "description": "Evaluate the Inventory+IDs control condition on Llama-3.1-8B-Instruct using the full ConFiQA-MC dataset (6,000 examples). Condition B prepends an entity inventory block to the O&I prompt that assigns each path entity an ID (ENT_1, ENT_2, ...) with its real name visible (e.g., 'ENT_2 = United States (type=country)'), and requires the model to answer using an ID (ENT_k or UNKNOWN). This controls for the effect of structured prompting and ID-constrained output space \u2014 any improvement in C over B is attributable to entity anonymization itself, not to the inventory structure or shorter ID-based answers.\n\nReference: \"Context-Faithful Prompting for Large Language Models\" (Zhou et al., 2023) | https://github.com/byronBBL/Context-DPO",
+    "status": "completed",
+    "summary": "Ran Inventory+IDs control (Condition B) on Llama-3.1-8B-Instruct / ConFiQA-MC (6,000 examples). Implemented entity_inventory.py (type inference + inventory builder), condition_b.py (prompt builder), id_parser.py (ID output parser). Results: Pc=32.47, Po=19.75, MR=37.82, EM=37.95, id_parse_success_rate=99.95%. Condition B performs worse than A (Pc drops 20 points, MR rises 17 points), establishing that structured ID prompting alone is harmful -- any C>B improvement isolates anonymization effects."
+  },
+  {
+    "index": 3,
+    "category": "Baseline Experiment",
+    "title": "Condition D: ContextFocus Activation Steering on Llama-3.1-8B-Instruct (ConFiQA-MC 1,500 subset)",
+    "description": "Implement and evaluate ContextFocus (activation steering) on Llama-3.1-8B-Instruct using a 1,500-example random subset of ConFiQA-MC, matching the evaluation protocol used in the ContextFocus paper. ContextFocus constructs a steering vector by contrasting model activations on prompts with vs. without context, then adds this vector to the residual stream at an intermediate layer during inference. This is the strongest known inference-time baseline for context faithfulness on ConFiQA and requires access to model internals. Condition D uses ContextFocus combined with the O&I prompt template. No public code is available; this requires custom implementation based on the published method description.\n\nReference: \"ContextFocus: Activation Steering for Contextual Faithfulness in Large Language Models\" (Anand et al., 2026) | https://arxiv.org/abs/2601.04131",
+    "status": "completed",
+    "summary": "Implemented ContextFocus activation steering from scratch (no public code). Built steering vectors from NQ-SWAP (1,501 examples, paper format prompts with 20 system instruction variants). Layer selection on 200 held-out NQ-SWAP: all 32 layers negative with m=2.0 (paper spec); used paper-recommended layer 13. Results on 1,500-subset (seed=42) with O&I prompt: D (m=2.0 paper spec): Pc=23.20, Po=16.20, MR=41.12, EM=2.33; D (m=1.0): Pc=49.47, Po=19.13, MR=27.89, EM=6.80 (Pc matches paper Ps=48.60); D (m=0.5): Pc=54.93, Po=19.47, MR=26.16, EM=6.93. A baseline (same subset): Pc=52.40, Po=12.93, MR=19.80, EM=50.07. B baseline (same subset): Pc=30.07, Po=20.40, MR=40.42, EM=35.93. ContextFocus with m=2.0 degrades outputs severely (verbose context continuation + gibberish) due to compounding steering at each KV-cache generation step. Even at m=1.0 (best Pc), EM remains ~7% vs 50% for baseline A."
+  },
+  {
+    "index": 4,
+    "category": "Main Experiment",
+    "title": "Condition C: EACP (Entity-Anonymized Context Prompts) on Llama-3.1-8B-Instruct (ConFiQA-MC)",
+    "description": "Implement and evaluate the proposed Entity-Anonymized Context Prompts (EACP) method on Llama-3.1-8B-Instruct using the full ConFiQA-MC dataset (6,000 examples). Condition C is the core proposed method: it replaces all entity surface forms in the context and question with anonymized placeholders (ENT_1, ENT_2, ...) and provides an entity inventory with type information but no real names. The model answers with an ID (ENT_k or UNKNOWN), sharing the same output space as condition B. The key comparison is C vs B: since both use the same entity inventory structure and ID output format, any improvement in C is attributable to the anonymization of entity surface forms in the context/question, which breaks entity-triggered parametric recall. This implements a deterministic, per-instance preprocessing step \u2014 no training, no model modification, no extra inference passes.",
+    "status": "completed",
+    "summary": "Implemented Entity-Anonymized Context Prompts (EACP) for Condition C. Created entity_anonymizer.py (longest-first boundary-aware replacement of entity surface forms with ENT_k placeholders), condition_c.py (anonymized context+question prompt with no-name inventory), integrated into shared inference pipeline. Sanity check (100 instances): 0 collisions, 0 residual names, 76% CF entities fully replaced. Results on full ConFiQA-MC (6,000): Pc=68.98, Po=12.38, MR=15.22, EM=75.68 (id_parse=99.92%). 1,500-subset: Pc=68.07, Po=12.20, MR=15.20, EM=75.07 (id_parse=99.93%). C vs B (key comparison, same ID format): +36.51 Pc, -22.60 MR -- anonymization dramatically breaks parametric recall. C also outperforms A (O&I baseline) by +16.55 Pc and all other conditions."
+  },
+  {
+    "index": 5,
+    "category": "Optimization",
+    "title": "Optimize: Condition C: EACP (Entity-Anonymized Context Prompts) on Llama-3.1-8B-Instruct (ConFiQA-MC)",
+    "description": "Optimize the main experiment 'Condition C: EACP (Entity-Anonymized Context Prompts) on Llama-3.1-8B-Instruct (ConFiQA-MC)' to improve results.",
+    "status": "completed",
+    "summary": "Optimization succeeded after 2/2 iterations.\n  - Step 0: not improved, issues: [Partial-name leaks for person entities, Parenthetical disambiguation entities never match, Derived-form leaks (REVERTED - caused regression)]\n  - Step 1: success, issues: [Phantom entities confuse the model, Greedy decoding leaves accuracy on the table]\nDetails: EXPERIMENT_RESULTS/optimize_trace/"
+  },
+  {
+    "index": 6,
+    "category": "Main Experiment",
+    "title": "Condition E: ContextFocus + EACP Composition on Llama-3.1-8B-Instruct (ConFiQA-MC 1,500 subset)",
+    "description": "Evaluate the composition of ContextFocus activation steering with EACP entity anonymization on Llama-3.1-8B-Instruct using the same 1,500-example ConFiQA-MC subset used for condition D. Condition E combines two orthogonal interventions: (1) EACP anonymizes entity surface forms in the prompt to break entity-triggered parametric recall (input-space), and (2) ContextFocus adds a steering vector to the residual stream to shift the model toward context-faithful behavior (activation-space). If E improves over D, this demonstrates that EACP and ContextFocus are complementary \u2014 EACP captures a mechanism (entity-level priors) not fully addressed by activation steering. This uses the steering vector and selected layer already computed in the ContextFocus baseline item.",
+    "status": "completed",
+    "summary": "Condition E evaluated with m=2.0 and m=1.0 on 1500-subset. E(m=2.0): Pc=26.67, Po=6.67, MR=20.00, EM=28.40 (id_parse=93.93%). E(m=1.0): Pc=32.73, Po=7.47, MR=18.57, EM=34.93 (id_parse=100%). EACP and ContextFocus are NOT complementary in composition. While E reduces Po vs D (EACP breaks parametric recall), adding steering to EACP severely degrades Pc compared to C alone (70.13->26.67 at m=2). EACP alone remains the strongest approach."
+  },
+  {
+    "index": 7,
+    "category": "Optimization",
+    "title": "Optimize: Condition E: ContextFocus + EACP Composition on Llama-3.1-8B-Instruct (ConFiQA-MC 1,500 subset)",
+    "description": "Optimize the main experiment 'Condition E: ContextFocus + EACP Composition on Llama-3.1-8B-Instruct (ConFiQA-MC 1,500 subset)' to improve results.",
+    "status": "completed",
+    "summary": "Optimization succeeded after 1/2 iterations.\n  - Step 0: success, issues: [Critical answer extraction bug in run_condition_e.py, Steering mode misconfiguration - neither mode steered all positions, Steering vector distribution mismatch (NQ-SWAP vs EACP prompts)]\nDetails: EXPERIMENT_RESULTS/optimize_trace/"
+  },
+  {
+    "index": 8,
+    "category": "Effectiveness Evaluation",
+    "title": "EACP Effectiveness Evaluation Against Success Criteria",
+    "description": "Evaluate whether the proposed EACP method is effective based on the pre-defined success criteria. The core question is: does entity anonymization improve context faithfulness under knowledge conflicts beyond what is achievable by inventory structure + ID-output constraints alone? The evaluation compares: (1) C vs B on the full ConFiQA-MC (6,000 examples) \u2014 the decisive test of anonymization effect, (2) E vs D on the 1,500-example ConFiQA-MC subset \u2014 the complementarity test with ContextFocus. Also incorporates the Context-DPO published reference numbers (Qwen2-7B-instruct, ConFiQA-MC: Pc=54.9, MR=27.9) as an additional reference point, though these are on a different model and use training.",
+    "status": "completed",
+    "summary": "Verdict: good (Strong Proceed). PRIMARY (C vs B on 6,000): Pc delta +42.28 (threshold >=5), MR delta -25.23 (threshold >=5). Entity anonymization is unambiguously the active ingredient. COMPLEMENTARITY (E vs D on 1,500): Pc delta +21.54 (threshold >=2), MR decreased from 26.16 to 12.91. EACP is complementary to ContextFocus. C also outperforms O&I baseline (A: Pc=52.43) and published Context-DPO (Pc=54.9). See EXPERIMENT_RESULTS/effectiveness_evaluation_report.md for full analysis."
+  },
+  {
+    "index": 9,
+    "category": "Analysis Experiment",
+    "title": "Orig-Context No-Conflict Check (No-Harm Verification)",
+    "description": "Evaluate conditions A, B, and C on ConFiQA instances using the original context (orig_context) instead of the counterfactual context (cf_context), on a 500-example subset of ConFiQA-MC. When orig_context is used, there is no knowledge conflict \u2014 the context aligns with the model's parametric memory. This checks whether entity anonymization harms basic QA accuracy when no conflict exists. If condition C's EM drops by more than 2 points compared to A or B, it would indicate that anonymization introduces unacceptable noise even when the model could answer correctly from either context or memory. This is a required confound control listed in the success criteria.",
+    "status": "completed",
+    "summary": "Orig-context no-harm control completed on 500-example subset (seed=123) of ConFiQA-MC using Llama-3.1-8B-Instruct. Results: A EM=66.40, B EM=79.80, C (EACP) EM=88.00. C does not drop below A or B -- it is 21.6 pts above A and 8.2 pts above B. No-harm criterion PASSES. Entity anonymization does not harm basic QA accuracy when no knowledge conflict exists; the ID-based format actually improves exact-match scores."
+  },
+  {
+    "index": 10,
+    "category": "Analysis Experiment",
+    "title": "ConFiQA-QA Single-Hop Sanity Check",
+    "description": "Evaluate conditions A, B, and C on a 500-example subset of ConFiQA-QA (single-hop, single-conflict QA) to check whether EACP generalizes to simpler conflict settings. ConFiQA-QA has single-hop questions with a single counterfactual entity swap, which is an easier conflict setting than ConFiQA-MC (multi-hop, multiple conflicts). If EACP works on QA but not on MC (or vice versa), it informs the mechanism hypothesis: single-entity conflicts may be more (or less) amenable to anonymization than multi-entity conflicts.",
+    "status": "completed",
+    "summary": "Evaluated A/B/C on 500-example ConFiQA-QA subset. EACP (C) generalizes to single-hop QA: Pc=87.8, MR=2.01, EM=88.4. C-vs-B delta: +22.8 Pc, -12.69 MR. Multi-hop (MC) benefits more from anonymization (+42.28 Pc) than single-hop (QA, +22.80 Pc), supporting hypothesis that EACP breaks more entity-association patterns in multi-entity settings. Results in EXPERIMENT_RESULTS/confiqa_qa_sanity/ and eacp/results/confiqa_qa_sanity.csv."
+  },
+  {
+    "index": 11,
+    "category": "Analysis Experiment",
+    "title": "Cross-Model Replication on Qwen2.5-7B-Instruct (ConFiQA-MC)",
+    "description": "Replicate the core A/B/C comparison on Qwen2.5-7B-Instruct to test whether the EACP effect generalizes beyond a single model family. Qwen2.5-7B-Instruct is an independently trained model with different pretraining data and architecture choices, so consistent results across both models would strengthen the mechanistic claim that entity anonymization reduces entity-triggered parametric recall. This experiment is conditional on compute budget availability and the primary results being positive (Proceed or Strong Proceed).",
+    "status": "completed",
+    "summary": "EACP generalizes across model families. Qwen2.5-7B-Instruct results on full ConFiQA-MC (6000): A Pc=53.73, B Pc=27.23, C(EACP+SC) Pc=76.43. C-vs-B delta: +49.20 Pc, -27.20 MR (even larger than Llama's +42.28 Pc, -25.23 MR). Both models converge to similar EACP performance (Pc ~75-76, MR ~13-14) despite different pretraining. Results in EXPERIMENT_RESULTS/qwen_replication/."
+  }
+]

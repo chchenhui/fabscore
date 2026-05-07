@@ -1,0 +1,101 @@
+{
+    "no_code_files": [],
+    "obvious_hallucination": [
+        {
+            "index": 1,
+            "category": "table",
+            "content": "1. Table 1, Dense, Evaluation Loss: 19.7731",
+            "reason": "The paper (Section 4) explicitly states the MoE baselines use 'an MoE layer containing 8 experts', but run_experiment.py sets NUM_EXPERTS = 4. Additionally, the paper states the MoE layer 'replaced' the final feed-forward layer of each encoder block, but the code adds a single MoE layer appended on top of the full encoder output via a residual connection — not replacing any FFN inside encoder blocks. These are concrete static conflicts between the described experimental setup and the implemented code. The reported number (19.7731) in results/results.json matches the paper but was produced under a different experimental setup than described.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "gemini/run_experiment.py:22 — NUM_EXPERTS = 4",
+                "gemini/run_experiment.py:93-131 — PRoMoEModel adds single MoE layer after encoder output, not replacing FFN in each block",
+                "results/results.json — dense eval_loss: 19.773113250732422 (matches paper but from wrong setup)",
+                "results/paper.md:107 — paper claims '8 experts'"
+            ]
+        },
+        {
+            "index": 2,
+            "category": "table",
+            "content": "2. Table 1, Standard MoE, Evaluation Loss: 10.3775",
+            "reason": "Same experiment_fabrication issue as Claim 1. The paper states the MoE models use 8 experts per layer and that the MoE layer replaces the FFN in each encoder block. The code uses NUM_EXPERTS = 4 and adds a single MoE layer after the entire encoder output. The Standard MoE model in the code is a PRoMoEModel instance with task_description=None passed during training, which is a fundamentally different architecture from a T5 with each encoder block's FFN replaced by an 8-expert MoE. The matching value in results.json (10.377483367919922) was produced under this wrong setup.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "gemini/run_experiment.py:22 — NUM_EXPERTS = 4",
+                "gemini/run_experiment.py:229 — standard_moe_model = PRoMoEModel.from_pretrained(MODEL_NAME)",
+                "gemini/run_experiment.py:248-249 — standard_moe trained with task_description=None",
+                "results/results.json — standard_moe eval_loss: 10.377483367919922",
+                "results/paper.md:107 — paper claims '8 experts'"
+            ]
+        },
+        {
+            "index": 3,
+            "category": "table",
+            "content": "3. Table 1, PRo-MoE, Evaluation Loss: 17.6780",
+            "reason": "Same experiment_fabrication issue as Claims 1-2. The PRo-MoE model uses 4 experts (NUM_EXPERTS=4) instead of the 8 described in the paper, and uses a single appended MoE layer rather than replacing FFN layers in each encoder block. The matching value in results.json (17.678010940551758) was produced under the wrong experimental setup.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "gemini/run_experiment.py:22 — NUM_EXPERTS = 4",
+                "gemini/run_experiment.py:97 — self.moe_layer = MoELayer(config.d_model, config.d_model, NUM_EXPERTS)",
+                "gemini/run_experiment.py:119-124 — MoE layer appended after encoder with residual, not replacing FFN",
+                "results/results.json — pro_moe eval_loss: 17.678010940551758",
+                "results/paper.md:107-108 — paper claims '8 experts' and MoE replaces FFN in each encoder block"
+            ]
+        },
+        {
+            "index": 4,
+            "category": "figure",
+            "content": "1. figures/dense_loss_curve.png: Training and validation loss for the Dense model.",
+            "reason": "The figure was generated from the same experiment that uses NUM_EXPERTS=4 (not 8 as the paper claims) and the wrong MoE architecture (single post-encoder MoE layer vs. per-block FFN replacement). The underlying log data in results/results.json (logs.dense) and the PNG in results/figures/dense_loss_curve.png both stem from this incorrectly configured experiment. The experimental setup conflict (experiment_fabrication) applies equally to the figures.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "gemini/run_experiment.py:22 — NUM_EXPERTS = 4",
+                "gemini/run_experiment.py:263-279 — plot_losses generates figures from trainer log_history",
+                "results/figures/dense_loss_curve.png — figure artifact exists",
+                "results/results.json — logs.dense used as underlying data for figure"
+            ]
+        },
+        {
+            "index": 5,
+            "category": "figure",
+            "content": "2. figures/standard_moe_loss_curve.png: Training and validation loss for the Standard MoE model.",
+            "reason": "Same experiment_fabrication issue as Claim 4. The figure was generated from a run using 4 experts and incorrect MoE architecture. The underlying data (results/results.json logs.standard_moe) and the PNG both reflect the incorrectly configured experiment.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "gemini/run_experiment.py:22 — NUM_EXPERTS = 4",
+                "gemini/run_experiment.py:347-349 — plots generated per model from log_history",
+                "results/figures/standard_moe_loss_curve.png — figure artifact exists",
+                "results/results.json — logs.standard_moe used as underlying data for figure"
+            ]
+        },
+        {
+            "index": 6,
+            "category": "figure",
+            "content": "3. figures/pro_moe_loss_curve.png: Training and validation loss for the PRo-MoE model.",
+            "reason": "Same experiment_fabrication issue as Claims 4-5. The PRo-MoE model in the code uses 4 experts and adds a single MoE layer after the encoder (not replacing per-block FFNs). The figure reflects the incorrectly configured experiment.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "gemini/run_experiment.py:22 — NUM_EXPERTS = 4",
+                "gemini/run_experiment.py:93-131 — PRoMoEModel architecture description",
+                "results/figures/pro_moe_loss_curve.png — figure artifact exists",
+                "results/results.json — logs.pro_moe used as underlying data for figure"
+            ]
+        }
+    ],
+    "static_verifiable": [],
+    "insufficient_evidence": [],
+    "execution_required": [],
+    "error": [],
+    "summary": {
+        "total_claims": 6,
+        "no_code_files": 0,
+        "obvious_hallucination": 6,
+        "data_fabrication": 0,
+        "experiment_fabrication": 6,
+        "result_fabrication": 0,
+        "static_verifiable": 0,
+        "insufficient_evidence": 0,
+        "execution_required": 0,
+        "error": 0
+    }
+}

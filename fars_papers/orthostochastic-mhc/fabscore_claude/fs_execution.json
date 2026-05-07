@@ -1,0 +1,128 @@
+{
+    "tables": [
+        {
+            "claim_index": 7,
+            "claim": "7. Table 1, mHC-Orthostochastic, Setting A (48L, n=4) Val Loss: 4.7642±0.013 (∆+0.003)",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The RESULTS.json artifacts show values that exactly match the claim (4.7642±0.013, ∆+0.003) and are internally mathematically consistent. However, there is no independent verification path: the training framework code is absent, the logs directory does not exist, no checkpoints are present, and the training scripts reference an external compute cluster not accessible in this environment. The reported std=0.0125 also uses population std (ddof=0), while the aggregation script uses sample std (ddof=1)=0.014, creating a minor inconsistency. Without training logs or the ability to rerun, the claim cannot be verified beyond the self-consistent RESULTS.json file.",
+            "evidence": "exp/EXPERIMENT_RESULTS/setting_a_orthostochastic/RESULTS.json shows best_val_loss mean=4.7642, std=0.0125 (≈±0.013), per-seed values [4.760407, 4.754586, 4.781883, 4.775499, 4.748842] (mathematically consistent), delta_best_val_loss=0.0028 (≈+0.003). Same values confirmed in exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/RESULTS.json. However, the nanogpt training codebase (exp/mHC-manifold-constrained-hyper-connections/examples/nanogpt/) does not exist locally, the logs/ directory is entirely absent (no per-seed training logs or checkpoints), and all training scripts reference an inaccessible external HPC cluster (/mnt/bmcpfs-29000zjpjtl6xjmjiifyk/). | Code: exp/EXPERIMENT_RESULTS/setting_a_orthostochastic/RESULTS.json; exp/orthostochastic_mhc_experiments/scripts/run_orthostochastic_a_optimized.sh:11 (EXP_ROOT=/mnt/bmcpfs-29000zjpjtl6xjmjiifyk/...); exp/orthostochastic_mhc_experiments/configs/setting_a_orthostochastic.py",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "exp/EXPERIMENT_RESULTS/setting_a_orthostochastic/RESULTS.json",
+                    "exp/orthostochastic_mhc_experiments/scripts/run_orthostochastic_a_optimized.sh:11 (EXP_ROOT=/mnt/bmcpfs-29000zjpjtl6xjmjiifyk/...)",
+                    "exp/orthostochastic_mhc_experiments/configs/setting_a_orthostochastic.py"
+                ],
+                "commands_executed": [
+                    "bash exp/orthostochastic_mhc_experiments/scripts/run_orthostochastic_a_optimized.sh [not executed — training framework absent and external cluster required]; python exp/orthostochastic_mhc_experiments/scripts/aggregate_results.py [not executed — requires populated logs/ directory]"
+                ]
+            }
+        },
+        {
+            "claim_index": 8,
+            "claim": "8. Table 1, mHC-Orthostochastic, Setting A (48L, n=4) r_max: 1.87±0.13",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The RESULTS.json values are numerically consistent with the paper claim (1.8665→1.87, 0.1305→0.13), but no training artifacts (gradient_spikes.json files from which r_max is derived) exist in the repository. The logs/ directory is completely absent. The nanogpt training code is not present locally, and training scripts reference an external HPC cluster. Without gradient norm logs or the ability to re-run training, independent verification of the r_max computation is impossible.",
+            "evidence": "exp/EXPERIMENT_RESULTS/setting_a_orthostochastic/RESULTS.json: r_max mean=1.8665, std=0.1305, values=[1.7036, 2.0207, 1.7174, 1.9558, 1.9348]. These round to 1.87±0.13, exactly matching the paper. Math is internally consistent (population std ddof=0). However, no gradient_spikes.json training logs exist in logs/ directory, and the directory is absent entirely. | Code: exp/EXPERIMENT_RESULTS/setting_a_orthostochastic/RESULTS.json; exp/orthostochastic_mhc_experiments/analysis/diagnostics.py:GradientSpikeTracker.get_r_max() (line 51-54); exp/orthostochastic_mhc_experiments/scripts/aggregate_results.py:load_seed_results() (line 12-61)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "exp/EXPERIMENT_RESULTS/setting_a_orthostochastic/RESULTS.json",
+                    "exp/orthostochastic_mhc_experiments/analysis/diagnostics.py:GradientSpikeTracker.get_r_max() (line 51-54)",
+                    "exp/orthostochastic_mhc_experiments/scripts/aggregate_results.py:load_seed_results() (line 12-61)"
+                ],
+                "commands_executed": [
+                    "None (no repository commands executed; existing artifacts inspected only)"
+                ]
+            }
+        },
+        {
+            "claim_index": 9,
+            "claim": "9. Table 1, mHC-Orthostochastic, Setting B (6L, n=8) Val Loss: 4.2626±0.005 (∆+0.013)",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The RESULTS.json file exactly matches the claim (4.2626±0.005, Δ+0.013), and the math is internally consistent (sample std of [4.264551, 4.256906, 4.266355] = 0.0050; delta = 4.2626 - 4.2495 = 0.0131). However, no independent verification is possible: the logs/ directory is absent (no training logs), the nanogpt training code is not present locally, and training scripts reference an external HPC cluster. Same infrastructure limitation as claims 7 and 8.",
+            "evidence": "exp/EXPERIMENT_RESULTS/setting_b_orthostochastic/RESULTS.json: mean=4.2626, std=0.0050, values=[4.264551, 4.256906, 4.266355], seeds=[11,2,3], delta=0.0131. exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/RESULTS.json confirms same values. Pre-optimization summary (seeds [1,2,3]) has different values. No training logs, no nanogpt code locally.",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "exp/EXPERIMENT_RESULTS/setting_b_orthostochastic/RESULTS.json"
+                ],
+                "commands_executed": [
+                    "None — existing artifacts reused"
+                ]
+            }
+        }
+    ],
+    "figures": [],
+    "results_section": [
+        {
+            "claim_index": 23,
+            "claim": "1. both mHC variants show substantially improved gradient stability—a reduction of approximately 39–40% compared to unconstrained HC",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The Sinkhorn mHC reduction (~39%) is well-supported by full-precision training artifacts. However, the Orthostochastic mHC r_max=1.87 (actual: 1.8665, reduction=40.5%) comes only from rounded RESULTS.json values with no supporting training logs, checkpoints, or local training code—consistent with Insufficient Evidence rulings for claims 7-9. Since the claim explicitly covers 'both mHC variants', and the Ortho portion cannot be independently verified, the claim cannot be fully verified.",
+            "evidence": "HC r_max=3.1387 (hc_calibration/RESULTS.json); Sinkhorn r_max=1.9125 (setting_a_sinkhorn_summary.json, full float64 precision) → reduction=39.1%; Ortho r_max=1.8665 (setting_a_orthostochastic/RESULTS.json, rounded) → reduction=40.5%. Sinkhorn reduction confirmed. Ortho reduction relies solely on RESULTS.json without gradient_spikes.json training logs. | Code: exp/EXPERIMENT_RESULTS/setting_a_orthostochastic/RESULTS.json (r_max section); exp/orthostochastic_mhc_experiments/results/setting_a_sinkhorn_summary.json; exp/EXPERIMENT_RESULTS/hc_calibration/RESULTS.json",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "exp/EXPERIMENT_RESULTS/setting_a_orthostochastic/RESULTS.json (r_max section)",
+                    "exp/orthostochastic_mhc_experiments/results/setting_a_sinkhorn_summary.json",
+                    "exp/EXPERIMENT_RESULTS/hc_calibration/RESULTS.json"
+                ],
+                "commands_executed": [
+                    "None (reused existing artifacts)"
+                ]
+            }
+        },
+        {
+            "claim_index": 24,
+            "claim": "2. In Setting A, the median gradient norm during the last 1000 iterations is 0.876±0.007 for Sinkhorn and 0.864±0.011 for Orthostochastic, while unconstrained HC shows 30% higher gradient norms (1.15).",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The RESULTS.json values match the claim exactly, but no underlying training logs (gradient_spikes.json) exist in the repository, the nanogpt training code is absent locally, and training scripts reference an external HPC cluster. The statistics cannot be independently verified or reproduced. Consistent with Insufficient Evidence rulings for claims 7-9 and 23.",
+            "evidence": "exp/EXPERIMENT_RESULTS/training_dynamics_analysis/RESULTS.json: Sinkhorn median_last1k_mean=0.8762, std=0.0074; Orthostochastic median_last1k_mean=0.8635, std=0.0111; HC median_last1k=1.1545. All values round correctly to claimed 0.876±0.007, 0.864±0.011, and 1.15 (30% higher). RESULTS.json itself notes 'HC Unconstrained shows 30% higher gradient norms than mHC methods'. | Code: exp/EXPERIMENT_RESULTS/training_dynamics_analysis/RESULTS.json:gradient_norm_statistics.setting_a; exp/scripts/plot_training_dynamics.py; exp/orthostochastic_mhc_experiments/analysis/diagnostics.py",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "exp/EXPERIMENT_RESULTS/training_dynamics_analysis/RESULTS.json:gradient_norm_statistics.setting_a",
+                    "exp/scripts/plot_training_dynamics.py",
+                    "exp/orthostochastic_mhc_experiments/analysis/diagnostics.py"
+                ],
+                "commands_executed": [
+                    "None — reused existing artifact exp/EXPERIMENT_RESULTS/training_dynamics_analysis/RESULTS.json; raw training logs absent and training cannot be re-run"
+                ]
+            }
+        },
+        {
+            "claim_index": 25,
+            "claim": "3. For Orthostochastic, the deviation from identity is small (∥H^res − I∥ ∈ [0.001, 0.166]), with the largest deviation occurring at the final layer.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: RESULTS.json reports values that exactly match the claim ([0.001, 0.166] range and final layer having most deviation). However, there are no model checkpoints (ckpt.pt), no training logs, and no local nanogpt training code. The training scripts reference an external HPC cluster. Without the checkpoints used to compute H_res matrices, the underlying computation cannot be independently verified.",
+            "evidence": "exp/EXPERIMENT_RESULTS/training_dynamics_analysis/RESULTS.json: h_res_analysis.setting_a.orthostochastic_seed1.h_minus_i_norm_range=[0.001, 0.166], most_deviation_layer=47, note='Layer 47 (last) has most deviation' — matches claim exactly. No checkpoint files (.pt) found anywhere in repository; logs directory absent. | Code: exp/EXPERIMENT_RESULTS/training_dynamics_analysis/RESULTS.json:54-60 (h_res_analysis.setting_a.orthostochastic_seed1); exp/scripts/plot_training_dynamics.py (plot_h_res_heatmaps function requires ckpt.pt files)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "exp/EXPERIMENT_RESULTS/training_dynamics_analysis/RESULTS.json:54-60 (h_res_analysis.setting_a.orthostochastic_seed1)",
+                    "exp/scripts/plot_training_dynamics.py (plot_h_res_heatmaps function requires ckpt.pt files)"
+                ],
+                "commands_executed": [
+                    "ls /home/chenhui/fabscore/fars_papers/orthostochastic-mhc/exp/orthostochastic_mhc_experiments/logs/ (directory absent)"
+                ]
+            }
+        }
+    ],
+    "summary": {
+        "total": 6,
+        "verified": 0,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 6,
+        "error": 0
+    }
+}

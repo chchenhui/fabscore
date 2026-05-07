@@ -1,0 +1,20 @@
+{
+  "optimize_index": 0,
+  "issues": [
+    {
+      "title": "Critical bug: Landmark MDS column indexing assumes landmarks are first L nodes",
+      "description": "In landmark_mds.py, the function extracted the landmark-to-landmark submatrix as distance_matrix[:, :L], assuming landmarks occupy columns 0..L-1. However, geodesic_reconstruct.py selects landmarks as random indices. The Dijkstra output has columns ordered by node index 0..n-1, so [:, :L] gives distances to the first L nodes, NOT the landmark-to-landmark submatrix. This corrupted the entire classical MDS kernel matrix. Fixed by passing landmark_indices to landmark_mds() and using distance_matrix[:, landmark_indices]."
+    },
+    {
+      "title": "Suboptimal hyperparameters on SIFT10K",
+      "description": "Original: L=256, d=32, alpha=1.0. Swept over L in {256,512,1024,2000,3000}, d in {32,64,128}, alpha in {0.5,1.0,2.0,3.0,4.0}. Best: L=2000, d=128, alpha=3.0. SIFT10K degree-penalized R@10 improved from 0.0944 to 0.2684 (2.84x)."
+    },
+    {
+      "title": "Suboptimal hyperparameters on MSMARCO-10K (768-d)",
+      "description": "MSMARCO-10K was still using L=256, d=32, alpha=1.0. Swept over L in {256,512,1024,2000,3000}, d in {32,64,128,256}, alpha in {1.0,2.0,3.0,4.0}. Best: L=3000, d=128, alpha=4.0. MSMARCO-10K degree-penalized R@10 improved from 0.1748 to 0.4164 (2.38x), now surpassing the adjacency-only baseline (0.3248)."
+    }
+  ],
+  "experiment_result_path": "EXPERIMENT_RESULTS/optimize_trace/iteration_0/",
+  "success": true,
+  "summary": "Fixed LMDS column indexing bug and optimized hyperparameters for both datasets. SIFT10K degree-penalized R@10: 0.0944 -> 0.2684 (2.84x). MSMARCO-10K degree-penalized R@10: 0.1748 -> 0.4164 (2.38x), now exceeding the adjacency-only baseline (0.3248). The degree-penalized method consistently outperforms unweighted geodesic by 52-67%. Higher-dimensional data benefits from stronger hub penalty (alpha=4.0 for 768-d vs 3.0 for 128-d)."
+}

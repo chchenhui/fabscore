@@ -1,0 +1,359 @@
+{
+    "tables": [],
+    "figures": [
+        {
+            "claim_index": 1,
+            "claim": "1. Figure 1: Comparison of invariance points and grokking points across tasks. The invariance point is consistently early, while the grokking point varies significantly.",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The paper claims Figure 1 shows invariance points are 'consistently early' (all at step 100) while grokking points vary significantly. The invariance_point=100 for all tasks is a code artifact: run_4.py sets max_invariance_score=inv_score before checking inv_score > 0.9*max_invariance_score, so the condition S>0.9*S always triggers on the first step for any non-zero score. For 3 of 4 tasks (x_minus_y, x_plus_y, permutation), the actual stored invariance scores at step 100 are only 0.017–0.071, demonstrating the model is not genuinely invariant at step 100. The invariance_point measurement pipeline is internally self-contradictory with the measured data it produces, making Figure 1's central visual message — that invariance is consistently achieved very early — a code-artifact illusion rather than a real experimental finding.",
+            "evidence": "run_4/final_info.json: invariance_point=100 for all tasks/seeds (stderr=0.0); actual invariance_scores at step 100: x_div_y=1.0, x_minus_y=[0.017,0.021,0.037], x_plus_y=[0.026,0.028,0.032], permutation=[0.071,0.067,0.066]; grokking_point_mean: x_div_y=4406.67, x_minus_y=4536.67, x_plus_y=2633.33, permutation=7500. plot.py lines 164-165: defaults both grokking_point and invariance_point to 7500 (would not reproduce figure correctly). | Code: run_4.py:492-495 (invariance_point bug: max_invariance_score updated before threshold check); plot.py:156-186 (plot_grokking_points function); plot.py:17-19 (all_results.npy dependency, file missing from all run dirs)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "run_4.py:492-495 (invariance_point bug: max_invariance_score updated before threshold check)",
+                    "plot.py:156-186 (plot_grokking_points function)",
+                    "plot.py:17-19 (all_results.npy dependency, file missing from all run dirs)"
+                ],
+                "commands_executed": [
+                    "None (existing artifacts sufficient: plot.py and run_4/final_info.json read directly)"
+                ]
+            }
+        },
+        {
+            "claim_index": 2,
+            "claim": "2. Figure 2(a): Modular Division — Learning dynamics for modular division, showing training loss, validation accuracy, and invariance score over time.",
+            "verdict": "Verified",
+            "explanation": "Execution stage: Figure 2(a) claims to show learning dynamics for modular division with training loss, validation accuracy, and invariance score over time. Fresh execution reproduces all three metrics for x_div_y: training loss decreases from ~4.69 to ~0.003, validation accuracy exhibits grokking (jumps to 1.0 at step ~4940), and invariance score is constant at 1.0 throughout (genuine for x_div_y since the division transform (a+97)%97=a is the identity). The figure description is supported by the underlying data.",
+            "evidence": "Fresh execution of run_4.py for x_div_y (seed 0) via fabscore_claude/workspace/verify_claim2.py confirms: (1) training loss time series from step 10–7500 (starts ~4.69, decreases to ~0.003); (2) validation accuracy time series showing grokking at step 4940 (starts ~0%, reaches 100%); (3) invariance score = 1.0 from step 100 throughout. Results saved in claim2_verification_results.json and claim2_figure2a_verification.png. | Code: run_4.py:424 (run function), run_4.py:559 (main loop for x_div_y), fabscore_claude/workspace/verify_claim2.py",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "run_4.py:424 (run function), run_4.py:559 (main loop for x_div_y), fabscore_claude/workspace/verify_claim2.py"
+                ],
+                "commands_executed": [
+                    "CUDA_VISIBLE_DEVICES=2 timeout 600 python fabscore_claude/workspace/verify_claim2.py"
+                ]
+            }
+        },
+        {
+            "claim_index": 3,
+            "claim": "3. Figure 2(b): Modular Subtraction — Learning dynamics for modular subtraction, showing training loss, validation accuracy, and invariance score over time.",
+            "verdict": "Verified",
+            "explanation": "Execution stage: The claim describes Figure 2(b) as showing training loss, validation accuracy, and invariance score over time for modular subtraction. Fresh execution confirms all three time-series: training loss decreases from ~4.69 to ~0.007; validation accuracy exhibits grokking at ~step 4860; invariance score gradually increases from ~0.017-0.037 at step 100 to 1.0 by ~step 7100. The figure content matches the paper's description.",
+            "evidence": "Fresh execution of verify_claim3.py for x_minus_y seed 0: training loss starts ~4.69 at step 10 decreasing to ~0.007 by step 7500; validation accuracy jumps from ~1% to 100% at grokking step 4860; invariance score starts at 0.037 (step 100), gradually increases, reaches 1.0 by step 7100. Stored run_4/invariance_scores_x_minus_y_0.json confirms invariance starts at 0.017 (step 100) for the original run. Figure claim3_figure2b_verification.png generated with all three required metrics. combined_metrics_x_minus_y.png also exists in repo root. | Code: run_4.py:run() function; fabscore_claude/workspace/verify_claim3.py",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "run_4.py:run() function",
+                    "fabscore_claude/workspace/verify_claim3.py"
+                ],
+                "commands_executed": [
+                    "python3 fabscore_claude/workspace/verify_claim3.py"
+                ]
+            }
+        },
+        {
+            "claim_index": 4,
+            "claim": "4. Figure 2(c): Modular Addition — Learning dynamics for modular addition, showing training loss, validation accuracy, and invariance score over time.",
+            "verdict": "Verified",
+            "explanation": "Execution stage: Fresh execution of run_4.py for the x_plus_y (modular addition) dataset confirms Figure 2(c) content: training loss decreases over time, validation accuracy exhibits grokking at ~step 3490, and invariance score gradually increases from 0.028 at step 100 to 1.0. This matches the paper's description of Figure 2(c) as showing learning dynamics for modular addition with all three metrics.",
+            "evidence": "Fresh run of x_plus_y seed 0 via verify_claim4.py: training loss starts ~4.68 and decreases to 0.002 by step 7500; validation accuracy starts ~1% and grokking occurs at step 3490 (jumps to 100%); invariance score starts at 0.028 at step 100 and gradually increases to 1.0 by step 7100. All three metrics (training loss, validation accuracy, invariance score) present and show expected dynamics. claim4_figure2c_verification.png and claim4_verification_results.json saved to workspace. | Code: run_4.py:run() function; fabscore_claude/workspace/verify_claim4.py",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "run_4.py:run() function",
+                    "fabscore_claude/workspace/verify_claim4.py"
+                ],
+                "commands_executed": [
+                    "python fabscore_claude/workspace/verify_claim4.py"
+                ]
+            }
+        },
+        {
+            "claim_index": 5,
+            "claim": "5. Figure 2(d): Permutations — Learning dynamics for permutations, showing training loss, validation accuracy, and invariance score over time.",
+            "verdict": "Verified",
+            "explanation": "Execution stage: Fresh execution confirms Figure 2(d) shows the three claimed metrics over time for the permutation task: (1) training loss decreasing, (2) validation accuracy remaining near 0 (no grokking), and (3) invariance score consistently low (~0.02-0.07) throughout 7500 training steps.",
+            "evidence": "Fresh execution of verify_claim5.py (permutation, seed 0): training loss starts ~4.91 and decreases to ~0.01; validation accuracy stays near 0 throughout (never grokks, grokking_point=7500); invariance scores consistently low ~0.022-0.054 across all 7500 steps. Artifacts: fabscore_claude/workspace/claim5_verification_results.json, fabscore_claude/workspace/claim5_figure2d_verification.png. Also corroborated by run_4/invariance_scores_permutation_0.json (all scores in range 0.017-0.071). | Code: run_4.py:run() function; verify_claim5.py (fresh verification script)",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "run_4.py:run() function",
+                    "verify_claim5.py (fresh verification script)"
+                ],
+                "commands_executed": [
+                    "python fabscore_claude/workspace/verify_claim5.py"
+                ]
+            }
+        }
+    ],
+    "results_section": [
+        {
+            "claim_index": 6,
+            "claim": "1. For all tasks, we observe that the invariance point (where the invariance score exceeds 90% of its maximum value) is consistently reached very early in training, at step 100.",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Clear code bug in run_4.py (line 492-495): the max_invariance_score is updated to inv_score immediately before the threshold check. At step 100 (first measurement), S > 0.9 * S is always true for any S > 0. So invariance_point is always set to 100 regardless of actual dynamics. For x_minus_y and x_plus_y, the invariance score at step 100 is only 0.017-0.037, far below 90% of the eventual maximum (~1.0). The invariance_point=100 result is an artifact of the ordering bug, not a scientific finding about early invariance learning.",
+            "evidence": "run_4.py:492-495 (inv_score > max_invariance_score update before threshold check); run_4/final_info.json: invariance_point=100 for all tasks; run_4/final_info.json: x_minus_y seed 0 invariance score at step 100 = 0.017, eventual max = 1.0; run_4/final_info.json: x_plus_y seed 0 invariance score at step 100 = 0.026, eventual max = 1.0",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_4.py:492-495 (inv_score > max_invariance_score update before threshold check)",
+                    "run_4/final_info.json: invariance_point=100 for all tasks",
+                    "run_4/final_info.json: x_minus_y seed 0 invariance score at step 100 = 0.017, eventual max = 1.0",
+                    "run_4/final_info.json: x_plus_y seed 0 invariance score at step 100 = 0.026, eventual max = 1.0"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 7,
+            "claim": "2. Modular division: Grokking point at 4406.67 ± 253.33 steps (mean ± standard error)",
+            "verdict": "Result Fabrication",
+            "explanation": "Analysis stage: The mean (4406.67) exactly matches run_4/final_info.json x_div_y grokking_point_mean. However, the reported SE of 253.33 conflicts with all computations from the actual seed data [4690, 3950, 4580]: the stored SE = 108.67 (computed as std/n=325.9/3, itself a bug), the correct SE = std/sqrt(n) = 188.2, and no standard statistical formula yields 253.33. The SE value is not derivable from run_4 data with any standard method.",
+            "evidence": "run_4/final_info.json: x_div_y grokking_point_mean=4406.667, grokking_point_stderr=108.673; run_4/final_info_x_div_y_0.json: step_val_acc_99=4690; run_4/final_info_x_div_y_1.json: step_val_acc_99=3950; run_4/final_info_x_div_y_2.json: step_val_acc_99=4580; run_4.py:584: stderrs computed as np.std(v)/len(v) instead of np.std(v)/sqrt(len(v))",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "result_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_4/final_info.json: x_div_y grokking_point_mean=4406.667, grokking_point_stderr=108.673",
+                    "run_4/final_info_x_div_y_0.json: step_val_acc_99=4690",
+                    "run_4/final_info_x_div_y_1.json: step_val_acc_99=3950",
+                    "run_4/final_info_x_div_y_2.json: step_val_acc_99=4580",
+                    "run_4.py:584: stderrs computed as np.std(v)/len(v) instead of np.std(v)/sqrt(len(v))"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 8,
+            "claim": "3. Modular subtraction: Grokking point at 4536.67 ± 93.33 steps",
+            "verdict": "Result Fabrication",
+            "explanation": "Analysis stage: The mean (4536.67) exactly matches run_4/final_info.json x_minus_y grokking_point_mean. However, the reported SE of 93.33 conflicts with all computations from the actual seed data [4860, 5520, 3230]: the stored SE = 320.81 (std/n=962.4/3), the correct SE = std/sqrt(n) = 555.7. No standard formula yields 93.33 from these seeds. The SE is not derivable from run_4 data.",
+            "evidence": "run_4/final_info.json: x_minus_y grokking_point_mean=4536.667, grokking_point_stderr=320.813; run_4/final_info_x_minus_y_0.json: step_val_acc_99=4860; run_4/final_info_x_minus_y_1.json: step_val_acc_99=5520; run_4/final_info_x_minus_y_2.json: step_val_acc_99=3230; run_4.py:584: np.std(v)/len(v) bug",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "result_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_4/final_info.json: x_minus_y grokking_point_mean=4536.667, grokking_point_stderr=320.813",
+                    "run_4/final_info_x_minus_y_0.json: step_val_acc_99=4860",
+                    "run_4/final_info_x_minus_y_1.json: step_val_acc_99=5520",
+                    "run_4/final_info_x_minus_y_2.json: step_val_acc_99=3230",
+                    "run_4.py:584: np.std(v)/len(v) bug"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 9,
+            "claim": "4. Modular addition: Grokking point at 2633.33 ± 406.67 steps",
+            "verdict": "Result Fabrication",
+            "explanation": "Analysis stage: The mean (2633.33) exactly matches run_4/final_info.json x_plus_y grokking_point_mean. However, the reported SE of 406.67 conflicts with all computations from the actual seed data [2240, 2600, 3060]: the stored SE = 111.86 (std/n=335.6/3), the correct SE = std/sqrt(n) = 193.8. No standard formula yields 406.67 from these seeds. The SE is not derivable from run_4 data.",
+            "evidence": "run_4/final_info.json: x_plus_y grokking_point_mean=2633.333, grokking_point_stderr=111.864; run_4/final_info_x_plus_y_0.json: step_val_acc_99=2240; run_4/final_info_x_plus_y_1.json: step_val_acc_99=2600; run_4/final_info_x_plus_y_2.json: step_val_acc_99=3060; run_4.py:584: np.std(v)/len(v) bug",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "result_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_4/final_info.json: x_plus_y grokking_point_mean=2633.333, grokking_point_stderr=111.864",
+                    "run_4/final_info_x_plus_y_0.json: step_val_acc_99=2240",
+                    "run_4/final_info_x_plus_y_1.json: step_val_acc_99=2600",
+                    "run_4/final_info_x_plus_y_2.json: step_val_acc_99=3060",
+                    "run_4.py:584: np.std(v)/len(v) bug"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 13,
+            "claim": "8. Accuracy on a set of 100 examples: 50.33% ± 2.33% [permutation task]",
+            "verdict": "Result Fabrication",
+            "explanation": "Analysis stage: The mean (50.33%) exactly matches run_4/final_info.json permutation_analysis_mean.accuracy=0.5033. However, the paper SE of 2.33% conflicts with the stored SE of 1.26% (=0.01257, computed as std/n=0.03771/3). The correct SE = std/sqrt(n) = 0.03771/sqrt(3) = 2.18%. Neither the stored buggy value (1.26%) nor the correct value (2.18%) equals the paper's 2.33%. The SE is not derivable from seeds [0.53, 0.45, 0.53] with any standard formula.",
+            "evidence": "run_4/final_info.json: permutation permutation_analysis_mean.accuracy=0.5033, permutation_analysis_stderr.accuracy=0.012571; run_4/final_info_permutation_0.json: permutation_analysis.accuracy=0.53; run_4/final_info_permutation_1.json: permutation_analysis.accuracy=0.45; run_4/final_info_permutation_2.json: permutation_analysis.accuracy=0.53; run_4.py:580: nested dict stderrs computed as np.std(...)/len(v) bug",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "result_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_4/final_info.json: permutation permutation_analysis_mean.accuracy=0.5033, permutation_analysis_stderr.accuracy=0.012571",
+                    "run_4/final_info_permutation_0.json: permutation_analysis.accuracy=0.53",
+                    "run_4/final_info_permutation_1.json: permutation_analysis.accuracy=0.45",
+                    "run_4/final_info_permutation_2.json: permutation_analysis.accuracy=0.53",
+                    "run_4.py:580: nested dict stderrs computed as np.std(...)/len(v) bug"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 14,
+            "claim": "9. Average attention across all layers: 0.25 ± 0.01, indicating roughly uniform attention [permutation task]",
+            "verdict": "Result Fabrication",
+            "explanation": "Analysis stage: The mean (0.25) is trivially correct (sum of attention weights per row = 1 for 4 positions, so mean of all elements = 0.25 by construction). However, the paper's SE of 0.01 conflicts with the stored SE of 0.109 (run_4/final_info.json permutation_analysis_stderr.avg_attention=0.1088). The stored SE of 0.109 appears computed incorrectly (possibly std across all attention matrix element values rather than across seed means). Neither value is derivable from a correct statistical computation, and the two values conflict strongly (factor of ~10x difference).",
+            "evidence": "run_4/final_info.json: permutation permutation_analysis_mean.avg_attention=0.24999999741097176; run_4/final_info.json: permutation permutation_analysis_stderr.avg_attention=0.10881486682021241; run_4.py:580: nested dict stderrs computed as np.std([nested_matrices])/len(v) incorrectly",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "result_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_4/final_info.json: permutation permutation_analysis_mean.avg_attention=0.24999999741097176",
+                    "run_4/final_info.json: permutation permutation_analysis_stderr.avg_attention=0.10881486682021241",
+                    "run_4.py:580: nested dict stderrs computed as np.std([nested_matrices])/len(v) incorrectly"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 10,
+            "claim": "5. Final validation accuracies of 100% for division and subtraction, and 99.07% for addition",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: All three values exactly match run_4/final_info.json: x_div_y final_val_acc_mean=1.0 (100%), x_minus_y final_val_acc_mean=1.0 (100%), x_plus_y final_val_acc_mean=0.99072265625 (99.07%). These are direct reads from the stored results without ambiguity.",
+            "evidence": "run_4/final_info.json: x_div_y means.final_val_acc_mean=1.0; run_4/final_info.json: x_minus_y means.final_val_acc_mean=1.0; run_4/final_info.json: x_plus_y means.final_val_acc_mean=0.99072265625",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_4/final_info.json: x_div_y means.final_val_acc_mean=1.0",
+                    "run_4/final_info.json: x_minus_y means.final_val_acc_mean=1.0",
+                    "run_4/final_info.json: x_plus_y means.final_val_acc_mean=0.99072265625"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 11,
+            "claim": "6. Failure to achieve high validation accuracy (final accuracy of 0.85%) [permutation task]",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: Exactly matches run_4/final_info.json: permutation final_val_acc_mean=0.008544921875 = 0.8544% ≈ 0.85%.",
+            "evidence": "run_4/final_info.json: permutation means.final_val_acc_mean=0.008544921875; run_4/final_info_permutation_0.json: final_val_acc=0.010009765625; run_4/final_info_permutation_1.json: final_val_acc=0.01025390625; run_4/final_info_permutation_2.json: final_val_acc=0.00537109375",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_4/final_info.json: permutation means.final_val_acc_mean=0.008544921875",
+                    "run_4/final_info_permutation_0.json: final_val_acc=0.010009765625",
+                    "run_4/final_info_permutation_1.json: final_val_acc=0.01025390625",
+                    "run_4/final_info_permutation_2.json: final_val_acc=0.00537109375"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 12,
+            "claim": "7. High training accuracy (96.68%), indicating severe overfitting [permutation task]",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: Exactly matches run_4/final_info.json: permutation final_train_acc_mean=0.966796894868215 = 96.68%.",
+            "evidence": "run_4/final_info.json: permutation means.final_train_acc_mean=0.966796894868215; run_4/final_info_permutation_0.json: final_train_acc=0.9994140863418579; run_4/final_info_permutation_1.json: final_train_acc=0.9019531607627869; run_4/final_info_permutation_2.json: final_train_acc=0.9990234375",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_4/final_info.json: permutation means.final_train_acc_mean=0.966796894868215",
+                    "run_4/final_info_permutation_0.json: final_train_acc=0.9994140863418579",
+                    "run_4/final_info_permutation_1.json: final_train_acc=0.9019531607627869",
+                    "run_4/final_info_permutation_2.json: final_train_acc=0.9990234375"
+                ],
+                "commands_executed": []
+            }
+        }
+    ],
+    "summary": {
+        "total": 14,
+        "verified": 7,
+        "data_fabrication": 0,
+        "experiment_fabrication": 2,
+        "result_fabrication": 5,
+        "no_code_files": 0,
+        "insufficient_evidence": 0
+    },
+    "analysis_summary": {
+        "total_claims": 14,
+        "no_code_files": 0,
+        "obvious_hallucination": 6,
+        "data_fabrication": 0,
+        "experiment_fabrication": 1,
+        "result_fabrication": 5,
+        "static_verifiable": 3,
+        "insufficient_evidence": 0,
+        "execution_required": 5,
+        "error": 0
+    },
+    "execution_summary": {
+        "total": 5,
+        "verified": 4,
+        "data_fabrication": 0,
+        "experiment_fabrication": 1,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 0,
+        "error": 0
+    },
+    "final_assessment": {
+        "fab_score": 0.5,
+        "total_claims": 14,
+        "verified": 7,
+        "data_fabrication": 0,
+        "experiment_fabrication": 2,
+        "result_fabrication": 5,
+        "no_code_files": 0,
+        "insufficient_evidence": 0,
+        "static_code_analysis_breakdown": {
+            "verified": 3,
+            "no_code_files": 0,
+            "data_fabrication": 0,
+            "experiment_fabrication": 1,
+            "result_fabrication": 5,
+            "insufficient_evidence": 0
+        },
+        "execution_artifact_analysis_breakdown": {
+            "verified": 1,
+            "no_code_files": 0,
+            "data_fabrication": 0,
+            "experiment_fabrication": 1,
+            "result_fabrication": 0,
+            "insufficient_evidence": 0
+        },
+        "code_execution_breakdown": {
+            "verified": 3,
+            "no_code_files": 0,
+            "data_fabrication": 0,
+            "experiment_fabrication": 0,
+            "result_fabrication": 0,
+            "insufficient_evidence": 0
+        }
+    }
+}

@@ -1,0 +1,52 @@
+{
+    "tables": [],
+    "figures": [
+        {
+            "claim_index": 25,
+            "claim": "1. Figure 1(a): Validation Loss on 'enwik8'",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The pre-existing val_loss_enwik8.png image is insufficient for a Verified verdict per evaluation rules (need underlying data files or successful script execution). The per-iteration validation loss data (all_results.npy) required by plot.py is missing from all run directories. Full re-training is infeasible (100,000 iterations × 3 datasets per run script, ~800s per dataset). The final_info files and the pre-existing image both confirm all methods achieved nearly identical val_loss (~1.0048-1.0055) with fully overlapping curves, but this cannot be formally Verified without the underlying per-iteration data.",
+            "evidence": "val_loss_enwik8.png exists (pre-existing image showing all 5 methods with completely overlapping loss curves from iter 0 to 100000). final_info_enwik8_0.json exists for all runs with best_val_loss: run_0=1.0055, run_1=1.0048, run_2=1.0048, run_3=1.0053, run_4=1.0054. all_results.npy (per-iteration data required by plot.py) is MISSING from all run directories. Suggested entrypoint 'python run_0.py --dataset enwik8' is invalid — no --dataset argument exists in the run scripts. | Code: plot.py:17 (np.load all_results.npy); run_1.py:715 (all_results.npy saved after full training); run_1.py:338 (max_iters=100000 for enwik8)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "plot.py:17 (np.load all_results.npy)",
+                    "run_1.py:715 (all_results.npy saved after full training)",
+                    "run_1.py:338 (max_iters=100000 for enwik8)"
+                ],
+                "commands_executed": [
+                    "None executed — existing artifacts inspected only"
+                ]
+            }
+        },
+        {
+            "claim_index": 26,
+            "claim": "2. Figure 1(b): Training Loss on 'enwik8'",
+            "verdict": "Result Fabrication",
+            "explanation": "Execution stage: The paper claims 'significant improvements in training dynamics' for its novel Depth-Adaptive Scaling and Task-Specific Priors methods. However, the actual final_train_loss values from final_info_enwik8_0.json show run_3 (Depth-Adaptive, 0.9367) and run_4 (Task-Specific, 0.9404) both performing WORSE than the baseline run_0 (0.9302). The pre-existing train_loss_enwik8.png is consistent with these findings, showing completely overlapping curves with no visible improvement for the novel methods. The paper's narrative of improvement is directly contradicted by the actual experimental results stored in the repository.",
+            "evidence": "final_info_enwik8_0.json files: run_0 (Baseline) final_train_loss=0.9302, run_1 (Xavier/Glorot)=0.9284, run_2 (Kaiming/He)=0.9256, run_3 (Depth-Adaptive)=0.9367, run_4 (Task-Specific)=0.9404. Pre-existing train_loss_enwik8.png shows all 5 methods with completely overlapping training loss curves. | Code: run_0/final_info_enwik8_0.json, run_3/final_info_enwik8_0.json, run_4/final_info_enwik8_0.json",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "run_0/final_info_enwik8_0.json, run_3/final_info_enwik8_0.json, run_4/final_info_enwik8_0.json"
+                ],
+                "commands_executed": [
+                    "cat run_0/final_info_enwik8_0.json run_1/final_info_enwik8_0.json run_2/final_info_enwik8_0.json run_3/final_info_enwik8_0.json run_4/final_info_enwik8_0.json"
+                ]
+            }
+        }
+    ],
+    "results_section": [],
+    "summary": {
+        "total": 2,
+        "verified": 0,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 1,
+        "no_code_files": 0,
+        "insufficient_evidence": 1,
+        "error": 0
+    }
+}

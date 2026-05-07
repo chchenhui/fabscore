@@ -1,0 +1,54 @@
+{
+  "verdict": "bad",
+  "summary": "The Debiased One-Pass Attention Sorting hypothesis is refuted. On the primary model (LLaMA-2-7B-32K-Instruct), debiasing has zero effect -- identical outputs to uncalibrated k=1 on all 600 examples. On the secondary model (YaRN-Llama-2-7b-64k), debiasing improves over k=1 by +8.67pp but remains 14.84pp behind k=5. Position bias accounts for only ~37% of the gap between k=1 and k=5; the remaining ~63% comes from other iterative sorting benefits that cannot be captured by bias correction alone.",
+  "analysis": {
+    "regime_check": {
+      "llama2_32k": {"k5_accuracy": 0.955, "no_sorting_accuracy": 0.7283, "gap_pp": 22.67, "pass": true},
+      "yarn_64k": {"k5_accuracy": 0.7067, "no_sorting_accuracy": 0.3583, "gap_pp": 34.84, "pass": true}
+    },
+    "main_success_criteria": {
+      "criterion_a_within_2pp_of_k5": {
+        "llama2_32k": {"gap_pp": 0.67, "pass": true, "note": "Passes only because k=1 uncalibrated is already close to k=5; debiasing adds nothing"},
+        "yarn_64k": {"gap_pp": 14.84, "pass": false}
+      },
+      "criterion_b_paired_win_rate_80pct": {
+        "llama2_32k": {"note": "Debiased k=1 identical to uncalibrated k=1 (0W/600T/0L); criterion not meaningfully testable"},
+        "yarn_64k": {"wins": 0, "ties": 0, "losses": 3, "win_rate_seeds": 0.0, "pass": false}
+      },
+      "criterion_c_improvement_outside_std": {
+        "llama2_32k": {"improvement_pp": 0.0, "k1_std": 0.0144, "ratio": 0.0, "pass": false},
+        "yarn_64k": {"improvement_pp": 8.67, "k1_std": 0.0225, "ratio": 3.85, "pass": true}
+      }
+    },
+    "refute_criteria": {
+      "debiased_indistinguishable_from_k1": {
+        "llama2_32k": true,
+        "yarn_64k": false
+      },
+      "debiased_3pp_worse_than_k5": {
+        "llama2_32k": false,
+        "yarn_64k": true
+      }
+    },
+    "per_model_results": {
+      "llama2_32k_instruct": {
+        "no_sorting": {"mean": 0.7283, "std": 0.0284},
+        "k1_uncalibrated": {"mean": 0.9483, "std": 0.0144},
+        "debiased_k1_best": {"mean": 0.9483, "std": 0.0144, "strategy": "minimal_swap"},
+        "k5": {"mean": 0.955, "std": 0.0071},
+        "debiased_improvement_over_k1_pp": 0.0,
+        "debiased_gap_to_k5_pp": 0.67
+      },
+      "yarn_llama2_64k": {
+        "no_sorting": {"mean": 0.3583, "std": 0.0225},
+        "k1_uncalibrated": {"mean": 0.4717, "std": 0.0225},
+        "debiased_k1_best": {"mean": 0.5583, "std": 0.0208, "strategy": "full_sort_divisive"},
+        "k5": {"mean": 0.7067, "std": 0.0333},
+        "debiased_improvement_over_k1_pp": 8.67,
+        "debiased_gap_to_k5_pp": 14.84,
+        "fraction_of_k1_k5_gap_closed": 0.37
+      }
+    }
+  },
+  "reason": "The hypothesis that per-prompt position-bias subtraction enables single-pass sorting to match iterative sorting is refuted on both models. On LLaMA-2-7B-32K-Instruct: debiasing produces byte-identical results to uncalibrated k=1 (0 wins, 600 ties, 0 losses), meaning position bias is not the bottleneck for this model. On YaRN-Llama-2-7b-64k: debiasing shows genuine improvement (+8.67pp, significant at 3.85x std), but the 14.84pp residual gap to k=5 (far beyond the 2-3pp pivot threshold) indicates that position bias is only one component (~37%) of iterative sorting's benefit. The remaining ~63% likely comes from attention context refinement, error averaging across iterations, and non-linear attention dynamics that cannot be captured by a static bias correction. The method's fundamental assumption -- that position bias is the primary barrier -- is contradicted by the evidence."
+}

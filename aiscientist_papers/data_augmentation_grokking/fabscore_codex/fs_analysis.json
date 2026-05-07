@@ -1,0 +1,343 @@
+{
+    "no_code_files": [],
+    "obvious_hallucination": [
+        {
+            "index": 4,
+            "category": "table",
+            "content": "4. Table 1, Reversal, Addition: 1993",
+            "reason": "`run_1.py` is the only identifiable code path for the paper's reversal condition, but `ModSumDataset.fetch_example` applies reversal with probability 0.3, while the paper states reversal-only addition uses 20%. The reported number matches `run_1/final_info.json`, but it comes from a different experimental condition than the paper describes.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_1.py: ModSumDataset.fetch_example",
+                "run_1/final_info.json",
+                "latex/template.tex"
+            ]
+        },
+        {
+            "index": 5,
+            "category": "table",
+            "content": "5. Table 1, Reversal, Subtraction: 5160",
+            "reason": "In `run_1.py`, the subtraction dataset has no reversal augmentation at all: `ModSubtractDataset` only defines `fetch_output` and inherits the unaugmented `fetch_example`. The saved value 5160 in `run_1/final_info.json` is therefore being reported as a reversal result even though the code does not implement subtraction reversal for this run.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_1.py: ModSubtractDataset",
+                "run_1/final_info.json",
+                "notes.txt"
+            ]
+        },
+        {
+            "index": 6,
+            "category": "table",
+            "content": "6. Table 1, Reversal, Division: 4500",
+            "reason": "In `run_1.py`, the division dataset also has no reversal augmentation path: `ModDivisonDataset` only defines `fetch_output` and inherits the unaugmented base `fetch_example`. The paper's reversal/division table entry is therefore mapped to a run that does not implement division reversal.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_1.py: ModDivisonDataset",
+                "run_1/final_info.json",
+                "notes.txt"
+            ]
+        },
+        {
+            "index": 7,
+            "category": "table",
+            "content": "7. Table 1, Negation, Addition: 1000",
+            "reason": "`run_2.py` does not implement negation-only addition. Its `ModSumDataset.fetch_example` first samples `random.random() < 0.3`, then uses an inner 50/50 branch to choose reversal or negation. That means the actual addition logic is 15% reversal, 15% negation, 70% none, with zero probability of both. The paper labels this row as pure negation augmentation.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_2.py: ModSumDataset.fetch_example",
+                "run_2/final_info.json",
+                "latex/template.tex"
+            ]
+        },
+        {
+            "index": 8,
+            "category": "table",
+            "content": "8. Table 1, Negation, Subtraction: 1343",
+            "reason": "`run_2.py` applies subtraction negation with probability 0.3 in `ModSubtractDataset.fetch_example`, while the paper describes negation-only runs as 20% probability. The stored number matches `run_2/final_info.json`, but not the paper's stated condition.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_2.py: ModSubtractDataset.fetch_example",
+                "run_2/final_info.json",
+                "latex/template.tex"
+            ]
+        },
+        {
+            "index": 9,
+            "category": "table",
+            "content": "9. Table 1, Negation, Division: 1443",
+            "reason": "`run_2.py` applies division negation with probability 0.3 in `ModDivisonDataset.fetch_example`, not the 20% negation-only condition stated in the paper. The result file supports 1443 only for that different setup.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_2.py: ModDivisonDataset.fetch_example",
+                "run_2/final_info.json",
+                "latex/template.tex"
+            ]
+        },
+        {
+            "index": 10,
+            "category": "table",
+            "content": "10. Table 1, Combined (15%), Addition: 920",
+            "reason": "`run_3.py` uses a mutually exclusive `if/elif` structure in `ModSumDataset.fetch_example`: 15% reversal, else-if 15% negation, so the probability of both augmentations on the same sample is exactly 0%. The paper describes a combined 15% condition 'for each technique'; an independent implementation would allow both to co-occur with nonzero probability. The saved 920 is tied to the mutually exclusive implementation instead.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_3.py: ModSumDataset.fetch_example",
+                "run_3/final_info.json",
+                "latex/template.tex"
+            ]
+        },
+        {
+            "index": 11,
+            "category": "table",
+            "content": "11. Table 1, Combined (15%), Subtraction: 1057",
+            "reason": "`run_3.py` implements subtraction 'combined (15%)' with a mutually exclusive `if/elif` branch: 15% reversal or 15% negation, never both. Because the paper presents this as a combined per-technique probability setting, the actual code path is a different experiment definition.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_3.py: ModSubtractDataset.fetch_example",
+                "run_3/final_info.json",
+                "latex/template.tex"
+            ]
+        },
+        {
+            "index": 12,
+            "category": "table",
+            "content": "12. Table 1, Combined (15%), Division: 1767",
+            "reason": "`run_3.py` has no combined division logic at all. `ModDivisonDataset.fetch_example` only applies negation with probability 0.3; there is no reversal branch and no 15%+15% composition. The table cell is therefore reported under a condition the repository does not implement for division.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_3.py: ModDivisonDataset.fetch_example",
+                "run_3/final_info.json",
+                "latex/template.tex"
+            ]
+        },
+        {
+            "index": 13,
+            "category": "table",
+            "content": "13. Table 1, Combined (30%), Addition: 793",
+            "reason": "Although `run_4.py` addition does use two independent `if` statements at 30% each, the training procedure still conflicts with the paper: the scripts use `LambdaLR(lambda s: min(s / warmup_steps, 1))`, which is warmup then constant learning rate, not the paper's stated linear warmup followed by cosine decay. The reported number is tied to a different training setup.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_4.py: ModSumDataset.fetch_example",
+                "run_4.py: scheduler = torch.optim.lr_scheduler.LambdaLR(...)",
+                "run_4/final_info.json",
+                "latex/template.tex"
+            ]
+        },
+        {
+            "index": 14,
+            "category": "table",
+            "content": "14. Table 1, Combined (30%), Subtraction: 1367",
+            "reason": "`run_4.py` does not implement subtraction combined(30%) as 30% reversal plus 30% negation. Instead `ModSubtractDataset.fetch_example` uses a mutually exclusive 15% reversal / 15% negation branch (`rand < 0.15`, `elif rand < 0.3`). The table entry is therefore mapped to a different condition than stated.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_4.py: ModSubtractDataset.fetch_example",
+                "run_4/final_info.json",
+                "latex/template.tex"
+            ]
+        },
+        {
+            "index": 15,
+            "category": "table",
+            "content": "15. Table 1, Combined (30%), Division: 1877",
+            "reason": "`run_4.py` division again has only negation with probability 0.3 in `ModDivisonDataset.fetch_example`; there is no second augmentation and no 30% combined implementation for division. The stored 1877 value is therefore reported under a condition the code does not realize.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_4.py: ModDivisonDataset.fetch_example",
+                "run_4/final_info.json",
+                "latex/template.tex"
+            ]
+        },
+        {
+            "index": 16,
+            "category": "figure",
+            "content": "1. Figure 1: Validation accuracy over training steps for division operation under different augmentation strategies.",
+            "reason": "`plot.py` hardcodes six plotted runs via `labels`, including an extra `run_5: Combined (20%)`, and then plots `runs = list(labels.keys())` for every dataset. The saved `val_acc_x_div_y.png` therefore visualizes six conditions, not the five-condition setup described in the paper, and some labels are experiment-level mismatches for division (for example, `run_1` is labeled reversal even though `run_1.py` implements no division reversal).",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "plot.py: labels",
+                "plot.py: runs = list(labels.keys())",
+                "val_acc_x_div_y.png",
+                "run_1.py: ModDivisonDataset",
+                "run_5.py"
+            ]
+        },
+        {
+            "index": 17,
+            "category": "figure",
+            "content": "2. Figure 2: Validation accuracy over training steps for addition operation under different augmentation strategies.",
+            "reason": "The saved validation-accuracy plot is generated from the same six-run labeling logic in `plot.py`, including an extra `Combined (20%)` run that is absent from the paper's stated five conditions. In addition, the plotted `Negation` addition curve would come from `run_2.py`, whose addition logic is actually a 15% reversal + 15% negation mixture rather than negation-only.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "plot.py: labels",
+                "plot.py: runs = list(labels.keys())",
+                "val_acc_x_plus_y.png",
+                "run_2.py: ModSumDataset.fetch_example",
+                "run_5.py"
+            ]
+        },
+        {
+            "index": 18,
+            "category": "figure",
+            "content": "3. Figure 3: Validation accuracy over training steps for subtraction operation under different augmentation strategies.",
+            "reason": "Again, `plot.py` plots six runs instead of the paper's five-condition design, and its global labels do not match the subtraction implementations in the run scripts. For example, `run_1` is plotted as `Operand Reversal`, but `run_1.py` implements no subtraction reversal augmentation at all.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "plot.py: labels",
+                "plot.py: runs = list(labels.keys())",
+                "val_acc_x_minus_y.png",
+                "run_1.py: ModSubtractDataset",
+                "run_5.py"
+            ]
+        },
+        {
+            "index": 19,
+            "category": "figure",
+            "content": "4. Figure 5(a): Training accuracy for division",
+            "reason": "The saved artifact `train_acc_x_div_y.png` directly conflicts with the paper's Figure 5 description: it shows only a single legend entry, `Baselines`, not multiple augmentation strategies. There is also no repository plotting script that generates this file; `plot.py` never saves any `train_acc_*` figure.",
+            "fabrication_type": "result_fabrication",
+            "code_evidence": [
+                "train_acc_x_div_y.png",
+                "plot.py: plt.savefig(...) calls",
+                "latex/template.tex"
+            ]
+        },
+        {
+            "index": 20,
+            "category": "figure",
+            "content": "5. Figure 5(b): Training loss for division",
+            "reason": "The saved `train_loss_x_div_y.png` also shows only `Baselines`, not the multi-strategy comparison described in the paper. As with the training-accuracy image, there is no identifiable code path in `plot.py` for generating `train_loss_*` outputs.",
+            "fabrication_type": "result_fabrication",
+            "code_evidence": [
+                "train_loss_x_div_y.png",
+                "plot.py: plt.savefig(...) calls",
+                "latex/template.tex"
+            ]
+        },
+        {
+            "index": 21,
+            "category": "figure",
+            "content": "6. Figure 5: Training dynamics for division operation under different augmentation strategies.",
+            "reason": "The repository's actual division training-dynamics artifacts are baseline-only images, so they do not support a figure 'under different augmentation strategies'. The figure claim is contradicted directly by `train_acc_x_div_y.png` and `train_loss_x_div_y.png`, and no repo-native script is present to generate a multi-strategy training-dynamics figure.",
+            "fabrication_type": "result_fabrication",
+            "code_evidence": [
+                "train_acc_x_div_y.png",
+                "train_loss_x_div_y.png",
+                "plot.py",
+                "latex/template.tex"
+            ]
+        },
+        {
+            "index": 22,
+            "category": "results_section",
+            "content": "1. representing a 61% reduction in training time to achieve high generalization performance.",
+            "reason": "This sentence depends on the baseline addition result and the paper's `Combined (15%)` addition condition. The only identifiable code path for that latter condition is `run_3.py`, whose addition logic is mutually exclusive 15% reversal / 15% negation, not a true combined-per-technique implementation. The claimed reduction is therefore attached to a different experiment definition.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_3.py: ModSumDataset.fetch_example",
+                "run_3/final_info.json",
+                "run_0/final_info.json",
+                "latex/template.tex"
+            ]
+        },
+        {
+            "index": 23,
+            "category": "results_section",
+            "content": "2. a 72% reduction.",
+            "reason": "The 72% subtraction reduction is derived from the paper's negation-only condition, but `run_2.py` uses 30% subtraction negation rather than the stated 20%. The number exists in `run_2/final_info.json`, but under a different experiment than the paper specifies.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_2.py: ModSubtractDataset.fetch_example",
+                "run_2/final_info.json",
+                "run_0/final_info.json",
+                "latex/template.tex"
+            ]
+        },
+        {
+            "index": 24,
+            "category": "results_section",
+            "content": "3. with a sharp increase in validation accuracy around 1000 steps.",
+            "reason": "The paper attributes this behavior to the `Combined (15%)` subtraction condition, but the only code path for that run is the mutually exclusive `if/elif` logic in `run_3.py`, not a per-technique combined implementation. The corresponding validation plot is also produced through a six-run `plot.py` configuration that does not match the paper's five-condition experiment set.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_3.py: ModSubtractDataset.fetch_example",
+                "plot.py: labels",
+                "val_acc_x_minus_y.png",
+                "latex/template.tex"
+            ]
+        },
+        {
+            "index": 25,
+            "category": "results_section",
+            "content": "4. a 66% reduction.",
+            "reason": "The paper's 66% division reduction is framed as a negation-only condition, but `run_2.py` applies division negation with probability 0.3 rather than the stated 0.2. The reported reduction is therefore tied to a different training procedure than the paper claims.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_2.py: ModDivisonDataset.fetch_example",
+                "run_2/final_info.json",
+                "run_0/final_info.json",
+                "latex/template.tex"
+            ]
+        },
+        {
+            "index": 26,
+            "category": "results_section",
+            "content": "5. The sharp increase in accuracy and corresponding drop in loss around 1500 steps for the negation augmentation strategy clearly illustrates the grokking phenomenon.",
+            "reason": "The repository's actual division training-dynamics images do not show a negation-strategy comparison at all; both `train_acc_x_div_y.png` and `train_loss_x_div_y.png` show only `Baselines`. The artifact that should support this sentence therefore contradicts it directly.",
+            "fabrication_type": "result_fabrication",
+            "code_evidence": [
+                "train_acc_x_div_y.png",
+                "train_loss_x_div_y.png",
+                "latex/template.tex"
+            ]
+        }
+    ],
+    "static_verifiable": [],
+    "insufficient_evidence": [
+        {
+            "index": 1,
+            "category": "table",
+            "content": "1. Table 1, Baseline, Addition: 2363",
+            "reason": "The repository contains claim-relevant baseline artifacts (`run_0/final_info.json`, `notes.txt`, and logs) showing the addition mean as 2363.333..., which rounds to the paper's 2363. However, there is no surviving baseline source file or identifiable repo-native baseline entrypoint; the available scripts are augmentation variants (`run_1.py` to `run_5.py`, `experiment.py`) rather than the baseline implementation that produced `run_0`.",
+            "code_evidence": [
+                "run_0/final_info.json",
+                "notes.txt",
+                "20240804_022805_data_augmentation_grokking_aider.txt"
+            ]
+        },
+        {
+            "index": 2,
+            "category": "table",
+            "content": "2. Table 1, Baseline, Subtraction: 4720",
+            "reason": "The subtraction baseline number is present in `run_0/final_info.json` and repeated in the notes/log artifacts, but the repository does not include the baseline training script that generated `run_0`. Because the provenance chain stops at saved summaries, static inspection cannot fully verify this claim.",
+            "code_evidence": [
+                "run_0/final_info.json",
+                "notes.txt",
+                "20240804_022805_data_augmentation_grokking_aider.txt"
+            ]
+        },
+        {
+            "index": 3,
+            "category": "table",
+            "content": "3. Table 1, Baseline, Division: 4200",
+            "reason": "The division baseline value is preserved in `run_0/final_info.json` and auxiliary notes, but there is no identifiable baseline code path left in the repository. That leaves claim-relevant evidence without a reproducible or inspectable implementation chain.",
+            "code_evidence": [
+                "run_0/final_info.json",
+                "notes.txt",
+                "20240804_022805_data_augmentation_grokking_aider.txt"
+            ]
+        }
+    ],
+    "execution_required": [],
+    "error": [],
+    "summary": {
+        "total_claims": 26,
+        "no_code_files": 0,
+        "obvious_hallucination": 23,
+        "data_fabrication": 0,
+        "experiment_fabrication": 19,
+        "result_fabrication": 4,
+        "static_verifiable": 0,
+        "insufficient_evidence": 3,
+        "execution_required": 0,
+        "error": 0
+    }
+}

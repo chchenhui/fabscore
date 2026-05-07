@@ -1,0 +1,16 @@
+{
+  "optimize_index": 0,
+  "issues": [
+    {
+      "title": "r_cap=30 too conservative for gradient flow",
+      "description": "The original r_cap=30 threshold was borrowed from mHC-lite's convergence warning, not designed for gradient flow in a 4x4 DS matrix. With exp(-30) ~ 1e-13, the Sinkhorn output was still a near-exact permutation matrix with zero entropy and ~1e-15 gradients. Fixed by reducing r_cap to 2.0, where exp(-2) ~ 0.14 gives meaningful off-diagonal entries. Sweeping r_cap in {2.0, 5.0, 8.0} showed r_cap=2.0 gives the best val loss while fully restoring gradient flow (4.1e-6 vs 1.9e-15, a 2.2 billion x improvement)."
+    },
+    {
+      "title": "DiagnosticLogger not receiving correct r_cap",
+      "description": "The DiagnosticLogger in train.py was initialized without passing mhc_r_cap and mhc_rrcs, so it always used the default r_cap=30 and computed DS error/entropy using the uncapped Sinkhorn. Fixed by passing r_cap=mhc_r_cap and mhc_rrcs=mhc_rrcs to the logger, and modifying the internal _sinkhorn_log function to apply RRCS capping when mhc_rrcs=True."
+    }
+  ],
+  "experiment_result_path": "EXPERIMENT_RESULTS/optimize_trace/iteration_0/",
+  "success": true,
+  "summary": "Reduced r_cap from 30 to 2.0 to restore gradient flow through RRCS Sinkhorn projection. With r_cap=2.0, H_res gradient norms increased from ~1.9e-15 to ~4.1e-6 (2.2 billion x improvement), H_res parameters now drift by 4.19 Frobenius norm units (vs ~0 before), and DS matrix entropy is 0.93 (vs 0.0). Val loss is 4.775 +/- 0.010, within noise of the baseline 4.771 +/- 0.009. All three success criteria from the proposal are met: gradient increase >= 100x (actual: 2.2B x), param drift >= 10x (actual: 20M x), and val loss not worse by > 0.5x baseline std."
+}

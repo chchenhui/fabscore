@@ -1,0 +1,45 @@
+===== Command 1: Inspect archive_v02.json structure =====
+$ python3 -c "import json; archive=json.load(open('anon-submission-1-main/artifacts/archive_v02.json')); print(f'Total entries: {len(archive)}'); ..."
+Total entries: 120
+Keys in first entry: ['gen', 'rule', 'pretty', 'train_loss', 'rule_train_loss', 'test_loss']
+First entry rule: {'bm': 0.0, 'bv': 0.9, 'am': 1.0, 'av': 1.0, 'a1': 1.0, 'a2': 0.5, 'p': 0.0, 'eta': 0.002, 'eps': 1e-06}
+First entry train_loss: 37.80834327684908
+First entry test_loss: 7.83084202819945
+
+===== Command 2: Get top-5 rules and generate per-seed convergence curves =====
+$ python3 -c "... eval_rule(r, 'rastrigin', dim=10, steps=300, seeds=(0,1,2)) ..."
+
+Top-5 rule entries (first 5 from archive):
+  Rule 1: gen=0, train_loss=37.8083, test_loss=7.8308
+  Rule 2: gen=0, train_loss=37.8083, test_loss=7.8308
+  Rule 3: gen=0, train_loss=37.8083, test_loss=8.0852
+  Rule 4: gen=0, train_loss=37.8083, test_loss=7.8308
+  Rule 5: gen=0, train_loss=37.8083, test_loss=7.9677
+
+Top-5 sorted by train_loss:
+  Rule 1: gen=0, train_loss=37.8083, test_loss=7.8308
+  Rule 2: gen=0, train_loss=37.8083, test_loss=7.8308
+  Rule 3: gen=0, train_loss=37.8083, test_loss=8.0852
+  Rule 4: gen=0, train_loss=37.8083, test_loss=7.8308
+  Rule 5: gen=0, train_loss=37.8083, test_loss=7.9677
+
+Figure saved: fabscore_claude/workspace/claim_57_figure4_top5_rastrigin.png
+
+Final values per seed for top-5 rules (seeds=(0,1,2)):
+  Rule 1: seed0=38.8033, seed1=36.8134, seed2=26.8638  (mean=34.1602)
+  Rule 2: seed0=38.8033, seed1=36.8134, seed2=26.8638  (mean=34.1602)
+  Rule 3: seed0=38.8033, seed1=36.8134, seed2=26.8638  (mean=34.1602)
+  Rule 4: seed0=38.8033, seed1=36.8134, seed2=26.8638  (mean=34.1602)
+  Rule 5: seed0=38.8033, seed1=36.8134, seed2=26.8638  (mean=34.1602)
+
+Curves shape: (3, 300) per rule
+
+===== Command 3: Run with seeds=(0,1) for comparison =====
+For seeds=(0,1):
+  Rule 1: mean_final=37.8083, seed0=38.8033, seed1=36.8134
+
+NOTE: archive_v02.json first 5 entries (gen=0) all have train_loss=37.8083 and test_loss between 7.83-8.09.
+NOTE: All 5 rules have p=0.0, meaning denominator=1 regardless of v. The rules effectively reduce to
+      momentum-based gradient descent variants that converge to same local optima from same seeds.
+NOTE: No dedicated Figure 4 plotting function exists in greenhouse/figures.py or experiments/plot_all.py.
+      The figure can be generated from archive_v02.json + eval_rule() directly.

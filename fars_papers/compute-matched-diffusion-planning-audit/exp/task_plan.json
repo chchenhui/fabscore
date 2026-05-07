@@ -1,0 +1,66 @@
+[
+  {
+    "index": 0,
+    "category": "Environment Configuration",
+    "title": "Dependencies Installation and Project Structure Initialization",
+    "description": "Set up the development environment for the compute-matched diffusion-vs-AR planning audit. The project is inference-only (no training) and requires: (1) PyTorch with CUDA support for running 7B models in bfloat16, (2) Hugging Face Transformers with trust_remote_code support for Dream-v0-Base-7B, (3) the Reasoning Gym library for procedural task generation and programmatic verifiers (countdown, mini_sudoku), and (4) standard scientific computing libraries for statistical analysis and visualization. Both Dream-v0-Base-7B and Qwen2.5-7B should fit on a single A100-80GB GPU in bfloat16 precision.",
+    "status": "completed",
+    "summary": "Environment set up with existing .venv (Python 3.12.12, torch 2.9.1+cu129, transformers 4.57.6). Installed reasoning-gym 0.1.24 and seaborn 0.13.2. Created audit/ directory structure with data/, prompts/, inference/, evaluation/, analysis/, timing/, results/{raw,tables,figures}, scripts/. Verified both Dream-org/Dream-v0-Base-7B (DreamModel, diffusion_generate callable, 7.62B params) and Qwen/Qwen2.5-7B (Qwen2ForCausalLM, generate callable, 7.62B params) load on A100-80GB in bfloat16. Tokenizers and reasoning_gym verifiers (countdown, mini_sudoku) confirmed working."
+  },
+  {
+    "index": 1,
+    "category": "Baseline Experiment",
+    "title": "Qwen2.5-7B Greedy Baseline on Countdown and Mini Sudoku",
+    "description": "Evaluate Qwen2.5-7B (base) with greedy decoding (single sample, temperature=0) on procedurally generated Countdown and 4×4 Mini Sudoku instances from Reasoning Gym. This establishes Condition A — the standard AR single-sample baseline — against which both the diffusion model and the compute-matched best-of-k protocol will be compared. This item also handles procedural data generation and prompt template creation, which are shared across all subsequent experiments.\n\n**Reference**: \"Qwen2.5 Technical Report\" | https://huggingface.co/Qwen/Qwen2.5-7B",
+    "status": "completed",
+    "summary": "Ran experiment. Generated 4 JSONL datasets (countdown/sudoku x test/cal) with Reasoning Gym. Created 8-shot prompt templates (seed=7777). Implemented vLLM-based greedy inference (temperature=0, max_tokens=64) and evaluation wrapper with sanity checks. Results: Countdown accuracy=6.0% (30/500), Mini Sudoku accuracy=16.8% (84/500). Shared data/prompt artifacts saved under audit/data/ and audit/prompts/."
+  },
+  {
+    "index": 2,
+    "category": "Baseline Experiment",
+    "title": "Dream-v0-Base-7B Diffusion Baseline on Countdown and Mini Sudoku",
+    "description": "Evaluate Dream-v0-Base-7B with its recommended diffusion generation settings on procedurally generated Countdown and 4×4 Mini Sudoku instances. This establishes Condition C — the single-sample diffusion baseline. Dream uses the entropy-based remasking algorithm with deterministic decoding (temperature=0). This item also performs wall-clock timing on the calibration subsets, which is needed for compute matching in the Main Experiment.\n\n**Reference**: \"Dream 7B: Diffusion Large Language Models\" | https://github.com/DreamLM/Dream",
+    "status": "completed",
+    "summary": "Ran experiment. Implemented Dream diffusion inference (audit/inference/dream_diffusion.py) using HF transformers diffusion_generate with entropy remasking, temperature=0, diffusion_steps=64, max_new_tokens=64. Results: Countdown accuracy=6.6% (33/500), Mini Sudoku accuracy=77.6% (388/500). Dream shows massive advantage on Sudoku (+60.8pp over Qwen greedy) but minimal on Countdown (+0.6pp). Wall-clock timing calibration: Dream is ~35x slower than Qwen on Countdown (47.68s vs 1.36s, k=35) and ~39x slower on Sudoku (55.75s vs 1.40s, k=39). Timing results saved to audit/timing/calibration_results.json."
+  },
+  {
+    "index": 3,
+    "category": "Main Experiment",
+    "title": "Compute-Matched Best-of-k Qwen2.5-7B on Countdown and Mini Sudoku",
+    "description": "Implement and execute the core proposed evaluation protocol: Qwen2.5-7B with best-of-k sampling where k is determined by wall-clock compute matching to Dream's diffusion generation time. This is Condition B — the inference-time scaled AR baseline that spends comparable wall-clock compute to the diffusion model. For each test instance, k independent samples are drawn from Qwen2.5-7B with temperature-based sampling, and the instance is marked solved if any of the k samples passes the Reasoning Gym programmatic verifier. No early stopping is applied (all k samples are always generated) to avoid giving AR an unfair advantage. Three generation seeds are used for stochastic sampling to measure variance.\n\nThis is the central contribution: testing whether AR models with compute-matched inference-time scaling can close the planning gap reported for diffusion models.",
+    "status": "completed",
+    "summary": "Implemented and executed best-of-k compute-matched evaluation. Created audit/inference/qwen_best_of_k.py using vLLM with n=k batched sampling (temperature=0.8, top_p=0.95). Ran on both tasks with 3 seeds (42, 123, 456). Countdown (k=35): 39.33% +/- 0.81% -- massively outperforms Dream diffusion (6.6%) by +32.7pp. Mini Sudoku (k=39): 66.13% +/- 0.09% -- closes most of the gap but Dream retains 11.5pp advantage (77.6%). Aggregated all conditions into results/tables/main_results.csv and results/figures/main_results.png. Key finding: diffusion advantage is task-dependent -- absent on Countdown, moderate on Sudoku."
+  },
+  {
+    "index": 4,
+    "category": "Optimization",
+    "title": "Optimize: Compute-Matched Best-of-k Qwen2.5-7B on Countdown and Mini Sudoku",
+    "description": "Optimize the main experiment 'Compute-Matched Best-of-k Qwen2.5-7B on Countdown and Mini Sudoku' to improve results.",
+    "status": "completed",
+    "summary": "Optimization succeeded after 1/2 iterations.\n  - Step 0: success, issues: [Suboptimal sampling temperature, Missing stop sequence for sudoku task]\nDetails: EXPERIMENT_RESULTS/optimize_trace/"
+  },
+  {
+    "index": 5,
+    "category": "Effectiveness Evaluation",
+    "title": "Evaluate Whether Diffusion Planning Advantage Persists Under Compute Matching",
+    "description": "Evaluate whether the proposed compute-matched evaluation protocol reveals a robust diffusion planning advantage or shows that the reported Dream-vs-Qwen gap shrinks substantially. The evaluation compares Condition B (Qwen best-of-k, compute-matched) against Condition C (Dream diffusion) on both Countdown and Mini Sudoku. The decision rule from the research idea is:\n- **Supports robust diffusion advantage**: Dream beats compute-matched Qwen best-of-k by ≥ +5 accuracy points on BOTH tasks, and bootstrap 95% CI for the difference excludes 0.\n- **Refutes/downweights diffusion advantage claim**: Dream's advantage is ≤ +2 points on both tasks (or negative), or confidence intervals include 0.\n- **Pivot**: If both models are near-ceiling or near-zero, adjust generator difficulty and re-run.",
+    "status": "completed",
+    "summary": "Verdict: good. Computed bootstrap 95% CIs (B=10000) for Dream-minus-BoK accuracy deltas. Countdown: delta=-32.5pp, CI=[-36.3%, -28.7%] (Dream significantly worse). Sudoku: delta=+10.4pp, CI=[+6.1%, +14.6%] (Dream significantly better). Neither the 'robust advantage on BOTH tasks' nor 'refutes on BOTH tasks' decision rule is met -- the finding is task-dependent. The compute-matched protocol closes ~83% of the naive gap on Sudoku (60.8pp->10.4pp) and reverses it entirely on Countdown. Dream retains a genuine, statistically significant advantage for constraint-satisfaction (Sudoku) but not arithmetic reasoning (Countdown). Results saved to results/tables/bootstrap_ci.csv and EXPERIMENT_RESULTS/."
+  },
+  {
+    "index": 6,
+    "category": "Analysis Experiment",
+    "title": "Sensitivity Analysis: k Estimator Variant (p75 vs Median)",
+    "description": "Assess the robustness of the compute-matching conclusion to the choice of wall-clock time estimator used for computing k. The main experiment uses the median wall-clock time to compute k; this analysis re-runs the best-of-k evaluation using k derived from the 75th percentile (p75) of wall-clock times, which yields a more generous compute budget for the AR model. If the conclusion is consistent across both k estimators, the finding is robust to this methodological choice.",
+    "status": "completed",
+    "summary": "p75 wall-clock sensitivity analysis completed. Extracted k_p75 values (Countdown: 34, Sudoku: 39). Ran best-of-k with k_p75=34 on Countdown (3 seeds): 38.9% +/- 1.4%. Sudoku k_p75=k_median=39, results reused (67.2% +/- 0.4%). Compared with median-k results: Countdown delta changes from -32.5pp to -32.3pp (0.2pp shift), Sudoku identical at +10.4pp. Both estimators yield the same qualitative conclusion on both tasks. The compute-matching finding is ROBUST to the choice of wall-clock time estimator."
+  },
+  {
+    "index": 7,
+    "category": "Analysis Experiment",
+    "title": "Accuracy-vs-k Scaling Curve Analysis",
+    "description": "Plot how Qwen2.5-7B best-of-k accuracy scales with increasing k on both tasks, to understand the marginal benefit of additional AR samples. This analysis provides insight into whether the AR model's performance saturates before reaching the compute-matched k value (suggesting an inherent diffusion advantage) or continues to improve (suggesting the gap could close further with more compute).",
+    "status": "completed",
+    "summary": "Scaling curve analysis completed. Created audit/analysis/plot_scaling.py to compute best-of-j accuracy for j=1,2,4,8,16,32,k_max from existing optimized JSONL data (3 seeds). Countdown: Qwen crosses Dream (6.6%) at j~4, reaches 39.1% at k=35 with no plateau. Sudoku: Qwen reaches 67.2% at k=39, still 10.4pp below Dream (77.6%); log-linear extrapolation estimates k~87 to match Dream (2.2x compute budget). Key finding: AR scaling has not saturated on either task -- Dream's Sudoku advantage is a compute-efficiency gap, not a capability ceiling. Figures saved to results/figures/scaling_{countdown,sudoku}.png. Analysis notes in results/tables/scaling_analysis_notes.txt."
+  }
+]

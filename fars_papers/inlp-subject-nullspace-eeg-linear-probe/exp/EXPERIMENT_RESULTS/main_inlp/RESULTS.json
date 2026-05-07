@@ -1,0 +1,71 @@
+{
+  "experiment": "EA + INLP Subject-Identity Removal + Linear Head (Optimized)",
+  "dataset": "BNCI2014001",
+  "protocol": "LOSO (9 folds)",
+  "seeds": [42, 123, 456],
+  "pooling": "flatten",
+  "embedding_dim": 17600,
+  "inlp_config": {
+    "mode": "progressive_with_inner_CV",
+    "max_iter": 10,
+    "iter_grid": [1, 2, 3, 4, 5, 7, 10],
+    "C_grid": [0.01, 0.1, 1.0, 10.0],
+    "selection_method": "inner_LOSO_CV_on_8_training_subjects",
+    "classifier": "SGDClassifier(loss='log_loss')",
+    "task_head": "LogisticRegression(solver='lbfgs')"
+  },
+  "results": {
+    "mean_accuracy": 0.5629,
+    "std_across_seeds": 0.0013,
+    "std_across_folds": 0.0798,
+    "per_seed": {
+      "42": 0.5638,
+      "123": 0.5635,
+      "456": 0.5615
+    },
+    "per_subject": {
+      "1": 0.6181,
+      "2": 0.4091,
+      "3": 0.6244,
+      "4": 0.5062,
+      "5": 0.5127,
+      "6": 0.5289,
+      "7": 0.6476,
+      "8": 0.6406,
+      "9": 0.5787
+    }
+  },
+  "config_selection": {
+    "most_common": {"iter": 1, "C": 0.01, "count": 7},
+    "distribution": {
+      "1_0.01": 7,
+      "2_0.01": 7,
+      "3_0.01": 6,
+      "4_0.01": 3,
+      "7_0.01": 2,
+      "2_0.1": 1,
+      "5_0.1": 1
+    },
+    "note": "74% of folds select 1-3 iterations; 93% select C=0.01"
+  },
+  "comparison": {
+    "ea_baseline": {
+      "mean": 0.5627,
+      "std_folds": 0.0809
+    },
+    "delta_vs_ea_baseline_pp": 0.02,
+    "original_inlp_fixed10": {
+      "mean": 0.5518,
+      "std_folds": 0.0719
+    },
+    "delta_vs_original_inlp_pp": 1.11,
+    "pca_k1_control": {
+      "mean": 0.5547,
+      "delta_vs_baseline_pp": -0.80
+    },
+    "vanilla_linear_probing_reported": 0.4145,
+    "full_finetuning_reported": 0.5303,
+    "delta_vs_vanilla_pp": 14.84,
+    "delta_vs_finetune_pp": 3.26
+  }
+}

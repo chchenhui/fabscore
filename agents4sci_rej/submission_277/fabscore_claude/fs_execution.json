@@ -1,0 +1,170 @@
+{
+    "tables": [],
+    "figures": [
+        {
+            "claim_index": 146,
+            "claim": "1. Figure 1: Runtime speedup from strategic layer dropout. Left: speedup by configuration. Right: scaling with batch size. Strategic dropout achieves 1.28× average speedup, approaching theoretical 1.33× maximum at larger batches.",
+            "verdict": "Result Fabrication",
+            "explanation": "Execution stage: The paper claims 'strategic dropout achieves 1.28× average speedup, approaching theoretical 1.33× maximum at larger batches.' Execution of the actual BERT inference code shows the 'strategic_15%' configuration (6 layers dropped, specifically designed to skip transition layers at 3 and 8) achieves ~1.93× average speedup — not 1.28×. The paper's theoretical max of 1.33× is mathematically consistent only with dropping 3 out of 12 layers (12/9=1.333×), which corresponds to the code's 'random_15%' configuration (avg 1.312×, close to paper's 1.28×). The paper attributes numbers from the 3-layer random dropout scenario to 'strategic' dropout, which actually achieves nearly 2× speedup. This is a result fabrication: the experiment code and model are real, but the reported numbers do not match the 'strategic' configuration's actual output.",
+            "evidence": "Executed verify_claim_146.py on GPU with BERT. Config 'strategic_15%' (6 layers dropped, labeled strategic, skips transitions at layers 3 and 8): avg speedup 1.927×, max 1.961×. Config 'random_15%' (3 layers dropped): avg speedup 1.312×, max 1.324×. Paper's claimed 1.33× theoretical maximum is only achievable by dropping 3/12 layers (12/9=1.333×) matching 'random_15%', NOT the 6-layer 'strategic_15%' config. Saved to claim_146_results.json and claim_146_command_output.txt. | Code: 277_Breaking_Points_How_Transf_Supplementary Material/noise_experiment_v0_v1/runtime_validation.py:86-122 (configurations dict, strategic_15% drops [1,2,4,5,9,10]=6 layers, achieving ~1.93× not 1.28×)",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "277_Breaking_Points_How_Transf_Supplementary Material/noise_experiment_v0_v1/runtime_validation.py:86-122 (configurations dict, strategic_15% drops [1,2,4,5,9,10]=6 layers, achieving ~1.93× not 1.28×)"
+                ],
+                "commands_executed": [
+                    "python fabscore_claude/workspace/verify_claim_146.py (run from /home/chenhui/fabscore/agents4sci_rej/submission_277)"
+                ]
+            }
+        },
+        {
+            "claim_index": 151,
+            "claim": "6. Figure 6: Real-world noise impact comparison. Left: Model performance on different real-world noise sources. Right: Systematic gap between synthetic and real-world noise challenges.",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The right panel of Figure 6 ('Systematic gap between synthetic and real-world noise challenges') is generated from hardcoded placeholder values rather than actual model evaluations. The code explicitly labels these as 'placeholder data' in a comment. The metric implementation bypasses real computation for the key comparative claim about the synthetic vs real-world noise gap.",
+            "evidence": "real_world_noise_exp.py lines 281-303: explicit comment '# Comparison with synthetic noise (placeholder data)' with hardcoded values Real-World: [0.85, 0.72, 0.88, 0.75, None, None] and Synthetic: [None, None, None, None, 0.92, 0.78] used to generate the right panel. No saved CSV results exist from prior runs. | Code: 277_Breaking_Points_How_Transf_Supplementary Material/noise_experiment_v0_v1/real_world_noise_exp.py:281-303",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "277_Breaking_Points_How_Transf_Supplementary Material/noise_experiment_v0_v1/real_world_noise_exp.py:281-303"
+                ],
+                "commands_executed": [
+                    "None — code inspection was sufficient to identify the fabrication"
+                ]
+            }
+        }
+    ],
+    "results_section": [
+        {
+            "claim_index": 156,
+            "claim": "5. Strategic dropout targeting non-transition layers (dropping layers 1, 5, and 10) achieves 1.28× measured speedup compared to the theoretical maximum of 1.33× for 25% layer removal.",
+            "verdict": "Result Fabrication",
+            "explanation": "Execution stage: The claim states strategic dropout dropping layers 1, 5, and 10 achieves 1.28× speedup with theoretical max 1.33× (= 3/12 layers removed). The code's `random_15%` drops 3 layers [1,4,9] (25%, theoretical 1.333×) and achieves 1.312× avg—not 1.28×. The code's `strategic_15%` (which skips transition layers 3 and 8) drops 6 layers and achieves 1.927× avg—not 1.28×. The specific layer combination [1,5,10] does not appear in any configuration. The 1.28× value does not match any executed configuration's output, constituting result fabrication.",
+            "evidence": "From claim_146_results.json (Session 3 execution): random_15% (3 layers [1,4,9]) avg speedup 1.312×; strategic_15% (6 layers [1,2,4,5,9,10]) avg speedup 1.927×. Neither matches claimed 1.28×. No code configuration drops 'layers 1, 5, and 10' as the claim states. | Code: 277_Breaking_Points_How_Transf_Supplementary Material/noise_experiment_v0_v1/runtime_validation.py:86-91 (configurations dict), claim_146_results.json (measured speedups)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "277_Breaking_Points_How_Transf_Supplementary Material/noise_experiment_v0_v1/runtime_validation.py:86-91 (configurations dict), claim_146_results.json (measured speedups)"
+                ],
+                "commands_executed": [
+                    "No new command executed; reused fabscore_claude/workspace/claim_146_results.json from Session 3 execution of verify_claim_146.py"
+                ]
+            }
+        },
+        {
+            "claim_index": 157,
+            "claim": "6. Random 25% dropout yields only 1.19× speedup while causing 8 percentage points of absolute performance degradation.",
+            "verdict": "Result Fabrication",
+            "explanation": "Execution stage: The 'random 25% dropout' configuration (random_15% in code, dropping 3 of 12 layers) produces 1.312× speedup in actual execution, conflicting with the claimed 1.19×. Additionally, runtime_validation.py only measures inference time and contains no performance/accuracy evaluation, so the claimed 8 pp degradation is entirely unsupported by any code in the repository.",
+            "evidence": "From claim_146_results.json (Session 3 execution): random_15% configuration (drops [1,4,9] = 3/12 = 25% of layers) achieves avg 1.312× speedup (range 1.298×–1.324×), not the claimed 1.19×. runtime_validation.py contains no accuracy evaluation code, so the '8 percentage points of absolute performance degradation' has no corresponding measurement in the repository. | Code: 277_Breaking_Points_How_Transf_Supplementary Material/noise_experiment_v0_v1/runtime_validation.py:86-91",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "277_Breaking_Points_How_Transf_Supplementary Material/noise_experiment_v0_v1/runtime_validation.py:86-91"
+                ],
+                "commands_executed": [
+                    "Reused: python fabscore_claude/workspace/verify_claim_146.py (Session 3 artifact: claim_146_results.json)"
+                ]
+            }
+        },
+        {
+            "claim_index": 158,
+            "claim": "7. Aggressive 50% dropout (6 layers) achieves 1.85× speedup but causes 18 percentage points of absolute performance loss.",
+            "verdict": "Result Fabrication",
+            "explanation": "Execution stage: The claim states 'Aggressive 50% dropout (6 layers) achieves 1.85× speedup.' The code's aggressive_25% configuration drops 8 layers (not 6) and achieves 2.784× speedup. The 6-layer strategic_15% configuration achieves 1.927× speedup — still not 1.85×. The 18 percentage point performance loss claim has zero supporting code in runtime_validation.py, which only measures inference time. Both the speedup value and performance loss claim conflict with actual measured execution results.",
+            "evidence": "Reused claim_146_results.json from Session 3. aggressive_25% config (lines 86-91 in runtime_validation.py) drops 8 layers [1,2,4,5,6,9,10,11], achieving avg 2.784× speedup (not 1.85×). The 6-layer config (strategic_15%) achieves avg 1.927× speedup. No configuration achieves 1.85× speedup. runtime_validation.py contains ONLY inference timing code — no accuracy/performance measurement exists, so the claimed 18 pp performance loss is completely unsupported. | Code: noise_experiment_v0_v1/runtime_validation.py:86-91 (configurations), claim_146_results.json (measured speedups: aggressive_25%=2.784×, strategic_15%=1.927×)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "noise_experiment_v0_v1/runtime_validation.py:86-91 (configurations), claim_146_results.json (measured speedups: aggressive_25%=2.784×, strategic_15%=1.927×)"
+                ],
+                "commands_executed": [
+                    "None (reused fabscore_claude/workspace/claim_146_results.json from Session 3, which ran the actual BERT inference speedup measurements)"
+                ]
+            }
+        },
+        {
+            "claim_index": 159,
+            "claim": "8. Speedup improves slightly with batch size, reaching 1.31× at batch=32 due to better GPU utilization amortizing fixed overhead costs.",
+            "verdict": "Result Fabrication",
+            "explanation": "Execution stage: The claim correctly describes the trend (speedup improves slightly with batch size), but reports 1.31× at batch=32 when the actual GPU-measured speedup for the closest matching configuration (random_15%, 3 layers dropped) is 1.324×, which rounds to 1.32× not 1.31×. No configuration achieves exactly 1.31× at batch=32.",
+            "evidence": "GPU execution results from claim_146_results.json (Device: CUDA confirmed): random_15% config shows batch=1: 1.298×, batch=8: 1.308×, batch=16: 1.318×, batch=32: 1.324×. Claimed value is 1.31× at batch=32, but measured GPU value is 1.324× (rounds to 1.32×, not 1.31×). Trend of slight improvement with batch size is correct, but specific value is wrong. | Code: noise_experiment_v0_v1/runtime_validation.py:86-91 (configurations), :95-120 (batch size loop). Results in fabscore_claude/workspace/claim_146_results.json.",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "noise_experiment_v0_v1/runtime_validation.py:86-91 (configurations), :95-120 (batch size loop). Results in fabscore_claude/workspace/claim_146_results.json."
+                ],
+                "commands_executed": [
+                    "No new command executed; reused existing GPU execution artifact from Session 3: fabscore_claude/workspace/claim_146_results.json and claim_146_command_output.txt (Device: CUDA confirmed)."
+                ]
+            }
+        },
+        {
+            "claim_index": 160,
+            "claim": "9. OCR Errors (ICDAR 2019 dataset): Common substitutions from 2,000 scanned documents reduce BERT robustness score from 0.640 (its average robustness on clean synthetic data) to 0.560 (12.5% relative drop).",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The paper claims OCR noise evaluation on the ICDAR 2019 dataset (2,000 scanned documents), but the code in real_world_noise_exp.py generates synthetic data from 8 hardcoded sentences repeated 25 times (200 samples). No ICDAR 2019 data files exist anywhere in the repository. The claimed dataset identity (ICDAR 2019, 2,000 scanned documents) is fabricated — the actual implementation uses synthetic text that cannot yield the specific BERT robustness values reported (0.640 → 0.560).",
+            "evidence": "real_world_noise_exp.py creates_real_world_datasets() uses 8 hardcoded sentences × 25 repetitions = 200 synthetic samples. No ICDAR dataset files found (glob '*icdar*' → 0 results). No saved result CSVs. The paper claims ICDAR 2019 dataset with 2,000 scanned documents, but the code uses entirely synthetic text. | Code: noise_experiment_v0_v1/real_world_noise_exp.py:128-151 (create_real_world_datasets: 8 hardcoded sentences × 25 = 200 synthetic samples, not ICDAR 2019)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "noise_experiment_v0_v1/real_world_noise_exp.py:128-151 (create_real_world_datasets: 8 hardcoded sentences × 25 = 200 synthetic samples, not ICDAR 2019)"
+                ],
+                "commands_executed": [
+                    "None (code inspection sufficient; glob search for '*icdar*' found 0 files)"
+                ]
+            }
+        },
+        {
+            "claim_index": 161,
+            "claim": "10. RoBERTa drops from 0.787 to 0.735 (6.6% relative drop) under OCR errors.",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The claim states RoBERTa drops from 0.787 to 0.735 under OCR errors. The clean baseline (0.787) is sourced from a synthetic experiment using np.random.normal() (experiment fabrication). The OCR noise evaluation uses 8 hardcoded sentences × 25 = 200 synthetic samples, not data from real scanned documents. The paper's 'Real-World Noise' framing is contradicted by the code, which uses entirely programmatically-generated synthetic data. This matches the same data fabrication pattern found in Claim 160 (BERT under OCR errors), which uses the identical code path and dataset.",
+            "evidence": "real_world_noise_exp.py:128-178 — create_real_world_datasets() generates OCR dataset from 8 hardcoded sentences × 25 = 200 synthetic samples, not real-world OCR data. apply_ocr_noise() applies hardcoded substitutions (e.g., 'rn'→'m', 'l'→'i') to these synthetic sentences. The clean baseline 0.787 for RoBERTa comes from nips_publication_experiment.py which uses np.random.normal() to generate fake robustness scores. No saved results CSV or JSON exists from any run of this script. | Code: noise_experiment_v0_v1/real_world_noise_exp.py:128-178 (create_real_world_datasets), lines 148-151 (ocr dataset, 8 sentences × 25 = 200 synthetic samples)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "noise_experiment_v0_v1/real_world_noise_exp.py:128-178 (create_real_world_datasets), lines 148-151 (ocr dataset, 8 sentences × 25 = 200 synthetic samples)"
+                ],
+                "commands_executed": [
+                    "None — reused code inspection from Session 9 (same code path: real_world_noise_exp.py:create_real_world_datasets())"
+                ]
+            }
+        },
+        {
+            "claim_index": 163,
+            "claim": "12. Social Media Text: 5,000 tweets with abbreviations and typos cause 18% average degradation, with RoBERTa showing only 8% loss.",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The paper claims '5,000 tweets with abbreviations and typos' as the social media dataset, but the code generates only 200 synthetic samples from 8 hardcoded generic sentences. No Twitter dataset exists anywhere in the repository. This is a direct dataset fabrication — the claimed real-world dataset does not exist in the repository and the code substitutes entirely synthetic data instead.",
+            "evidence": "real_world_noise_exp.py lines 154-157: social_media dataset created from 8 hardcoded clean sentences × 25 = 200 samples total. No Twitter dataset, no 5,000 tweets, no external data file of any kind. The apply_social_media_noise() function applies programmatic substitutions from a hardcoded dictionary to synthetic text, not real tweet data. | Code: 277_Breaking_Points_How_Transf_Supplementary Material/noise_experiment_v0_v1/real_world_noise_exp.py:128-178 (create_real_world_datasets), lines 154-157 (social_media dataset: 8 sentences × 25 = 200 samples)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "277_Breaking_Points_How_Transf_Supplementary Material/noise_experiment_v0_v1/real_world_noise_exp.py:128-178 (create_real_world_datasets), lines 154-157 (social_media dataset: 8 sentences × 25 = 200 samples)"
+                ],
+                "commands_executed": [
+                    "None — code inspection of real_world_noise_exp.py lines 128-178 was sufficient; prior sessions (9 and 10) already confirmed the same synthetic data pattern for all three noise types in this file"
+                ]
+            }
+        }
+    ],
+    "summary": {
+        "total": 9,
+        "verified": 0,
+        "data_fabrication": 3,
+        "experiment_fabrication": 1,
+        "result_fabrication": 5,
+        "no_code_files": 0,
+        "insufficient_evidence": 0,
+        "error": 0
+    }
+}

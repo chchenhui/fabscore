@@ -1,0 +1,118 @@
+\section{Methodology: The Forensic Toolkit}
+
+Every successful investigation requires the right tools and systematic protocols. In our quest to uncover the hidden vulnerabilities within transformer models, we assembled a comprehensive forensic toolkit designed to probe, stress-test, and analyze these complex systems at their most fundamental levels. Like detectives examining a crime scene layer by layer, our methodology enables us to peer inside the black box of transformer processing, revealing where and how these models break under adversarial pressure.
+
+Our investigative framework treats each transformer model as a suspect with unique behavioral patterns and potential weaknesses. Rather than accepting surface-level performance metrics at face value, we developed protocols to systematically expose hidden fault lines—those critical junctures where models either catastrophically fail or remarkably recover. This forensic approach transforms the abstract problem of robustness evaluation into a concrete investigation with measurable evidence trails.
+
+\subsection{Model Selection: The Suspects Under Investigation}
+
+Our investigation focused on five transformer architectures that represent the current state-of-the-art in natural language processing, each with distinct architectural choices that could influence their robustness profiles. These models served as our primary suspects, each potentially harboring unique vulnerabilities or defensive mechanisms against noise perturbations.
+
+We selected BERT-base \cite{devlin2019bert} as our baseline suspect, the foundational bidirectional transformer that revolutionized contextual understanding through masked language modeling. With its 12 layers, 768 hidden dimensions, and 110 million parameters, BERT established the architectural blueprint that subsequent models would either follow or deliberately deviate from. Its bidirectional attention mechanism processes context from both directions simultaneously, potentially creating unique vulnerability patterns compared to unidirectional alternatives.
+
+RoBERTa-base \cite{liu2019roberta} emerged as our prime candidate for superior robustness, representing an optimized variant of BERT with identical architecture but dramatically different training dynamics. By removing the next sentence prediction task, training on 160GB of text with dynamic masking, and carefully tuning hyperparameters, RoBERTa's creators hypothesized that robust pre-training could overcome architectural limitations. Our investigation would reveal whether these training enhancements translated into genuine noise resilience or merely superficial performance gains.
+
+ALBERT-base \cite{lan2020albert} presented an intriguing case through its parameter-sharing strategy, where embedding parameters are factorized and layers share weights across the network. This architectural economy reduces the model from BERT's 110M to just 12M parameters while maintaining 12 layers of processing. The parameter sharing creates an unusual dynamic where noise perturbations might propagate differently through the network, potentially amplifying or dampening their effects in unexpected ways.
+
+DistilBERT \cite{sanh2019distilbert} offered a complementary perspective through knowledge distillation, compressing BERT's capabilities into 6 layers while retaining 97\% of its performance on downstream tasks. This compression raises fundamental questions: Does distillation preserve robustness properties, or does the compression process create new vulnerabilities? With only half the layers, DistilBERT's processing pipeline might exhibit fundamentally different failure modes under noise stress.
+
+ELECTRA-small \cite{clark2020electra} introduced a radically different pre-training objective, using a discriminator to detect replaced tokens rather than predicting masked ones. This adversarial training regime theoretically should enhance robustness by explicitly training the model to detect perturbations. However, with only 14M parameters distributed across 12 layers, ELECTRA-small operates under severe capacity constraints that might limit its ability to maintain robust representations under noise.
+
+\subsection{Noise Perturbation Strategies: The Stress Tests}
+
+Our forensic toolkit employed five distinct noise types, each designed to probe different aspects of transformer processing and reveal specific vulnerabilities. These perturbations served as our investigative instruments, carefully calibrated to expose failure modes while remaining realistic enough to reflect real-world deployment scenarios.
+
+Character-level swap noise simulated typographical errors by randomly transposing adjacent characters within words with probability $p_{swap} \in \{0.05, 0.10, 0.15, 0.20, 0.25\}$. For a token $t$ with characters $c_1, c_2, ..., c_n$, we applied swaps according to:
+\begin{equation}
+t' = \begin{cases}
+c_1...c_{i+1}c_i...c_n & \text{if } U(0,1) < p_{swap} \text{ for position } i \\
+t & \text{otherwise}
+\end{cases}
+\end{equation}
+This perturbation tests the models' ability to recover from surface-level corruptions that preserve most semantic information but disrupt tokenization and subword processing.
+
+Word dropout noise removed entire tokens from the input sequence, simulating missing information scenarios common in speech recognition or incomplete documents. Given an input sequence $X = [x_1, x_2, ..., x_n]$, we generated the corrupted sequence:
+\begin{equation}
+X' = [x_i | U(0,1) > p_{drop}, i \in \{1, ..., n\}]
+\end{equation}
+This stress test revealed how models handle incomplete context and whether their representations degrade gracefully or catastrophically when key information disappears.
+
+Semantic substitution replaced words with semantically related alternatives, testing whether models truly understand meaning or merely memorize surface patterns. Using a pre-computed similarity matrix $S$ derived from word embeddings, we substituted token $x_i$ with probability $p_{sub}$:
+\begin{equation}
+x'_i = \begin{cases}
+\arg\max_{x_j \in V \setminus \{x_i\}} S(x_i, x_j) & \text{if } U(0,1) < p_{sub} \\
+x_i & \text{otherwise}
+\end{cases}
+\end{equation}
+where $V$ represents the vocabulary. This perturbation probed whether models maintain semantic coherence when surface forms change but meaning remains approximately preserved.
+
+Syntactic shuffling disrupted word order within syntactic boundaries, challenging the models' structural processing capabilities. For each sentence, we identified syntactic constituents using dependency parsing and shuffled tokens within each constituent with probability $p_{shuffle}$. This targeted perturbation tested whether models rely on rigid positional encoding or can recover structural information from corrupted sequences.
+
+Attention mask noise corrupted the self-attention mechanism directly by randomly masking attention connections between tokens. For attention weight matrix $A \in \mathbb{R}^{n \times n}$, we applied:
+\begin{equation}
+A'_{ij} = \begin{cases}
+0 & \text{if } U(0,1) < p_{mask} \\
+A_{ij} & \text{otherwise}
+\end{cases}
+\end{equation}
+This surgical intervention into the attention mechanism revealed how information flow disruptions cascade through the transformer layers.
+
+\subsection{Layer-wise Analysis Protocol: The Forensic Examination}
+
+Our layer-wise analysis protocol represented the core of our forensic methodology, enabling us to trace how noise perturbations propagate through transformer architectures and identify critical failure points. Rather than treating models as monolithic black boxes, we developed techniques to extract and analyze representations at each processing stage, creating a detailed map of vulnerability patterns.
+
+For each model $M$ with layers $L = \{l_0, l_1, ..., l_{11}\}$, we extracted hidden representations $h_i^{(l)}$ for each token $i$ at layer $l$. Given clean input $X$ and noisy input $X'$, we computed the representation divergence at each layer:
+\begin{equation}
+D^{(l)} = \frac{1}{n} \sum_{i=1}^n \| h_i^{(l)}(X) - h_i^{(l)}(X') \|_2
+\end{equation}
+This divergence metric quantified how noise-induced perturbations evolved through the network, revealing whether they amplified, dampened, or underwent phase transitions at specific layers.
+
+We further developed a robustness score $R^{(l)}$ for each layer, measuring its ability to maintain consistent predictions despite input perturbations:
+\begin{equation}
+R^{(l)} = \mathbb{E}_{(X, X') \sim \mathcal{D}} \left[ \frac{\text{cos}(h^{(l)}(X), h^{(l)}(X'))}{1 + \alpha \cdot KL(p^{(l)}(X) || p^{(l)}(X'))} \right]
+\end{equation}
+where $\text{cos}(\cdot, \cdot)$ denotes cosine similarity, $KL(\cdot||\cdot)$ represents Kullback-Leibler divergence between output distributions, and $\alpha$ is a scaling factor. This composite metric captured both representational similarity and functional consistency, providing a holistic view of layer-wise robustness.
+
+To identify phase transitions—those critical layers where processing fundamentally shifts—we computed the discrete derivative of robustness scores:
+\begin{equation}
+\Delta R^{(l)} = R^{(l+1)} - R^{(l)}
+\end{equation}
+Layers where $|\Delta R^{(l)}| > \tau$ for threshold $\tau$ were flagged as transition points, warranting deeper investigation into their architectural or functional properties.
+
+\subsection{Statistical Validation: Ensuring No False Leads}
+
+In any investigation, distinguishing genuine patterns from statistical noise is paramount. Our statistical validation framework ensured that discovered vulnerability patterns represented robust, reproducible phenomena rather than sampling artifacts or experimental fluctuations.
+
+We conducted experiments across 2,000 samples per condition, drawn from diverse textual domains to ensure generalizability. Each sample underwent processing through all five models under all noise conditions, generating over 300,000 individual measurements. This massive dataset provided statistical power to detect even subtle robustness differences while controlling for multiple comparisons.
+
+For hypothesis testing, we employed a hierarchical statistical framework. At the model level, we used repeated measures ANOVA to test for significant differences in robustness across architectures:
+\begin{equation}
+F = \frac{\text{MS}_{between}}{\text{MS}_{within}} \sim F(k-1, N-k)
+\end{equation}
+where $k=5$ models and $N=2000$ samples per condition. Post-hoc Tukey HSD tests identified specific pairwise differences while controlling family-wise error rate.
+
+At the layer level, we applied Friedman tests to detect non-uniform vulnerability distributions across the 12 layers, treating layers as repeated measures:
+\begin{equation}
+\chi^2_F = \frac{12N}{k(k+1)} \sum_{j=1}^k (R_j - \frac{k+1}{2})^2
+\end{equation}
+where $R_j$ represents the rank sum for layer $j$. Significant results ($p < 0.001$) triggered targeted investigations using Wilcoxon signed-rank tests to pinpoint transition layers.
+
+Effect sizes were quantified using Cohen's $d$ for pairwise comparisons:
+\begin{equation}
+d = \frac{\mu_1 - \mu_2}{\sigma_{pooled}}
+\end{equation}
+Only effects with $|d| > 0.8$ (large effect size) were considered practically significant, ensuring our findings represented meaningful robustness differences rather than statistically significant but negligible variations.
+
+To validate the transferability of noise patterns across models, we computed cross-model correlation matrices for layer-wise vulnerability profiles. Spearman's rank correlation coefficient $\rho$ quantified pattern similarity:
+\begin{equation}
+\rho = 1 - \frac{6\sum d_i^2}{n(n^2 - 1)}
+\end{equation}
+where $d_i$ represents rank differences between models for layer $i$. High correlations ($\rho > 0.6$) indicated universal vulnerability patterns transcending specific architectural choices.
+
+Finally, we implemented bootstrap confidence intervals (10,000 iterations) for all key metrics, ensuring robust uncertainty quantification:
+\begin{equation}
+CI_{95\%} = [\hat{\theta}^*_{0.025}, \hat{\theta}^*_{0.975}]
+\end{equation}
+where $\hat{\theta}^*$ represents bootstrap estimates of the parameter of interest. This comprehensive statistical framework transformed our investigation from exploratory analysis into rigorous hypothesis testing, ensuring every claimed discovery met stringent evidential standards.
+
+Through this carefully constructed methodology—selecting diverse architectural suspects, applying targeted stress tests, conducting thorough forensic examination, and validating findings with rigorous statistics—we assembled a complete investigative framework for understanding transformer vulnerabilities. Like detectives building an airtight case, each component of our methodology contributed essential evidence toward solving the mystery of why some models fail catastrophically while others demonstrate remarkable resilience. The stage was now set for our experimental investigation to uncover the hidden patterns that govern transformer robustness.

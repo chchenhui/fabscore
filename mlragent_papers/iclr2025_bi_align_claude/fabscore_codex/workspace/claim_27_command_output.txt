@@ -1,0 +1,189 @@
+============================================================
+COMMAND: nl -ba claude_code/evaluation.py | sed -n '140,156p'
+============================================================
+STDOUT:
+   140	                end_time = time.time()
+   141	                response_time = end_time - start_time
+   142	                
+   143	                # Update model based on human values
+   144	                model.update(human_values)
+   145	                
+   146	                # Record model values and metrics
+   147	                if model.name not in results["raw_data"]["model_values"]:
+   148	                    results["raw_data"]["model_values"][model.name] = []
+   149	                    results["raw_data"]["alignment_scores"][model.name] = []
+   150	                    results["raw_data"]["response_times"][model.name] = []
+   151	                    results["raw_data"]["responses"][model.name] = []
+   152	                
+   153	                results["raw_data"]["model_values"][model.name].append(model.value_system.values.copy())
+   154	                results["raw_data"]["alignment_scores"][model.name].append(model.alignment_scores[-1])
+   155	                results["raw_data"]["response_times"][model.name].append(response_time)
+   156	                results["raw_data"]["responses"][model.name].append(response)
+
+STDERR:
+
+============================================================
+COMMAND: nl -ba claude_code/visualization.py | sed -n '388,402p'
+============================================================
+STDOUT:
+   388	        for model_name in scenario_results['models']:
+   389	            model_values = np.array(scenario_results['raw_data']['model_values'][model_name])
+   390	            model_df = pd.DataFrame(
+   391	                model_values,
+   392	                columns=results['overall']['value_dimensions']
+   393	            )
+   394	            
+   395	            figure_paths[f'model_values_{model_name}_{scenario_name}'] = plot_value_evolution(
+   396	                model_df,
+   397	                f'model_value_evolution_{model_name}_{scenario_name}',
+   398	                figures_dir,
+   399	                config,
+   400	                title=f"{model_name} Value Evolution"
+   401	            )
+   402	            
+
+STDERR:
+
+============================================================
+COMMAND: python - <<'PY'
+import json
+from pathlib import Path
+p = Path('fabscore_codex/workspace/claim_23_run_json/results/results.json')
+obj = json.loads(p.read_text())
+series = obj['scenarios']['gradual_drift']['raw_data']['model_values']['ceva_basic']
+dims = obj['overall']['value_dimensions']
+print('artifact=', p)
+print('num_steps=', len(series))
+print('num_dims=', len(series[0]) if series else 0)
+print('dims=', dims)
+for label, idx in [('first',0), ('step_1',1), ('mid', len(series)//2), ('last', len(series)-1)]:
+    print(label, '=', series[idx])
+for i, dim in enumerate(dims):
+    vals = [step[i] for step in series]
+    print(dim, 'first=', vals[0], 'mid=', vals[len(vals)//2], 'last=', vals[-1], 'min=', min(vals), 'max=', max(vals))
+PY
+============================================================
+STDOUT:
+artifact= fabscore_codex/workspace/claim_23_run_json/results/results.json
+num_steps= 100
+num_dims= 5
+dims= ['autonomy', 'benevolence', 'security', 'achievement', 'conformity']
+first = [0.1694851275687668, 0.2080107696429355, 0.20350653018344442, 0.19600887907217962, 0.18023638338902612]
+step_1 = [0.14462801578198964, 0.21727433575577562, 0.21201665947224646, 0.1758177882873223, 0.1527314591861181]
+mid = [0.06716474259562431, 0.317151410464262, 0.07183713035529042, 0.61717703610606, 0.05699014185820719]
+last = [0.025119297589587523, 0.05151813980391777, 0.22219849060367303, 0.25276419723191246, 0.3642622319640829]
+autonomy first= 0.1694851275687668 mid= 0.06716474259562431 last= 0.025119297589587523 min= 0.0001551124532722691 max= 0.3119741746961492
+benevolence first= 0.2080107696429355 mid= 0.317151410464262 last= 0.05151813980391777 min= 0.040081449326297154 max= 0.3571388894725893
+security first= 0.20350653018344442 mid= 0.07183713035529042 last= 0.22219849060367303 min= 0.029491347621018335 max= 0.2859610905310099
+achievement first= 0.19600887907217962 mid= 0.61717703610606 last= 0.25276419723191246 min= 0.008496473979778875 max= 0.8507758749450423
+conformity first= 0.18023638338902612 mid= 0.05699014185820719 last= 0.3642622319640829 min= 0.010294615337584027 max= 0.37850695835508286
+
+STDERR:
+
+============================================================
+COMMAND: sed -n '322,332p' results/paper.md
+============================================================
+STDOUT:
+Figures 5-8 show how each model's value representation evolved (or remained static) in response to these changes.
+
+![static_alignment Value Evolution](./figures/model_value_evolution_static_alignment_gradual_drift.png)
+*Figure 5: Evolution of static_alignment values in gradual_drift scenario*
+
+![adaptive_alignment Value Evolution](./figures/model_value_evolution_adaptive_alignment_gradual_drift.png)
+*Figure 6: Evolution of adaptive_alignment values in gradual_drift scenario*
+
+![ceva_basic Value Evolution](./figures/model_value_evolution_ceva_basic_gradual_drift.png)
+*Figure 7: Evolution of ceva_basic values in gradual_drift scenario*
+
+STDERR:
+
+============================================================
+COMMAND: nl -ba claude_code/alignment_models.py | sed -n '327,390p'
+============================================================
+STDOUT:
+   327	    def update(self, human_values: ValueSystem) -> None:
+   328	        """
+   329	        Update the model's value system based on human values.
+   330	        
+   331	        Args:
+   332	            human_values: Human value system to align with
+   333	        """
+   334	        # Update each value dimension with level-specific adaptation rates
+   335	        for dim in self.value_dimensions:
+   336	            current_value = self.value_system.get_value(dim)
+   337	            human_value = human_values.get_value(dim)
+   338	            adaptation_rate = self._get_adaptation_rate(dim)
+   339	            
+   340	            # Higher confidence leads to faster adaptation
+   341	            effective_rate = adaptation_rate * self.value_confidence[dim]
+   342	            
+   343	            # Linear interpolation between current and target values
+   344	            new_value = (1 - effective_rate) * current_value + effective_rate * human_value
+   345	            self.value_system.set_value(dim, new_value)
+   346	            
+   347	            # Update confidence based on consistency of observations
+   348	            # If human values are stable, confidence increases; if they change a lot, confidence decreases
+   349	            value_diff = abs(human_value - current_value)
+   350	            conf_update = 0.01 * (1 - value_diff)  # Small updates to confidence
+   351	            self.value_confidence[dim] = max(0.1, min(1.0, self.value_confidence[dim] + conf_update))
+   352	            
+   353	        # Record current values in history
+   354	        self.value_history.append(self.value_system.values.copy())
+   355	        
+   356	        # Calculate and record alignment score
+   357	        alignment_score = self.calculate_alignment_score(human_values)
+   358	        self.alignment_scores.append(alignment_score)
+   359	        
+   360	    def detect_value_shifts(self, human_values: ValueSystem, threshold: float = 0.1) -> List[str]:
+   361	        """
+   362	        Detect significant shifts in human values.
+   363	        
+   364	        Args:
+   365	            human_values: Current human value system
+   366	            threshold: Threshold for considering a shift significant
+   367	            
+   368	        Returns:
+   369	            List of dimensions where significant shifts were detected
+   370	        """
+   371	        # If we don't have enough history, return empty list
+   372	        if len(self.value_history) < 5:
+   373	            return []
+   374	            
+   375	        shifted_dimensions = []
+   376	        
+   377	        # Compare current human values with the average of last few AI model values
+   378	        recent_values = np.array(self.value_history[-5:])
+   379	        average_recent_values = np.mean(recent_values, axis=0)
+   380	        
+   381	        for dim in self.value_dimensions:
+   382	            dim_idx = self.value_system.dim_to_idx[dim]
+   383	            recent_avg = average_recent_values[dim_idx]
+   384	            current_human = human_values.get_value(dim)
+   385	            
+   386	            # Check if the difference exceeds the threshold
+   387	            if abs(current_human - recent_avg) > threshold:
+   388	                shifted_dimensions.append(dim)
+   389	                
+   390	        return shifted_dimensions
+
+STDERR:
+
+============================================================
+COMMAND: nl -ba claude_code/run_experiment.py | sed -n '98,110p'
+============================================================
+STDOUT:
+    98	            
+    99	            # Convert human values
+   100	            raw_data['human_values'] = [
+   101	                [[float(v) for v in agent_values] for agent_values in step_values]
+   102	                for step_values in raw_data['human_values']
+   103	            ]
+   104	            
+   105	            # Convert model values
+   106	            for model_name in raw_data['model_values']:
+   107	                raw_data['model_values'][model_name] = [
+   108	                    [float(v) for v in step_values]
+   109	                    for step_values in raw_data['model_values'][model_name]
+   110	                ]
+
+STDERR:

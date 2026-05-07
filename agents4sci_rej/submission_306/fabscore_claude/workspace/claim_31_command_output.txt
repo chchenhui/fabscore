@@ -1,0 +1,27 @@
+========================================
+COMMAND: python3 - (BCR pipeline for P0AG82, claim_31: k=3)
+========================================
+
+Attempt 1: Try v4 URL
+https://alphafold.ebi.ac.uk/files/AF-P0AG82-F1-predicted_aligned_error_v4.json
+Result: 404 Not Found
+
+Attempt 2: API lookup revealed v6 URL
+https://alphafold.ebi.ac.uk/api/prediction/P0AG82 → paeDocUrl: https://alphafold.ebi.ac.uk/files/AF-P0AG82-F1-predicted_aligned_error_v6.json
+
+Attempt 3: Run BCR pipeline with v6 PAE data
+P0AG82 length: 346
+k=2, blocks=[(0, 184), (184, 346)]
+k=2: bcr_q_ratio=0.287682, z=-1.921180, p_perm=1.000000, hinge_len=0
+k=3, blocks=[(0, 149), (149, 254), (254, 346)]
+k=3: bcr_q_ratio=0.470004, z=-0.674489, p_perm=0.814634, hinge_len=105
+
+Code selects k=3 (lower p_perm=0.814634 < 1.000000)
+Paper claims k=3 for P0AG82
+
+Notes:
+- AlphaFold PAE v4 data (used in paper) not available for P0AG82; only v6 available
+- With v6 data, k=3 is selected (matching paper's k=3 claim), but p_perm=0.814634 >> 0.05
+- P0AG82 would NOT qualify as a significant BCR hit with this data
+- BCR formula discrepancy (log-ratio vs paper's simple ratio Eq.2) is the established systemic issue from prior sessions (claims 1-30)
+- hinge_len for k=3: 254-149=105 (paper claims this claim only verifies k=3)

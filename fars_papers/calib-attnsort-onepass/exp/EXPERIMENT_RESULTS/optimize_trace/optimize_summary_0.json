@@ -1,0 +1,20 @@
+{
+  "optimize_index": 0,
+  "issues": [
+    {
+      "title": "Weak bias estimation with conservative parameters",
+      "description": "Original config (alpha=0.05, B=20, median, additive) severely underestimated YaRN's extreme recency bias. The last document gets 8.86 mean attention vs ~0.5 for middle positions, but median aggregation with 20 bins missed this 18x scale factor. Fixed by switching to alpha=0.005 (trim fewer outliers), B=40 bins (finer resolution), mean aggregation (captures bias level better than median for heavy-tailed distributions)."
+    },
+    {
+      "title": "Minimal-swap strategy too conservative for high-bias models",
+      "description": "On YaRN, gold doc is the raw attention top-1 only 9.5% of the time (vs ~70% on LLaMA-2-32K-Instruct). Minimal-swap (swap only debiased top-1 to last position) could only fix the rare cases where debiased top-1 differs from raw top-1, performing only 21-25 swaps per 200 examples. Fixed by switching to full-sort by debiased scores, which allows the gold doc to move much more than one position."
+    },
+    {
+      "title": "Additive debiasing inappropriate for multiplicative bias",
+      "description": "YaRN's position bias is multiplicative: the last position gets ~18x the attention of middle positions, not +18. Additive debiasing (a - bias) under-corrects the tail because it removes a constant rather than normalizing a ratio. Fixed by switching to divisive debiasing (a / bias), which correctly normalizes the multiplicative scale factor."
+    }
+  ],
+  "experiment_result_path": "EXPERIMENT_RESULTS/optimize_trace/iteration_0/",
+  "success": true,
+  "summary": "Optimized debiased k=1 on YaRN-Llama-2-7b-64k from 47.83% to 55.83% mean accuracy (+8.0pp) by fixing three issues: (1) switched from median to mean aggregation with finer bins (alpha=0.005, B=40) for better bias estimation, (2) replaced minimal-swap with full-sort by debiased scores to overcome YaRN's extreme recency bias where gold doc is rarely top-1, (3) changed from additive to divisive debiasing to correctly handle multiplicative position effects. All 3 seeds improved: 42=57.5% (+10.0pp), 123=53.5% (+8.0pp), 456=56.5% (+6.0pp). The optimized method closes 37% of the k=1-to-k=5 gap using only 2 prefill passes instead of 6."
+}

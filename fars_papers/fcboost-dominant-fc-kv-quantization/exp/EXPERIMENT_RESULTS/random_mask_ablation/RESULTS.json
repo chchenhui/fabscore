@@ -1,0 +1,35 @@
+{
+  "experiment": "Random Mask Ablation: CA Signal Validation",
+  "model": "Qwen/Qwen3-8B",
+  "task_index": 6,
+  "comparison_table": {
+    "columns": ["Mask Type", "AIME24", "AIME25", "Avg"],
+    "rows": [
+      {"mask_type": "FCBoost (CA mask)", "aime24": 74.44, "aime25": 67.78, "avg": 71.11},
+      {"mask_type": "Random mask (seed 42)", "aime24": 63.33, "aime25": 66.67, "avg": 65.00},
+      {"mask_type": "Random mask (seed 123)", "aime24": 70.00, "aime25": 63.33, "avg": 66.67},
+      {"mask_type": "Random mask (seed 456)", "aime24": 56.67, "aime25": 66.67, "avg": 61.67},
+      {"mask_type": "Random mask (mean +/- std)", "aime24": "63.33 +/- 5.44", "aime25": "65.56 +/- 1.57", "avg": "64.44 +/- 2.06"},
+      {"mask_type": "KIVI-KV2* (no boost)", "aime24": 65.56, "aime25": 66.67, "avg": 66.11}
+    ]
+  },
+  "analysis": {
+    "random_vs_no_boost": {
+      "question": "Does random mask improve over KIVI-KV2* (no boost)?",
+      "answer": "No",
+      "random_mask_avg": 64.44,
+      "kivi_kv2star_avg": 66.11,
+      "delta_pp": -1.67,
+      "detail": "Random boosting does not reliably help and may slightly hurt. Boosting arbitrary channels introduces noise rather than reducing quantization error."
+    },
+    "ca_vs_random": {
+      "question": "Does FCBoost (CA) significantly outperform random mask mean?",
+      "answer": "Yes",
+      "fcboost_ca_avg": 71.11,
+      "random_mask_avg": 64.44,
+      "delta_pp": 6.67,
+      "detail": "The CA-derived mask outperforms random masks by 6.67pp, validating that CA selection provides genuinely useful information about quantization sensitivity."
+    },
+    "conclusion": "The CA signal provides meaningful information for channel selection. Random masks perform at or below the no-boost baseline, while CA-guided selection achieves substantial gains. This validates the core hypothesis that RoPE frequency-based sensitivity analysis can identify which channels benefit most from higher precision."
+  }
+}

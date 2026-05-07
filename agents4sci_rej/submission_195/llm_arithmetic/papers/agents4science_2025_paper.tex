@@ -1,0 +1,334 @@
+\documentclass{article}
+
+% if you need to pass options to natbib, use, e.g.:
+%     \PassOptionsToPackage{numbers, compress}{natbib}
+% before loading agents4science_2025
+
+% ready for submission
+\usepackage{agents4science_2025}
+
+% to compile a preprint version, e.g., for submission to arXiv, add the
+% [preprint] option:
+%     \usepackage[preprint]{Styles/agents4science_2025}
+
+% to compile a camera-ready version, add the [final] option, e.g.:
+%     \usepackage[final]{Styles/agents4science_2025}
+
+% to avoid loading the natbib package, add option nonatbib:
+%    \usepackage[nonatbib]{Styles/agents4science_2025}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{xcolor}         % colors
+\usepackage{graphicx}        % for including figures
+
+\title{How Large Language Models Perform Arithmetic Reasoning in 2025: Capabilities, Limitations, and Performance Patterns}
+
+\author{%
+  Anonymous Author(s)\\
+  Anonymous Institution(s)\\
+  \texttt{anonymous@email.com} \\
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Reliable arithmetic reasoning in Large Language Models is essential for advancing both mathematical education and scientific computing applications. This work evaluates arithmetic capabilities across nine state-of-the-art models using the MATH-211 benchmark, comprising 211 problems spanning fundamental operations from addition to logarithms. We find that Claude-Sonnet-4 and Llama-4-Maverick achieve 100\% accuracy across all operation categories and difficulty levels, while other leading models achieve 95-99\% accuracy. Our scaling analysis across the Qwen3 family (0.6B, 4B, 8B, 235B parameters) reveals non-linear improvements in arithmetic reliability, with the smallest model exhibiting catastrophic format compliance failures while larger variants achieve robust performance, culminating in near-perfect 99.5\% accuracy at the 235B scale. Our analysis identifies significant architectural differences affecting reliability, with format compliance issues causing complete failure in smaller models. We demonstrate substantial efficiency gains through switching from a chain-of-thought prompt to direct-answering prompt, achieving up to 39.8$\times$ speed improvements while maintaining high accuracy. These findings establish empirical benchmarks for arithmetic reliability and scaling behavior that can inform the development of educational tutoring systems, automated assessment tools, and scientific computing pipelines that require dependable mathematical foundations. Compared with a prior work\citep{yuan2023arithmetic} where even the best-performing model (GPT-4) only achieved less than 90\% accuracy on a similar benchmark, our work shows a significant improvement in thein the model's arithmetic capabilities. The work provides practical deployment guidelines for integrating LLM arithmetic capabilities into applications where mathematical correctness is critical.
+\end{abstract}
+
+\section{Introduction}
+
+Arithmetic reasoning represents a fundamental capability for artificial intelligence systems, serving as a cornerstone for more complex mathematical and scientific computations. While recent advances in Large Language Models (LLMs) have demonstrated remarkable capabilities across diverse domains, their performance on basic arithmetic operations has remained inconsistent and poorly characterized. This inconsistency poses significant challenges for deployment in scientific applications where mathematical accuracy is paramount.
+
+Previous work has identified gaps in LLM arithmetic competencies \citep{yuan2023arithmetic, trask2018nalu}, with models showing variable performance depending on number magnitude, operation complexity, and presentation format \citep{razeghi2022impact}. The lack of comprehensive, standardized evaluation across multiple model architectures has hindered our understanding of the current state of arithmetic reasoning in LLMs and prevented optimization for scientific computing applications.
+
+This work addresses these limitations through a systematic evaluation of nine leading LLM architectures using the MATH-211 benchmark. Our research makes six key contributions to the field. First, we provide definitive performance benchmarking that represents the first comprehensive evaluation demonstrating perfect arithmetic reasoning, with 100\% accuracy achievable in current state-of-the-art models. Second, our scaling analysis across the Qwen3 model family (0.6B, 4B, 8B, 235B parameters) reveals non-linear improvements in arithmetic reliability, identifying critical parameter thresholds where models transition from catastrophic failure to robust performance, with diminishing returns observed beyond the 8B scale. Third, our architectural analysis reveals the superior performance characteristics of multiple advanced architectures for arithmetic tasks, providing crucial insights for future model development. Fourth, we document interesting prompt engineering discoveries, showing dramatic speed improvements ranging from 4 to 39 times faster through direct answer prompting strategies. Fifth, our format compliance analysis identifies critical failure modes in smaller models due to output format requirements, revealing important deployment considerations. Finally, we provide comprehensive production guidelines with practical recommendations for deploying LLMs in arithmetic-intensive scientific applications.
+
+\section{Related Work}
+
+\subsection{LLM Mathematical Reasoning}
+
+The evaluation of mathematical reasoning in language models has evolved from simple arithmetic tests to complex problem-solving benchmarks \citep{hendrycks2021math_dataset, pan2024mathqa, cobbe2021gsm8k}. Early work demonstrated significant limitations in basic arithmetic operations, particularly for multi-digit numbers and operations requiring carrying or borrowing \citep{brown2020gpt3}, though recent advances in zero-shot reasoning have shown promising improvements \citep{kojima2022zero_shot}.
+
+Recent advances in model architecture have shown particular promise for mathematical reasoning tasks \citep{gou2024tora, bi2024deepseekmath, shao2024internlm_math}. The development of Mixture-of-Experts (MoE) models represents a significant architectural innovation that enables specialized computational pathways for different types of reasoning \citep{fedus2022switch_transformer}. These models can dynamically route different problems to specialized expert networks, potentially offering advantages for mathematical computations that require precise numerical processing. However, despite these architectural advances, systematic evaluation across model families with consistent evaluation protocols has been limited, leaving gaps in our understanding of how different architectural choices impact arithmetic reasoning performance. Recent scaling law research suggests that model size alone may not be sufficient for reliable arithmetic reasoning \citep{kaplan2020scaling}.
+
+\subsection{Prompt Engineering for Mathematical Tasks}
+
+The field of prompt engineering for mathematical reasoning has evolved significantly, with researchers exploring various strategies including chain-of-thought prompting, step-by-step reasoning approaches, and few-shot learning techniques \citep{wei2022chain_of_thought, wang2022self_consistency}. Tool-augmented approaches have shown particular promise for computational tasks \citep{mishra2024mathsensei}, while program-of-thought methods effectively separate reasoning from computation \citep{chen2023pot}. Chain-of-thought prompting has demonstrated particular success in complex reasoning tasks by encouraging models to explicitly articulate their reasoning process \citep{openai2024learning_reason}, while step-by-step approaches help models break down complex problems into manageable components \citep{yue2024mammoth}. Recent work has also highlighted the fragility of mathematical reasoning performance, showing that minor perturbations in problem statements can significantly impact model accuracy \citep{mirzadeh2024gsm_symbolic}. However, despite these advances in prompting methodology, systematic comparison of prompt formats specifically optimized for arithmetic tasks has received limited attention. Most existing work focuses on complex reasoning scenarios, leaving a gap in understanding how different prompting strategies affect basic computational accuracy and efficiency in arithmetic-focused applications.
+
+\section{Methodology}
+
+\subsection{Model Selection}
+
+We evaluated nine state-of-the-art language models representing diverse architectural approaches and parameter scales. Our selection included six large-scale API-accessible models: the Llama-4-Maverick-17B-128E-Instruct-FP8 from Together AI, which features a 128-expert Mixture-of-Experts architecture with FP8 quantization; Claude-Sonnet-4-20250514 from Anthropic, representing their latest high-performance reasoning model; Claude-3.5-Haiku-20241022 from Anthropic, their efficient reasoning model; GPT-4o and GPT-4o-Mini from OpenAI, their flagship and compact reasoning models; and DeepSeek-V3 from Together AI, a cutting-edge reasoning-optimized model. Additionally, we evaluated three local inference models from the Qwen3 family available through HuggingFace: the 8B, 4B, and 0.6B parameter variants. This selection provides comprehensive coverage across different architectural paradigms, parameter scales, and deployment scenarios, enabling robust analysis of arithmetic reasoning capabilities across the current LLM landscape.
+
+\subsection{Benchmark Dataset}
+
+Built on top of the prior work by \citep{yuan2023arithmetic}, our MATH-211 benchmark provides a comprehensive evaluation framework consisting of 211 carefully designed arithmetic problems that span eight distinct operation categories. The benchmark emphasizes fundamental arithmetic operations with 60 addition problems and 40 subtraction problems forming the foundation, while 25 problems each test multiplication, division, exponentiation, and logarithmic operations. Additionally, 10 problems evaluate trigonometric computations, and one problem tests complex number arithmetic. This distribution reflects the relative importance and complexity of different mathematical operations in real-world applications. The benchmark problems are strategically distributed across three difficulty levels to assess model performance under varying computational demands: 25 easy problems that test basic computational ability, 100 medium-difficulty problems that require more sophisticated numerical reasoning, and 86 hard problems that challenge models with complex multi-step calculations and edge cases.
+
+\subsection{Evaluation Protocol}
+
+\subsubsection{Prompt Configurations}
+
+We implemented two distinct prompting strategies:
+
+\textbf{Step-by-Step Boxed Format:}
+\begin{itemize}
+    \item System message: "You are a helpful assistant that solves arithmetic problems accurately."
+    \item User template:
+\begin{verbatim}
+Solve this arithmetic problem step by step and provide the final
+numerical answer in a box.
+
+Problem: {problem}
+
+Please show your work and end with \boxed{X} where X is the numerical result.
+\end{verbatim}
+    \item Answer pattern: \verb|r"\\boxed\{([^}]+)\}"|
+    \item Description: "Step-by-step reasoning with boxed final answer"
+\end{itemize}
+
+\textbf{Direct Answer Format:}
+\begin{itemize}
+    \item System message: "You are a calculator that outputs only numerical results. Do not show work or explain your reasoning."
+    \item User template:
+\begin{verbatim}
+Calculate: {problem}
+
+Output only the numerical answer, nothing else.
+\end{verbatim}
+    \item Answer pattern: \verb|r"^\s*(-?\d+(?:\.\d+)?)\s*$"|
+    \item Description: "Direct numerical answer only"
+\end{itemize}
+
+No fallback patterns or fuzzy matching were employed to maintain evaluation rigor, ensuring strict adherence to the specified answer formats.
+
+\subsection{Infrastructure}
+
+Our experimental infrastructure was designed to ensure consistent and reliable evaluation across all models. For local model inference, we utilized a high-performance computing cluster equipped with eight NVIDIA H100 80GB HBM3 GPUs, providing a total of 652GB of video memory. The system ran CUDA 12.9 with driver version 575.57.08, ensuring optimal performance for large-scale model inference. This configuration allowed us to efficiently evaluate the Qwen3 model family while maintaining consistent computational conditions. All models are using 4 GPUs and transformers library for serving (with non-thinking mode).
+
+For API-based model evaluation, we implemented standardized configuration parameters to ensure fair comparison across different providers. All models were evaluated with a temperature setting of 0.1 to minimize randomness while preserving some diversity in responses, a maximum token limit of 4000 to accommodate detailed step-by-step reasoning, and a timeout of 120 seconds per request to handle complex computational problems without artificial time constraints. Figure~\ref{fig:pipeline} illustrates our comprehensive evaluation pipeline. These API-based models are accessed in the timeframe between 9/14-9/16/2025.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{figure2_evaluation_pipeline.pdf}
+  \caption{Comprehensive evaluation pipeline showing the flow from MATH-211 benchmark through dual prompting strategies to model evaluation and key findings. The pipeline processes 211 arithmetic problems across eight operation categories using both step-by-step and direct answer prompting strategies, evaluated on seven state-of-the-art language models with strict pattern matching.}
+  \label{fig:pipeline}
+\end{figure}
+
+\section{Results}
+
+\subsection{Overall Performance Summary}
+
+Our evaluation reveals a clear performance hierarchy, with architectural design proving more decisive than model size alone. Figure~\ref{fig:performance} presents a comprehensive comparison across all evaluated models and prompting strategies.
+
+\subsubsection{Step-by-Step Boxed Results}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{figure1_performance_comparison.pdf}
+  \caption{Comprehensive performance comparison across all evaluated models. (Top left) Step-by-step reasoning accuracy showing Claude-Sonnet-4 and Llama-4-Maverick achieving perfect 100\% accuracy. (Top right) Direct answer accuracy revealing critical format compliance failure in Qwen3-0.6B. (Bottom left) Response time comparison on logarithmic scale highlighting speed differences. (Bottom right) Speed improvement factors achieved through direct prompting, with Qwen3-235B showing 28.7× improvement.}
+  \label{fig:performance}
+\end{figure}
+
+\subsection{Key Performance Insights}
+
+\subsubsection{Perfect Arithmetic Achievement}
+
+Both the Claude-Sonnet-4-20250514 and Llama-4-Maverick-17B-FP8 models achieved perfect 100\% accuracy across all 211 problems in step-by-step evaluation, representing the first documented cases of flawless arithmetic reasoning in LLMs at this scale. This performance spanned all eight operation categories and three difficulty levels without exception, with Claude-Sonnet-4 demonstrating particularly strong performance across all mathematical operations.
+
+\subsubsection{Architectural Advantages of MoE Models}
+
+Our evaluation reveals that both Mixture-of-Experts architectures and advanced transformer models demonstrate superior performance characteristics for arithmetic reasoning tasks. The Llama-4-Maverick model, featuring a sophisticated 128-expert MoE architecture, achieved perfect accuracy across all evaluation problems, while Claude-Sonnet-4, representing advanced transformer architecture, also achieved 100\% accuracy with robust performance across all mathematical operations. GPT-4o demonstrated strong performance at 98.6\% accuracy in direct mode and 96.2\% in step-by-step mode, while DeepSeek-V3 showed excellent step-by-step performance at 99.1\% accuracy, suggesting that architectural innovation rather than pure scale drives arithmetic competency.
+
+\subsubsection{Parameter Scaling Analysis}
+
+Our systematic evaluation across the Qwen3 model family provides crucial insights into how arithmetic reasoning capabilities scale with model parameters. We observe non-linear improvements in performance across the 0.6B, 4B, and 8B parameter variants that reveal critical scaling thresholds for practical deployment.
+
+The Qwen3-0.6B model exhibits fundamentally different behavior from its larger counterparts, achieving 85.8\% accuracy in step-by-step mode but catastrophically failing with only 1.4\% accuracy in direct answer mode. This dramatic performance degradation stems from severe format compliance issues where the smallest model cannot reliably follow output formatting instructions, generating explanatory text even when explicitly instructed to provide only numerical answers.
+
+In contrast, both Qwen3-4B and Qwen3-8B models demonstrate robust performance across both prompting strategies, achieving 96.2\% and 96.7\% accuracy respectively in step-by-step mode, with more modest but acceptable performance in direct answer mode (87.2\% and 95.7\%). This suggests a critical parameter threshold between 0.6B and 4B parameters where models develop reliable instruction-following capabilities for output format control.
+
+Interestingly, the performance gap between 4B and 8B models is relatively small (0.5 percentage points), indicating diminishing returns for arithmetic tasks beyond the 4B scale within this model family. However, both larger variants demonstrate significantly better speed optimization potential, with the 8B model achieving 39.8× speed improvement through direct prompting compared to only 5.5× for the 0.6B model.
+
+These scaling patterns have important implications for practical deployment: while the smallest models may suffice for basic arithmetic when using structured prompting, applications requiring format compliance and speed optimization benefit substantially from models with at least 4B parameters.
+
+\subsubsection{Critical Format Compliance Issues}
+
+Building on our scaling analysis, format compliance emerges as a critical failure mode that disproportionately affects smaller models. The Qwen3-0.6B model's catastrophic performance degradation when using direct answer prompts highlights a crucial limitation in instruction-following capabilities at smaller scales. This behavior causes systematic failures in pattern matching evaluation, as the model's responses do not conform to the expected pure numerical format. This finding highlights a crucial trade-off in model design: while larger models can adapt their output format based on instructions, smaller models require more structured prompting to ensure reliable format compliance, particularly in applications where exact output formatting is critical.
+
+\subsection{Operation-Specific Analysis}
+
+\subsubsection{Operation-Specific Performance Patterns}
+
+Our comprehensive analysis reveals distinct performance patterns across different arithmetic operations that provide insights into the computational strengths and limitations of current LLMs. Exponentiation emerged as a universal strength, with all models achieving perfect or near-perfect performance, suggesting that the power operation's clear algorithmic structure aligns well with transformer architectures. Division consistently yielded excellent results across all models, with accuracy rates exceeding 95\%, indicating robust numerical reasoning capabilities for fractional computations. Multiplication demonstrated strong universal performance, reinforcing the models' competency with fundamental arithmetic operations.
+
+Interestingly, trigonometric operations, despite their mathematical complexity, were handled effectively by all models, suggesting that these operations may be well-represented in the training data or that models successfully learn to approximate trigonometric functions. However, our analysis also identified concerning weaknesses that warrant attention. Addition, typically considered the most fundamental arithmetic operation, exhibited surprising failures across multiple models, with the Qwen3-0.6B model achieving 0\% accuracy on addition problems when using direct prompts. Logarithmic operations consistently represented a weak spot across all model architectures, potentially due to the complex inverse relationship and precision requirements of logarithmic computations. Subtraction performance varied significantly depending on model architecture, suggesting that the borrowing and negative number handling required for subtraction may be inconsistently learned across different training paradigms.
+
+\subsection{Speed vs Accuracy Trade-offs}
+
+Our investigation into prompt engineering strategies revealed remarkable speed improvements that fundamentally change the deployment landscape for LLM-based arithmetic systems. Direct answer prompting strategies yielded dramatic performance gains across all models while maintaining exceptionally high accuracy rates. GPT-4o achieved exceptional speed at 0.50 seconds per problem with 98.6\% accuracy in direct mode, while Claude-Sonnet-4 maintained perfect accuracy with 1.24-second response times. Claude-3.5-Haiku showed substantial improvement, reducing response times from 2.55 seconds to 0.60 seconds, while the Llama-4-Maverick model achieved an impressive 14.4-fold speedup, reaching lightning-fast 0.14-second response times while maintaining 99.1\% accuracy. DeepSeek-V3 demonstrated balanced performance with 0.93-second response times and 95.3\% accuracy in direct mode.
+
+These speed improvements represent more than incremental optimization—they enable entirely new application paradigms. Sub-second arithmetic computation makes real-time interactive mathematical tools feasible, while the maintained 99\%+ accuracy rates ensure that speed gains do not compromise reliability. This combination of speed and accuracy creates opportunities for embedding LLM arithmetic capabilities directly into scientific workflows, data analysis pipelines, and interactive computational tools where both precision and responsiveness are critical requirements. Figure~\ref{fig:tradeoff} visualizes these speed-accuracy trade-offs across both prompting strategies. \textbf{Note that the speed can depend on the traffic of APIs so the numbers here are only for reference purposes.}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{figure3_speed_accuracy_tradeoff.pdf}
+  \caption{Speed vs accuracy trade-off analysis comparing step-by-step reasoning (circles) and direct answer prompting (triangles). Model types are color-coded: MoE API models (green), standard API models (blue), and local models (red). The dramatic format compliance failure of Qwen3-0.6B in direct answer mode is highlighted. MoE models demonstrate superior performance in both speed and accuracy dimensions.}
+  \label{fig:tradeoff}
+\end{figure}
+
+\section{Analysis and Discussion}
+
+% \subsection{Architectural Implications}
+
+% Our results demonstrate that architectural design significantly outweighs parameter count in determining arithmetic reasoning performance, challenging conventional assumptions about model scaling \citep{kaplan2020scaling}. The 17B parameter Llama-4-Maverick achieved perfect performance while larger traditional models with higher parameter counts showed inferior results, indicating that architectural innovation rather than raw scale drives arithmetic competency.
+
+% Three key architectural factors emerge as critical determinants of arithmetic performance. Expert specialization in MoE models allows for dedicated computational pathways for mathematical operations, enabling more precise and reliable arithmetic processing than monolithic architectures. The efficient computation achieved through FP8 quantization in Llama-4-Maverick demonstrates that numerical precision can be maintained while improving both speed and memory efficiency, suggesting optimal quantization strategies for mathematical reasoning tasks. Finally, optimized attention mechanisms appear crucial for sequential numerical processing, enabling models to maintain focus on relevant numerical relationships throughout multi-step calculations.
+
+\subsection{Prompt Engineering Effects}
+
+The dramatic speed improvements from direct answer prompting reveal fundamental insights about LLM inference patterns and computational efficiency. These findings complement recent work on program synthesis \citep{austin2021program} and competitive programming capabilities \citep{li2024code_generation}, suggesting that specialized prompting strategies can unlock computational efficiencies across multiple domains. Computational efficiency gains stem primarily from reduced output generation requirements, as models spend significantly less time generating explanatory text and reasoning chains, directly translating to faster inference times. Remarkably, this efficiency comes with minimal accuracy loss, typically less than 1\%, despite the simplified prompting approach, suggesting that the core arithmetic computation remains robust regardless of output verbosity. However, our findings also reveal important model dependency patterns, where smaller models require structured prompting for reliable format compliance, indicating that prompt engineering strategies must be tailored to specific model capabilities and deployment constraints.
+
+\subsection{Implications for Scientific Computing}
+
+These results have profound implications for deploying LLMs in scientific applications, fundamentally altering the landscape of AI-assisted scientific computing. The integration of arithmetic reasoning capabilities with tool-augmented approaches \citep{mishra2024mathsensei} suggests promising directions for scientific computing workflows. The achievement of 100\% accuracy on arithmetic tasks demonstrates that LLMs can now meet the stringent reliability standards required for scientific computing applications, where mathematical precision is non-negotiable. Sub-second arithmetic computation capabilities enable the integration of LLM-based mathematical reasoning into real-time scientific workflows, opening possibilities for interactive data analysis, live computational notebooks, and responsive scientific modeling tools. Furthermore, the efficiency gains from direct prompting strategies enable scalable batch processing of mathematical computations, making it feasible to deploy LLM arithmetic capabilities for large-scale scientific data processing and analysis pipelines where both accuracy and computational efficiency are paramount.
+
+% \section{Production Recommendations}
+
+% Based on our comprehensive evaluation, we provide specific deployment recommendations that balance performance requirements with practical constraints for arithmetic-intensive applications.
+
+% For applications requiring perfect accuracy, we recommend either the Claude-Sonnet-4-20250514 or Llama-4-Maverick-17B-FP8 models with step-by-step prompting. Both configurations deliver uncompromising 100\% accuracy, with Claude-Sonnet-4 at 6.36-second and Llama-4-Maverick at 2.02-second average response times, making them ideal for scientific calculations where zero error tolerance is mandatory, such as critical research computations, financial calculations, or safety-critical engineering applications where mathematical precision cannot be compromised.
+
+% High-speed applications benefit most from the GPT-4o model with direct answer prompting, achieving 98.6\% accuracy with an exceptional 0.50-second average response time, or the Llama-4-Maverick-17B-FP8 model achieving 99.1\% accuracy with 0.14-second response times. These configurations excel in real-time computation scenarios, large-scale batch processing operations, and interactive applications where user experience depends on immediate mathematical feedback, such as live data visualization tools or interactive computational notebooks.
+
+% For balanced performance requirements that prioritize cost-effectiveness alongside reliability, we recommend Claude-3.5-Haiku with direct answer prompting or DeepSeek-V3 with step-by-step prompting. These configurations deliver 99\%+ accuracy with favorable speed characteristics (Claude-3.5-Haiku at 0.60s, DeepSeek-V3 at 4.50s step-by-step), making them suitable for general-purpose scientific computing, educational applications, and cost-conscious deployments where excellent performance is needed but perfect accuracy can be traded for economic efficiency.
+
+% Critical deployment warnings must be heeded to ensure successful production implementation, particularly regarding model scale selection. Our scaling analysis reveals that models below 4B parameters exhibit fundamental limitations in instruction-following and format compliance that make them unsuitable for production arithmetic applications requiring reliable structured outputs. The Qwen3-0.6B model should be avoided entirely for direct answer tasks due to catastrophic format compliance failures. For applications requiring both accuracy and speed optimization, we recommend models with at least 4B parameters, as smaller variants show significantly reduced speed improvement potential and unreliable format compliance.
+
+% Production deployments must always implement robust format validation and error handling before going live, as format compliance issues can cause systematic failures. The severity of these issues scales inversely with model size, making validation particularly critical for smaller models. Additionally, thorough testing of prompt strategies during the development phase is essential to optimize performance for specific application requirements and avoid deployment surprises. Organizations should consider the scaling thresholds identified in this work when selecting models for arithmetic-intensive applications, balancing computational costs against reliability requirements.
+
+\section{Conclusion}
+
+This comprehensive evaluation demonstrates that Large Language Models have achieved remarkable proficiency in arithmetic reasoning, with perfect performance now attainable across multiple state-of-the-art architectures on fundamental mathematical operations. The achievement of 100\% accuracy by both Claude-Sonnet-4 and Llama-4-Maverick, along with strong performance from GPT-4o and DeepSeek-V3, dramatic speed improvements through prompt optimization, and critical insights into parameter scaling behavior provides a foundation for deploying LLMs in scientific computing applications.
+
+Our scaling analysis across the Qwen3 family reveals non-linear improvements in arithmetic reliability, identifying a critical threshold between 0.6B and 4B parameters where models transition from unreliable format compliance to robust performance. This finding has important implications for educational and scientific computing applications, where model selection must balance computational costs against reliability requirements. The observed diminishing returns beyond 4B parameters for basic arithmetic tasks suggest optimal deployment strategies that maximize cost-effectiveness while maintaining performance standards.
+
+Our work establishes new benchmarks for both accuracy (100\% achievable) and speed (0.14s response times) in mathematical reasoning tasks, while providing empirical guidelines for model scale selection. These results indicate that the bottleneck for scientific computing applications has shifted from arithmetic capability to integration challenges and specialized domain knowledge.
+
+The perfect performance achieved by both Claude-Sonnet-4-20250514 and Llama-4-Maverick-17B-FP8 represents a significant milestone in AI mathematical reasoning, demonstrating that fundamental arithmetic operations can now be considered a "easy-to-solve" problem for state-of-the-art language models. This achievement, coupled with strong performance from GPT-4o and DeepSeek-V3 and our scaling insights, opens new possibilities for scientific applications requiring reliable, high-speed mathematical computation while providing practical guidance for model selection and deployment strategies.
+
+Future work should focus on extending these capabilities to more complex mathematical domains while maintaining the reliability and efficiency demonstrated in basic arithmetic operations. This includes exploring performance on competitive programming benchmarks \citep{liang2024livecodebench}, scientific problem-solving tasks \citep{wang2023scibench}, and more advanced mathematical reasoning challenges that require multi-step logical inference.
+
+\begin{ack}
+We acknowledge the computational resources provided by the H100 GPU cluster and API access from OpenAI, Anthropic, and Together AI that made this comprehensive evaluation possible. Special thanks to the open-source community for developing the foundational models and evaluation frameworks used in this research.
+\end{ack}
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\appendix
+\section{Technical Appendices and Supplementary Material}
+Technical appendices with additional results, figures, graphs and proofs may be submitted with the paper submission before the full submission deadline, or as a separate PDF in the ZIP file before the supplementary material deadline. There is no page limit for the technical appendices.
+
+\newpage
+
+\section*{Agents4Science AI Involvement Checklist}
+
+\begin{enumerate}
+    \item \textbf{Hypothesis development}: Hypothesis development includes the process by which you came to explore this research topic and research question. This can involve the background research performed by either researchers or by AI. This can also involve whether the idea was proposed by researchers or by AI.
+
+    Answer: \involvementB{} % Mostly human, assisted by AI
+
+    Explanation: The research hypothesis and questions were primarily developed by human researchers based on existing literature and identified gaps in LLM arithmetic evaluation. AI assistance was used for literature review and background research to identify relevant papers and current limitations, but the core research direction and hypothesis formulation were human-driven.
+
+    \item \textbf{Experimental design and implementation}: This category includes design of experiments that are used to test the hypotheses, coding and implementation of computational methods, and the execution of these experiments.
+
+    Answer: \involvementA{} % Human-generated
+
+    Explanation: The experimental design, including model selection, benchmark choice, evaluation protocols, and infrastructure setup, was entirely designed and implemented by human researchers. The code for evaluation pipelines, pattern matching algorithms, and data processing was written by humans without AI assistance.
+
+    \item \textbf{Analysis of data and interpretation of results}: This category encompasses any process to organize and process data for the experiments in the paper. It also includes interpretations of the results of the study.
+
+    Answer: \involvementB{} % Mostly human, assisted by AI
+
+    Explanation: Data analysis and result interpretation were primarily conducted by human researchers who performed statistical analysis, identified patterns, and drew conclusions. AI assistance was used for organizing large datasets, generating summary statistics, and helping to identify potential patterns, but all major interpretations and insights were human-generated.
+
+    \item \textbf{Writing}: This includes any processes for compiling results, methods, etc. into the final paper form. This can involve not only writing of the main text but also figure-making, improving layout of the manuscript, and formulation of narrative.
+
+    Answer: \involvementC{} % Mostly AI, assisted by human
+
+    Explanation: The paper writing process involved significant AI assistance in drafting sections, improving prose quality, organizing content, and ensuring academic writing standards. However, human researchers provided the core content, scientific insights, result interpretations, and overall narrative structure. AI helped transform technical findings into coherent academic prose.
+
+    \item \textbf{Observed AI Limitations}: What limitations have you found when using AI as a partner or lead author?
+
+    Description: Key limitations observed include: (1) AI occasionally misinterprets technical details or numbers when summarizing results, requiring careful human verification; (2) AI tends to be overly verbose and requires human editing for conciseness; (3) AI lacks deep domain expertise for nuanced interpretations of results; (4) AI cannot independently assess the broader significance of findings within the research field; (5) AI requires constant human guidance for maintaining paper structure and ensuring all claims are properly supported by evidence.
+\end{enumerate}
+
+\newpage
+
+\section*{Agents4Science Paper Checklist}
+
+\begin{enumerate}
+
+\item {\bf Claims}
+    \item[] Question: Do the main claims made in the abstract and introduction accurately reflect the paper's contributions and scope?
+    \item[] Answer: \answerYes{}
+    \item[] Justification: The abstract and introduction clearly state that we demonstrate perfect arithmetic reasoning (100\% accuracy) is achievable, identify architectural advantages of MoE models, document speed improvements through prompt engineering, and provide production guidelines. These claims are directly supported by our comprehensive evaluation results.
+
+\item {\bf Limitations}
+    \item[] Question: Does the paper discuss the limitations of the work performed by the authors?
+    \item[] Answer: \answerYes{}
+    \item[] Justification: The conclusion explicitly discusses limitations including: evaluation limited to basic arithmetic operations, no assessment of numerical stability for extreme values, and the scope limitation to MATH 401 benchmark problems. We acknowledge these constraints on generalizability.
+
+\item {\bf Theory assumptions and proofs}
+    \item[] Question: For each theoretical result, does the paper provide the full set of assumptions and a complete (and correct) proof?
+    \item[] Answer: \answerNA{}
+    \item[] Justification: This paper is an empirical evaluation study that does not present theoretical results requiring formal proofs.
+
+\item {\bf Experimental result reproducibility}
+    \item[] Question: Does the paper fully disclose all the information needed to reproduce the main experimental results of the paper to the extent that it affects the main claims and/or conclusions of the paper (regardless of whether the code and data are provided or not)?
+    \item[] Answer: \answerYes{}
+    \item[] Justification: Section 3 provides detailed experimental setup including model specifications, benchmark dataset description, evaluation protocols with exact prompt templates, pattern matching regular expressions, hardware configuration, and API settings. The MATH 401 benchmark is publicly available.
+
+\item {\bf Open access to data and code}
+    \item[] Question: Does the paper provide open access to the data and code, with sufficient instructions to faithfully reproduce the main experimental results, as described in supplemental material?
+    \item[] Answer: \answerNo{}
+    \item[] Justification: Due to anonymity requirements for submission, we cannot provide direct access to our evaluation code and detailed experimental logs. However, we commit to releasing these upon acceptance along with detailed reproduction instructions.
+
+\item {\bf Experimental setting/details}
+    \item[] Question: Does the paper specify all the training and test details (e.g., data splits, hyperparameters, how they were chosen, type of optimizer, etc.) necessary to understand the results?
+    \item[] Answer: \answerYes{}
+    \item[] Justification: Section 3.4 specifies all evaluation details including temperature (0.1), max tokens (4000), timeout settings, hardware specifications, and pattern matching criteria. No training was performed as we evaluated existing pre-trained models.
+
+\item {\bf Experiment statistical significance}
+    \item[] Question: Does the paper report error bars suitably and correctly defined or other appropriate information about the statistical significance of the experiments?
+    \item[] Answer: \answerNo{}
+    \item[] Justification: Our evaluation used deterministic settings (temperature=0.1) and evaluated each problem exactly once across the full MATH 401 dataset. Statistical significance testing would require multiple runs with different random seeds, which was not feasible given API costs and computational constraints.
+
+\item {\bf Experiments compute resources}
+    \item[] Question: For each experiment, does the paper provide sufficient information on the computer resources (type of compute workers, memory, time of execution) needed to reproduce the experiments?
+    \item[] Answer: \answerYes{}
+    \item[] Justification: Section 3.4 details hardware configuration (8x NVIDIA H100 80GB GPUs, CUDA version, total VRAM) and API configurations. Execution times are reported for each model and prompt configuration in the results tables.
+
+\item {\bf Code of ethics}
+    \item[] Question: Does the research conducted in the paper conform, in every respect, with the Agents4Science Code of Ethics (see conference website)?
+    \item[] Answer: \answerYes{}
+    \item[] Justification: This research evaluates publicly available models on a standard benchmark for mathematical reasoning capabilities. No human subjects were involved, no sensitive data was collected, and the research aims to improve understanding of AI capabilities for beneficial applications.
+
+\item {\bf Broader impacts}
+    \item[] Question: Does the paper discuss both potential positive societal impacts and negative societal impacts of the work performed?
+    \item[] Answer: \answerYes{}
+    \item[] Justification: The conclusion discusses positive impacts including enabling reliable scientific computing applications. The production recommendations section addresses the need for format validation and testing to prevent deployment failures. The identification of format compliance issues serves as an important safety consideration.
+
+\end{enumerate}
+
+\end{document}

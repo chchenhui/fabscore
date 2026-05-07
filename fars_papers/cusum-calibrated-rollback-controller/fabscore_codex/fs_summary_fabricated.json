@@ -1,0 +1,47 @@
+{
+    "tables": [],
+    "figures": [],
+    "results_section": [
+        {
+            "claim_index": 53,
+            "claim": "1. Both controllers dramatically reduce perturbation damage compared to no controller (>80% reduction in peak excess loss).",
+            "verdict": "Result Fabrication",
+            "explanation": "Analysis stage: The saved result artifacts show Or-epsilon clears 80% on both perturbation types, but FIR-CUSUM does not on step perturbation: 1 - 3.470912922620774 / 16.94166473478079 = 79.51%, which contradicts the paper's blanket '>80%' statement for both controllers.",
+            "evidence": "exp/cusum_controller/results/no_controller/summary_metrics.json; exp/cusum_controller/results/cusum_epsilon/metrics_summary.json; exp/EXPERIMENT_RESULTS/effectiveness_evaluation_result.json",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "result_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "exp/cusum_controller/results/no_controller/summary_metrics.json",
+                    "exp/cusum_controller/results/cusum_epsilon/metrics_summary.json",
+                    "exp/EXPERIMENT_RESULTS/effectiveness_evaluation_result.json"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 59,
+            "claim": "7. When perturbations cause large innovation spikes (>5σ above baseline), Or-ϵ detects immediately while CUSUM-ϵ needs 2–3 steps to accumulate sufficient evidence",
+            "verdict": "Result Fabrication",
+            "explanation": "Execution stage: The repository contains the relevant implementation and calibration outputs, and they directly conflict with the paper's claim. Under the committed Or-epsilon threshold, a `>5σ` innovation spike is not sufficient for immediate rollback; the threshold is about `5.40σ`. Under the committed FIR-CUSUM settings, initial detection from `S_0=0` needs 4 steps for spikes up to and including `6.5σ`, not `2-3` steps. So the paper's blanket statement that `>5σ` spikes imply immediate Or detection and `2-3` CUSUM steps is inconsistent with the implemented controller and saved calibration constants.",
+            "evidence": "Fresh command log `fabscore_codex/workspace/claim_59_command_output.txt` shows the implemented thresholds contradict the paper's timing statement. From `exp/cusum_controller/results/calibration/calibration_params.json`, `epsilon=1.1805052340427251`, `mu_0=-0.04125521912250121`, `sigma_0=0.2260490837544573`, `cusum_h=18.0`, `cusum_k=0.5`. Recomputed from those committed values: Or immediate alarm requires `(epsilon - mu_0) / sigma_0 = 5.404845854152397σ`, not merely `>5σ`. For CUSUM initial detection from `S_0=0`, the fresh calculation gave `initial_steps_at_5.01sigma=4`, `5.5sigma=4`, `6.5sigma=4`, `6.6sigma=3`, `9.5sigma=3`, `9.6sigma=2`. | Code: `exp/cusum_controller/controllers/or_controller.py:19-21`; `exp/cusum_controller/controllers/cusum_controller.py:30-37`; `exp/cusum_controller/results/calibration/calibration_params.json:2-12`; `exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json:3-12`.",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "`exp/cusum_controller/controllers/or_controller.py:19-21`",
+                    "`exp/cusum_controller/controllers/cusum_controller.py:30-37`",
+                    "`exp/cusum_controller/results/calibration/calibration_params.json:2-12`",
+                    "`exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json:3-12`."
+                ],
+                "commands_executed": [
+                    "Commands logged in `fabscore_codex/workspace/claim_59_command_output.txt`: `nl -ba exp/cusum_controller/controllers/or_controller.py | sed -n '1,120p'`; `nl -ba exp/cusum_controller/controllers/cusum_controller.py | sed -n '1,140p'`; `nl -ba exp/cusum_controller/results/calibration/calibration_params.json | sed -n '1,120p'`; `python` calculation of sigma thresholds and required CUSUM steps from the committed calibration JSON."
+                ]
+            }
+        }
+    ]
+}

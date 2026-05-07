@@ -1,0 +1,70 @@
+{
+  "experiment": "FCBoost Main Experiment",
+  "model": "Qwen/Qwen3-8B",
+  "method": "FCBoost",
+  "method_description": "2-bit KV cache quantization with static CA-derived channel boost. Uses offline Contextual Agreement (CA) profiling to select top-8 RoPE frequency pairs per (layer, KV head) for INT4 boosting; all other channels remain INT2. Replaces Kitty's dynamic per-page magnitude-based selection with O(1) fixed masks. S=32 sink tokens in FP16.",
+  "config": {
+    "sink_length": 32,
+    "buffer_length": 128,
+    "group_size": 128,
+    "kbits": 2,
+    "vbits": 2,
+    "promote_ratio": 0.125,
+    "promote_bit": 4,
+    "channel_selection": "static_ca_mask",
+    "boost_ratio": 0.125,
+    "top_f_rope_pairs": 8,
+    "boosted_channels_per_kv_head": 16,
+    "ca_topk": 256,
+    "calibration": "WikiText-2 (4 sequences, 4096 tokens each)"
+  },
+  "evaluation_params": {
+    "temperature": 0.6,
+    "top_p": 0.95,
+    "top_k": 20,
+    "max_gen_toks": 32768,
+    "num_fewshot": 0,
+    "num_repeats": 3,
+    "seed_protocol": "base_random_seed=0+i, base_numpy_seed=1234+i, base_torch_seed=1234+i, base_fewshot_seed=1234+i"
+  },
+  "results": {
+    "aime24": {
+      "per_seed": [63.33, 73.33, 70.00],
+      "mean": 68.89,
+      "max_deviation": 5.56,
+      "num_problems": 30
+    },
+    "aime25": {
+      "per_seed": [70.00, 60.00, 60.00],
+      "mean": 63.33,
+      "max_deviation": 6.67,
+      "num_problems": 30
+    },
+    "average": 66.11
+  },
+  "comparison": {
+    "kivi_kv2star": {
+      "aime24_mean": 67.78,
+      "aime25_mean": 64.44,
+      "average": 66.11,
+      "source": "Reproduced"
+    },
+    "kitty": {
+      "aime24_mean": 72.22,
+      "aime25_mean": 61.11,
+      "average": 66.67,
+      "source": "Reproduced"
+    },
+    "fcboost_vs_kivi_kv2star": {
+      "aime24_delta": 1.11,
+      "aime25_delta": -1.11,
+      "average_delta": 0.00
+    },
+    "fcboost_vs_kitty": {
+      "aime24_delta": -3.33,
+      "aime25_delta": 2.22,
+      "average_delta": -0.56
+    }
+  },
+  "notes": "FCBoost achieves 66.11% average, matching KIVI-KV2* exactly and within 0.56 pts of Kitty's 66.67%. On AIME24, FCBoost is 3.33 pts below Kitty but 1.11 pts above KIVI-KV2*. On AIME25, FCBoost is 2.22 pts above Kitty and 1.11 pts below KIVI-KV2*. The static CA-derived mask eliminates per-page channel selection compute while maintaining competitive accuracy."
+}

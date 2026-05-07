@@ -1,0 +1,75 @@
+\subsection{Mathematical Formulation}
+
+\subsubsection{Problem Setup}
+
+Let $\mathcal{D} = \{(\mathbf{x}_i, a_i, y_i)\}_{i=1}^n$ denote our synthetic tabular dataset, where:
+\begin{align}
+\mathbf{x}_i &\in \mathbb{R}^d \quad \text{(feature vector)} \label{eq:features}\\
+a_i &\in \{0, 1\} \quad \text{(protected attribute)} \label{eq:protected}\\
+y_i &\in \{0, 1\} \quad \text{(binary label)} \label{eq:labels}
+\end{align}
+
+The synthetic dataset generation process injects bias through:
+\begin{equation}
+\text{logit}(p(y_i = 1)) = \boldsymbol{\beta}^T \mathbf{x}_i - \gamma \cdot \mathbf{1}_{a_i = 0} \label{eq:bias_injection}
+\end{equation}
+where $\boldsymbol{\beta} \in \mathbb{R}^d$ represents feature coefficients and $\gamma > 0$ is the bias strength parameter that systematically reduces the probability of positive outcomes for the protected group $a_i = 0$.
+
+\subsubsection{Classification Models}
+
+We consider binary classifiers $f: \mathbb{R}^d \rightarrow \{0, 1\}$ that produce predictions $\hat{y}_i = f(\mathbf{x}_i)$. The base classification loss is:
+\begin{equation}
+\mathcal{L}_{\text{class}}(\boldsymbol{\theta}) = \frac{1}{n} \sum_{i=1}^n \ell(y_i, f_{\boldsymbol{\theta}}(\mathbf{x}_i)) \label{eq:class_loss}
+\end{equation}
+where $\ell$ is the binary cross-entropy loss and $\boldsymbol{\theta}$ are model parameters.
+
+\subsubsection{Fairness Metrics}
+
+We evaluate fairness using three key metrics:
+
+\textbf{Demographic Parity:} Equal positive prediction rates across groups:
+\begin{equation}
+\text{DP} = |P(\hat{y} = 1 | a = 0) - P(\hat{y} = 1 | a = 1)| \label{eq:demographic_parity}
+\end{equation}
+
+\textbf{Equal Opportunity:} Equal true positive rates across groups:
+\begin{equation}
+\text{EO} = |P(\hat{y} = 1 | y = 1, a = 0) - P(\hat{y} = 1 | y = 1, a = 1)| \label{eq:equal_opportunity}
+\end{equation}
+
+\textbf{Equalized Odds:} Equal true positive and false positive rates:
+\begin{equation}
+\text{EOdds} = \max\{|\text{TPR}_{a=0} - \text{TPR}_{a=1}|, |\text{FPR}_{a=0} - \text{FPR}_{a=1}|\} \label{eq:equalized_odds}
+\end{equation}
+
+\subsubsection{Fairness-Aware Optimization}
+
+Our proposed fairness-aware classifier optimizes:
+\begin{equation}
+\boldsymbol{\theta}^* = \arg\min_{\boldsymbol{\theta}} \mathcal{L}_{\text{class}}(\boldsymbol{\theta}) + \lambda \mathcal{L}_{\text{fair}}(\boldsymbol{\theta}) \label{eq:fairness_optimization}
+\end{equation}
+
+where $\lambda \geq 0$ is the fairness regularization parameter and $\mathcal{L}_{\text{fair}}$ is the fairness penalty term.
+
+\paragraph{Reweighting Approach}
+
+For the reweighting strategy, we assign instance weights:
+\begin{equation}
+w_i = \begin{cases}
+\frac{n}{2n_0} & \text{if } a_i = 0 \\
+\frac{n}{2n_1} & \text{if } a_i = 1
+\end{cases} \label{eq:reweighting}
+\end{equation}
+where $n_0$ and $n_1$ are the number of samples in each group.
+
+\paragraph{Adversarial Debiasing}
+
+For adversarial debiasing, we introduce an adversary $g_{\boldsymbol{\phi}}$ that predicts the protected attribute:
+\begin{equation}
+\mathcal{L}_{\text{fair}}(\boldsymbol{\theta}) = -\mathcal{L}_{\text{adv}}(\boldsymbol{\phi}, \boldsymbol{\theta}) = -\frac{1}{n} \sum_{i=1}^n \ell(a_i, g_{\boldsymbol{\phi}}(f_{\boldsymbol{\theta}}(\mathbf{x}_i))) \label{eq:adversarial_loss}
+\end{equation}
+
+The complete adversarial objective becomes:
+\begin{equation}
+\min_{\boldsymbol{\theta}} \max_{\boldsymbol{\phi}} \mathcal{L}_{\text{class}}(\boldsymbol{\theta}) - \lambda \mathcal{L}_{\text{adv}}(\boldsymbol{\phi}, \boldsymbol{\theta}) \label{eq:minimax}
+\end{equation}

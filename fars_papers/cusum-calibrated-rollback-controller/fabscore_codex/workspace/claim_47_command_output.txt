@@ -1,0 +1,126 @@
+===== COMMAND: python extract Table 3 lines from paper.pdf =====
+--- page 6 ---
+Table 3: Impact of FIR partial reset on CUSUM-ϵperformance. FIR reduces peak excess by 35–36%
+Original CUSUM (h=14,St=0) 5.40±1.725.62±1.03275.3±144.4271.4±109.1—
+FIR-CUSUM (h=18,St=h/2) 3.47±0.813.65±0.75182.6±83.2212.0±68.6-36% / -35% / -34% / -22%
+Table 3 shows the impact of FIR partial reset. The original CUSUM resetSt to 0 after each rollback,
+
+===== COMMAND: nl -ba exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json | sed -n 1,80p =====
+     1	{
+     2	  "experiment": "FIR-CUSUM-epsilon on ResNet-18/CIFAR-10",
+     3	  "controller": "cusum_epsilon_fir",
+     4	  "calibration": {
+     5	    "h": 18.0,
+     6	    "k": 0.5,
+     7	    "reset_fraction": 0.5,
+     8	    "mu_0": -0.04125521912250121,
+     9	    "sigma_0": 0.2260490837544573,
+    10	    "alpha": 0.1,
+    11	    "p0_target": 0.002,
+    12	    "calibration_alarm_rate": 0.002,
+    13	    "s0_initialization": 0.0,
+    14	    "s_reset_value": 9.0
+    15	  },
+    16	  "metrics": {
+    17	    "step": {
+    18	      "peak_excess_loss": {"mean": 3.471, "std": 0.808},
+    19	      "excess_auc": {"mean": 182.566, "std": 83.207},
+    20	      "false_rollbacks_outside_window": {"mean": 37.0, "std": 37.994},
+    21	      "detection_delay": {"mean": -18.25, "std": 44.422},
+    22	      "y_pre": {"mean": 1.462, "std": 0.259}
+    23	    },
+    24	    "ramp": {
+    25	      "peak_excess_loss": {"mean": 3.651, "std": 0.750},
+    26	      "excess_auc": {"mean": 211.950, "std": 68.585},
+    27	      "false_rollbacks_outside_window": {"mean": 67.35, "std": 44.135},
+    28	      "detection_delay": {"mean": -22.05, "std": 47.748},
+    29	      "y_pre": {"mean": 1.442, "std": 0.233}
+    30	    },
+    31	    "nominal": {
+    32	      "nominal_rollback_fraction": {"mean": 0.002, "std": 0.003},
+    33	      "y_pre": {"mean": 1.384, "std": 0.275}
+    34	    }
+    35	  },
+    36	  "rate_matching": {
+    37	    "cusum_nominal_rate": 0.002,
+    38	    "or_epsilon_nominal_rate": 0.0016,
+    39	    "p0_target": 0.002,
+    40	    "cusum_vs_p0_relative_error": 0.0,
+    41	    "or_vs_p0_relative_error": 0.20,
+    42	    "cusum_vs_or_relative_difference": 0.25,
+    43	    "cusum_vs_p0_pass": true,
+    44	    "or_vs_p0_pass": true,
+    45	    "cross_controller_pass": false
+    46	  },
+    47	  "improvement_vs_original": {
+    48	    "peak_excess_step_pct_change": -35.7,
+    49	    "peak_excess_ramp_pct_change": -35.0,
+    50	    "excess_auc_step_pct_change": -33.7,
+    51	    "excess_auc_ramp_pct_change": -21.9
+    52	  },
+    53	  "num_seeds": 20,
+    54	  "num_steps": 250,
+    55	  "conditions": ["step", "ramp", "nominal"]
+    56	}
+
+===== COMMAND: nl -ba exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md | sed -n 24,32p =====
+    24	## Key Results
+    25	
+    26	| Metric | Old CUSUM (h=14, S_t=0) | FIR-CUSUM (h=18, S_t=h/2) | Or-epsilon | Improvement |
+    27	|--------|------------------------|---------------------------|------------|-------------|
+    28	| Peak Excess (step) | 5.40 +/- 1.72 | 3.47 +/- 0.81 | 1.85 +/- 0.92 | -36% |
+    29	| Peak Excess (ramp) | 5.62 +/- 1.03 | 3.65 +/- 0.75 | 2.06 +/- 0.70 | -35% |
+    30	| Excess AUC (step) | 275.26 +/- 144.39 | 182.57 +/- 83.21 | 124.08 +/- 65.77 | -34% |
+    31	| Excess AUC (ramp) | 271.37 +/- 109.07 | 211.95 +/- 68.58 | 114.60 +/- 51.35 | -22% |
+    32	| Nominal rate | 0.0022 | 0.0020 | 0.0016 | exact match |
+
+===== COMMAND: nl -ba exp/task_plan.json | sed -n 24,40p =====
+    24	    "summary": "Implemented OrController (one-step innovation threshold) and calibration protocol. Calibrated epsilon=1.1805 from 20 nominal probe traces (99.8th percentile, empirical rate=0.002). Ran 60 experiments (20 seeds x 3 conditions) via TrainService. Results: step perturbation peak_excess_loss=1.85+/-0.92, excess_AUC=124.08+/-65.77; ramp perturbation peak_excess_loss=2.06+/-0.70, excess_AUC=114.60+/-51.35. Nominal rollback fraction=0.0016 (within 20% of target p_0=0.002). Or-epsilon reduces peak excess loss by ~89-91% vs no-controller. All results in cusum_controller/results/or_epsilon/ and EXPERIMENT_RESULTS/or_epsilon_baseline/."
+    25	  },
+    26	  {
+    27	    "index": 3,
+    28	    "category": "Main Experiment",
+    29	    "title": "CUSUM-epsilon on ResNet-18 / CIFAR-10",
+    30	    "description": "Implement and evaluate the proposed CUSUM-epsilon rollback controller on ResNet-18/CIFAR-10. CUSUM-epsilon replaces the one-step innovation threshold in Or-epsilon with a one-sided CUSUM sequential test that accumulates evidence of sustained upward drift in standardized innovations. The CUSUM statistic is: S_t = max(0, S_{t-1} + r_t - k), where r_t = (nu_t - mu_0) / (sigma_0 + 1e-8) is the standardized innovation. Rollback is triggered when S_t > h, after which S_t is reset to 0. The reference value k=0.5 is pre-committed (targeting detection of roughly >=1 sigma sustained shifts). The threshold h is calibrated on nominal training runs by grid search over h in {2, 3, 4, 5, 6, 7, 8} to match the same target rollback rate p_0 = 0.2% per step as Or-epsilon.\n\nThis item reuses all shared infrastructure from previous items (data loading, probe set, model, perturbation, training loop, metrics) and the calibration statistics (mu_0, sigma_0) computed in the Or-epsilon calibration step. Only the CUSUM controller implementation and its h-calibration are new.",
+    31	    "status": "completed",
+    32	    "summary": "Implemented CUSUMController (one-sided CUSUM sequential test, S_t = max(0, S_{t-1} + r_t - k), rollback when S_t > h). Extended calibration to find h: original grid {2,...,8} all yielded rates >0.007, so extended to {2,...,20}; selected h=14 with exact alarm rate=0.002 matching p_0. Extended train_loop.py to log CUSUM-specific fields (r_t, S_t) to WandB. Ran 60 experiments (20 seeds x 3 conditions) via TrainService with 4 GPUs. Results: step perturbation peak_excess=5.40+/-1.72, excess_AUC=275.26+/-144.39; ramp perturbation peak_excess=5.62+/-1.03, excess_AUC=271.37+/-109.07. Nominal rollback fraction=0.0022 (10% rel. error from p_0=0.002, PASS). CUSUM-epsilon reduces peak excess by ~68-75% vs no-controller but is worse than Or-epsilon (~2.9x higher peak excess). However, CUSUM-epsilon has ~70% fewer false rollbacks outside perturbation window (26 vs 87). Cross-controller rate matching: 27.3% relative difference (marginal fail at 20% threshold). All results in cusum_controller/results/cusum_epsilon/ and EXPERIMENT_RESULTS/cusum_epsilon/."
+    33	  },
+    34	  {
+    35	    "index": 4,
+    36	    "category": "Optimization",
+    37	    "title": "Optimize: CUSUM-epsilon on ResNet-18 / CIFAR-10",
+    38	    "description": "Optimize the main experiment 'CUSUM-epsilon on ResNet-18 / CIFAR-10' to improve results.",
+    39	    "status": "completed",
+    40	    "summary": "Optimization succeeded after 1/2 iterations.\n  - Step 0: success, issues: [CUSUM reset blind spot: full reset to S_t=0 after rollback, FIR head start at initialization caused early false alarms, Re-calibration of h for FIR-CUSUM]\nDetails: EXPERIMENT_RESULTS/optimize_trace/"
+
+===== COMMAND: python recompute AUC-ramp delta from RESULTS.json =====
+{'fir_auc_ramp': 211.95, 'saved_pct_change': -21.9, 'implied_original_auc_ramp': 271.38284250960305, 'recomputed_pct_change': -21.9}
+
+===== COMMAND: nl -ba exp/cusum_controller/scripts/run_cusum_epsilon.py | sed -n 157,183p =====
+   157	    summary = {}
+   158	    for perturb_type in perturb_types:
+   159	        agg = aggregate_across_seeds(all_metrics[perturb_type])
+   160	        summary[perturb_type] = agg
+   161	        print(f"\n{'='*60}")
+   162	        print(f"Aggregated metrics for {perturb_type} (CUSUM-epsilon):")
+   163	        for mk, v in agg.items():
+   164	            if v["mean"] is not None:
+   165	                print(f"  {mk}: {v['mean']:.4f} +/- {v['std']:.4f} (n={v['count']})")
+   166	            else:
+   167	                print(f"  {mk}: None (n={v['count']})")
+   168	
+   169	    summary_path = os.path.join(results_base, "metrics_summary.json")
+   170	    serializable = {}
+   171	    for pt, agg in summary.items():
+   172	        serializable[pt] = {}
+   173	        for mk, v in agg.items():
+   174	            serializable[pt][mk] = {"mean": v["mean"], "std": v["std"], "count": v["count"]}
+   175	    with open(summary_path, "w") as f:
+   176	        json.dump(serializable, f, indent=2)
+   177	
+   178	    per_seed_path = os.path.join(results_base, "per_seed_metrics.json")
+   179	    per_seed_data = {}
+   180	    for pt in perturb_types:
+   181	        per_seed_data[pt] = all_metrics[pt]
+   182	    with open(per_seed_path, "w") as f:
+   183	        json.dump(per_seed_data, f, indent=2)

@@ -1,0 +1,488 @@
+{
+  "tables": [
+    {
+      "claim_index": 1,
+      "claim": "1. Table 1, PyTorch default, x_plus_y: 2363 ± 215",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The mean (2363) matches run_0/final_info.json (stored mean=2363.33). However, the paper labels the ± values as '95% Confidence Intervals' while the code at run_1.py:415 computes `np.std(v) / len(v)` (population std divided by n, not a CI formula). The stored stderr for this entry is 185.6, which does not match the paper's ±215. The ± values are misrepresented both statistically (wrong formula mislabeled) and numerically (stored value ≠ reported value).",
+      "evidence": "run_1.py:415 (stderrs = {f\"{k}_stderr\": np.std(v) / len(v) for k, v in final_info_dict.items()}); run_0/final_info.json (x_plus_y step_val_acc_99_stderr=185.6, not 215); weight_initialization_grokking.pdf Table 1 caption: '95% Confidence Intervals'",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_1.py:415 (stderrs = {f\"{k}_stderr\": np.std(v) / len(v) for k, v in final_info_dict.items()})",
+          "run_0/final_info.json (x_plus_y step_val_acc_99_stderr=185.6, not 215)",
+          "weight_initialization_grokking.pdf Table 1 caption: '95% Confidence Intervals'"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 2,
+      "claim": "2. Table 1, PyTorch default, x_minus_y: 4720 ± 312",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Mean matches (stored=4720.0). Paper claims 95% CI but code computes std/n. Stored stderr=87.22 does not match paper's ±312 (ratio ~3.58x). Mislabeling and numeric mismatch both constitute experiment_fabrication.",
+      "evidence": "run_1.py:415 (np.std(v) / len(v)); run_0/final_info.json (x_minus_y step_val_acc_99_stderr=87.22, not 312)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_1.py:415 (np.std(v) / len(v))",
+          "run_0/final_info.json (x_minus_y step_val_acc_99_stderr=87.22, not 312)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 3,
+      "claim": "3. Table 1, PyTorch default, x_div_y: 4200 ± 287",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Mean matches (stored=4200.0). Paper claims 95% CI but code computes std/n. Stored stderr=76.35 does not match paper's ±287 (ratio ~3.76x). Mislabeling and numeric mismatch both constitute experiment_fabrication.",
+      "evidence": "run_1.py:415 (np.std(v) / len(v)); run_0/final_info.json (x_div_y step_val_acc_99_stderr=76.35, not 287)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_1.py:415 (np.std(v) / len(v))",
+          "run_0/final_info.json (x_div_y step_val_acc_99_stderr=76.35, not 287)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 4,
+      "claim": "4. Table 1, PyTorch default, permutation: 7500 ± 0",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Mean matches (stored=7500.0). Stored stderr=0.0 matches paper's ±0 (all seeds hit max steps). The mean is correct. However, the same experiment_fabrication issue applies: paper labels these as '95% CI' while code computes std/n. For this specific entry the ± value happens to agree since all seeds reached max steps. Classified consistently with other table entries.",
+      "evidence": "run_1.py:415 (np.std(v) / len(v)); run_0/final_info.json (permutation step_val_acc_99_stderr=0.0)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_1.py:415 (np.std(v) / len(v))",
+          "run_0/final_info.json (permutation step_val_acc_99_stderr=0.0)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 5,
+      "claim": "5. Table 1, Xavier, x_plus_y: 863 ± 98",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Mean matches (stored=863.33). Paper claims 95% CI but code computes std/n. Stored stderr=29.98 does not match paper's ±98 (ratio ~3.27x).",
+      "evidence": "run_1.py:415 (np.std(v) / len(v)); run_1/final_info.json (x_plus_y step_val_acc_99_stderr=29.98, not 98)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_1.py:415 (np.std(v) / len(v))",
+          "run_1/final_info.json (x_plus_y step_val_acc_99_stderr=29.98, not 98)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 6,
+      "claim": "6. Table 1, Xavier, x_minus_y: 2347 ± 178",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Mean matches (stored=2346.67). Paper claims 95% CI but code computes std/n. Stored stderr=42.19 does not match paper's ±178 (ratio ~4.22x).",
+      "evidence": "run_1.py:415 (np.std(v) / len(v)); run_1/final_info.json (x_minus_y step_val_acc_99_stderr=42.19, not 178)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_1.py:415 (np.std(v) / len(v))",
+          "run_1/final_info.json (x_minus_y step_val_acc_99_stderr=42.19, not 178)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 7,
+      "claim": "7. Table 1, Xavier, x_div_y: 2537 ± 203",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Mean matches (stored=2536.67). Paper claims 95% CI but code computes std/n. Stored stderr=132.23 does not match paper's ±203 (ratio ~1.54x).",
+      "evidence": "run_1.py:415 (np.std(v) / len(v)); run_1/final_info.json (x_div_y step_val_acc_99_stderr=132.23, not 203)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_1.py:415 (np.std(v) / len(v))",
+          "run_1/final_info.json (x_div_y step_val_acc_99_stderr=132.23, not 203)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 8,
+      "claim": "8. Table 1, Xavier, permutation: 5067 ± 342",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Mean matches (stored=5066.67). Paper claims 95% CI but code computes std/n. Stored stderr=122.64 does not match paper's ±342 (ratio ~2.79x).",
+      "evidence": "run_1.py:415 (np.std(v) / len(v)); run_1/final_info.json (permutation step_val_acc_99_stderr=122.64, not 342)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_1.py:415 (np.std(v) / len(v))",
+          "run_1/final_info.json (permutation step_val_acc_99_stderr=122.64, not 342)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 9,
+      "claim": "9. Table 1, He, x_plus_y: 2137 ± 187",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Mean matches (stored=2136.67). Paper claims 95% CI but code computes std/n. Stored stderr=28.33 does not match paper's ±187 (ratio ~6.60x).",
+      "evidence": "run_1.py:415 (np.std(v) / len(v)); run_2/final_info.json (x_plus_y step_val_acc_99_stderr=28.33, not 187)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_1.py:415 (np.std(v) / len(v))",
+          "run_2/final_info.json (x_plus_y step_val_acc_99_stderr=28.33, not 187)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 10,
+      "claim": "10. Table 1, He, x_minus_y: 3640 ± 256",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Mean matches (stored=3640.0). Paper claims 95% CI but code computes std/n. Stored stderr=68.69 does not match paper's ±256 (ratio ~3.73x).",
+      "evidence": "run_1.py:415 (np.std(v) / len(v)); run_2/final_info.json (x_minus_y step_val_acc_99_stderr=68.69, not 256)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_1.py:415 (np.std(v) / len(v))",
+          "run_2/final_info.json (x_minus_y step_val_acc_99_stderr=68.69, not 256)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 11,
+      "claim": "11. Table 1, He, x_div_y: 3463 ± 231",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Mean matches (stored=3463.33). Paper claims 95% CI but code computes std/n. Stored stderr=193.07 does not match paper's ±231 (ratio ~1.20x).",
+      "evidence": "run_1.py:415 (np.std(v) / len(v)); run_2/final_info.json (x_div_y step_val_acc_99_stderr=193.07, not 231)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_1.py:415 (np.std(v) / len(v))",
+          "run_2/final_info.json (x_div_y step_val_acc_99_stderr=193.07, not 231)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 12,
+      "claim": "12. Table 1, He, permutation: 6460 ± 389",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Mean matches (stored=6460.0). Paper claims 95% CI but code computes std/n. Stored stderr=246.35 does not match paper's ±389 (ratio ~1.58x).",
+      "evidence": "run_1.py:415 (np.std(v) / len(v)); run_2/final_info.json (permutation step_val_acc_99_stderr=246.35, not 389)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_1.py:415 (np.std(v) / len(v))",
+          "run_2/final_info.json (permutation step_val_acc_99_stderr=246.35, not 389)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 13,
+      "claim": "13. Table 1, Orthogonal, x_plus_y: 837 ± 89",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Mean matches (stored=836.67). Paper claims 95% CI but code computes std/n. Stored stderr=29.86 does not match paper's ±89 (ratio ~2.98x).",
+      "evidence": "run_1.py:415 (np.std(v) / len(v)); run_3/final_info.json (x_plus_y step_val_acc_99_stderr=29.86, not 89)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_1.py:415 (np.std(v) / len(v))",
+          "run_3/final_info.json (x_plus_y step_val_acc_99_stderr=29.86, not 89)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 14,
+      "claim": "14. Table 1, Orthogonal, x_minus_y: 1993 ± 165",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Mean matches (stored=1993.33). Paper claims 95% CI but code computes std/n. Stored stderr=90.61 does not match paper's ±165 (ratio ~1.82x).",
+      "evidence": "run_1.py:415 (np.std(v) / len(v)); run_3/final_info.json (x_minus_y step_val_acc_99_stderr=90.61, not 165)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_1.py:415 (np.std(v) / len(v))",
+          "run_3/final_info.json (x_minus_y step_val_acc_99_stderr=90.61, not 165)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 15,
+      "claim": "15. Table 1, Orthogonal, x_div_y: 1643 ± 143",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Mean matches (stored=1643.33). Paper claims 95% CI but code computes std/n. Stored stderr=93.74 does not match paper's ±143 (ratio ~1.53x).",
+      "evidence": "run_1.py:415 (np.std(v) / len(v)); run_3/final_info.json (x_div_y step_val_acc_99_stderr=93.74, not 143)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_1.py:415 (np.std(v) / len(v))",
+          "run_3/final_info.json (x_div_y step_val_acc_99_stderr=93.74, not 143)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 16,
+      "claim": "16. Table 1, Orthogonal, permutation: 4543 ± 298",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Mean matches (stored=4543.33). Paper claims 95% CI but code computes std/n. Stored stderr=645.45 does not match paper's ±298 — and notably the paper's reported value (298) is SMALLER than the actual computed stderr (645.45), a clear downward fabrication of the uncertainty.",
+      "evidence": "run_1.py:415 (np.std(v) / len(v)); run_3/final_info.json (permutation step_val_acc_99_stderr=645.45, not 298)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_1.py:415 (np.std(v) / len(v))",
+          "run_3/final_info.json (permutation step_val_acc_99_stderr=645.45, not 298)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 17,
+      "claim": "17. Table 1, Kaiming Normal, x_plus_y: 1967 ± 176",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Mean matches (stored=1966.67). Paper claims 95% CI but code computes std/n. Stored stderr=44.75 does not match paper's ±176 (ratio ~3.93x).",
+      "evidence": "run_1.py:415 (np.std(v) / len(v)); run_4/final_info.json (x_plus_y step_val_acc_99_stderr=44.75, not 176)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_1.py:415 (np.std(v) / len(v))",
+          "run_4/final_info.json (x_plus_y step_val_acc_99_stderr=44.75, not 176)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 18,
+      "claim": "18. Table 1, Kaiming Normal, x_minus_y: 3547 ± 243",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Mean matches (stored=3546.67). Paper claims 95% CI but code computes std/n. Stored stderr=97.54 does not match paper's ±243 (ratio ~2.49x).",
+      "evidence": "run_1.py:415 (np.std(v) / len(v)); run_4/final_info.json (x_minus_y step_val_acc_99_stderr=97.54, not 243)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_1.py:415 (np.std(v) / len(v))",
+          "run_4/final_info.json (x_minus_y step_val_acc_99_stderr=97.54, not 243)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 19,
+      "claim": "19. Table 1, Kaiming Normal, x_div_y: 3070 ± 219",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Mean matches (stored=3070.0). Paper claims 95% CI but code computes std/n. Stored stderr=70.92 does not match paper's ±219 (ratio ~3.09x).",
+      "evidence": "run_1.py:415 (np.std(v) / len(v)); run_4/final_info.json (x_div_y step_val_acc_99_stderr=70.92, not 219)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_1.py:415 (np.std(v) / len(v))",
+          "run_4/final_info.json (x_div_y step_val_acc_99_stderr=70.92, not 219)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 20,
+      "claim": "20. Table 1, Kaiming Normal, permutation: 6297 ± 376",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Mean matches (stored=6296.67). Paper claims 95% CI but code computes std/n. Stored stderr=39.66 does not match paper's ±376 (ratio ~9.48x — the most extreme discrepancy in the table).",
+      "evidence": "run_1.py:415 (np.std(v) / len(v)); run_4/final_info.json (permutation step_val_acc_99_stderr=39.66, not 376)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "run_1.py:415 (np.std(v) / len(v))",
+          "run_4/final_info.json (permutation step_val_acc_99_stderr=39.66, not 376)"
+        ],
+        "commands_executed": []
+      }
+    }
+  ],
+  "figures": [],
+  "results_section": [],
+  "summary": {
+    "total": 24,
+    "verified": 4,
+    "data_fabrication": 0,
+    "experiment_fabrication": 20,
+    "result_fabrication": 0,
+    "no_code_files": 0,
+    "insufficient_evidence": 0
+  },
+  "analysis_summary": {
+    "total_claims": 24,
+    "no_code_files": 0,
+    "obvious_hallucination": 20,
+    "data_fabrication": 0,
+    "experiment_fabrication": 20,
+    "result_fabrication": 0,
+    "static_verifiable": 0,
+    "insufficient_evidence": 0,
+    "execution_required": 4,
+    "error": 0
+  },
+  "execution_summary": {
+    "total": 4,
+    "verified": 4,
+    "data_fabrication": 0,
+    "experiment_fabrication": 0,
+    "result_fabrication": 0,
+    "no_code_files": 0,
+    "insufficient_evidence": 0,
+    "error": 0
+  },
+  "final_assessment": {
+    "fab_score": 0.1667,
+    "total_claims": 24,
+    "verified": 4,
+    "data_fabrication": 0,
+    "experiment_fabrication": 20,
+    "result_fabrication": 0,
+    "no_code_files": 0,
+    "insufficient_evidence": 0,
+    "static_code_analysis_breakdown": {
+      "verified": 0,
+      "no_code_files": 0,
+      "data_fabrication": 0,
+      "experiment_fabrication": 20,
+      "result_fabrication": 0,
+      "insufficient_evidence": 0
+    },
+    "execution_artifact_analysis_breakdown": {
+      "verified": 0,
+      "no_code_files": 0,
+      "data_fabrication": 0,
+      "experiment_fabrication": 0,
+      "result_fabrication": 0,
+      "insufficient_evidence": 0
+    },
+    "code_execution_breakdown": {
+      "verified": 4,
+      "no_code_files": 0,
+      "data_fabrication": 0,
+      "experiment_fabrication": 0,
+      "result_fabrication": 0,
+      "insufficient_evidence": 0
+    }
+  },
+  "filtered_summary": {
+    "total_claims": 20,
+    "tables": 20,
+    "figures": 0,
+    "results_section": 0,
+    "verdict_breakdown": {
+      "Verified": 0,
+      "Data Fabrication": 0,
+      "Experiment Fabrication": 20,
+      "Result Fabrication": 0,
+      "No Code Files": 0,
+      "Insufficient Evidence": 0,
+      "Error": 0,
+      "Other": 0
+    }
+  }
+}

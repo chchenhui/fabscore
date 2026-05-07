@@ -1,0 +1,162 @@
+===== COMMAND: python - <<'PY'
+import PyPDF2
+p='206_Self_Spec_Model_Authored_S.pdf'
+with open(p,'rb') as f:
+    r=PyPDF2.PdfReader(f)
+    text='\n'.join((page.extract_text() or '') for page in r.pages)
+for line in text.splitlines():
+    if 'GPT-4o 87% 92% +5' in line or 'improves from 87% to 92% (+5)' in line:
+        print(line)
+PY =====
+GPT-4o 87% 92% +5
+
+===== COMMAND: nl -ba A4S_update/readme.md | sed -n '30,80p' =====
+    30	- `all_spec_gpt_4o.jsonl` — spec-driven generations (GPT-4o).
+    31	- `results_summary_*.txt` — one-line summary: `Total / Passed / Failed`.
+    32	- `failed_*.jsonl` — failing cases for quick inspection.
+    33	
+    34	---
+    35	> **Heads-up (easy to re-run):** Two artifacts are not committed — **GPT-4o baseline** and **Claude 3.5 spec**.  
+    36	> These files were originally saved but later misplaced. If you wish to verify, you can easily regenerate them:
+    37	>
+    38	> **GPT-4o baseline**:
+    39	> ```bash
+    40	> python evaluation_baseline_pipeline.py
+    41	> ```
+    42	> **Claude 3.5 spec**
+    43	> ```bash
+    44	> python spec_result_generation.py
+    45	> python spec_result_evaluation.py
+    46	> ```
+    47	
+    48	---
+    49	
+    50	## Requirements
+    51	
+    52	- Python **3.8+**
+    53	- Python packages: `openai`  *(native Anthropic SDK not required if you’re using an OpenAI‑compatible endpoint via `base_url`)*
+    54	
+    55	```bash
+    56	pip install -U openai
+    57	# optional, if you prefer .env management
+    58	pip install -U python-dotenv
+    59	```
+    60	
+    61	**Environment variables**
+    62	- `OPENAI_API_KEY` — used for both OpenAI and OpenAI‑compatible endpoints (e.g., Claude via `base_url`).
+    63	- (Optional) `OPENAI_BASE_URL` — if you prefer to set the endpoint globally; otherwise the scripts have it inline.
+    64	
+    65	---
+    66	
+    67	## Quickstart
+    68	
+    69	### A) Baseline Pipeline (e.g., GPT‑4o)
+    70	
+    71	**Option 1 (one-shot, recommended):**
+    72	```bash
+    73	python evaluation_baseline_pipeline.py
+    74	```
+    75	- Uses GPT‑4o by default.
+    76	- Produces `all_baseline_<model>.jsonl`, `results_summary_baseline_<model>.txt`, and `failed_baseline_<model>.jsonl`.
+    77	
+    78	**Option 2 (evaluate an existing result file):**
+    79	```bash
+    80	python baseline_result_evaluation.py
+
+===== COMMAND: nl -ba A4S_update/evaluation_baseline_pipeline.py | sed -n '1,30p' =====
+     1	import os
+     2	import json
+     3	import asyncio
+     4	from typing import Tuple, Dict, Any, List
+     5	
+     6	from openai import AsyncOpenAI
+     7	
+     8	API_KEY = ""
+     9	client = AsyncOpenAI(api_key=API_KEY)
+    10	# client = AsyncOpenAI(api_key=API_KEY, base_url="https://api.anthropic.com/v1/")
+    11	
+    12	# claude-3-5-sonnet-20241022
+    13	# MODEL = "claude-3-7-sonnet-20250219"
+    14	MODEL = "gpt-4o"
+    15	TEMPERATURE = 0
+    16	
+    17	MAX_CONCURRENCY = 10
+    18	sem = asyncio.Semaphore(MAX_CONCURRENCY)
+    19	
+    20	SUMMARY_TXT = f"results_summary_baseline_{MODEL}.txt" 
+    21	PRELUDE = (
+    22	    "from typing import *\n"
+    23	    "import math, functools, itertools, collections\n"
+    24	)
+    25	
+    26	
+    27	async def fetch_code(prompt: str, task_id: str) -> Tuple[str, str]:
+    28	    try:
+    29	        async with sem:
+    30	            resp = await client.chat.completions.create(
+
+===== COMMAND: nl -ba A4S_update/spec_result_evaluation.py | sed -n '98,110p' =====
+    98	    total = len(results)
+    99	    print(f"Total: {total}, Passed: {passed_cnt}, Failed: {total - passed_cnt}")
+   100	    for tid, res in results.items():
+   101	        mark = "✅" if res["passed"] else "❌"
+   102	        detail = "" if res["passed"] else f" {res['error']}"
+   103	        print(f"{tid} {mark}{detail}")
+   104	
+   105	    with open(SUMMARY_TXT, "w", encoding="utf-8") as f:
+   106	        f.write(f"Total: {total}, Passed: {passed_cnt}, Failed: {total - passed_cnt}\n")
+   107	
+   108	    with open(ERROR_PATH, "w", encoding="utf-8") as f:
+   109	        for rec in failed_records:
+   110	            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+
+===== COMMAND: nl -ba A4S_update/results_summary_baseline_gpt-4o.txt =====
+     1	Total: 164, Passed: 0, Failed: 164
+
+===== COMMAND: nl -ba A4S_update/results_summary_spec_gpt_4o.txt =====
+     1	Total: 164, Passed: 150, Failed: 14
+
+===== COMMAND: python - <<'PY'
+import json
+from pathlib import Path
+p=Path('A4S_update/all_baseline_gpt-4o.jsonl')
+with p.open() as f:
+    rows=[json.loads(next(f))]
+print('first_task_id:', rows[0]['task_id'])
+print('first_passed:', rows[0]['passed'])
+print('first_error_prefix:', rows[0]['error'][:120])
+PY =====
+first_task_id: HumanEval/0
+first_passed: False
+first_error_prefix: ERROR: Error code: 401 - {'error': {'message': "You didn't provide an API key. You need to provide your API key in an Au
+
+===== COMMAND: python - <<'PY'
+from fractions import Fraction
+spec_passed=150
+n=164
+print('spec_percent=', spec_passed/n*100)
+for baseline_passed in (142,143):
+    print('baseline_passed=', baseline_passed, 'baseline_percent=', baseline_passed/n*100, 'delta_points=', (spec_passed-baseline_passed)/n*100)
+PY =====
+spec_percent= 91.46341463414635
+baseline_passed= 142 baseline_percent= 86.58536585365853 delta_points= 4.878048780487805
+baseline_passed= 143 baseline_percent= 87.1951219512195 delta_points= 4.2682926829268295
+
+===== COMMAND: rg -n '401|Passed: 0, Failed: 164|API key|misplaced' fabscore_codex/workspace/claim_1_command_output.txt =====
+51:> These files were originally saved but later misplaced. If you wish to verify, you can easily regenerate them:
+111:   **Just set your API key** (e.g., `OPENAI_API_KEY`) and run:
+319:Total: 164, Passed: 0, Failed: 164
+350:  "generated_solution": "ERROR: Error code: 401 - {'error': {'message': \"You didn't provide an API key. You need to provide your API key in an Authorization header using Bearer auth (i.e. Authorization: Bearer YOUR_KEY), or as the password field (with blank username) if you're accessing the API from your browser and are prompted for a username and password. You can obtain an API key from https://platform.openai.com/account/api-keys.\", 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+351:  "error": "ERROR: Error code: 401 - {'error': {'message': \"You didn't provide an API key. You need to provide your API key in an Authorization header using Bearer auth (i.e. Authorization: Bearer YOUR_KEY), or as the password field (with blank username) if you're accessing the API from your browser and are prompted for a username and password. You can obtain an API key from https://platform.openai.com/account/api-keys.\", 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+361:  "generated_solution": "ERROR: Error code: 401 - {'error': {'message': \"You didn't provide an API key. You need to provide your API key in an Authorization header using Bearer auth (i.e. Authorization: Bearer YOUR_KEY), or as the password field (with blank username) if you're accessing the API from your browser and are prompted for a username and password. You can obtain an API key from https://platform.openai.com/account/api-keys.\", 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+362:  "error": "ERROR: Error code: 401 - {'error': {'message': \"You didn't provide an API key. You need to provide your API key in an Authorization header using Bearer auth (i.e. Authorization: Bearer YOUR_KEY), or as the password field (with blank username) if you're accessing the API from your browser and are prompted for a username and password. You can obtain an API key from https://platform.openai.com/account/api-keys.\", 'type': 'invalid_
+370:  "generated_solution": "ERROR: Error code: 401 - {'error': {'message': \"You didn't provide an API key. You need to provide your API key in an Authorization header using Bearer auth (i.e. Authorization: Bearer YOUR_KEY), or as the password field (with blank username) if you're accessing the API from your browser and are prompted for a username and password. You can obtain an API key from https://platform.openai.com/account/api-keys.\", 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+371:  "error": "ERROR: Error code: 401 - {'error': {'message': \"You didn't provide an API key. You need to provide your API key in an Authorization header using Bearer auth (i.e. Authorization: Bearer YOUR_KEY), or as the password field (with blank username) if you're accessing the API from your browser and are prompted for a username and password. You can obtain an API key from https://platform.openai.com/account/api-keys.\", 'type': 'invalid_request_error', 'param': None, 'code': None}}",
+388:- Concise classification summary: 42 total claims. `static_verifiable`: 4 claims (Claude 3.7 native/self-spec, Claude 3.7 delta, Claude 3.5 native). `obvious_hallucination`: 1 claim (Figure 1 control flow conflicts with code because implementation can proceed without explicit `CONFIRM` and without a hard no-`TBD` check). `execution_required`: 37 claims, mainly because GPT-4o baseline artifacts in the repo are a failed 401 run, GPT-4o Self-Spec summary is 150/164 rather than the paper's 92%, and Claude 3.5 Self-Spec artifacts needed for Table 1/Table 2/Table 3 are missing but have an identifiable regeneration path.
+1015:print('contains 401:', '401' in first['error'])
+1018:error prefix: ERROR: Error code: 401 - {'error': {'message': "You didn't provide an API key. Y
+1019:contains 401: True
+1028:    36	> These files were originally saved but later misplaced. If you wish to verify, you can easily regenerate them:
+1249:     1	Total: 164, Passed: 0, Failed: 164
+1287:    36	> These files were originally saved but later misplaced. If you wish to verify, you can easily regenerate them:
+

@@ -1,0 +1,239 @@
+===== COMMAND =====
+python - <<'PY'
+from pathlib import Path
+from pypdf import PdfReader
+pdf = Path('/home/chenhui/fabscore/agent4sci_rej/submission_345/345_Multi_Agent_AI_System_for_.pdf')
+reader = PdfReader(str(pdf))
+for i in [4,5,6,7]:
+    text = reader.pages[i].extract_text()
+    print(f'--- PAGE {i+1} ---')
+    for line in text.splitlines():
+        if 'Repatha' in line or 'Peak heuristic' in line or 'Phase 5' in line or '218' in line or '85.4' in line:
+            print(line)
+PY
+===== STDOUT/STDERR =====
+--- PAGE 5 ---
+• Peak heuristic: $4.6B peak (18% of actual, 81.5% peak APE)167
+Repatha (Cardiovascular - Moderate):170
+• Peak heuristic: $218M peak (15% of actual, 85.4% peak APE)174
+Phase 5 historical validation demonstrates both the achievements and remaining challenges in194
+--- PAGE 6 ---
+tion), while Repatha achieves 33.6% peak APE (vs previous 4.7x overestimation). Both drugs now206
+MAPE), and enhanced analog forecasting (100.2% MAPE), demonstrating the value of specialized218
+Systematic Improvement Framework:Phase 5 validation establishes a rigorous framework for220
+--- PAGE 7 ---
+--- PAGE 8 ---
+Trikafta (66.7% pass rate, 2/3 tests), Repatha (50% pass rate, 1/2 tests), and Ibrance (50% pass rate,260
+through multi-agent AI architecture following MASSIVE_OVERHAUL_PLAN methodology. Phase 5272
+including Keytruda and Repatha.275
+including Keytruda (34.6% peak APE) and Repatha (33.6% peak APE) through systematic calibration279
+
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+nl -ba '/home/chenhui/fabscore/agent4sci_rej/submission_345/345_Multi_Agent_AI_System_for__Supplementary Material/src/data/build_dataset.py' | sed -n '68,118p'
+===== STDOUT/STDERR =====
+    68	            'justification': str
+    69	        }
+    70	    
+    71	    def load_raw_data(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    72	        """Load raw CSV files."""
+    73	        logger.info(f"Loading raw data from {self.data_dir}")
+    74	        
+    75	        # For now, create synthetic data that looks real
+    76	        # In production, this would load actual scraped data
+    77	        launches = self._create_synthetic_launches()
+    78	        revenues = self._create_synthetic_revenues(launches)
+    79	        
+    80	        return launches, revenues
+    81	    
+    82	    def _create_synthetic_launches(self) -> pd.DataFrame:
+    83	        """Create realistic synthetic launch data for testing."""
+    84	        
+    85	        # Real drug examples for realistic data
+    86	        drugs = [
+    87	            # Blockbusters
+    88	            {'drug_name': 'Keytruda', 'company': 'Merck', 'approval_date': '2014-09-04',
+    89	             'indication': 'Melanoma', 'mechanism': 'PD-1 inhibitor', 'route': 'IV',
+    90	             'therapeutic_area': 'Oncology', 'eligible_patients': 500000,
+    91	             'list_price_monthly': 12500, 'gtn': 0.65, 'tier': 'PA'},
+    92	            
+    93	            {'drug_name': 'Humira', 'company': 'AbbVie', 'approval_date': '2002-12-31',
+    94	             'indication': 'Rheumatoid Arthritis', 'mechanism': 'TNF inhibitor', 'route': 'SC',
+    95	             'therapeutic_area': 'Immunology', 'eligible_patients': 2000000,
+    96	             'list_price_monthly': 5500, 'gtn': 0.55, 'tier': 'PA'},
+    97	            
+    98	            # Moderate success
+    99	            {'drug_name': 'Repatha', 'company': 'Amgen', 'approval_date': '2015-08-27',
+   100	             'indication': 'Hypercholesterolemia', 'mechanism': 'PCSK9 inhibitor', 'route': 'SC',
+   101	             'therapeutic_area': 'Cardiovascular', 'eligible_patients': 8000000,
+   102	             'list_price_monthly': 1200, 'gtn': 0.45, 'tier': 'PA'},
+   103	            
+   104	            # Failures
+   105	            {'drug_name': 'Exubera', 'company': 'Pfizer', 'approval_date': '2006-01-27',
+   106	             'indication': 'Diabetes', 'mechanism': 'Inhaled insulin', 'route': 'Inhaled',
+   107	             'therapeutic_area': 'Endocrinology', 'eligible_patients': 30000000,
+   108	             'list_price_monthly': 150, 'gtn': 0.75, 'tier': 'OPEN'},
+   109	        ]
+   110	        
+   111	        # Expand to 50+ drugs with variations
+   112	        expanded_drugs = []
+   113	        for i, template in enumerate(drugs * 15):  # Repeat to get 60 drugs
+   114	            drug = template.copy()
+   115	            drug['launch_id'] = f"DRUG_{i:04d}"
+   116	            
+   117	            # Add variations
+   118	            drug['eligible_patients_at_launch'] = int(drug['eligible_patients'] * np.random.uniform(0.8, 1.2))
+
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+nl -ba '/home/chenhui/fabscore/agent4sci_rej/submission_345/345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py' | sed -n '264,344p'
+===== STDOUT/STDERR =====
+   264	    def run_baseline_forecasts(self, drug: pd.Series) -> Dict[str, np.ndarray]:
+   265	        """Run industry baseline methods for comparison"""
+   266	        
+   267	        drug_name = drug['drug_name']
+   268	        print(f"Running baseline methods for {drug_name}...")
+   269	        
+   270	        forecasts = {}
+   271	        
+   272	        # Peak Sales Heuristic (consultant method)
+   273	        try:
+   274	            peak_forecast = peak_sales_heuristic(drug)
+   275	            if peak_forecast > 0:
+   276	                # Convert to trajectory
+   277	                forecasts['peak_heuristic'] = np.array([
+   278	                    peak_forecast * 0.2, peak_forecast * 0.6, peak_forecast * 1.0,
+   279	                    peak_forecast * 0.9, peak_forecast * 0.8
+   280	                ])
+   281	            else:
+   282	                forecasts['peak_heuristic'] = np.zeros(5)
+   283	        except Exception as e:
+   284	            print(f"Peak heuristic failed: {e}")
+   285	            forecasts['peak_heuristic'] = np.zeros(5)
+   286	        
+   287	        # Ensemble Baseline
+   288	        try:
+   289	            ensemble_result = ensemble_baseline(drug, years=5)
+   290	            if isinstance(ensemble_result, dict) and 'ensemble' in ensemble_result:
+   291	                forecasts['ensemble_baseline'] = ensemble_result['ensemble']
+   292	            else:
+   293	                forecasts['ensemble_baseline'] = np.zeros(5)
+   294	        except Exception as e:
+   295	            print(f"Ensemble baseline failed: {e}")
+   296	            forecasts['ensemble_baseline'] = np.zeros(5)
+   297	        
+   298	        # Enhanced Analog Forecasting (our latest improvement)
+   299	        try:
+   300	            print(f"Running enhanced analog forecasting for {drug_name}...")
+   301	            analog_forecaster = AnalogForecaster()
+   302	            analog_forecast = analog_forecaster.forecast_from_analogs(drug, years=5)
+   303	            if isinstance(analog_forecast, np.ndarray) and len(analog_forecast) == 5:
+   304	                forecasts['analog_enhanced'] = analog_forecast
+   305	                print(f"Analog forecast peak: ${np.max(analog_forecast):,.0f}")
+   306	            else:
+   307	                forecasts['analog_enhanced'] = np.zeros(5)
+   308	        except Exception as e:
+   309	            print(f"Enhanced analog forecasting failed: {e}")
+   310	            forecasts['analog_enhanced'] = np.zeros(5)
+   311	        
+   312	        return forecasts
+   313	    
+   314	    def calculate_accuracy_metrics(self, forecast: np.ndarray, actual: np.ndarray) -> Dict[str, float]:
+   315	        """Calculate industry-standard accuracy metrics (fixed per GPT-5 feedback)"""
+   316	        
+   317	        if len(forecast) == 0 or len(actual) == 0:
+   318	            return {'mape': 999.0, 'peak_ape': 999.0, 'y2_ape': 999.0}
+   319	        
+   320	        # MAPE (Mean Absolute Percentage Error)
+   321	        valid_errors = []
+   322	        for i in range(min(len(forecast), len(actual))):
+   323	            if actual[i] > 0:
+   324	                error = abs(forecast[i] - actual[i]) / actual[i]
+   325	                valid_errors.append(error)
+   326	        
+   327	        mape = np.mean(valid_errors) if valid_errors else 999.0
+   328	        
+   329	        # Peak APE (Absolute Percentage Error) - GPT-5 correction
+   330	        actual_peak = np.max(actual)
+   331	        forecast_peak = np.max(forecast)
+   332	        peak_ape = abs(forecast_peak - actual_peak) / actual_peak if actual_peak > 0 else 999.0
+   333	        
+   334	        # Year 2 APE (Absolute Percentage Error) - GPT-5 correction
+   335	        if len(actual) > 1 and actual[1] > 0:
+   336	            y2_ape = abs(forecast[1] - actual[1]) / actual[1]
+   337	        else:
+   338	            y2_ape = 999.0
+   339	        
+   340	        return {
+   341	            'mape': mape,
+   342	            'peak_ape': peak_ape,    # GPT-5 fix: renamed from peak_accuracy
+   343	            'y2_ape': y2_ape         # GPT-5 fix: renamed from y2_accuracy
+   344	        }
+
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+python - <<'PY'
+from pathlib import Path
+import json
+p = Path('/home/chenhui/fabscore/agent4sci_rej/submission_345/345_Multi_Agent_AI_System_for__Supplementary Material/results/phase5_validation_results.json')
+data = json.loads(p.read_text())
+repatha = [d for d in data['detailed_results'] if d['drug_name']=='Repatha']
+print('repatha_entries', len(repatha))
+for i, d in enumerate(repatha[:10], 1):
+    m = d['metrics']['peak_heuristic']
+    f = d['forecasts']['peak_heuristic']
+    print(i, d['actual_peak'], max(f), max(f)/d['actual_peak'], m['peak_accuracy'], m['mape'])
+PY
+===== STDOUT/STDERR =====
+repatha_entries 5
+1 309024772.07642555 4116724141.8234196 13.321663872323168 12.321663872323168 13.171314522079905
+2 175902814.2239358 1774518270.8513796 10.088060720804055 9.088060720804055 10.792622398354407
+3 222126755.00251195 2068893103.7013502 9.314020292953696 8.314020292953696 10.023635080161482
+4 358533238.7308445 4021289462.150847 11.215946048365353 10.215946048365353 11.10417210173788
+5 245402056.27484012 2318061874.0688925 9.445975756098635 8.445975756098635 11.609500473685404
+
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+python - <<'PY'
+from pathlib import Path
+import pandas as pd
+root = Path('/home/chenhui/fabscore/agent4sci_rej/submission_345/345_Multi_Agent_AI_System_for__Supplementary Material')
+launches = pd.read_parquet(root / 'data_proc' / 'launches.parquet')
+revenues = pd.read_parquet(root / 'data_proc' / 'launch_revenues.parquet')
+repatha = launches[launches['drug_name']=='Repatha'][['launch_id','drug_name','therapeutic_area']]
+print('repatha_rows', len(repatha))
+print(repatha.head(20).to_string(index=False))
+for lid in repatha['launch_id'].tolist()[:5]:
+    peak = revenues[revenues['launch_id']==lid]['revenue_usd'].max()
+    print(lid, float(peak))
+PY
+===== STDOUT/STDERR =====
+repatha_rows 15
+launch_id drug_name therapeutic_area
+DRUG_0002   Repatha   Cardiovascular
+DRUG_0006   Repatha   Cardiovascular
+DRUG_0010   Repatha   Cardiovascular
+DRUG_0014   Repatha   Cardiovascular
+DRUG_0018   Repatha   Cardiovascular
+DRUG_0022   Repatha   Cardiovascular
+DRUG_0026   Repatha   Cardiovascular
+DRUG_0030   Repatha   Cardiovascular
+DRUG_0034   Repatha   Cardiovascular
+DRUG_0038   Repatha   Cardiovascular
+DRUG_0042   Repatha   Cardiovascular
+DRUG_0046   Repatha   Cardiovascular
+DRUG_0050   Repatha   Cardiovascular
+DRUG_0054   Repatha   Cardiovascular
+DRUG_0058   Repatha   Cardiovascular
+DRUG_0002 329121772.97533625
+DRUG_0006 196379700.2226284
+DRUG_0010 222126755.00251195
+DRUG_0014 358533238.7308445
+DRUG_0018 245402056.27484012
+
+===== EXIT CODE: 0 =====
+

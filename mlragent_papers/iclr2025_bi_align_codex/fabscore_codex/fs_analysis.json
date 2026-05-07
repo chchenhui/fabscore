@@ -1,0 +1,186 @@
+{
+    "no_code_files": [],
+    "obvious_hallucination": [
+        {
+            "index": 6,
+            "category": "figure",
+            "content": "1. decision_quality.png: Decision Quality over Time",
+            "reason": "Figure 1 is presented as part of the recommendation experiment described on MovieLens-1M, but the only implementation path uses synthetic Gaussian features and a synthetic latent preference vector instead of any MovieLens data. Because the data object used by the code concretely conflicts with the paper's stated benchmark, the figure claim is not supported by the implemented experiment.",
+            "fabrication_type": "data_fabrication",
+            "code_evidence": [
+                "results/paper.md:42-46",
+                "results/paper.md:61-63",
+                "codex/experiment.py:34-36",
+                "codex/experiment.py:73-82"
+            ]
+        },
+        {
+            "index": 7,
+            "category": "figure",
+            "content": "2. pce.png: Final Preference Calibration Error",
+            "reason": "Figure 2 is also reported for the MovieLens-1M recommendation experiment, but the repository computes PCE only on synthetic random features generated in code. Static inspection already shows a concrete mismatch between the paper's stated data object and the implemented data object, so this result figure is based on the wrong dataset.",
+            "fabrication_type": "data_fabrication",
+            "code_evidence": [
+                "results/paper.md:42-46",
+                "results/paper.md:65-66",
+                "codex/experiment.py:34-36",
+                "codex/experiment.py:84-95"
+            ]
+        },
+        {
+            "index": 8,
+            "category": "results_section",
+            "content": "1. UDCA achieves a PCE of ≈1.5",
+            "reason": "This PCE claim is stated for the MovieLens-1M recommendation benchmark, but the only available code computes PCE from synthetic random features (`np.random.randn`) and a synthetic `theta_true`. That is a concrete data-object conflict, so the reported PCE is not supported by the implemented experiment.",
+            "fabrication_type": "data_fabrication",
+            "code_evidence": [
+                "results/paper.md:42-46",
+                "results/paper.md:65",
+                "codex/experiment.py:34-36",
+                "codex/experiment.py:85-88"
+            ]
+        },
+        {
+            "index": 9,
+            "category": "results_section",
+            "content": "2. versus 6.4 (static)",
+            "reason": "The static-model PCE is claimed as part of the MovieLens-1M experiment, but the repository has no MovieLens data path and instead evaluates on synthetic random features created inside `run_experiment`. The dataset identity therefore conflicts with the paper's stated benchmark.",
+            "fabrication_type": "data_fabrication",
+            "code_evidence": [
+                "results/paper.md:42-46",
+                "results/paper.md:65",
+                "codex/experiment.py:34-36",
+                "codex/experiment.py:85-88"
+            ]
+        },
+        {
+            "index": 10,
+            "category": "results_section",
+            "content": "3. and 0.3 (passive)",
+            "reason": "The passive-model PCE is likewise attributed to the paper's MovieLens-1M recommendation experiment, but the only implementation evaluates passive updates on synthetic Gaussian item features. That is a direct data mismatch between paper and repository.",
+            "fabrication_type": "data_fabrication",
+            "code_evidence": [
+                "results/paper.md:42-46",
+                "results/paper.md:65",
+                "codex/experiment.py:34-36",
+                "codex/experiment.py:85-88"
+            ]
+        },
+        {
+            "index": 11,
+            "category": "results_section",
+            "content": "4. Query Efficiency: static issues 0 queries",
+            "reason": "Although the repository stores `queries.static = 0`, the paper frames this as a MovieLens-1M recommendation result. The only code path producing query counts runs on synthetic random features rather than MovieLens data, so the claim is attached to the wrong data object.",
+            "fabrication_type": "data_fabrication",
+            "code_evidence": [
+                "results/paper.md:42-46",
+                "results/paper.md:68",
+                "codex/experiment.py:34-36",
+                "codex/experiment.py:54-55",
+                "codex/results.json:1"
+            ]
+        },
+        {
+            "index": 12,
+            "category": "results_section",
+            "content": "5. passive issues 100 queries",
+            "reason": "The passive query count is reported for the MovieLens-1M experiment, but the implemented experiment uses synthetic Gaussian features instead of MovieLens data. Since the underlying data object conflicts, the reported count is not supported as a MovieLens result.",
+            "fabrication_type": "data_fabrication",
+            "code_evidence": [
+                "results/paper.md:42-46",
+                "results/paper.md:68",
+                "codex/experiment.py:34-36",
+                "codex/experiment.py:56-60",
+                "codex/results.json:1"
+            ]
+        },
+        {
+            "index": 13,
+            "category": "results_section",
+            "content": "6. UDCA fewer than 100 queries (adaptive)",
+            "reason": "The adaptive-query claim is also tied to the paper's MovieLens-1M recommendation setup, but the implementation computes it only on synthetic random features. Static inspection therefore establishes a concrete data mismatch for this reported result.",
+            "fabrication_type": "data_fabrication",
+            "code_evidence": [
+                "results/paper.md:42-46",
+                "results/paper.md:68",
+                "codex/experiment.py:34-36",
+                "codex/experiment.py:61-69",
+                "codex/results.json:1"
+            ]
+        }
+    ],
+    "static_verifiable": [
+        {
+            "index": 1,
+            "category": "table",
+            "content": "1. Table 1, Number of items, Value: 50",
+            "reason": "Table 1's `Number of items` value matches the default argument `num_items=50` in the only experiment entrypoint, and the same value is restated in `results/results.md`.",
+            "code_evidence": [
+                "results/paper.md:52-59",
+                "codex/experiment.py:34",
+                "results/results.md:3-10"
+            ]
+        },
+        {
+            "index": 2,
+            "category": "table",
+            "content": "2. Table 1, Feature dim $d$, Value: 5",
+            "reason": "Table 1's feature dimension matches the default argument `dim=5` in `run_experiment`, and the same setup value is documented in `results/results.md`.",
+            "code_evidence": [
+                "results/paper.md:52-59",
+                "codex/experiment.py:34",
+                "results/results.md:3-10"
+            ]
+        },
+        {
+            "index": 3,
+            "category": "table",
+            "content": "3. Table 1, Candidates $K$, Value: 10",
+            "reason": "Table 1's candidate count is statically confirmed by the `K=10` default in `run_experiment`, with the same setup value repeated in `results/results.md`.",
+            "code_evidence": [
+                "results/paper.md:52-59",
+                "codex/experiment.py:34",
+                "results/results.md:3-10"
+            ]
+        },
+        {
+            "index": 4,
+            "category": "table",
+            "content": "4. Table 1, Iterations $T$, Value: 100",
+            "reason": "Table 1's iteration count is directly supported by the `T=100` default and the `for t in range(T)` loop in the experiment implementation.",
+            "code_evidence": [
+                "results/paper.md:52-59",
+                "codex/experiment.py:34",
+                "codex/experiment.py:45",
+                "results/results.md:3-10"
+            ]
+        },
+        {
+            "index": 5,
+            "category": "table",
+            "content": "5. Table 1, Initial threshold $\\tau_0$, Value: 2.0",
+            "reason": "Table 1's initial threshold is statically confirmed by the `threshold=2.0` default and `tau = threshold` initialization in the experiment code.",
+            "code_evidence": [
+                "results/paper.md:52-59",
+                "codex/experiment.py:34",
+                "codex/experiment.py:44",
+                "results/results.md:3-10"
+            ]
+        }
+    ],
+    "insufficient_evidence": [],
+    "execution_required": [],
+    "error": [],
+    "summary": {
+        "total_claims": 13,
+        "no_code_files": 0,
+        "obvious_hallucination": 8,
+        "data_fabrication": 8,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "static_verifiable": 5,
+        "insufficient_evidence": 0,
+        "execution_required": 0,
+        "error": 0
+    }
+}

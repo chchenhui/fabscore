@@ -1,0 +1,110 @@
+[
+{
+"claim": "A black-box jailbreak detector using semantic entropy over N=5 sampled responses will achieve a significantly higher Area Under the Receiver Operating Characteristic (AUROC) score than a detector using a simpler textual consistency metric (pairwise BERTScore, inspired by SelfCheckGPT) on the JailbreakBench benchmark.",
+"dataset": "JailbreakBench/JBB-Behaviors (using the 'harmful' config for positive examples and 'benign' config for negative examples)",
+"metric": "AUROC (Area Under the Receiver Operating Characteristic)",
+"baseline": "A detector using the average pairwise BERTScore across N=5 generated samples as its classification feature, mirroring the methodology of SelfCheckGPT.",
+"success_threshold": "The AUROC from the semantic entropy detector is at least 0.1 greater than the AUROC from the BERTScore-based baseline.",
+"budget": {
+"compute": "1 GPU",
+"hours": "4",
+"memory": "40GB"
+},
+"citations": {
+"dataset": [
+{"title": "JailbreakBench: An Open Robustness Benchmark for Jailbreaking Large Language Models", "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/63092d79154adebd7305dfd498cbff70-Paper-Datasets_and_Benchmarks_Track.pdf", "venue": "NeurIPS", "year": "2024"}
+],
+"baseline": [
+{"title": "SelfCheckGPT: Zero-Resource Black-Box Hallucination Detection", "url": "https://aclanthology.org/2023.emnlp-main.557.pdf", "venue": "EMNLP", "year": "2023"},
+{"title": "BERTScore: Evaluating Text Generation with BERT", "url": "https://openreview.net/forum?id=SkeHuCVFDr", "venue": "ICLR", "year": "2020"}
+],
+"metrics": [
+{"title": "Detecting hallucinations in large language models using semantic entropy", "url": "https://www.nature.com/articles/s41586-024-07421-0", "venue": "Nature", "year": "2024"}
+]
+}
+},
+{
+"claim": "The semantic entropy-based detector will maintain high performance (AUROC > 0.85) when distinguishing JailbreakBench's harmful prompts from its matched 'benign-but-hard' counterparts, demonstrating that the signal is sensitive to malicious conflict, not just prompt complexity.",
+"dataset": "JailbreakBench/JBB-Behaviors (using 'harmful' config as positive class and 'benign' config as negative class)",
+"metric": "AUROC",
+"baseline": "This hypothesis tests against an absolute performance threshold on a challenging negative control dataset, rather than a specific model baseline. The baseline is the implicit performance of a naive detector that is sensitive to complexity.",
+"success_threshold": "AUROC > 0.85",
+"budget": {
+"compute": "1 GPU",
+"hours": "4",
+"memory": "40GB"
+},
+"citations": {
+"dataset": [
+{"title": "JailbreakBench: An Open Robustness Benchmark for Jailbreaking Large Language Models", "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/63092d79154adebd7305dfd498cbff70-Paper-Datasets_and_Benchmarks_Track.pdf", "venue": "NeurIPS", "year": "2024"}
+],
+"baseline": [],
+"metrics": []
+}
+},
+{
+"claim": "A semantic entropy-based detector, with its detection threshold calibrated only on JailbreakBench's standard attacks, will detect qualitatively different 'contextual' attacks from the HarmBench benchmark with an AUROC significantly greater than random chance.",
+"dataset": "Calibration on JailbreakBench/JBB-Behaviors (harmful vs benign); Evaluation on HarmBench (textual 'contextual' behaviors vs. matched benign prompts).",
+"metric": "AUROC",
+"baseline": "A random classifier, which would achieve an AUROC of 0.5.",
+"success_threshold": "AUROC > 0.70 on the HarmBench test set.",
+"budget": {
+"compute": "1 GPU",
+"hours": "6",
+"memory": "40GB"
+},
+"citations": {
+"dataset": [
+{"title": "JailbreakBench: An Open Robustness Benchmark for Jailbreaking Large Language Models", "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/63092d79154adebd7305dfd498cbff70-Paper-Datasets_and_Benchmarks_Track.pdf", "venue": "NeurIPS", "year": "2024"},
+{"title": "HarmBench: A Standardized Evaluation Framework for Automated Red Teaming and Robust Refusal", "url": "https://arxiv.org/abs/2402.04249", "venue": "arXiv", "year": "2024"}
+],
+"baseline": [],
+"metrics": []
+}
+},
+{
+"claim": "Deploying the semantic entropy detector as a gate will reduce the Attack Success Rate (ASR) of an adaptive jailbreak algorithm (Tree of Attacks - TAP) by at least 25 percentage points compared to an undefended model.",
+"dataset": "Procedural benchmark using the official Tree of Attacks (TAP) implementation to generate attacks against the behaviors defined in JailbreakBench.",
+"metric": "Attack Success Rate (ASR) reduction.",
+"baseline": "The ASR of the undefended target LLM when attacked by the TAP algorithm, with ASR measured by the official JailbreakBench judge (Llama-3-70B).",
+"success_threshold": "The ASR of the model defended by the semantic entropy gate is at least 25 percentage points lower than the baseline ASR.",
+"budget": {
+"compute": "1 GPU",
+"hours": "6",
+"memory": "40GB"
+},
+"citations": {
+"dataset": [
+{"title": "Tree of Attacks: Jailbreaking Black-Box LLMs Automatically", "url": "https://arxiv.org/abs/2312.02119", "venue": "NeurIPS", "year": "2024"},
+{"title": "JailbreakBench: An Open Robustness Benchmark for Jailbreaking Large Language Models", "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/63092d79154adebd7305dfd498cbff70-Paper-Datasets_and_Benchmarks_Track.pdf", "venue": "NeurIPS", "year": "2024"}
+],
+"baseline": [
+{"title": "Tree of Attacks: Jailbreaking Black-Box LLMs Automatically", "url": "https://github.com/RICommunity/TAP", "venue": "GitHub", "year": "2023"}
+],
+"metrics": [
+{"title": "JailbreakBench: An Open Robustness Benchmark for Jailbreaking Large Language Models", "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/63092d79154adebd7305dfd498cbff70-Paper-Datasets_and_Benchmarks_Track.pdf", "venue": "NeurIPS", "year": "2024"}
+]
+}
+},
+{
+"claim": "The zero-shot semantic entropy detector correctly identifies a significant fraction (>20%) of the jailbreak prompts from WildGuardTest that the SOTA supervised classifier allenai/wildguard fails to detect (i.e., its false negatives).",
+"dataset": "allenai/wildguardmix (using the 'test' split, also known as WildGuardTest).",
+"metric": "Complementary Detection Rate (% of baseline's False Negatives correctly identified).",
+"baseline": "The predictions of the allenai/wildguard model on the WildGuardTest dataset.",
+"success_threshold": "Complementary Detection Rate > 0.20",
+"budget": {
+"compute": "1 GPU",
+"hours": "5",
+"memory": "40GB"
+},
+"citations": {
+"dataset": [
+{"title": "WildGuard: Open One-Stop Moderation Tools for Safety Risks, Jailbreaks, and Refusals of LLMs", "url": "https://huggingface.co/datasets/allenai/wildguardmix", "venue": "Hugging Face", "year": "2024"}
+],
+"baseline": [
+{"title": "WildGuard: Open One-Stop Moderation Tools for Safety Risks, Jailbreaks, and Refusals of LLMs", "url": "https://huggingface.co/allenai/wildguard", "venue": "Hugging Face", "year": "2024"}
+],
+"metrics": []
+}
+}
+]

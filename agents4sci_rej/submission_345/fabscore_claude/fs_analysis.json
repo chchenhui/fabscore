@@ -1,0 +1,252 @@
+{
+    "no_code_files": [],
+    "obvious_hallucination": [
+        {
+            "index": 2,
+            "category": "figure",
+            "content": "2. Figure 2: Global sensitivity of NPV to key drivers (market size, list price, GTN, adherence, SG&A) showing the impact of each parameter on NPV variance.",
+            "reason": "The figure generation script (reports/generate_paper_figures.py, lines 195-234) uses completely hardcoded sensitivity impact values (market_size=1.8, list_price=1.5, gtn=1.2, adherence=0.9, wacc=0.8, etc.) rather than actually computing NPV sensitivity. The code comment says 'Simplified NPV calculation for tornado' and never calls any actual NPV function with varied parameters. The figure purports to show computed sensitivity analysis but every bar value is a hardcoded constant.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "reports/generate_paper_figures.py:195-234 (generate_shap_summary function with hardcoded impacts)"
+            ]
+        },
+        {
+            "index": 3,
+            "category": "results_section",
+            "content": "1. Multi-agent System: 41.3% MAPE (approaching 40% consultant baseline)",
+            "reason": "The validation script phase5_historical_validation.py explicitly bypasses the actual multi-agent system. In test_multi_agent_system() (lines 168-202), the code states: 'For Phase 5, we'll simulate multi-agent performance...But for validation, we use a representative simulation.' It then returns hardcoded trajectories: $20B for blockbusters, $5B for oncology, $1B for rare disease, $2B for other - never calling the GPT5Orchestrator. The reported 41.3% MAPE is derived from this simulation, not from actual multi-agent execution.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "validation/phase5_historical_validation.py:168-202 (test_multi_agent_system with hardcoded simulation)",
+                "validation/phase5_historical_validation.py:171-172 (explicit comment: 'we use a representative simulation')"
+            ]
+        },
+        {
+            "index": 8,
+            "category": "results_section",
+            "content": "6. Keytruda (Oncology - Blockbuster): Actual peak revenue: $25.0B (Year 5)",
+            "reason": "The repository's golden_drugs.csv (the manually verified reference data) shows Keytruda Y5 revenue as $14.4B, not $25.0B. Keytruda was approved in 2014, so Year 5 = 2019, when actual Keytruda revenue was ~$11-14.4B. Keytruda did not reach $25B annual revenue until ~2023 (Year 9 post-launch). Furthermore, gpt5_orchestrator.py comments (line 669) reveal '$25B actual' is used as the calibration TARGET, not an independently measured actual value. The build_dataset.py (line 192) caps revenues at $25B, further distorting the actual reference values.",
+            "fabrication_type": "data_fabrication",
+            "code_evidence": [
+                "data_raw/golden_drugs.csv:2 (Keytruda Y5=14.4B, not 25B)",
+                "ai_scientist/gpt5_orchestrator.py:669 (comment: 'Keytruda: $25B actual' used as calibration target)",
+                "ai_scientist/gpt5_orchestrator.py:694,759 (drug-specific multipliers calibrated to hit $25B target)",
+                "src/data/build_dataset.py:192 (revenue capped at $25B)"
+            ]
+        },
+        {
+            "index": 9,
+            "category": "results_section",
+            "content": "7. Keytruda: Multi-agent forecast: $16.3B peak (65% of actual, 34.6% peak APE)",
+            "reason": "The claimed percentages (65% of actual, 34.6% peak APE) are computed using $25.0B as the actual reference, which is wrong. Golden_drugs.csv shows Keytruda Y5=$14.4B. Using the correct actual, $16.3B/$14.4B=113% (not 65%), and peak APE would be 13.2% (not 34.6%). Additionally, the historical_validation.py multi-agent simulation returns $20B for blockbusters, not $16.3B, meaning the number doesn't even match what the simulation code would produce.",
+            "fabrication_type": "data_fabrication",
+            "code_evidence": [
+                "data_raw/golden_drugs.csv:2 (Keytruda Y5=14.4B, not 25B)",
+                "validation/phase5_historical_validation.py:179-188 (blockbuster simulation returns $20B peak, not $16.3B)",
+                "ai_scientist/gpt5_orchestrator.py:669 ($25B used as calibration target)"
+            ]
+        },
+        {
+            "index": 10,
+            "category": "results_section",
+            "content": "8. Keytruda: Multi-agent MAPE: 41.1% (approaching consultant-level accuracy)",
+            "reason": "The MAPE calculation uses $25.0B as Keytruda's actual reference value. Golden_drugs.csv shows the real Y5 value as $14.4B, making the MAPE denominator wrong. The multi-agent system was also calibrated with $25B as its target (gpt5_orchestrator.py:694,759), making the evaluation non-blind. The MAPE of 41.1% is therefore computed against a fabricated reference value.",
+            "fabrication_type": "data_fabrication",
+            "code_evidence": [
+                "data_raw/golden_drugs.csv:2 (Keytruda Y5=14.4B, not 25B)",
+                "ai_scientist/gpt5_orchestrator.py:669,694,759 (calibrated to $25B target)"
+            ]
+        },
+        {
+            "index": 11,
+            "category": "results_section",
+            "content": "9. Keytruda: Peak heuristic: $4.6B peak (18% of actual, 81.5% peak APE)",
+            "reason": "The 18% and 81.5% figures use $25.0B as the actual denominator. With correct actual=$14.4B from golden_drugs.csv, $4.6B/$14.4B=32% (not 18%) and peak APE=68.1% (not 81.5%). The percentages are inconsistent with the repository's own reference data.",
+            "fabrication_type": "data_fabrication",
+            "code_evidence": [
+                "data_raw/golden_drugs.csv:2 (Keytruda Y5=14.4B, not 25B)"
+            ]
+        },
+        {
+            "index": 12,
+            "category": "results_section",
+            "content": "10. Keytruda: Enhanced analog: $3.6B peak (14% of actual, 85.7% peak APE)",
+            "reason": "Same data conflict: 14% and 85.7% use $25.0B as denominator. With correct actual=$14.4B: $3.6B/$14.4B=25% (not 14%) and peak APE=75% (not 85.7%).",
+            "fabrication_type": "data_fabrication",
+            "code_evidence": [
+                "data_raw/golden_drugs.csv:2 (Keytruda Y5=14.4B, not 25B)"
+            ]
+        },
+        {
+            "index": 13,
+            "category": "results_section",
+            "content": "11. Repatha (Cardiovascular - Moderate): Actual peak revenue: $1.5B (Year 4)",
+            "reason": "Golden_drugs.csv shows Repatha Y4=1.0B and Y5=1.23B. The peak within the 5-year window is $1.23B at Year 5, not $1.5B at Year 4. Repatha (approved 2015) actual 2019 revenue (Y4) was ~$1.02B. Repatha did not reach $1.5B until 2022 (Year 7). The code comment in gpt5_orchestrator.py (line 669) confirms '$1.5B actual' was used as the calibration target, not the measured actual.",
+            "fabrication_type": "data_fabrication",
+            "code_evidence": [
+                "data_raw/golden_drugs.csv:7 (Repatha Y4=1.0B, Y5=1.23B, peak not 1.5B at Y4)",
+                "ai_scientist/gpt5_orchestrator.py:669 ('Repatha: $1.5B actual' as calibration target)"
+            ]
+        },
+        {
+            "index": 14,
+            "category": "results_section",
+            "content": "12. Repatha: Multi-agent forecast: $996M peak (66% of actual, 33.6% peak APE)",
+            "reason": "The 66% and 33.6% figures use $1.5B as the actual denominator. With correct actual=$1.23B from golden_drugs.csv: $996M/$1.23B=81% (not 66%) and peak APE=19% (not 33.6%). The percentages are inconsistent with the repository's own reference data.",
+            "fabrication_type": "data_fabrication",
+            "code_evidence": [
+                "data_raw/golden_drugs.csv:7 (Repatha Y5=1.23B, not 1.5B)",
+                "ai_scientist/gpt5_orchestrator.py:669 ($1.5B used as calibration target)"
+            ]
+        },
+        {
+            "index": 15,
+            "category": "results_section",
+            "content": "13. Repatha: Multi-agent MAPE: 41.5% (approaching consultant-level accuracy)",
+            "reason": "The MAPE uses $1.5B as the actual reference. Correct actual from golden_drugs.csv is $1.23B (Y5). Using the correct denominator changes MAPE significantly. Additionally, the multi-agent system was calibrated with $1.5B as the Repatha target (gpt5_orchestrator.py:669), making the evaluation non-blind.",
+            "fabrication_type": "data_fabrication",
+            "code_evidence": [
+                "data_raw/golden_drugs.csv:7 (Repatha Y5=1.23B, not 1.5B)",
+                "ai_scientist/gpt5_orchestrator.py:669 (calibrated to $1.5B Repatha target)"
+            ]
+        },
+        {
+            "index": 16,
+            "category": "results_section",
+            "content": "14. Repatha: Peak heuristic: $218M peak (15% of actual, 85.4% peak APE)",
+            "reason": "The 15% and 85.4% use $1.5B as denominator. With correct actual=$1.23B: $218M/$1.23B=17.7% (not 15%) and peak APE=82.3% (not 85.4%). The percentages are inconsistent with the repository's own reference data.",
+            "fabrication_type": "data_fabrication",
+            "code_evidence": [
+                "data_raw/golden_drugs.csv:7 (Repatha Y5=1.23B, not 1.5B)"
+            ]
+        },
+        {
+            "index": 17,
+            "category": "results_section",
+            "content": "15. Repatha: Enhanced analog: $3.6B peak (238% of actual, 138.3% peak APE)",
+            "reason": "The 238% and 138.3% use $1.5B as denominator. With correct actual=$1.23B: $3.6B/$1.23B=293% (not 238%) and peak APE=193% (not 138.3%). The percentages are inconsistent with the repository's own reference data.",
+            "fabrication_type": "data_fabrication",
+            "code_evidence": [
+                "data_raw/golden_drugs.csv:7 (Repatha Y5=1.23B, not 1.5B)"
+            ]
+        }
+    ],
+    "static_verifiable": [],
+    "insufficient_evidence": [
+        {
+            "index": 18,
+            "category": "results_section",
+            "content": "16. Cost efficiency: estimated $0.16 per forecast vs $2M consultant cost",
+            "reason": "Cost tracking code exists in model_router.py and system_monitor.py, and the paper labels this as 'estimated.' However, no actual run output files (e.g., results/phase5_real_validation.json or usage logs) exist in the repository. The data_proc/ directory needed to run the validation is missing, so no run could have produced this figure. The $0.16 estimate appears to be a rough estimate based on known API pricing, not a measured outcome. There is no suitable repo-native execution path that can independently verify this figure without the missing data infrastructure.",
+            "code_evidence": [
+                "ai_scientist/model_router.py (cost tracking infrastructure)",
+                "ai_scientist/system_monitor.py (audit trail with cost tracking)",
+                "Missing: results/ directory with actual run outputs",
+                "Missing: data_proc/ directory needed for any validation run"
+            ]
+        }
+    ],
+    "execution_required": [
+        {
+            "index": 1,
+            "category": "figure",
+            "content": "1. Figure 1: NPV distribution from Monte Carlo simulation (n=10,000) showing P10/P50/P90 percentiles and probability of positive NPV.",
+            "reason": "The figure generation script reports/generate_paper_figures.py contains generate_npv_histogram() which calls monte_carlo_npv() with hardcoded parameters and seed=42, producing P10/P50/P90 and prob_positive. The figure appears in the paper PDF. However, no pre-generated PNG or underlying data files (e.g., saved npv_values array) exist in the repository. The script needs to be executed to verify whether the output matches the paper's figure (Prob(NPV>0)=100%, P10=$4.1B, P50=$7.7B, P90=$15.3B).",
+            "candidate_files": [
+                "reports/generate_paper_figures.py",
+                "src/econ/npv.py",
+                "conf/params.yml"
+            ],
+            "suggested_entrypoints": [
+                "cd '345_Multi_Agent_AI_System_for__Supplementary Material' && python reports/generate_paper_figures.py"
+            ]
+        },
+        {
+            "index": 4,
+            "category": "results_section",
+            "content": "2. Peak Heuristic Baseline: 71.2% MAPE (industry standard method)",
+            "reason": "The peak_sales_heuristic function exists in src/models/baselines.py and is called from the validation scripts. The MAPE calculation code in phase5_historical_validation.py is legitimate. However, the required data files (data_proc/launches.parquet, data_proc/launch_revenues.parquet) are missing. The ETL pipeline (src/data/etl.py, src/data/build_dataset.py, src/data/fixed_sec_extractor.py) could potentially regenerate these from raw data or API calls. No results file with the 71.2% number exists.",
+            "candidate_files": [
+                "validation/phase5_historical_validation.py",
+                "src/models/baselines.py",
+                "src/data/build_dataset.py",
+                "src/data/etl.py"
+            ],
+            "suggested_entrypoints": [
+                "cd '345_Multi_Agent_AI_System_for__Supplementary Material' && python src/data/build_dataset.py && python validation/phase5_historical_validation.py"
+            ]
+        },
+        {
+            "index": 5,
+            "category": "results_section",
+            "content": "3. Ensemble Baseline: 80.8% MAPE (traditional ensemble approach)",
+            "reason": "The ensemble_baseline function exists in src/models/baselines.py and is called from validation scripts. The MAPE calculation code is implemented. Same data dependency issue as claim 4: data_proc/ directory is missing. No results file with the 80.8% number exists. ETL pipeline could potentially generate needed data.",
+            "candidate_files": [
+                "validation/phase5_historical_validation.py",
+                "src/models/baselines.py",
+                "src/models/ensemble.py",
+                "src/data/build_dataset.py"
+            ],
+            "suggested_entrypoints": [
+                "cd '345_Multi_Agent_AI_System_for__Supplementary Material' && python src/data/build_dataset.py && python validation/phase5_historical_validation.py"
+            ]
+        },
+        {
+            "index": 6,
+            "category": "results_section",
+            "content": "4. Enhanced Analog Forecasting: 100.2% MAPE (TA priors with DTW similarity)",
+            "reason": "The AnalogForecaster class exists in src/models/analogs.py and is called from validation scripts. TA priors are implemented in src/models/ta_priors.py. The MAPE calculation code is implemented. Same data dependency issue: data_proc/ is missing. No results file with the 100.2% number exists.",
+            "candidate_files": [
+                "validation/phase5_historical_validation.py",
+                "src/models/analogs.py",
+                "src/models/ta_priors.py",
+                "src/data/build_dataset.py"
+            ],
+            "suggested_entrypoints": [
+                "cd '345_Multi_Agent_AI_System_for__Supplementary Material' && python src/data/build_dataset.py && python validation/phase5_historical_validation.py"
+            ]
+        },
+        {
+            "index": 7,
+            "category": "results_section",
+            "content": "5. Golden Validation: 76.9% pass rate (10/13 tests within ±10% tolerance)",
+            "reason": "The golden validation framework exists in src/validation/golden_framework.py with ±10% tolerance testing. The validation drug list (Mounjaro, Verzenio, Trikafta, Repatha, Ibrance) and test counts are specified. However, data_proc/golden_set.parquet is missing. The raw data in data_raw/golden_drugs.csv exists but only covers some of these drugs. No results file confirming 10/13 pass rate exists. Execution could attempt to regenerate.",
+            "candidate_files": [
+                "src/validation/golden_framework.py",
+                "data_raw/golden_drugs.csv",
+                "src/data/build_dataset.py"
+            ],
+            "suggested_entrypoints": [
+                "cd '345_Multi_Agent_AI_System_for__Supplementary Material' && python src/data/build_dataset.py && python -c \"from src.validation.golden_framework import GoldenValidationFramework; GoldenValidationFramework().run()\""
+            ]
+        },
+        {
+            "index": 19,
+            "category": "results_section",
+            "content": "17. Current validation results show 76.9% pass rate (10/13 tests passed) across 5 drugs: Mounjaro (100% pass rate, 3/3 tests), Verzenio (100% pass rate, 3/3 tests), Trikafta (66.7% pass rate, 2/3 tests), Repatha (50% pass rate, 1/2 tests), and Ibrance (50% pass rate, 1/2 tests).",
+            "reason": "Same as claim 7 above - the golden validation framework code exists in src/validation/golden_framework.py but data_proc/golden_set.parquet is missing. The detailed per-drug breakdown (Mounjaro, Verzenio, Trikafta, Repatha, Ibrance) is not found in the existing data files (golden_drugs.csv doesn't contain Mounjaro, Verzenio, or Trikafta). Execution would need to regenerate the dataset from scratch.",
+            "candidate_files": [
+                "src/validation/golden_framework.py",
+                "src/data/build_dataset.py",
+                "data_raw/golden_drugs.csv"
+            ],
+            "suggested_entrypoints": [
+                "cd '345_Multi_Agent_AI_System_for__Supplementary Material' && python src/data/build_dataset.py && python src/validation/golden_framework.py"
+            ]
+        }
+    ],
+    "error": [],
+    "summary": {
+        "total_claims": 19,
+        "no_code_files": 0,
+        "obvious_hallucination": 12,
+        "data_fabrication": 10,
+        "experiment_fabrication": 2,
+        "result_fabrication": 0,
+        "static_verifiable": 0,
+        "insufficient_evidence": 1,
+        "execution_required": 6,
+        "error": 0
+    }
+}

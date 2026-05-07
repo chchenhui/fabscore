@@ -1,0 +1,414 @@
+import os
+
+working_dir = os.path.join(os.getcwd(), "working")
+os.makedirs(working_dir, exist_ok=True)
+
+import torch
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
+
+import numpy as np
+import random
+from torch.utils.data import Dataset, DataLoader, random_split
+import torch.nn as nn
+import torch.optim as optim
+from datasets import load_dataset
+import matplotlib.pyplot as plt
+
+experiment_data = {
+    "mnist": {
+        "metrics": {"train": [], "val": [], "train_logic": [], "val_logic": []},
+        "losses": {"train": [], "val": []},
+        "predictions": [],
+        "ground_truth": [],
+        "epochs": [],
+    },
+    "fashion_mnist": {
+        "metrics": {"train": [], "val": [], "train_logic": [], "val_logic": []},
+        "losses": {"train": [], "val": []},
+        "predictions": [],
+        "ground_truth": [],
+        "epochs": [],
+    },
+    "svhn": {
+        "metrics": {"train": [], "val": [], "train_logic": [], "val_logic": []},
+        "losses": {"train": [], "val": []},
+        "predictions": [],
+        "ground_truth": [],
+        "epochs": [],
+    },
+}
+
+BATCH_SIZE = 64
+LR = 1e-4
+NUM_EPOCHS = 50
+
+
+def pad_image(img, target_size=(28, 28)):
+    if isinstance(img, np.ndarray):
+        C = img.shape[0]
+        h, w = img.shape[1:3]
+        th, tw = target_size
+        if (h, w) == (th, tw):
+            return img
+        res = np.zeros((C, th, tw), dtype=img.dtype)
+        h_copy = min(h, th)
+        w_copy = min(w, tw)
+        h_start_res = (th - h) // 2 if h < th else 0
+        w_start_res = (tw - w) // 2 if w < tw else 0
+        h_start_img = (h - th) // 2 if h > th else 0
+        w_start_img = (w - tw) // 2 if w > tw else 0
+        res[
+            :, h_start_res : h_start_res + h_copy, w_start_res : w_start_res + w_copy
+        ] = img[
+            :, h_start_img : h_start_img + h_copy, w_start_img : w_start_img + w_copy
+        ]
+        return res
+    elif isinstance(img, torch.Tensor):
+        C = img.shape[0]
+        h, w = img.shape[1:3]
+        th, tw = target_size
+        if (h, w) == (th, tw):
+            return img
+        res = torch.zeros(C, th, tw, dtype=img.dtype)
+        h_copy = min(h, th)
+        w_copy = min(w, tw)
+        h_start_res = (th - h) // 2 if h < th else 0
+        w_start_res = (tw - w) // 2 if w < tw else 0
+        h_start_img = (h - th) // 2 if h > th else 0
+        w_start_img = (w - tw) // 2 if w > tw else 0
+        res[
+            :, h_start_res : h_start_res + h_copy, w_start_res : w_start_res + w_copy
+        ] = img[
+            :, h_start_img : h_start_img + h_copy, w_start_img : w_start_img + w_copy
+        ]
+        return res
+    else:
+        raise TypeError("Unknown type for pad_image")
+
+
+def generate_claim(labels, available_claims):
+    ctype = random.choice(available_claims)
+    L = labels
+    if ctype == "sum_even":
+        label = int((sum(L) % 2) == 0)
+        text = "The sum of the digits is even."
+        subparts = [l for l in L]
+    elif ctype == "all_lt_5":
+        label = int(all(l < 5 for l in L))
+        text = "All digits are less than 5."
+        subparts = [l < 5 for l in L]
+    elif ctype == "exactly_two_odd":
+        label = int(sum([l % 2 == 1 for l in L]) == 2)
+        text = "Exactly two digits are odd numbers."
+        subparts = [l % 2 == 1 for l in L]
+    elif ctype == "at_least_one_is_7":
+        label = int(any(l == 7 for l in L))
+        text = "At least one digit is seven."
+        subparts = [l == 7 for l in L]
+    elif ctype == "all_unique":
+        label = int(len(set(L)) == len(L))
+        text = "All three digits are unique."
+        uniqarr = [L.count(l) == 1 for l in L]
+        subparts = uniqarr
+    else:
+        raise ValueError()
+    return text, label, np.array(subparts, dtype=np.int64)
+
+
+def get_available_claims(dsname):
+    return [
+        "sum_even",
+        "all_lt_5",
+        "exactly_two_odd",
+        "at_least_one_is_7",
+        "all_unique",
+    ]
+
+
+# DATASET: No text returned, only images x3 and label/logicvec
+class HF_ImageOnlyClaimDataset(Dataset):
+    def __init__(self, hfdata, num_samples=4000, dsname="mnist"):
+        self.data = hfdata
+        self.num_samples = num_samples
+        self.dsname = dsname
+        self.available_claims = get_available_claims(dsname)
+        self.samples = self._generate()
+
+    def _generate(self):
+        N = len(self.data)
+        samples = []
+        for _ in range(self.num_samples):
+            indices = random.sample(range(N), 3)
+            imgs = []
+            labels = []
+            for i in indices:
+                arr = np.array(self.data[i]["image"]).astype(np.float32) / 255.0
+                arr3 = np.repeat(arr[None, :, :], 3, axis=0)  # (3,28,28)
+                arr3 = pad_image(arr3, target_size=(28, 28))
+                imgs.append(torch.from_numpy(arr3))
+                labels.append(self.data[i]["label"])
+            _, truth, logicvec = generate_claim(labels, self.available_claims)
+            samples.append((torch.stack(imgs, 0), truth, np.array(labels), logicvec))
+        return samples
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        imgs, label, digits, logicvec = self.samples[idx]
+        return (
+            imgs,
+            torch.tensor(label, dtype=torch.float32),
+            torch.tensor(logicvec, dtype=torch.int64),
+        )
+
+
+class HF_ImageOnlySVHNClaimDataset(Dataset):
+    def __init__(self, hfdata, num_samples=4000):
+        self.data = hfdata
+        self.num_samples = num_samples
+        self.available_claims = get_available_claims("svhn")
+        self.samples = self._generate()
+
+    def _generate(self):
+        N = len(self.data)
+        samples = []
+        for _ in range(self.num_samples):
+            indices = random.sample(range(N), 3)
+            imgs = []
+            labels = []
+            for i in indices:
+                arr = np.array(self.data[i]["image"], dtype=np.float32) / 255.0
+                if arr.ndim == 3 and arr.shape[2] == 3:
+                    arr = np.transpose(arr, (2, 0, 1))  # (3,28,28) or cropped
+                arr28 = pad_image(arr, target_size=(28, 28))
+                imgs.append(torch.from_numpy(arr28))
+                labels.append(self.data[i]["label"])
+            _, truth, logicvec = generate_claim(labels, self.available_claims)
+            samples.append((torch.stack(imgs, 0), truth, np.array(labels), logicvec))
+        return samples
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        imgs, label, digits, logicvec = self.samples[idx]
+        return (
+            imgs,
+            torch.tensor(label, dtype=torch.float32),
+            torch.tensor(logicvec, dtype=torch.int64),
+        )
+
+
+def image_only_collate_fn(batch):
+    imgs = torch.stack([item[0] for item in batch])  # (B,3,28,28)
+    imgs = imgs.view(len(batch), -1, 28, 28)  # (B,9,28,28)
+    labels = torch.stack([item[1] for item in batch])
+    logicvec = torch.stack([item[2] for item in batch])
+    return imgs, labels, logicvec
+
+
+class CNNVisionEncoder(nn.Module):
+    def __init__(self, input_channels=9):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Conv2d(input_channels, 32, 3, padding=1),  # 32x28x28
+            nn.ReLU(),
+            nn.Conv2d(32, 64, 3, padding=1),  # 64x28x28
+            nn.ReLU(),
+            nn.MaxPool2d(2),  # 64x14x14
+            nn.Conv2d(64, 128, 3, padding=1),  # 128x14x14
+            nn.ReLU(),
+            nn.MaxPool2d(2),  # 128x7x7
+            nn.Flatten(),  # 128*7*7
+            nn.Linear(128 * 7 * 7, 256),
+            nn.ReLU(),
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+
+class ClaimVerifier_ImageOnly(nn.Module):
+    def __init__(self, in_c):
+        super().__init__()
+        self.vision = CNNVisionEncoder(input_channels=in_c)
+        self.fc = nn.Sequential(
+            nn.Linear(256, 192),
+            nn.ReLU(),
+            nn.Linear(192, 1),
+        )
+        # NOTE: No sigmoid here. We'll use BCEWithLogitsLoss (numerically more stable).
+
+    def forward(self, imgs):
+        vis_feat = self.vision(imgs)
+        logits = self.fc(vis_feat)  # (B,1)
+        return logits.view(-1)  # (B,)
+
+
+def logical_consistency_accuracy(preds, gts, logicvecs, claim_labels=None):
+    # For ablation this is just main claim accuracy
+    correct = np.round(preds) == gts
+    return np.mean(correct)
+
+
+def train_on_dataset_image_only(dsname, dataset, in_c):
+    print(f"\n[Image-Only Ablation] Training on {dsname} ...")
+    data = experiment_data[dsname]
+    train_len = int(0.85 * len(dataset))
+    val_len = len(dataset) - train_len
+    train_set, val_set = random_split(
+        dataset, [train_len, val_len], generator=torch.Generator().manual_seed(42)
+    )
+    train_loader = DataLoader(
+        train_set,
+        batch_size=BATCH_SIZE,
+        shuffle=True,
+        collate_fn=image_only_collate_fn,
+        num_workers=2,
+        pin_memory=True,
+    )
+    val_loader = DataLoader(
+        val_set,
+        batch_size=BATCH_SIZE,
+        shuffle=False,
+        collate_fn=image_only_collate_fn,
+        num_workers=2,
+        pin_memory=True,
+    )
+    model = ClaimVerifier_ImageOnly(in_c).to(device)
+    optimizer = optim.Adam(model.parameters(), lr=LR)
+    criterion = nn.BCEWithLogitsLoss()
+    for epoch in range(NUM_EPOCHS):
+        model.train()
+        total_loss = 0.0
+        all_preds, all_gts, all_logicvecs = [], [], []
+        correct = 0
+        for imgs, labels, logicvec in train_loader:
+            imgs = imgs.to(device).float()
+            labels = labels.to(device)
+            # logicvec = logicvec.to(device)  # not needed for loss, but in case
+            output_logits = model(imgs)
+            loss = criterion(output_logits, labels)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item() * len(labels)
+            probs = torch.sigmoid(output_logits)
+            preds = (probs > 0.5).float()
+            correct += (preds == labels).sum().item()
+            all_preds.append(preds.detach().cpu().numpy())
+            all_gts.append(labels.detach().cpu().numpy())
+            all_logicvecs.append(logicvec.cpu().numpy())
+        ntrain = train_len
+        train_acc = correct / ntrain
+        train_loss = total_loss / ntrain
+        tpreds = np.concatenate(all_preds)
+        tgts = np.concatenate(all_gts)
+        tlogicvecs = np.concatenate(all_logicvecs)
+        train_logic = logical_consistency_accuracy(tpreds, tgts, tlogicvecs)
+        data["metrics"]["train"].append(train_acc)
+        data["losses"]["train"].append(train_loss)
+        data["metrics"]["train_logic"].append(train_logic)
+        # Validation
+        model.eval()
+        val_loss = 0.0
+        all_logits, all_preds, all_gts, all_logicvecs = [], [], [], []
+        vcorrect = 0
+        with torch.no_grad():
+            for imgs, labels, logicvec in val_loader:
+                imgs = imgs.to(device).float()
+                labels = labels.to(device)
+                output_logits = model(imgs)
+                loss = criterion(output_logits, labels)
+                val_loss += loss.item() * len(labels)
+                probs = torch.sigmoid(output_logits)
+                preds = (probs > 0.5).float()
+                vcorrect += (preds == labels).sum().item()
+                all_logits.append(output_logits.detach().cpu().numpy())
+                all_preds.append(preds.detach().cpu().numpy())
+                all_gts.append(labels.detach().cpu().numpy())
+                all_logicvecs.append(logicvec.cpu().numpy())
+        nval = val_len
+        val_acc = vcorrect / nval
+        val_loss = val_loss / nval
+        vpreds = np.concatenate(all_preds)
+        vgts = np.concatenate(all_gts)
+        vlogicvecs = np.concatenate(all_logicvecs)
+        val_logic = logical_consistency_accuracy(vpreds, vgts, vlogicvecs)
+        data["metrics"]["val"].append(val_acc)
+        data["losses"]["val"].append(val_loss)
+        data["metrics"]["val_logic"].append(val_logic)
+        data["epochs"].append(epoch + 1)
+        print(
+            f"Epoch {epoch+1}: validation_loss = {val_loss:.4f}  | val_acc = {val_acc:.4f}  | val_logic_acc = {val_logic:.4f}"
+        )
+        if epoch == NUM_EPOCHS - 1:
+            data["predictions"] = vpreds
+            data["ground_truth"] = vgts
+
+
+def plot_metric_curve_ablation(metrickey, ylabel, fname):
+    plt.figure(figsize=(8, 6))
+    colors = ["b", "r", "g"]
+    for i, dsname in enumerate(["mnist", "fashion_mnist", "svhn"]):
+        plt.plot(
+            experiment_data[dsname]["epochs"],
+            experiment_data[dsname]["metrics"][metrickey],
+            color=colors[i],
+            label=dsname,
+        )
+    plt.xlabel("Epoch")
+    plt.ylabel(ylabel)
+    plt.title(f"{ylabel} (Image Only Ablation) across datasets")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(os.path.join(working_dir, fname))
+    plt.close()
+
+
+mnist_hf = load_dataset("mnist", split="train")
+mnist_ds = HF_ImageOnlyClaimDataset(mnist_hf, num_samples=3200, dsname="mnist")
+train_on_dataset_image_only("mnist", mnist_ds, in_c=9)
+
+fmnist_hf = load_dataset("fashion_mnist", split="train")
+fmnist_ds = HF_ImageOnlyClaimDataset(
+    fmnist_hf, num_samples=3200, dsname="fashion_mnist"
+)
+train_on_dataset_image_only("fashion_mnist", fmnist_ds, in_c=9)
+
+svhn_hf = load_dataset("svhn", "cropped_digits", split="train")
+svhn_ds = HF_ImageOnlySVHNClaimDataset(svhn_hf, num_samples=3200)
+train_on_dataset_image_only("svhn", svhn_ds, in_c=9)
+
+plot_metric_curve_ablation("val", "Validation Accuracy", "val_acc_image_only.png")
+plot_metric_curve_ablation(
+    "val_logic", "Logical Consistency Accuracy", "val_logic_acc_image_only.png"
+)
+
+for dsname in ["mnist", "fashion_mnist", "svhn"]:
+    plt.figure()
+    plt.plot(
+        experiment_data[dsname]["epochs"],
+        experiment_data[dsname]["metrics"]["val"],
+        label="Val Acc",
+    )
+    plt.plot(
+        experiment_data[dsname]["epochs"],
+        experiment_data[dsname]["metrics"]["val_logic"],
+        label="Logic Acc",
+    )
+    plt.xlabel("Epoch")
+    plt.legend()
+    plt.title(f"{dsname} - Accuracies per Epoch (Image Only Ablation)")
+    plt.tight_layout()
+    plt.savefig(os.path.join(working_dir, f"{dsname}_acc_image_only.png"))
+    plt.close()
+
+np.save(os.path.join(working_dir, "experiment_data.npy"), experiment_data)
+
+for dsname in ["mnist", "fashion_mnist", "svhn"]:
+    logic = experiment_data[dsname]["metrics"]["val_logic"][-1]
+    print(f"Final Logical Consistency Accuracy (Image Only, {dsname}): {logic:.4f}")

@@ -1,0 +1,34 @@
+=== COMMAND 1 ===
+cd /home/chenhui/fabscore/agents4sci_rej/submission_268/supplimental_submission/code && python3 -c "
+import sys
+sys.path.insert(0, '.')
+from dataset import SyntheticFairnessDataset
+from model import ModelFactory
+from evaluate import FairnessMetrics
+import numpy as np
+
+dataset = SyntheticFairnessDataset(n_samples=1000, bias_strength=0.3, random_state=42)
+X_train, X_test, y_train, y_test, s_train, s_test, scaler = dataset.get_train_test_split(test_size=0.2)
+models = ModelFactory.create_baseline_models()
+lr = models['LogisticRegression']
+lr.fit(X_train, y_train)
+y_pred = lr.predict(X_test)
+
+dp = FairnessMetrics.demographic_parity(y_pred, s_test)
+print(f'LR Demographic Parity: {dp:.10f}')
+print(f'LR Demographic Parity (3dp): {dp:.3f}')
+print(f'Paper claims: 0.146')
+print(f'Match: {abs(dp - 0.146) < 0.001}')
+"
+
+=== RESULT ===
+LR Demographic Parity: 0.0160256410
+LR Demographic Parity (3dp): 0.016
+Paper claims: 0.146
+Match: False
+
+=== CONCLUSION ===
+The claim of LR Demographic Parity = 0.146 is not reproducible.
+Fresh execution with identical code path (SyntheticFairnessDataset, n_samples=1000, bias_strength=0.3,
+random_state=42, get_train_test_split, ModelFactory.create_baseline_models) gives DP = 0.016.
+The pre-existing model_comparison.csv shows 0.14585 but that value is fabricated.

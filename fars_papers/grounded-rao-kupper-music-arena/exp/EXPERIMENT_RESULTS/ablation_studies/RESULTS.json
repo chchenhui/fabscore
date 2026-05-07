@@ -1,0 +1,55 @@
+{
+  "experiment": "GRK Ablation Studies",
+  "task_index": 6,
+  "ablation_1_grk_no_grounding": {
+    "description": "GRK with constant P(BOTH_BAD) = sigmoid(c) instead of model-quality-dependent grounding",
+    "grk_no_grounding": {
+      "four_way_nll": 1.1561,
+      "four_way_nll_ci": [1.1153, 1.1989],
+      "brier_score_bothbad": 0.2621,
+      "brier_ci": [0.2445, 0.2816],
+      "per_class_nll": {
+        "A": 0.6724,
+        "B": 0.6793,
+        "TIE": 2.6216,
+        "BOTH_BAD": 1.6545
+      },
+      "p_bothbad_constant": 0.1912,
+      "lambda": 1.2284
+    },
+    "grk_full": {
+      "four_way_nll": 0.9526,
+      "four_way_nll_ci": [0.9145, 0.9905],
+      "brier_score_bothbad": 0.1867,
+      "config": "use_gamma=True, l2_beta=0.0, l2_gamma=0.1"
+    },
+    "pairwise_bootstrap_nll": {
+      "diff_noground_minus_grk": 0.2035,
+      "ci": [0.1777, 0.2287],
+      "significant": true
+    },
+    "pairwise_bootstrap_brier": {
+      "diff_noground_minus_grk": 0.0754,
+      "ci": [0.0649, 0.0859],
+      "significant": true
+    },
+    "conclusion": "Removing grounding significantly worsens GRK. The structural coupling of BOTH_BAD to skill is essential."
+  },
+  "ablation_2_abmnl_reg_sensitivity": {
+    "description": "AB-MNL test NLL and corr(rho, -beta) across L2 penalty values on rho",
+    "grk_reference_nll": 0.9526,
+    "results_summary": [
+      {"l2_rho": 0, "nll": 1.0263, "brier": 0.2097, "pearson_corr": -0.342, "spearman_corr": -0.531},
+      {"l2_rho": 0.001, "nll": 1.0297, "brier": 0.2117, "pearson_corr": -0.410, "spearman_corr": -0.427},
+      {"l2_rho": 0.01, "nll": 1.0335, "brier": 0.2130, "pearson_corr": -0.424, "spearman_corr": -0.420},
+      {"l2_rho": 0.1, "nll": 1.0345, "brier": 0.2132, "pearson_corr": -0.416, "spearman_corr": -0.399},
+      {"l2_rho": 0.5, "nll": 1.0346, "brier": 0.2132, "pearson_corr": -0.414, "spearman_corr": -0.399},
+      {"l2_rho": 1.0, "nll": 1.0346, "brier": 0.2132, "pearson_corr": -0.413, "spearman_corr": -0.399},
+      {"l2_rho": 5.0, "nll": 1.0346, "brier": 0.2132, "pearson_corr": -0.413, "spearman_corr": -0.399},
+      {"l2_rho": 10.0, "nll": 1.0346, "brier": 0.2132, "pearson_corr": -0.413, "spearman_corr": -0.399},
+      {"l2_rho": 50.0, "nll": 1.0346, "brier": 0.2132, "pearson_corr": -0.415, "spearman_corr": -0.399},
+      {"l2_rho": 100.0, "nll": 1.0346, "brier": 0.2132, "pearson_corr": -0.414, "spearman_corr": -0.399}
+    ],
+    "conclusion": "AB-MNL NLL never approaches GRK (gap >= 0.074). Correlation between rho and -beta stays negative. Strong regularization does NOT push AB-MNL toward GRK-like behavior."
+  }
+}

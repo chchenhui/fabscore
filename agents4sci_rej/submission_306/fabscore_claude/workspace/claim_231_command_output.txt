@@ -1,0 +1,60 @@
+=== CLAIM 231 VERIFICATION: Table 1, P13029, k: 3 ===
+
+--- COMMAND 1: Check pre-computed CSV files ---
+grep "P13029" results/bcrparts/topN.csv
+OUTPUT: (no output - P13029 not in topN.csv, which only has 2 lines: header + P69924)
+
+grep "P13029" for_submission/results/bcrparts/topN.csv
+OUTPUT: (no output - same, only P69924 present)
+
+find /home/chenhui/fabscore/agents4sci_rej/submission_306 -name "*P13029*"
+OUTPUT: (no output - P13029 data not in local cache)
+
+--- COMMAND 2: Attempt to fetch P13029 PAE from AlphaFold ---
+requests.get('https://alphafold.ebi.ac.uk/files/AF-P13029-F1-predicted_aligned_error_v4.json')
+OUTPUT: HTTP 404 (v4 not available)
+
+requests.get('https://alphafold.ebi.ac.uk/api/prediction/P13029')
+OUTPUT: HTTP 200 - P13029 = KATG_ECOLI (Catalase-peroxidase), E. coli K12, length=726, latest version=6
+
+requests.get('https://alphafold.ebi.ac.uk/files/AF-P13029-F1-predicted_aligned_error_v6.json')
+OUTPUT: HTTP 200 - PAE matrix 726x726 successfully downloaded
+
+--- COMMAND 3: Run BCR analysis for P13029 ---
+python3 -c "
+import requests, numpy as np
+sys.path.insert(0, 'for_submission')
+from common.metrics import bcr_q_ratio
+from common.segmentation import partition_k_spectral
+# Fetch P13029 v6 PAE
+pae_mat = np.array(pae_data['predicted_aligned_error'])  # 726x726
+pae_sym = (pae_mat + pae_mat.T) / 2
+# Run BCR for k=2,3 with n_perm=30
+for k in [2, 3]:
+    blocks = partition_k_spectral(pae_sym, k=k)
+    result = bcr_q_ratio(pae_sym, blocks, n_perm=30, null_mode='block_shuffle', return_p=True)
+# Run BCR for k=2,3 with n_perm=1024, null_mode=rotation (actual run settings)
+for k in [2, 3]:
+    blocks = partition_k_spectral(pae_sym, k=k)
+    result = bcr_q_ratio(pae_sym, blocks, n_perm=1024, null_mode='rotation', return_p=True)
+"
+
+OUTPUT:
+P13029 N=726
+k=2: bcr_q_ratio=2.014903, z=24.230652, p_perm=0.032258, blocks=Blocks(blocks=[(0, 57), (57, 726)])
+k=3: bcr_q_ratio=2.014903, z=22.881673, p_perm=0.032258, blocks=Blocks(blocks=[(0, 57), (57, 432), (432, 726)])
+[n_perm=1024,rotation] k=2: bcr_q_ratio=2.014903, z=12.115254, p_perm=0.034146, blocks=Blocks(blocks=[(0, 57), (57, 726)])
+[n_perm=1024,rotation] k=3: bcr_q_ratio=2.014903, z=9.969492, p_perm=0.063415, blocks=Blocks(blocks=[(0, 57), (57, 432), (432, 726)])
+
+KEY FINDINGS:
+1. P13029 (Catalase-peroxidase, KATG_ECOLI) has length=726, which matches paper.
+2. With n_perm=30: k=2 and k=3 both give p_perm=0.032258 (minimum possible = 1/31).
+   - Tie in p_perm; code selects lower k (k=2) due to same p_perm.
+3. With n_perm=1024 (actual run settings from run_parallel_all.sh):
+   - k=2: p_perm=0.034146 (lower) → SELECTED by code
+   - k=3: p_perm=0.063415 (higher)
+4. Code would select k=2 for P13029 (lowest p_perm), NOT k=3 as paper claims.
+5. BCR formula in code: log((Q75_inter + eps) / (Q25_intra + eps)) [log-ratio with eps on both sides]
+   Paper Eq.2: Q75_inter / (Q25_intra + eps) [simple ratio, eps only on denominator]
+6. This is the same experiment fabrication pattern as all prior Table 1 claims (1-230).
+7. cohorts/evidence_ready.csv is missing (required input for full pipeline run).

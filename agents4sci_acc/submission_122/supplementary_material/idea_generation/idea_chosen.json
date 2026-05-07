@@ -1,0 +1,23 @@
+{
+  "title": "UnitMath: Unit-Aware Numerical Reasoning and Dimensional Consistency",
+  "core_idea": "Augment table reasoning with a unit parser and a symbolic calculator that handles conversions, percentage points vs percent, fold-changes, ratios, and confidence intervals. Enforce dimensional consistency during reasoning and comparisons.",
+  "hypothesis": "Unit-aware normalization and symbolic numeric reasoning reduce arithmetic and scale errors, improving performance on claims requiring quantitative comparisons in SCITAB.",
+  "why_it_matters": "Many scientific errors stem from misinterpreting units or arithmetic; addressing this explicitly can produce large, reliable gains on compositional numerical claims.",
+  "possible_methods": [
+    "Unit and quantity extraction from headers/cells/claims with a rule-enhanced neural tagger",
+    "Symbolic reasoning module for conversions and operations (add, diff, ratio, percentage points, CI overlap)",
+    "Neural-symbolic fusion: model proposes operations; calculator executes and returns features",
+    "Consistency constraints: block comparisons across incompatible dimensions",
+    "Data augmentation: unit-rescaling counterfactuals to probe sensitivity to unit semantics"
+  ],
+  "experimental_design": [
+    "Build a quantity/units tagger for claims and table schema; map to a canonical unit ontology",
+    "Implement a calculator API exposing safe numeric ops and conversions; integrate as a differentiable plug-in via feature returns",
+    "Modify the model to output an operation sketch (e.g., compare(diff(colA,rowX), value)) which the calculator executes",
+    "Training: supervise labels plus soft supervision on operation types via distant cues (keywords like 'increase by', '% points')",
+    "Evaluation: label F1, numeric error categories (scale, unit, arithmetic), and a CI-overlap correctness metric where applicable",
+    "Stress tests: unit rescaling (mg→g), percentage vs percentage points swaps; measure invariance/equivariance",
+    "Ablations: without calculator, without unit normalization, with noisy unit detection",
+    "Package a lightweight unit-conversion library and templates for integrating with existing table encoders"
+  ]
+}

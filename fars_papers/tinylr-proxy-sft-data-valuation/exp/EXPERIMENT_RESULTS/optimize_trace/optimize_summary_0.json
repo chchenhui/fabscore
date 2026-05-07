@@ -1,0 +1,20 @@
+{
+  "optimize_index": 0,
+  "issues": [
+    {
+      "title": "Learning rate too low (5e-6) causing insufficient learning and inverted ranking",
+      "description": "At LR=5e-6, the proxy model barely moved from the base model, producing heavily compressed scores (spread 0.113) and an inverted ranking (Spearman rho=-0.378). The model learned surface patterns (favoring long-response CoT datasets like QwQ-LongCoT) rather than actual math skills. Fixed by increasing LR to 1e-5 (still 5x below standard 5e-5)."
+    },
+    {
+      "title": "Insufficient training steps (500) for tiny-LR regime",
+      "description": "With a 10x smaller LR, the effective learning per step is much reduced. 500 steps was insufficient for the model to learn meaningful math skills. Doubled to 1000 steps to compensate for the smaller step size, giving the proxy model enough gradient updates to differentiate between datasets."
+    },
+    {
+      "title": "Response-length confound dominating GSM8K scores at low LR",
+      "description": "A fundamental issue: datasets with longer reasoning chains (QwQ ~7K chars, Magpie ~10K chars) produce disproportionately high GSM8K scores because the 1.5B proxy can pattern-match long reasoning chains on simpler problems. This confound is less problematic for MATH500 (harder problems). The optimized proxy shows excellent MATH500-only PDA (0.818) but GSM8K ranking remains confounded. This is an inherent limitation of the proxy model + benchmark combination, not a fixable bug."
+    }
+  ],
+  "experiment_result_path": "EXPERIMENT_RESULTS/optimize_trace/iteration_0/",
+  "success": true,
+  "summary": "Increased tiny-LR proxy from LR=5e-6/500steps to LR=1e-5/1000steps. Composite PDA improved from 0.349 to 0.500 (+0.151), Spearman rho from -0.378 to -0.091. Ranking is no longer inverted. MATH500-only PDA is excellent at 0.818 (approaching std-LR proxy 0.864). dart-math-hard moved from proxy rank 8 to rank 3. However, composite PDA (0.500) still below std-LR proxy (0.712) due to GSM8K response-length confound that is inherent to the tiny-LR regime with a 1.5B proxy on simpler benchmarks."
+}

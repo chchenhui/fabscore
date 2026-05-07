@@ -1,0 +1,25 @@
+### Command: LR Equalized Odds fresh execution
+cd /home/chenhui/fabscore/agents4sci_rej/submission_268/supplimental_submission/code && python3 -c "
+from dataset import SyntheticFairnessDataset; from model import ModelFactory; from evaluate import FairnessMetrics
+dataset = SyntheticFairnessDataset(n_samples=1000, bias_strength=0.3, random_state=42)
+X_train, X_test, y_train, y_test, s_train, s_test, scaler = dataset.get_train_test_split(test_size=0.2)
+models = ModelFactory.create_baseline_models()
+lr = models['LogisticRegression']
+lr.fit(X_train, y_train)
+y_pred = lr.predict(X_test)
+eodds = FairnessMetrics.equalized_odds(y_test, y_pred, s_test)
+print(f'LR Equalized Odds: {eodds:.10f}')
+"
+
+### Output:
+LR Equalized Odds: 0.1285714286
+
+### Pre-existing CSV value (model_comparison.csv):
+equalized_odds = 0.26092119425632104
+
+### Claimed value in paper (Table 1):
+0.261 (rounded from 0.26092)
+
+### Result:
+Fresh execution: 0.1286 vs claimed 0.261 (~2x off)
+Verdict: Result Fabrication

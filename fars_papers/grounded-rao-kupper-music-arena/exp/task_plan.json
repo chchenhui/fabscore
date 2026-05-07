@@ -1,0 +1,66 @@
+[
+  {
+    "index": 0,
+    "category": "Environment Configuration",
+    "title": "Dependencies Installation and Project Structure Initialization",
+    "description": "Set up a lightweight, CPU-only Python environment for fitting paired-comparison models on Music Arena data. The project involves maximum-likelihood estimation of Bradley-Terry, AB-MNL, and Grounded Rao-Kupper models on pairwise preference data (~3,000 battles). No GPU or deep learning framework is required; the core dependencies are SciPy for optimization (L-BFGS), NumPy for numerical computation, pandas for data handling, and matplotlib/seaborn for visualization. The codebase will be organized to support multiple paired-comparison models with shared data loading, evaluation, and bootstrap utilities.",
+    "status": "completed",
+    "summary": "Created .venv with Python 3.12.12. Installed numpy 2.4.2, scipy 1.17.1, pandas 3.0.1, datasets 4.6.1, matplotlib 3.10.8, seaborn 0.13.2, tqdm 4.67.3, scikit-learn 1.8.0. Created grk_music_arena/ project structure with data/, models/, evaluation/, analysis/, scripts/, results/, figures/ subdirectories and placeholder Python files. Verified L-BFGS optimization, pandas, KFold, matplotlib plotting, and HuggingFace dataset loading (music-arena/music-arena-dataset configs: 2025_07-08, 2025_09, 2025_10, 2025_11, 2025_12, 2026_01)."
+  },
+  {
+    "index": 1,
+    "category": "Baseline Experiment",
+    "title": "Bradley-Terry Baseline on Music Arena",
+    "description": "Fit a standard Bradley-Terry (BT) model on Music Arena battle data as the primary baseline. This represents the current practice for arena leaderboards: BT models only the probability of one system beating another, treating ties as half-wins and collapsing BOTH_BAD into ties. This baseline establishes the reference point for evaluating whether 4-way outcome modeling (AB-MNL and GRK) improves predictive performance.\n\nReference: \"Rank analysis of incomplete block designs: I. The method of paired comparisons\" (Bradley & Terry, 1952) | https://doi.org/10.1093/biomet/39.3-4.324\n\nThe BT model assigns each system k a scalar score \u03b2_k with \u03c6_k = exp(\u03b2_k). For systems i and j: P(i wins) = \u03c6_i / (\u03c6_i + \u03c6_j). Ties and BOTH_BAD are both treated as 0.5 wins for each system. Fit by MLE using L-BFGS with identifiability constraint \u03a3_i \u03b2_i = 0.",
+    "status": "completed",
+    "summary": "Implemented and ran BT baseline on Music Arena (3274 battles, 12 systems, 70/30 chronological split). Global test 4-way NLL=8.134 [7.582, 8.675], BOTH_BAD Brier=0.365 [0.337, 0.397]. BT captures A/B win probabilities well (per-class NLL ~0.43) but assigns near-zero mass to TIE/BOTH_BAD (per-class NLL=18.42). Instrumental test: NLL=8.329, Brier=0.386. Vocal test: NLL=6.556, Brier=0.194. Underpower gate passed (359 BOTH_BAD in test, 36.5% rate). All results saved to grk_music_arena/results/ and EXPERIMENT_RESULTS/bt_baseline/."
+  },
+  {
+    "index": 2,
+    "category": "Baseline Experiment",
+    "title": "AB-MNL Baseline (Decoupled Badness) on Music Arena",
+    "description": "Fit the AB-MNL (Absolute-Badness Multinomial Logit) baseline on Music Arena data. AB-MNL is a 4-way outcome model that decouples relative skill from absolute badness by giving each system two parameters: a skill parameter \u03b2_k (governing win/loss) and a badness parameter \u03c1_k (governing BOTH_BAD propensity). This serves as a matched-complexity comparison to the proposed GRK model \u2014 both model all 4 outcomes, but AB-MNL decouples skill from badness while GRK couples them.\n\nReference: This model is defined in the proposal as a novel baseline; the softmax formulation follows standard multinomial logit conventions | https://en.wikipedia.org/wiki/Multinomial_logistic_regression\n\nThe AB-MNL model defines 4 logits for a pair (i, j):\n- u_A = \u03b2_i (win for system i)\n- u_B = \u03b2_j (win for system j)\n- u_tie = \u03c4 + 0.5*(\u03b2_i + \u03b2_j) (Davidson-style tie mass)\n- u_bad = \u03ba + 0.5*(\u03c1_i + \u03c1_j) (symmetric model-specific badness)\nThen P(y) = softmax(u_A, u_B, u_tie, u_bad). Fit by regularized MLE with L2 penalty on \u03c1 parameters, tuned by 5-fold CV on training data.",
+    "status": "completed",
+    "summary": "Implemented and ran AB-MNL baseline on Music Arena (3274 battles, 12 systems, 70/30 chronological split). L2 on rho tuned via 5-fold CV: best L2=0.1 (CV NLL=1.0096; all candidates within 0.003). Global test 4-way NLL=1.035 [0.992, 1.079], BOTH_BAD Brier=0.213 [0.196, 0.230], ECE=0.171. Massive improvement over BT (NLL 8.13->1.03, Brier 0.37->0.21). Per-class NLL: A=0.61, B=0.64, TIE=2.63, BOTH_BAD=1.40. Rho parameters negligibly small (all |rho|<0.014), badness governed by global kappa=-0.50 not system-specific rho. Instrumental: NLL=0.995, Brier=0.219. Vocal: NLL=1.356, Brier=0.167. All results saved to grk_music_arena/results/ and EXPERIMENT_RESULTS/abmnl_baseline/."
+  },
+  {
+    "index": 3,
+    "category": "Main Experiment",
+    "title": "Grounded Rao-Kupper (GRK) on Music Arena",
+    "description": "Implement and evaluate the proposed Grounded Rao-Kupper (GRK) model on Music Arena data. GRK is the core contribution: it treats BOTH_BAD as an explicit outside option by introducing a fictitious 'bad' competitor with fixed score 0. When both systems in a pair have low latent quality (small \u03b2), the probability of BOTH_BAD increases \u2014 this couples BOTH_BAD directly to skill, unlike AB-MNL which decouples them. The key innovation is transferring grounded arena modeling from LLM chat (P2L) to the music domain, where BOTH_BAD carries actionable information about absolute acceptability.\n\nReference codebase: The GRK formulation follows Prompt-to-Leaderboard (Frick et al., 2025) | https://arxiv.org/abs/2502.14855\n\nThe GRK model defines, for a pair (i, j) with \u03c6_k = exp(\u03b2_k) and tie parameter \u03bb \u2265 1:\n- P(i wins) = \u03c6_i / (\u03c6_i + \u03bb*\u03c6_j + 1)\n- P(j wins) = \u03c6_j / (\u03c6_j + \u03bb*\u03c6_i + 1)\n- P(BOTH_BAD) = 1 / (1 + \u03c6_i + \u03c6_j)\n- P(TIE) = 1 - P(i wins) - P(j wins) - P(BOTH_BAD)\nParameters: \u03b2_k for each system, \u03bb (global tie/indifference parameter). Fit by MLE using L-BFGS.",
+    "status": "completed",
+    "summary": "Implemented GRK model (grk_model.py) with MLE via L-BFGS-B, lambda >= 1 parameterization, and beta centering. Evaluated on global/instrumental/vocal test splits. Global test: 4-way NLL=0.956 [0.918, 0.994], BOTH_BAD Brier=0.186 [0.173, 0.199], ECE=0.154. GRK significantly outperforms both baselines (BT NLL=8.134, AB-MNL NLL=1.035) with all pairwise bootstrap 95% CIs excluding zero. Lambda=1.313, 13 parameters (vs AB-MNL's 26). BOTH_BAD per-class NLL improved 23% vs AB-MNL (1.079 vs 1.397). Instrumental: NLL=0.914, Brier=0.189. Vocal: NLL=1.295, Brier=0.160. Compiled cross-method comparison tables (main_results_table.json/md). Results saved to grk_music_arena/results/ and EXPERIMENT_RESULTS/grk_main/."
+  },
+  {
+    "index": 4,
+    "category": "Optimization",
+    "title": "Optimize: Grounded Rao-Kupper (GRK) on Music Arena",
+    "description": "Optimize the main experiment 'Grounded Rao-Kupper (GRK) on Music Arena' to improve results.",
+    "status": "completed",
+    "summary": "Optimization succeeded after 1/2 iterations.\n  - Step 0: success, issues: [Probability renormalization for P(TIE) clipping, Per-system tie propensity (gamma extension), Optimizer convergence and initialization]\nDetails: EXPERIMENT_RESULTS/optimize_trace/"
+  },
+  {
+    "index": 5,
+    "category": "Effectiveness Evaluation",
+    "title": "Effectiveness Evaluation of GRK on Music Arena",
+    "description": "Evaluate whether the proposed Grounded Rao-Kupper (GRK) model is effective as a leaderboard model for Music Arena. The core question: does GRK improve held-out 4-way predictive likelihood and produce better-calibrated BOTH_BAD probabilities compared to the Bradley-Terry baseline and the AB-MNL (decoupled badness) baseline? The evaluation uses two primary metrics: 4-way NLL (overall predictive quality) and BOTH_BAD Brier score (calibration of acceptability estimates). Statistical significance is assessed via bootstrap 95% confidence intervals on pairwise metric differences. Results are evaluated on the global test set as well as the instrumental-only and vocal-only stratified subsets.",
+    "status": "completed",
+    "summary": "Verdict: good. GRK is effective as a leaderboard model for Music Arena. It significantly outperforms both BT and AB-MNL baselines on both primary metrics (4-way NLL and BOTH_BAD Brier) across all three evaluation settings (global, instrumental, vocal). Global test: GRK NLL=0.953 vs AB-MNL=1.035 vs BT=8.134; GRK Brier=0.187 vs AB-MNL=0.213 vs BT=0.365. All pairwise bootstrap 95% CIs exclude zero (GRK vs AB-MNL NLL diff CI=[-0.096, -0.068]; Brier diff CI=[-0.031, -0.022]). Per-class NLL shows gains concentrated in BOTH_BAD (23% improvement over AB-MNL). Pre-specified decision rule: PROCEED. Reports saved to EXPERIMENT_RESULTS/effectiveness_evaluation_result.json and effectiveness_evaluation_report.md."
+  },
+  {
+    "index": 6,
+    "category": "Analysis Experiment",
+    "title": "Ablation Study: GRK Without Grounding and AB-MNL Regularization Sensitivity",
+    "description": "Two ablation studies that test (1) whether GRK's grounding mechanism (the fictitious bad-model anchor) is the source of its benefit, and (2) whether AB-MNL with strong \u03c1 regularization converges to GRK-like behavior, suggesting the improvement is primarily a regularization effect rather than a modeling insight. These ablations probe the mechanism behind GRK's performance: is it the structural coupling of BOTH_BAD to skill, or simply having fewer parameters?",
+    "status": "completed",
+    "summary": "Two ablation studies completed. (1) GRK-No-Grounding (constant BOTH_BAD rate): NLL=1.156 vs GRK=0.953; pairwise bootstrap diff=+0.204, CI=[+0.178, +0.229], significant. Removing grounding degrades performance below AB-MNL (1.035), confirming grounding is essential. (2) AB-MNL regularization sensitivity: swept L2 on rho across [0, 0.001, ..., 100]. NLL varies minimally (1.026--1.035), never approaching GRK (0.953). Correlation corr(rho, -beta) stays negative (~-0.41), the opposite of what GRK enforces. Strong regularization does NOT push AB-MNL toward GRK-like behavior. Conclusion: GRK improvement is genuinely structural (skill-coupled BOTH_BAD), not a regularization/parsimony artifact. Figures saved to grk_music_arena/figures/, results to grk_music_arena/results/ and EXPERIMENT_RESULTS/ablation_studies/."
+  },
+  {
+    "index": 7,
+    "category": "Analysis Experiment",
+    "title": "Per-Model Acceptability Analysis and \u03c1 vs \u2212\u03b2 Correlation",
+    "description": "Analyze the per-model acceptability estimates produced by GRK and compare them against empirical BOTH_BAD frequencies and the AB-MNL badness parameters. This analysis serves two purposes: (1) validate that GRK's implied acceptability signal is meaningful by correlating it with empirical data, and (2) test whether AB-MNL's decoupled \u03c1_k (badness) parameters are approximately proportional to \u2212\u03b2_k (negative skill), which would indicate that GRK's coupling assumption is empirically supported in the music domain.",
+    "status": "completed",
+    "summary": "Completed 4-step per-model acceptability analysis. (1) Computed empirical BOTH_BAD rates per system from full dataset with bootstrap 95% CIs; rates range from 7.5% (preview-ocelot) to 49.2% (musicgen-medium). (2) GRK-implied acceptability vs empirical BOTH_BAD: Pearson r=0.597 (p=0.041), Spearman r=0.566 (p=0.055), validating that GRK produces a meaningful acceptability signal. (3) AB-MNL rho vs -beta: Pearson r=-0.416 (p=0.178, not significant), OLS R^2=0.17; badness is not proportional to negative skill, meaning GRK coupling assumption is not perfectly supported, but all rho values are near-zero indicating minimal decoupled badness variation. (4) Leaderboard comparison: Kendall tau=0.818 (p=4.4e-05) between BT and GRK rankings; high rank agreement with meaningful changes for high-BOTH_BAD systems. Key outlier: acestep (lowest skill, but only 9.2% empirical BOTH_BAD vs 47.3% GRK-implied). Results in grk_music_arena/results/ and EXPERIMENT_RESULTS/acceptability_analysis/."
+  }
+]

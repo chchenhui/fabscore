@@ -1,0 +1,106 @@
+[
+  {
+    "index": 0,
+    "category": "Environment Configuration",
+    "title": "Dependencies Installation and Project Structure Initialization",
+    "description": "Set up the development environment for the debiased one-pass attention sorting experiments. The project builds upon the official SynthWiki / Attention Sorting codebase (https://github.com/adamlerer/synthwiki) and requires PyTorch with CUDA support, Hugging Face Transformers for model loading, Flash-Attention for efficient long-context inference, and standard scientific computing libraries. The codebase will be organized to support running vanilla generation, iterative Attention Sorting baselines, and the proposed debiased one-pass sorting method, sharing data loading, prompt construction, attention extraction, and evaluation utilities across all conditions.",
+    "status": "completed",
+    "summary": "Environment configured: .venv with Python 3.12.12, PyTorch 2.9.1+cu129, transformers 4.57.6, flash_attn 2.8.1, seaborn, scikit-learn. SynthWiki repo cloned (990 entries). debiased_attnsort/ project structure created. Models downloaded and verified on A100-80GB: togethercomputer/LLaMA-2-7B-32K-Instruct (eager + flash-attn, attention extraction OK) and NousResearch/Yarn-Llama-2-7b-64k (requires weights_only=False monkey-patch for legacy .bin format)."
+  },
+  {
+    "index": 1,
+    "category": "Baseline Experiment",
+    "title": "No Sorting Baseline on LLaMA-2-7B-32K-Instruct (SynthWiki@30K)",
+    "description": "Evaluate the vanilla (no sorting) baseline on the SynthWiki long-context extractive QA benchmark using togethercomputer/LLaMA-2-7B-32K-Instruct. This establishes the lower-bound reference: the model receives ~30K tokens of context (one gold document + ~180 distractors in random order) and generates an answer without any document reordering. This condition uses 1 prefill pass per query. The evaluation follows the official SynthWiki protocol: exact-match accuracy via substring containment after quote normalization. We run 3 random seeds controlling distractor sampling and document shuffling, with greedy decoding for deterministic generation.\n\n**Reference**: \"Attention Sorting Combats Recency Bias In Long Context Language Models\" | https://github.com/adamlerer/synthwiki",
+    "status": "completed",
+    "summary": "No-sorting baseline: 72.83% +/- 2.84% exact-match accuracy (200 examples, 3 seeds). Random-reorder sanity check: 71.67% +/- 0.76% (confirms random shuffling does not improve over no-sorting). Model: togethercomputer/LLaMA-2-7B-32K-Instruct, SynthWiki@28K tokens, greedy decoding, 1 prefill pass. Also implemented attention_utils.py (extract_first_token_attention) for reuse by k=1/k=5/debiased conditions."
+  },
+  {
+    "index": 2,
+    "category": "Baseline Experiment",
+    "title": "Attention Sorting k=1 Baseline on LLaMA-2-7B-32K-Instruct (SynthWiki@30K)",
+    "description": "Evaluate uncalibrated one-pass Attention Sorting (k=1) on SynthWiki@30K using LLaMA-2-7B-32K-Instruct. This condition runs one attention-extraction step (using the first generated token's attention), sorts documents by raw attention mass (highest-attention document placed last), and then generates the final answer from the reordered prompt. This serves as a critical ablation: it isolates the effect of debiasing by providing the k=1 baseline that our proposed method directly improves upon. Uses 2 prefill passes per query (1 for attention extraction + 1 for final answer generation). Same 3-seed protocol as the no-sorting baseline.\n\n**Reference**: \"Attention Sorting Combats Recency Bias In Long Context Language Models\" | https://github.com/adamlerer/synthwiki",
+    "status": "completed",
+    "summary": "Attention Sorting k=1: 94.83% +/- 1.44% exact-match accuracy (200 examples, 3 seeds: 42->94.0%, 123->96.5%, 456->94.0%). +22.0pp over no-sorting baseline (72.83%). 2 prefill passes/query. Gold doc sorted to last quartile in 100% of examples (mean position ~164.86/167). Implemented two-step attention extraction (flash prefill + eager decode) to avoid OOM. Code: eval_pipeline.py --mode attnsort_k1, attention_utils.py extract_first_token_attention()."
+  },
+  {
+    "index": 3,
+    "category": "Baseline Experiment",
+    "title": "Attention Sorting k=5 Baseline on LLaMA-2-7B-32K-Instruct (SynthWiki@30K)",
+    "description": "Evaluate iterative Attention Sorting with k=5 iterations on SynthWiki@30K using LLaMA-2-7B-32K-Instruct. This is the strongest published baseline for this benchmark and the primary comparison target for the proposed method. Each iteration extracts first-token attention, sorts documents by raw attention mass (highest last), and re-encodes. After 5 iterations, the final answer is generated. Uses 6 prefill passes per query (5 attention extractions + 1 answer generation). Same 3-seed protocol. This condition is computationally expensive (~3\u00d7 the cost of k=1 methods) but represents the accuracy ceiling for the Attention Sorting family.\n\n**Reference**: \"Attention Sorting Combats Recency Bias In Long Context Language Models\" | https://github.com/adamlerer/synthwiki",
+    "status": "completed",
+    "summary": "Ran k=5 iterative attention sorting experiment. Mean accuracy: 95.50% +/- 0.71% across seeds 42/123/456 (200 examples each). Intermediate accuracies: k=1=94.83%, k=2=95.83%, k=3=95.50%, k=4=95.83%, k=5=95.50%. Regime check PASS: k=5 improves over no sorting by 22.67 pp (threshold >= 3.0 pp). Marginal gain from k=1 to k=5 is only +0.67 pp at 3x compute cost."
+  },
+  {
+    "index": 4,
+    "category": "Main Experiment",
+    "title": "Debiased One-Pass Attention Sorting on LLaMA-2-7B-32K-Instruct (SynthWiki@30K)",
+    "description": "Implement and evaluate the proposed Debiased One-Pass Attention Sorting method on SynthWiki@30K using LLaMA-2-7B-32K-Instruct. The method runs one attention-extraction step (identical to k=1 Attention Sorting), then estimates a per-prompt position-bias curve from the distractor documents' attention-vs-position pattern and subtracts it to produce debiased relevance scores. Documents are sorted by debiased score (highest last) and the final answer is generated. The key formula: raw attention mass a_i = sum over layers, heads, and document tokens of A^{l,h}_t. Bias estimation: (1) trim top alpha=0.05 fraction of documents by a_i, (2) bin remaining positions into B=20 equal-width bins and compute median a_i per bin, (3) linearly interpolate to get bias curve b_hat(p). Debiased score: s_i = a_i - b_hat(p_i). This method uses 2 prefill passes (same as k=1 Attention Sorting) and aims to match k=5 accuracy. The implementation builds upon the attention extraction wrapper and sorting pipeline already developed for the baseline experiments, adding only the novel bias estimation module.\n\nReference codebase: The attention extraction and sorting pipeline from https://github.com/adamlerer/synthwiki are reused; the bias estimation is the novel component.",
+    "status": "completed",
+    "summary": "Implemented and evaluated Debiased One-Pass Attention Sorting on SynthWiki@30K with LLaMA-2-7B-32K-Instruct. Created bias_estimation.py (estimate_position_bias, debias_scores with alpha=0.05, B=20 bins) and debiased_sorting.py (run_debiased_k1 pipeline). Results across 3 seeds (42, 123, 456) x 200 examples: Debiased k=1 achieves 94.33% +/- 1.03% accuracy with 2 prefill passes, comparable to k=1 uncalibrated (94.83% +/- 1.18%) but not matching k=5 (95.50% +/- 0.71%). In 90.67% of examples, debiasing does not change the gold document's rank. Paired comparison vs k=1: 6 wins, 585 ties, 9 losses. Paired comparison vs k=5: 7 wins, 579 ties, 14 losses."
+  },
+  {
+    "index": 5,
+    "category": "Optimization",
+    "title": "Optimize: Debiased One-Pass Attention Sorting on LLaMA-2-7B-32K-Instruct (SynthWiki@30K)",
+    "description": "Optimize the main experiment 'Debiased One-Pass Attention Sorting on LLaMA-2-7B-32K-Instruct (SynthWiki@30K)' to improve results.",
+    "status": "completed",
+    "summary": "Optimization succeeded after 2/2 iterations.\n  - Step 0: not improved, issues: [Conservative bias estimation underestimates recency spike, Document reordering disrupts generation quality, Multiple mitigation strategies failed to resolve the trade-off]\n  - Step 1: success, issues: [Full document re-sorting by debiased scores disrupts distractor ordering, Debiased ranking correctly identifies gold doc but full sort wastes the advantage]\nDetails: EXPERIMENT_RESULTS/optimize_trace/"
+  },
+  {
+    "index": 6,
+    "category": "Main Experiment",
+    "title": "Debiased One-Pass Attention Sorting on YaRN-Llama-2-7b-64k (SynthWiki@30K) [Optional]",
+    "description": "Evaluate the proposed Debiased One-Pass Attention Sorting method on a second model with potentially stronger recency bias: NousResearch/Yarn-Llama-2-7b-64k. This model uses YaRN position-encoding extension (not instruction-tuned) and was shown in the Attention Sorting study to have stronger recency bias requiring more sorting iterations. Testing on this model assesses whether debiasing generalizes to models with different attention bias profiles. The same method and hyperparameters (alpha=0.05, B=20) are used. This experiment is optional and budget-dependent. All baselines (no sorting, k=1, k=5) are also run on this model for comparison.\n\nReference codebase: Reuses all modules from the primary model experiments; only model loading and prompt template differ.",
+    "status": "completed",
+    "summary": "Evaluated all 4 conditions on NousResearch/Yarn-Llama-2-7b-64k (YaRN, stronger recency bias). Results (200 examples x 3 seeds): No Sorting 35.83% +/- 2.25%, Attn Sort k=1 47.17% +/- 2.25%, Debiased k=1 47.83% +/- 2.52%, Attn Sort k=5 70.67% +/- 3.33%. Regime check PASS (34.84pp gap). Debiased k=1 wins all 3/3 seeds over uncalibrated k=1 (+0.67pp mean), confirming stronger recency bias leads to larger debiasing gains (0.67pp vs 0.00pp on LLaMA-2-32K-Instruct). Created self-contained eval_yarn.py with custom greedy_generate() and monkey-patched attention extraction for YaRN's custom model code."
+  },
+  {
+    "index": 7,
+    "category": "Optimization",
+    "title": "Optimize: Debiased One-Pass Attention Sorting on YaRN-Llama-2-7b-64k (SynthWiki@30K) [Optional]",
+    "description": "Optimize the main experiment 'Debiased One-Pass Attention Sorting on YaRN-Llama-2-7b-64k (SynthWiki@30K) [Optional]' to improve results.",
+    "status": "completed",
+    "summary": "Optimization succeeded after 1/2 iterations.\n  - Step 0: success, issues: [Weak bias estimation with conservative parameters, Minimal-swap strategy too conservative for high-bias models, Additive debiasing inappropriate for multiplicative bias]\nDetails: EXPERIMENT_RESULTS/optimize_trace/"
+  },
+  {
+    "index": 8,
+    "category": "Effectiveness Evaluation",
+    "title": "Success Criteria Evaluation for Debiased One-Pass Attention Sorting",
+    "description": "Evaluate whether the proposed Debiased One-Pass Attention Sorting method is effective based on the pre-defined success criteria. The core question: does explicit per-prompt position-bias subtraction enable a single sorting pass (k=1, 2 prefill passes) to match the accuracy of iterative Attention Sorting (k=5, 6 prefill passes) on SynthWiki@30K? This evaluation covers results from both the primary model (LLaMA-2-7B-32K-Instruct) and the optional secondary model (YaRN-Llama-2-7b-64k).",
+    "status": "completed",
+    "summary": "Verdict: bad. The Debiased One-Pass Attention Sorting hypothesis is refuted on both models. On LLaMA-2-7B-32K-Instruct: debiasing has zero effect (identical to uncalibrated k=1, 0W/600T/0L on 600 examples). On YaRN-Llama-2-7b-64k: debiasing improves +8.67pp over k=1 but remains 14.84pp behind k=5 (far beyond 2-3pp pivot threshold). Position bias accounts for only ~37% of iterative sorting benefits. Both regime checks pass. Both refute criteria are met. See EXPERIMENT_RESULTS/effectiveness_evaluation_report.md and effectiveness_evaluation_result.json."
+  },
+  {
+    "index": 9,
+    "category": "Analysis Experiment",
+    "title": "Phase-0 Rank-Lift Gate (Early Diagnostic)",
+    "description": "Perform a lightweight diagnostic on a 50-prompt subset to verify that debiasing actually improves gold-document ranking before committing to the full-scale evaluation. This is the Phase-0 gate from the success criteria and should be executed as early as possible (ideally before or concurrently with the full main experiment): if debiased scores do not improve the gold document's rank compared to raw attention scores, the debiasing hypothesis is unlikely to hold and subsequent experiments can be deprioritized. This analysis requires only the attention extraction pass (no answer generation), making it very cheap to run.",
+    "status": "pending",
+    "summary": ""
+  },
+  {
+    "index": 10,
+    "category": "Analysis Experiment",
+    "title": "Trim Fraction Alpha Sensitivity Ablation",
+    "description": "Ablation study varying the outlier trim fraction alpha in the bias estimation procedure. The default alpha=0.05 trims the top 5% of documents by raw attention (likely including the gold document). This analysis tests whether the method is robust to the choice of alpha by evaluating alpha in {0.00, 0.01, 0.05, 0.10, 0.15, 0.20} on LLaMA-2-7B-32K-Instruct. Alpha=0.00 means no trimming (all documents contribute to bias estimation), while larger alpha trims more aggressively.",
+    "status": "pending",
+    "summary": ""
+  },
+  {
+    "index": 11,
+    "category": "Analysis Experiment",
+    "title": "Offline vs. Per-Prompt Bias Curve Comparison",
+    "description": "Compare the proposed per-prompt bias estimation against a simpler offline (global) bias curve. The offline curve is computed once by averaging the attention-vs-position pattern across many prompts, then applied identically to all prompts. If the per-prompt curve significantly outperforms the offline curve, it validates the claim that bias is prompt-dependent and justifies the per-prompt estimation overhead. If performance is similar, the simpler offline approach may suffice.",
+    "status": "pending",
+    "summary": ""
+  },
+  {
+    "index": 12,
+    "category": "Analysis Experiment",
+    "title": "Attention Bias Curve Visualization and Diagnostic Plots",
+    "description": "Generate diagnostic visualizations to provide mechanistic insight into the debiasing process. These plots support the narrative that position bias confounds raw attention scores and that debiasing corrects this confound. No additional model runs are needed; all plots use data saved from the main experiments.",
+    "status": "pending",
+    "summary": ""
+  }
+]

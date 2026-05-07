@@ -1,0 +1,680 @@
+===== COMMAND: python - <<'PY'
+from pathlib import Path
+from pypdf import PdfReader
+pdf = Path('202_SciVerify_Digits_A_Benchma.pdf')
+reader = PdfReader(str(pdf))
+text = '\n'.join(page.extract_text() or '' for page in reader.pages)
+for i, line in enumerate(text.splitlines(), 1):
+    if 'Table 1' in line or 'Simple Concat' in line or 'MNIST Fashion-MNIST SVHN Permuted SVHN' in line or '85.1' in line:
+        print(f'{i}: {line}')
+PY =====
+95: 1. Simple Concatenation Baseline:A CNN extracts features from each image, and a pre-86
+130: strategies. More advanced models show similar struggles. Table 1 summarizes the performance of all121
+146: Table 1: Model performance across datasets and tests. Accuracy (%) is reported. The simple baseline
+149: MNIST Fashion-MNIST SVHN Permuted SVHN
+150: Simple Concat 85.1 62.3 58.9 51.4
+
+===== COMMAND: python - <<'PY'
+import numpy as np
+path='logs/0-run/experiment_results/experiment_23b7cc9670dc469d91f273d62ad1176e_proc_1502176/experiment_data.npy'
+data=np.load(path, allow_pickle=True).item()
+for k,v in data['num_epochs_tuning']['mnist_claims'].items():
+    print('KEY', k)
+    print('final_val_acc', v['metrics']['val_acc'][-1])
+    print('best_val_acc', max(v['metrics']['val_acc']))
+PY =====
+KEY epochs_10
+final_val_acc 0.7183333333333334
+best_val_acc 0.7183333333333334
+KEY epochs_20
+final_val_acc 0.6983333333333334
+best_val_acc 0.7166666666666667
+KEY epochs_30
+final_val_acc 0.71
+best_val_acc 0.7166666666666667
+
+===== COMMAND: python - <<'PY'
+import numpy as np
+path='logs/0-run/experiment_results/experiment_787c7a47f00e4c4cba895078ef763dff_proc_1514333/experiment_data.npy'
+data=np.load(path, allow_pickle=True).item()
+for ds in ['mnist','fashion_mnist','svhn']:
+    print('DATASET', ds)
+    print('final_val', data[ds]['metrics']['val'][-1])
+    print('best_val', max(data[ds]['metrics']['val']))
+PY =====
+DATASET mnist
+final_val 0.7
+best_val 0.7604166666666666
+DATASET fashion_mnist
+final_val 0.7125
+best_val 0.7708333333333334
+DATASET svhn
+final_val 0.6083333333333333
+best_val 0.6916666666666667
+
+===== COMMAND: python - <<'PY'
+from pathlib import Path
+import numpy as np
+root = Path('logs/0-run/experiment_results')
+for path in sorted(root.glob('experiment_*/experiment_data.npy')):
+    try:
+        data = np.load(path, allow_pickle=True).item()
+    except Exception as e:
+        print(f'LOAD_FAIL {path}: {e}')
+        continue
+    printed = False
+    if 'num_epochs_tuning' in data and 'mnist_claims' in data['num_epochs_tuning']:
+        for k,v in data['num_epochs_tuning']['mnist_claims'].items():
+            vals = v.get('metrics', {}).get('val_acc')
+            if vals:
+                if not printed:
+                    print(path)
+                    printed = True
+                print(f'  num_epochs/{k}: final={vals[-1]} best={max(vals)}')
+    for ds in ['mnist','fashion_mnist','svhn']:
+        if ds in data and isinstance(data[ds], dict):
+            vals = data[ds].get('metrics', {}).get('val')
+            if vals:
+                if not printed:
+                    print(path)
+                    printed = True
+                print(f'  {ds}/val: final={vals[-1]} best={max(vals)}')
+            vals2 = data[ds].get('metrics', {}).get('val_logic')
+            if vals2:
+                if not printed:
+                    print(path)
+                    printed = True
+                print(f'  {ds}/val_logic: final={vals2[-1]} best={max(vals2)}')
+    for k,v in data.items():
+        if isinstance(v, dict) and 'metrics' in v:
+            vals = v['metrics'].get('val_acc')
+            if vals:
+                if not printed:
+                    print(path)
+                    printed = True
+                print(f'  {k}/val_acc: final={vals[-1]} best={max(vals)}')
+PY =====
+logs/0-run/experiment_results/experiment_069df5f4c4de4842a291735c4c76dea1_proc_1501281/experiment_data.npy
+  mnist_claims/val_acc: final=0.7183333333333334 best=0.7183333333333334
+logs/0-run/experiment_results/experiment_23b7cc9670dc469d91f273d62ad1176e_proc_1502176/experiment_data.npy
+  num_epochs/epochs_10: final=0.7183333333333334 best=0.7183333333333334
+  num_epochs/epochs_20: final=0.6983333333333334 best=0.7166666666666667
+  num_epochs/epochs_30: final=0.71 best=0.7166666666666667
+logs/0-run/experiment_results/experiment_272875af61684c03898c49779a68b795_proc_1514333/experiment_data.npy
+  mnist/val_logic: final=0.6966666666666667 best=0.6966666666666667
+  fashion_mnist/val_logic: final=0.67 best=0.71
+  svhn/val_logic: final=0.71 best=0.71
+  mnist/val_acc: final=0.6933333333333334 best=0.6933333333333334
+  fashion_mnist/val_acc: final=0.6888888888888889 best=0.71
+  svhn/val_acc: final=0.6566666666666666 best=0.6566666666666666
+logs/0-run/experiment_results/experiment_35c6c026826f4a209722d86629dca9e2_proc_1522608/experiment_data.npy
+  mnist/val: final=0.5416666666666666 best=0.6125
+  mnist/val_logic: final=0.5416666666666666 best=0.6125
+  fashion_mnist/val: final=0.575 best=0.6854166666666667
+  fashion_mnist/val_logic: final=0.575 best=0.6854166666666667
+  svhn/val: final=0.4708333333333333 best=0.5666666666666667
+  svhn/val_logic: final=0.4708333333333333 best=0.5666666666666667
+logs/0-run/experiment_results/experiment_5d63515e2e1a419abdebbeac6bebe10c_proc_1514333/experiment_data.npy
+  mnist/val_logic: final=0.7 best=0.7
+  fashion_mnist/val_logic: final=0.67 best=0.71
+  svhn/val_logic: final=0.71 best=0.71
+  mnist/val_acc: final=0.6933333333333334 best=0.6933333333333334
+  fashion_mnist/val_acc: final=0.69 best=0.7111111111111111
+  svhn/val_acc: final=0.6566666666666666 best=0.6566666666666666
+logs/0-run/experiment_results/experiment_6193ad435f4447a49f9596b25a9621dc_proc_1501281/experiment_data.npy
+  mnist_claims/val_acc: final=0.7183333333333334 best=0.7183333333333334
+logs/0-run/experiment_results/experiment_787c7a47f00e4c4cba895078ef763dff_proc_1514333/experiment_data.npy
+  mnist/val: final=0.7 best=0.7604166666666666
+  mnist/val_logic: final=0.7 best=0.7604166666666666
+  fashion_mnist/val: final=0.7125 best=0.7708333333333334
+  fashion_mnist/val_logic: final=0.7125 best=0.7708333333333334
+  svhn/val: final=0.6083333333333333 best=0.6916666666666667
+  svhn/val_logic: final=0.6083333333333333 best=0.6916666666666667
+logs/0-run/experiment_results/experiment_8d1c9cccde634b2592d985e98793f7fe_proc_1502176/experiment_data.npy
+  num_epochs/epochs_10: final=0.7183333333333334 best=0.7183333333333334
+  num_epochs/epochs_20: final=0.7 best=0.7166666666666667
+  num_epochs/epochs_30: final=0.7083333333333334 best=0.7133333333333334
+
+===== COMMAND: nl -ba logs/0-run/experiment_results/experiment_23b7cc9670dc469d91f273d62ad1176e_proc_1502176/experiment_code.py | sed -n '37,240p' =====
+    37	# Synthetic claim generator
+    38	def generate_claim(digits):
+    39	    claim_type = random.choice(["sum_even", "all_less_than_5"])
+    40	    if claim_type == "sum_even":
+    41	        label = int(sum(digits) % 2 == 0)
+    42	        text = "The sum of the digits is even."
+    43	    elif claim_type == "all_less_than_5":
+    44	        label = int(all([d < 5 for d in digits]))
+    45	        text = "All digits are less than 5."
+    46	    return text, label
+    47	
+    48	
+    49	# Custom MNIST+Claim dataset
+    50	class MNISTClaimDataset(Dataset):
+    51	    def __init__(self, num_samples=3000, tokenizer=None):
+    52	        self.data = datasets.MNIST(
+    53	            root=".", train=True, download=True, transform=transforms.ToTensor()
+    54	        )
+    55	        self.num_samples = num_samples
+    56	        self.tokenizer = tokenizer or BertTokenizer.from_pretrained("bert-base-uncased")
+    57	        self.samples = self._generate()
+    58	
+    59	    def _generate(self):
+    60	        samples = []
+    61	        for _ in range(self.num_samples):
+    62	            indices = random.sample(range(len(self.data)), 3)
+    63	            imgs = [self.data[i][0] for i in indices]
+    64	            labels = [self.data[i][1] for i in indices]
+    65	            text, truth = generate_claim(labels)
+    66	            samples.append((imgs, text, truth))
+    67	        return samples
+    68	
+    69	    def __len__(self):
+    70	        return len(self.samples)
+    71	
+    72	    def __getitem__(self, idx):
+    73	        imgs, text, label = self.samples[idx]
+    74	        img_tensor = torch.stack(imgs)  # (3, 1, 28, 28)
+    75	        enc = self.tokenizer(
+    76	            text,
+    77	            return_tensors="pt",
+    78	            padding="max_length",
+    79	            truncation=True,
+    80	            max_length=32,
+    81	        )
+    82	        input_ids = enc["input_ids"].squeeze(0)  # (seq_len,)
+    83	        attention_mask = enc["attention_mask"].squeeze(0)  # (seq_len,)
+    84	        return (
+    85	            img_tensor,
+    86	            input_ids,
+    87	            attention_mask,
+    88	            torch.tensor(label, dtype=torch.float32),
+    89	        )
+    90	
+    91	
+    92	# Simple CNN for processing stack of 3 images as 3 channels
+    93	class CNNVisionEncoder(nn.Module):
+    94	    def __init__(self):
+    95	        super().__init__()
+    96	        self.net = nn.Sequential(
+    97	            nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1),  # 3->16, 28x28
+    98	            nn.ReLU(),
+    99	            nn.MaxPool2d(2),  # 16x14x14
+   100	            nn.Conv2d(16, 32, 3, padding=1),  # 32x14x14
+   101	            nn.ReLU(),
+   102	            nn.MaxPool2d(2),  # 32x7x7
+   103	            nn.Flatten(),
+   104	            nn.Linear(32 * 7 * 7, 128),  # 128-dim visual feature
+   105	            nn.ReLU(),
+   106	        )
+   107	
+   108	    def forward(self, x):
+   109	        return self.net(x)
+   110	
+   111	
+   112	# Full claim verifier model
+   113	class ClaimVerifier(nn.Module):
+   114	    def __init__(self):
+   115	        super().__init__()
+   116	        self.vision = CNNVisionEncoder()
+   117	        self.text = BertModel.from_pretrained("bert-base-uncased")
+   118	        for param in self.text.parameters():
+   119	            param.requires_grad = False  # freeze BERT for baseline
+   120	        self.fc = nn.Sequential(
+   121	            nn.Linear(128 + 768, 128), nn.ReLU(), nn.Linear(128, 1), nn.Sigmoid()
+   122	        )
+   123	
+   124	    def forward(self, imgs, input_ids, attn_mask):
+   125	        vis_feat = self.vision(imgs)  # (batch,128)
+   126	        txt_feat = self.text(
+   127	            input_ids=input_ids, attention_mask=attn_mask
+   128	        ).last_hidden_state[
+   129	            :, 0, :
+   130	        ]  # (batch,768)
+   131	        combined = torch.cat([vis_feat, txt_feat], dim=1)  # (batch,896)
+   132	        out = self.fc(combined).squeeze(1)
+   133	        return out
+   134	
+   135	
+   136	def collate_fn(batch):
+   137	    imgs = torch.stack([item[0] for item in batch])  # (B, 3, 1, 28, 28)
+   138	    imgs = imgs.squeeze(2)  # (B, 3, 28, 28)
+   139	    input_ids = torch.stack([item[1] for item in batch])  # (B, seq)
+   140	    attn_mask = torch.stack([item[2] for item in batch])  # (B, seq)
+   141	    labels = torch.stack([item[3] for item in batch])  # (B,)
+   142	    return imgs, input_ids, attn_mask, labels
+   143	
+   144	
+   145	# Training and validation loop
+   146	def train_eval_loop(model, loaders, optimizer, criterion, num_epochs=10, epoch_start=0):
+   147	    (
+   148	        train_accs,
+   149	        val_accs,
+   150	        train_losses,
+   151	        val_losses,
+   152	        all_val_preds,
+   153	        all_val_gts,
+   154	        all_epochs,
+   155	    ) = ([], [], [], [], None, None, [])
+   156	    best_val_acc = 0.0
+   157	    for epoch in range(epoch_start, epoch_start + num_epochs):
+   158	        model.train()
+   159	        total_loss, correct, n = 0, 0, 0
+   160	        for imgs, input_ids, attn_mask, labels in loaders["train"]:
+   161	            imgs, input_ids, attn_mask, labels = (
+   162	                imgs.to(device),
+   163	                input_ids.to(device),
+   164	                attn_mask.to(device),
+   165	                labels.to(device),
+   166	            )
+   167	            optimizer.zero_grad()
+   168	            outputs = model(imgs, input_ids, attn_mask)
+   169	            loss = criterion(outputs, labels)
+   170	            loss.backward()
+   171	            optimizer.step()
+   172	            total_loss += loss.item() * imgs.size(0)
+   173	            preds = (outputs > 0.5).float()
+   174	            correct += (preds == labels).sum().item()
+   175	            n += imgs.size(0)
+   176	        tr_loss, tr_acc = total_loss / n, correct / n
+   177	        # Validation
+   178	        model.eval()
+   179	        val_loss, val_correct, val_n = 0, 0, 0
+   180	        val_preds, val_gts = [], []
+   181	        with torch.no_grad():
+   182	            for imgs, input_ids, attn_mask, labels in loaders["val"]:
+   183	                imgs, input_ids, attn_mask, labels = (
+   184	                    imgs.to(device),
+   185	                    input_ids.to(device),
+   186	                    attn_mask.to(device),
+   187	                    labels.to(device),
+   188	                )
+   189	                outputs = model(imgs, input_ids, attn_mask)
+   190	                loss = criterion(outputs, labels)
+   191	                val_loss += loss.item() * imgs.size(0)
+   192	                preds = (outputs > 0.5).float().cpu().numpy()
+   193	                val_preds.append(preds)
+   194	                val_gts.append(labels.cpu().numpy())
+   195	                val_correct += (preds == labels.cpu().numpy()).sum()
+   196	                val_n += imgs.size(0)
+   197	        val_loss /= val_n
+   198	        val_acc = val_correct / val_n
+   199	        print(
+   200	            f"Epoch {epoch+1}: train_loss = {tr_loss:.4f}, val_loss = {val_loss:.4f}, train_acc = {tr_acc:.4f}, val_acc = {val_acc:.4f}"
+   201	        )
+   202	        train_losses.append(tr_loss)
+   203	        val_losses.append(val_loss)
+   204	        train_accs.append(tr_acc)
+   205	        val_accs.append(val_acc)
+   206	        all_epochs.append(epoch + 1)
+   207	        # Save preds/gts from final epoch
+   208	        if epoch == epoch_start + num_epochs - 1:
+   209	            all_val_preds = np.concatenate(val_preds)
+   210	            all_val_gts = np.concatenate(val_gts)
+   211	    return {
+   212	        "metrics": {"train_acc": train_accs, "val_acc": val_accs},
+   213	        "losses": {"train": train_losses, "val": val_losses},
+   214	        "predictions": all_val_preds,
+   215	        "ground_truth": all_val_gts,
+   216	        "epochs": all_epochs,
+   217	    }
+   218	
+   219	
+   220	# Prepare dataset, train/val split, and dataloaders (done only once)
+   221	tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+   222	full_dataset = MNISTClaimDataset(num_samples=3000, tokenizer=tokenizer)
+   223	train_len = int(0.8 * len(full_dataset))
+   224	val_len = len(full_dataset) - train_len
+   225	train_set, val_set = random_split(
+   226	    full_dataset, [train_len, val_len], generator=torch.Generator().manual_seed(42)
+   227	)
+   228	train_loader = DataLoader(
+   229	    train_set,
+   230	    batch_size=64,
+   231	    shuffle=True,
+   232	    collate_fn=collate_fn,
+   233	    num_workers=2,
+   234	    pin_memory=True,
+   235	)
+   236	val_loader = DataLoader(
+   237	    val_set,
+   238	    batch_size=64,
+   239	    shuffle=False,
+   240	    collate_fn=collate_fn,
+
+===== COMMAND: nl -ba logs/0-run/experiment_results/experiment_787c7a47f00e4c4cba895078ef763dff_proc_1514333/experiment_code.py | sed -n '94,428p' =====
+    94	def generate_claim(labels, available_claims):
+    95	    ctype = random.choice(available_claims)
+    96	    L = labels
+    97	    if ctype == "sum_even":
+    98	        label = int((sum(L) % 2) == 0)
+    99	        text = "The sum of the digits is even."
+   100	        subparts = [l for l in L]
+   101	    elif ctype == "all_lt_5":
+   102	        label = int(all(l < 5 for l in L))
+   103	        text = "All digits are less than 5."
+   104	        subparts = [l < 5 for l in L]
+   105	    elif ctype == "exactly_two_odd":
+   106	        label = int(sum([l % 2 == 1 for l in L]) == 2)
+   107	        text = "Exactly two digits are odd numbers."
+   108	        subparts = [l % 2 == 1 for l in L]
+   109	    elif ctype == "at_least_one_is_7":
+   110	        label = int(any(l == 7 for l in L))
+   111	        text = "At least one digit is seven."
+   112	        subparts = [l == 7 for l in L]
+   113	    elif ctype == "all_unique":
+   114	        label = int(len(set(L)) == len(L))
+   115	        text = "All three digits are unique."
+   116	        uniqarr = [L.count(l) == 1 for l in L]
+   117	        subparts = uniqarr
+   118	    else:
+   119	        raise ValueError()
+   120	    return text, label, np.array(subparts, dtype=np.int64)
+   121	
+   122	
+   123	def get_available_claims(dsname):
+   124	    return [
+   125	        "sum_even",
+   126	        "all_lt_5",
+   127	        "exactly_two_odd",
+   128	        "at_least_one_is_7",
+   129	        "all_unique",
+   130	    ]
+   131	
+   132	
+   133	class HF_ClaimDataset(Dataset):
+   134	    def __init__(self, hfdata, num_samples=4000, dsname="mnist"):
+   135	        self.data = hfdata
+   136	        self.num_samples = num_samples
+   137	        self.tokenizer = tokenizer
+   138	        self.dsname = dsname
+   139	        self.available_claims = get_available_claims(dsname)
+   140	        self.samples = self._generate()
+   141	
+   142	    def _generate(self):
+   143	        N = len(self.data)
+   144	        samples = []
+   145	        for _ in range(self.num_samples):
+   146	            indices = random.sample(range(N), 3)
+   147	            imgs = []
+   148	            labels = []
+   149	            for i in indices:
+   150	                arr = np.array(self.data[i]["image"]).astype(np.float32) / 255.0
+   151	                arr3 = np.repeat(arr[None, :, :], 3, axis=0)
+   152	                arr3 = pad_image(arr3, target_size=(28, 28))
+   153	                imgs.append(torch.from_numpy(arr3))
+   154	                labels.append(self.data[i]["label"])
+   155	            text, truth, logicvec = generate_claim(labels, self.available_claims)
+   156	            samples.append(
+   157	                (torch.stack(imgs, 0), text, truth, np.array(labels), logicvec)
+   158	            )
+   159	        return samples
+   160	
+   161	    def __len__(self):
+   162	        return len(self.samples)
+   163	
+   164	    def __getitem__(self, idx):
+   165	        imgs, text, label, digits, logicvec = self.samples[idx]
+   166	        enc = self.tokenizer(
+   167	            text,
+   168	            return_tensors="pt",
+   169	            padding="max_length",
+   170	            truncation=True,
+   171	            max_length=32,
+   172	        )
+   173	        input_ids = enc["input_ids"].squeeze(0)
+   174	        attn_mask = enc["attention_mask"].squeeze(0)
+   175	        return (
+   176	            imgs,  # (3,3,28,28) in case of repeated images
+   177	            input_ids,
+   178	            attn_mask,
+   179	            torch.tensor(label, dtype=torch.float32),
+   180	            torch.tensor(logicvec, dtype=torch.int64),
+   181	        )
+   182	
+   183	
+   184	class HF_SVHNClaimDataset(Dataset):
+   185	    def __init__(self, hfdata, num_samples=4000):
+   186	        self.data = hfdata
+   187	        self.num_samples = num_samples
+   188	        self.tokenizer = tokenizer
+   189	        self.available_claims = get_available_claims("svhn")
+   190	        self.samples = self._generate()
+   191	
+   192	    def _generate(self):
+   193	        N = len(self.data)
+   194	        samples = []
+   195	        for _ in range(self.num_samples):
+   196	            indices = random.sample(range(N), 3)
+   197	            imgs = []
+   198	            labels = []
+   199	            for i in indices:
+   200	                arr = np.array(self.data[i]["image"], dtype=np.float32) / 255.0
+   201	                if arr.ndim == 3 and arr.shape[2] == 3:
+   202	                    arr = np.transpose(arr, (2, 0, 1))
+   203	                arr28 = pad_image(arr, target_size=(28, 28))
+   204	                imgs.append(torch.from_numpy(arr28))
+   205	                labels.append(self.data[i]["label"])
+   206	            text, truth, logicvec = generate_claim(labels, self.available_claims)
+   207	            samples.append(
+   208	                (torch.stack(imgs, 0), text, truth, np.array(labels), logicvec)
+   209	            )
+   210	        return samples
+   211	
+   212	    def __len__(self):
+   213	        return len(self.samples)
+   214	
+   215	    def __getitem__(self, idx):
+   216	        imgs, text, label, digits, logicvec = self.samples[idx]
+   217	        enc = self.tokenizer(
+   218	            text,
+   219	            return_tensors="pt",
+   220	            padding="max_length",
+   221	            truncation=True,
+   222	            max_length=32,
+   223	        )
+   224	        input_ids = enc["input_ids"].squeeze(0)
+   225	        attn_mask = enc["attention_mask"].squeeze(0)
+   226	        return (
+   227	            imgs,
+   228	            input_ids,
+   229	            attn_mask,
+   230	            torch.tensor(label, dtype=torch.float32),
+   231	            torch.tensor(logicvec, dtype=torch.int64),
+   232	        )
+   233	
+   234	
+   235	def collate_fn(batch):
+   236	    # Each sample: (imgs (3,3,28,28), input_ids, attn_mask, label, logicvec)
+   237	    imgs = torch.stack([item[0] for item in batch])  # (B,3,28,28)
+   238	    # We'll merge the three images (for a claim) along channel dim: (B, 3*3, 28, 28)
+   239	    imgs = imgs.view(len(batch), -1, 28, 28)  # (B,9,28,28)
+   240	    input_ids = torch.stack([item[1] for item in batch])
+   241	    attn_mask = torch.stack([item[2] for item in batch])
+   242	    labels = torch.stack([item[3] for item in batch])
+   243	    logicvec = torch.stack([item[4] for item in batch])
+   244	    return imgs, input_ids, attn_mask, labels, logicvec
+   245	
+   246	
+   247	# Adjusted CNN Vision Encoder for merged image representation
+   248	class CNNVisionEncoder(nn.Module):
+   249	    def __init__(self, input_channels=9):
+   250	        super().__init__()
+   251	        self.net = nn.Sequential(
+   252	            nn.Conv2d(input_channels, 32, 3, padding=1),  # 32x28x28
+   253	            nn.ReLU(),
+   254	            nn.Conv2d(32, 64, 3, padding=1),  # 64x28x28
+   255	            nn.ReLU(),
+   256	            nn.MaxPool2d(2),  # 64x14x14
+   257	            nn.Conv2d(64, 128, 3, padding=1),  # 128x14x14
+   258	            nn.ReLU(),
+   259	            nn.MaxPool2d(2),  # 128x7x7
+   260	            nn.Flatten(),  # 128*7*7
+   261	            nn.Linear(128 * 7 * 7, 256),
+   262	            nn.ReLU(),
+   263	        )
+   264	
+   265	    def forward(self, x):
+   266	        return self.net(x)
+   267	
+   268	
+   269	class ClaimVerifier(nn.Module):
+   270	    def __init__(self, in_c, do_finetune_text=True):
+   271	        super().__init__()
+   272	        self.vision = CNNVisionEncoder(input_channels=in_c)
+   273	        self.text = BertModel.from_pretrained("bert-base-uncased")
+   274	        for param in self.text.parameters():
+   275	            param.requires_grad = do_finetune_text
+   276	        self.fc = nn.Sequential(
+   277	            nn.Linear(256 + 768, 192),
+   278	            nn.ReLU(),
+   279	            nn.Linear(192, 1),
+   280	            nn.Sigmoid(),
+   281	        )
+   282	
+   283	    def forward(self, imgs, input_ids, attn_mask):
+   284	        vis_feat = self.vision(imgs)
+   285	        txt_feat = self.text(
+   286	            input_ids=input_ids, attention_mask=attn_mask
+   287	        ).last_hidden_state[:, 0, :]
+   288	        x = torch.cat([vis_feat, txt_feat], dim=1)
+   289	        return self.fc(x).squeeze(1)
+   290	
+   291	
+   292	def logical_consistency_accuracy(preds, gts, logicvecs, claim_labels=None):
+   293	    # For this research, logical consistency is defined as (rounded) prediction equals ground truth
+   294	    correct = np.round(preds) == gts
+   295	    return np.mean(correct)
+   296	
+   297	
+   298	def train_on_dataset(name, dataset, in_c):
+   299	    print(f"\nTraining on {name} ...")
+   300	    train_len = int(0.85 * len(dataset))
+   301	    val_len = len(dataset) - train_len
+   302	    train_set, val_set = random_split(
+   303	        dataset, [train_len, val_len], generator=torch.Generator().manual_seed(42)
+   304	    )
+   305	    train_loader = DataLoader(
+   306	        train_set,
+   307	        batch_size=BATCH_SIZE,
+   308	        shuffle=True,
+   309	        collate_fn=collate_fn,
+   310	        num_workers=2,
+   311	        pin_memory=True,
+   312	    )
+   313	    val_loader = DataLoader(
+   314	        val_set,
+   315	        batch_size=BATCH_SIZE,
+   316	        shuffle=False,
+   317	        collate_fn=collate_fn,
+   318	        num_workers=2,
+   319	        pin_memory=True,
+   320	    )
+   321	    model = ClaimVerifier(in_c, do_finetune_text=True).to(device)
+   322	    optimizer = optim.Adam(model.parameters(), lr=LR)
+   323	    criterion = nn.BCELoss()
+   324	
+   325	    for epoch in range(NUM_EPOCHS):
+   326	        model.train()
+   327	        total_loss = 0.0
+   328	        all_preds, all_gts, all_logicvecs = [], [], []
+   329	        correct = 0
+   330	        for imgs, input_ids, attn_mask, labels, logicvec in train_loader:
+   331	            imgs = imgs.to(device).float()
+   332	            input_ids = input_ids.to(device)
+   333	            attn_mask = attn_mask.to(device)
+   334	            labels = labels.to(device)
+   335	            output = model(imgs, input_ids, attn_mask)
+   336	            loss = criterion(output, labels)
+   337	            optimizer.zero_grad()
+   338	            loss.backward()
+   339	            optimizer.step()
+   340	            total_loss += loss.item() * len(labels)
+   341	            preds = (output > 0.5).float()
+   342	            correct += (preds == labels).sum().item()
+   343	            all_preds.append(preds.detach().cpu().numpy())
+   344	            all_gts.append(labels.detach().cpu().numpy())
+   345	            all_logicvecs.append(logicvec.cpu().numpy())
+   346	        ntrain = train_len
+   347	        train_acc = correct / ntrain
+   348	        train_loss = total_loss / ntrain
+   349	        tpreds = np.concatenate(all_preds)
+   350	        tgts = np.concatenate(all_gts)
+   351	        tlogicvecs = np.concatenate(all_logicvecs)
+   352	        train_logic = logical_consistency_accuracy(tpreds, tgts, tlogicvecs)
+   353	        experiment_data[name]["metrics"]["train"].append(train_acc)
+   354	        experiment_data[name]["losses"]["train"].append(train_loss)
+   355	        experiment_data[name]["metrics"]["train_logic"].append(train_logic)
+   356	        # Validation
+   357	        model.eval()
+   358	        val_loss = 0.0
+   359	        all_preds, all_gts, all_logicvecs = [], [], []
+   360	        vcorrect = 0
+   361	        with torch.no_grad():
+   362	            for imgs, input_ids, attn_mask, labels, logicvec in val_loader:
+   363	                imgs = imgs.to(device).float()
+   364	                input_ids = input_ids.to(device)
+   365	                attn_mask = attn_mask.to(device)
+   366	                labels = labels.to(device)
+   367	                output = model(imgs, input_ids, attn_mask)
+   368	                loss = criterion(output, labels)
+   369	                val_loss += loss.item() * len(labels)
+   370	                preds = (output > 0.5).float()
+   371	                vcorrect += (preds == labels).sum().item()
+   372	                all_preds.append(preds.detach().cpu().numpy())
+   373	                all_gts.append(labels.detach().cpu().numpy())
+   374	                all_logicvecs.append(logicvec.cpu().numpy())
+   375	        nval = val_len
+   376	        val_acc = vcorrect / nval
+   377	        val_loss = val_loss / nval
+   378	        vpreds = np.concatenate(all_preds)
+   379	        vgts = np.concatenate(all_gts)
+   380	        vlogicvecs = np.concatenate(all_logicvecs)
+   381	        val_logic = logical_consistency_accuracy(vpreds, vgts, vlogicvecs)
+   382	        experiment_data[name]["metrics"]["val"].append(val_acc)
+   383	        experiment_data[name]["losses"]["val"].append(val_loss)
+   384	        experiment_data[name]["metrics"]["val_logic"].append(val_logic)
+   385	        experiment_data[name]["epochs"].append(epoch + 1)
+   386	        print(
+   387	            f"Epoch {epoch+1}: validation_loss = {val_loss:.4f}  | val_acc = {val_acc:.4f}  | val_logic_acc = {val_logic:.4f}"
+   388	        )
+   389	        if epoch == NUM_EPOCHS - 1:
+   390	            experiment_data[name]["predictions"] = vpreds
+   391	            experiment_data[name]["ground_truth"] = vgts
+   392	
+   393	
+   394	def plot_metric_curve(metrickey, ylabel, fname):
+   395	    plt.figure(figsize=(8, 6))
+   396	    colors = ["b", "r", "g"]
+   397	    for i, dsname in enumerate(["mnist", "fashion_mnist", "svhn"]):
+   398	        plt.plot(
+   399	            experiment_data[dsname]["epochs"],
+   400	            experiment_data[dsname]["metrics"][metrickey],
+   401	            color=colors[i],
+   402	            label=dsname,
+   403	        )
+   404	    plt.xlabel("Epoch")
+   405	    plt.ylabel(ylabel)
+   406	    plt.title(f"{ylabel} across datasets")
+   407	    plt.legend()
+   408	    plt.tight_layout()
+   409	    plt.savefig(os.path.join(working_dir, fname))
+   410	    plt.close()
+   411	
+   412	
+   413	mnist_hf = load_dataset("mnist", split="train")
+   414	mnist_ds = HF_ClaimDataset(mnist_hf, num_samples=3200, dsname="mnist")
+   415	train_on_dataset("mnist", mnist_ds, in_c=9)
+   416	
+   417	fmnist_hf = load_dataset("fashion_mnist", split="train")
+   418	fmnist_ds = HF_ClaimDataset(fmnist_hf, num_samples=3200, dsname="fashion_mnist")
+   419	train_on_dataset("fashion_mnist", fmnist_ds, in_c=9)
+   420	
+   421	svhn_hf = load_dataset("svhn", "cropped_digits", split="train")
+   422	svhn_ds = HF_SVHNClaimDataset(svhn_hf, num_samples=3200)
+   423	train_on_dataset("svhn", svhn_ds, in_c=9)
+   424	
+   425	plot_metric_curve("val", "Validation Accuracy", "val_acc_compare.png")
+   426	plot_metric_curve(
+   427	    "val_logic", "Logical Consistency Accuracy", "val_logic_acc_compare.png"
+   428	)
+

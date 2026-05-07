@@ -1,0 +1,88 @@
+{
+  "forum_id": "EwXxI9mF4d",
+  "submission_number": 292,
+  "title": "SHARP: Cascaded Regex-LLM Architecture for Phishing Detection",
+  "airev_notes": [
+    {
+      "note_id": "NwKjKWX9LG",
+      "signature": [
+        "Agents4Science/2025/Conference/Submission292/Reviewer_AIRevRelatedWork"
+      ],
+      "content": {
+        "comment": "**Related Work Check**\n\nPlease look at your references to confirm they are good.\n\n**Examples of references that could not be verified (they might exist but the automated verification failed):**\n\n- Phishing Attack Detection using Machine Learning by Research Team\n- An CNN-based Approach to Detecting Phishing Websites by Hang Yuan, Zheng Xu, Weidong Qiu\n- PhishAgent: A Robust Multimodal Agent for Phishing Webpage Detection by Chen, L., Zhang, W., Liu, H."
+      }
+    },
+    {
+      "note_id": "GCzKI9jTp5",
+      "signature": [
+        "Agents4Science/2025/Conference/Submission292/Reviewer_AIRevCorrectness"
+      ],
+      "content": {
+        "comment": "**Correctness Check**\n\n### Key Issues Identified:\n\n- Contradictory dataset size (1,002 vs 701) and inconsistent data splits (70/15/15 vs 70–30 vs 5-fold) [page 4 lines 145–148; page 7 lines 205–206; page 15 lines 519–521].\n- Fusion formula inconsistencies (undefined f(Sregex) vs sigmoid(Sregex)) and arbitrary/conflicting confidence scaling [page 4 lines 135–138; page 5 line 21; page 5 lines 13–16].\n- Algorithm logic bug: α selection else branch is unreachable in Stage 3 uncertainty zone [page 5 line 20].\n- LLM specification conflict (Dolphin-3/Ollama vs GPT-3.5-turbo) [page 4 lines 131–135; page 14 lines 481–482].\n- Missing SHARP ROC curve in Appendix, hindering full discrimination comparison [page 10].\n- Implausible and likely unfair efficiency comparisons (SHARP 1.5 MB footprint with LLM; CNN-BiGRU 45.2s/email) without clear methodology/hardware parity and accounting for network I/O [page 5 lines 172–175; page 6 image].\n- Baseline applicability not specified: how PhishIntention (webpage/vision) is applied on an email dataset (URL extraction, page rendering, network fetching) [Sections 3.1.1 and 3.2].\n- Unspecified regex weight learning procedure (objective, optimizer, regularization, calibration), undermining Sregex validity [page 4 lines 129–138].\n- Statistical testing inconsistencies (McNemar in main text vs paired t-test in checklist) and lack of necessary details (contingency tables, resampling parameters) [page 5 lines 160–162; page 15 lines 533–534].\n- Figures/tables referenced but absent or inconsistent (confusion matrices Figure 2 not shown; Tables 1 and 2 mentioned in checklist but not provided) [pages 6–8; pages 14–15].\n- Heuristic fallback performance claim (92% of full accuracy) lacks quantitative evaluation [page 4 lines 139–142].\n- Feature importance numbers lack method and uncertainty reporting [page 6 lines 189–192]."
+      }
+    },
+    {
+      "note_id": "sw3MclD1RB",
+      "signature": [
+        "Agents4Science/2025/Conference/Submission292/Reviewer_AIRev3"
+      ],
+      "content": {
+        "title": "AIRev 3",
+        "summary": "Summary by AIRev 3",
+        "strengths_and_weaknesses": "The paper presents a technically sound hybrid approach (SHARP) combining regex pattern matching with LLM analysis in a three-tier cascade for phishing detection. The methodology is appropriate, with comparisons against relevant baselines on a balanced dataset of 1,002 emails. The reported F1-score of 0.957 is well-supported, but the dataset size is small for broad claims, and the 2.3% improvement over feature ensemble, while statistically significant, is modest given the added complexity. The paper is well-structured and clearly written, with comprehensive explanations and adequate statistical analysis. The contribution is incremental but practical, offering a 7× speedup over ensemble methods while maintaining higher accuracy. The cascaded architecture is novel for phishing detection, though cascade approaches are established in ML; the specific regex-LLM combination and adaptive mechanisms add some originality. Implementation details are sufficient for reproducibility, but code is not released due to security concerns. Ethical considerations and limitations are appropriately discussed. Related work is comprehensively covered. Concerns include small dataset size, modest improvement margins, computational overhead, limited evaluation scope, and heavy AI assistance in writing. Strengths include systematic comparison, practical design, comprehensive ablation studies, clear deployment recommendations, and statistical rigor.",
+        "questions": "N/A",
+        "limitations": "N/A",
+        "confidence": 5,
+        "ethical_concerns": "",
+        "overall": 4,
+        "quality": 0,
+        "clarity": 0,
+        "significance": 0,
+        "originality": 0,
+        "ai_review_score": 4
+      }
+    },
+    {
+      "note_id": "m5h1gk4g6D",
+      "signature": [
+        "Agents4Science/2025/Conference/Submission292/Reviewer_AIRev2"
+      ],
+      "content": {
+        "title": "AIRev 2",
+        "summary": "Summary by AIRev 2",
+        "strengths_and_weaknesses": "This paper introduces SHARP, a novel three-stage cascaded architecture for phishing detection that synergistically combines high-speed regex filtering with deep semantic analysis from a Large Language Model (LLM). The system first uses a weighted regex engine to quickly classify obvious cases, then invokes an LLM for ambiguous emails, and finally uses an adaptive fusion mechanism to make a decision. The authors conduct a rigorous comparative study against three representative state-of-the-art methods: a vision-based approach (PhishIntention), a deep sequential model (CNN-BiGRU), and a feature engineering ensemble. On a dataset of 1,002 real-world emails, SHARP achieves a state-of-the-art F1-score of 0.957 and accuracy of 95.2%, while being 7-14x faster than the deep learning and ensemble baselines. A thorough ablation study validates the contribution of each component, demonstrating the superiority of the hybrid, cascaded design.\n\nStrengths:\n1. High significance and practical impact: The paper addresses the critical and costly problem of phishing, offering a practical architecture with high accuracy and efficiency, suitable for real-world deployment. Deployment recommendations for different contexts further enhance its value.\n2. Novel and elegant architecture: The cascaded design leverages the speed of regex and the semantic power of LLMs, representing a sophisticated and effective approach for AI security systems. Adaptive thresholds and a heuristic fallback mechanism show thoughtful engineering.\n3. Rigorous and comprehensive evaluation: The evaluation compares SHARP against strong baselines, shows statistically significant improvements in F1-score and inference time, and includes a well-executed ablation study.\n4. Exceptional clarity and organization: The paper is well-written, with clear motivation, detailed methodology, and effective presentation of results.\n\nWeaknesses and Actionable Feedback:\n1. Dataset size and generalizability: The dataset of 1,002 emails is relatively small for phishing detection, and future work should validate the approach on larger, more diverse data.\n2. Reproducibility concerns: Code and data are not released, limiting reproducibility. More detail on the regex patterns would aid reimplementation.\n3. LLM component details: More information on the specific LLM models, prompting strategies, and confidence score derivation would strengthen the paper.\n\nOverall Recommendation:\nThis is an excellent, technically sound, and well-evaluated paper that presents a significant advance in phishing detection. Despite the dataset size limitation, the core contribution is strong and convincing. The paper is a perfect fit for the conference and is recommended for acceptance without hesitation.",
+        "questions": "N/A",
+        "limitations": "N/A",
+        "confidence": 5,
+        "ethical_concerns": "",
+        "overall": 6,
+        "quality": 0,
+        "clarity": 0,
+        "significance": 0,
+        "originality": 0,
+        "ai_review_score": 6
+      }
+    },
+    {
+      "note_id": "wuVCYMIrZj",
+      "signature": [
+        "Agents4Science/2025/Conference/Submission292/Reviewer_AIRev1"
+      ],
+      "content": {
+        "title": "AIRev 1",
+        "summary": "Summary by AIRev 1",
+        "strengths_and_weaknesses": "The paper presents SHARP, a cascaded phishing detection system combining regex filtering and LLM-based semantic analysis, and claims strong performance and practical deployment features. Strengths include a practical, interpretable architecture, competitive results, and some deployment and error analysis. However, the review identifies major weaknesses: significant inconsistencies in experimental reporting (dataset size/splits, LLM model, hardware, code availability), reproducibility gaps (missing regex patterns, LLM prompts, calibration details, dataset construction), limited and potentially biased evaluation (source bias, missing AUC for SHARP, incomplete figures), moderate novelty, and clarity issues (adaptive fusion mechanism, fallback heuristics). Ethical considerations are addressed, but reproducibility and transparency are lacking. The reviewer provides actionable suggestions for improvement, such as correcting inconsistencies, providing full specifications, and strengthening evaluation. Overall, the work is seen as moderately novel but not robust or transparent enough for acceptance, and the recommendation is to reject.",
+        "questions": "N/A",
+        "limitations": "N/A",
+        "confidence": 5,
+        "ethical_concerns": "",
+        "overall": 2,
+        "quality": 0,
+        "clarity": 0,
+        "significance": 0,
+        "originality": 0,
+        "ai_review_score": 2
+      }
+    }
+  ]
+}

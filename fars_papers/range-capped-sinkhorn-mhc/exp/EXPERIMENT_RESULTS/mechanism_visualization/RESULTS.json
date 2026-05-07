@@ -1,0 +1,56 @@
+{
+  "task": "mechanism_visualization",
+  "description": "Diagnostic figures demonstrating RRCS prevents gradient vanishing through Sinkhorn",
+  "figures_dir": "mhc_repo/results/figures/",
+  "script": "mhc_repo/diagnostics/plot_results.py",
+  "figures": {
+    "hres_grad_norm_timeseries.png": {
+      "description": "H_res gradient norm time series (median across 96 layers vs iteration)",
+      "key_finding": "mHC default: 0.0, cap-init: ~1e-15, RRCS: ~4e-6"
+    },
+    "sinkhorn_log_range_distribution.png": {
+      "description": "Violin plots of Sinkhorn input log-range distribution per condition",
+      "key_finding": "mHC default: 160, cap-init: 30, RRCS raw: ~162, RRCS post-cap: ~2.0"
+    },
+    "sinkhorn_log_range_timeseries.png": {
+      "description": "Sinkhorn log-range mean across layers vs iteration",
+      "key_finding": "RRCS post-cap effective range stays near 2.0 throughout training"
+    },
+    "hres_param_drift.png": {
+      "description": "Cumulative H_res parameter drift proxy over training",
+      "key_finding": "mHC default: 0, cap-init: ~0, RRCS: substantial drift (final Fro=4.19)"
+    },
+    "global_grad_norm.png": {
+      "description": "Global gradient norm with smoothing and spike ratio annotation",
+      "key_finding": "Similar profiles across conditions; spike ratios: default ~1.42, cap-init ~1.42, RRCS ~1.34"
+    },
+    "range_cap_mechanism.png": {
+      "description": "Theoretical illustration: exp(Z) underflow and gradient chain mechanism",
+      "key_finding": "Only r_cap=2.0 keeps exp(Z_min) above 0.135, enabling soft routing"
+    }
+  },
+  "conditions": {
+    "mhc_default": {
+      "h_res_grad_median": 0.0,
+      "sinkhorn_range": 160.0,
+      "param_drift_fro": 0.0,
+      "grad_norm_spike_ratio": 1.42
+    },
+    "capinit": {
+      "h_res_grad_median": 1.59e-15,
+      "sinkhorn_range": 30.0,
+      "param_drift_fro": 3.4e-10,
+      "grad_norm_spike_ratio": 1.42
+    },
+    "rrcs_rcap2": {
+      "h_res_grad_median": 4.1e-6,
+      "sinkhorn_range_raw": 162.0,
+      "sinkhorn_range_effective": 2.0,
+      "param_drift_fro": 4.19,
+      "grad_norm_spike_ratio": 1.34
+    }
+  },
+  "seeds": [42, 123, 456],
+  "diagnostic_interval_steps": 10,
+  "total_iterations": 5000
+}

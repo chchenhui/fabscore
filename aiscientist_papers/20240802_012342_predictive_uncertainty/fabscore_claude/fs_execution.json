@@ -1,0 +1,51 @@
+{
+    "tables": [],
+    "figures": [
+        {
+            "claim_index": 33,
+            "claim": "1. Figure 1(a): Training accuracy for x/y mod p.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The experiment code in run_1.py is valid and generates real training accuracy time-series data for x_div_y in the correct format for plot.py. A 300-step partial run confirmed the code path works end-to-end (train_acc 0.72%→29.08%, plausible grokking trajectory). However, the full training runs (7500 steps × 4 datasets × 3 seeds × 6 run scripts) needed to reproduce Figure 1(a) could not be completed within available time (~6 hours estimated). The underlying all_results.npy files are absent from all run directories, so the exact data behind the existing train_acc_x_div_y.png cannot be directly verified. The code is plausible but insufficient evidence remains to confirm the figure's specific training curves.",
+            "evidence": "quick_test_claim33.py ran 300 steps on x_div_y (seed 0) using run_1.py functions; generated all_results.npy at fabscore_claude/workspace/run_quick_out/; train_acc rises 0.72%→29.08% across 300 steps; data structure matches plot.py expectations (keys: x_div_y_0_train_info with train_accuracy, step fields). Full run_1.py timed out at 5 min (7500 steps × 4 datasets × 3 seeds, estimated ~6h total). all_results.npy absent from all run_0–run_5 directories. train_acc_x_div_y.png exists in repo root. | Code: run_1.py:314 (run function), run_1.py:341 (num_total_updates=7500), run_1.py:429 (np.save all_results.npy), plot.py:17-18 (np.load all_results.npy)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "run_1.py:314 (run function), run_1.py:341 (num_total_updates=7500), run_1.py:429 (np.save all_results.npy), plot.py:17-18 (np.load all_results.npy)"
+                ],
+                "commands_executed": [
+                    "timeout 300 python run_1.py --out_dir fabscore_claude/workspace/run_1_test (timed out); python fabscore_claude/workspace/quick_test_claim33.py (completed: 300 steps, x_div_y, seed 0)"
+                ]
+            }
+        },
+        {
+            "claim_index": 34,
+            "claim": "2. Figure 1(b): Training loss for x/y mod p.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The pre-existing train_loss_x_div_y.png cannot alone verify Figure 1(b). The full-run all_results.npy files (required by plot.py to generate the loss curves) are absent from all run directories. A 300-step quick test (Session 3) confirms the code correctly records train_loss per step, but full reproduction (~6 hours for 7500 steps × 4 datasets × 3 seeds × 6 runs) is impractical. No concrete conflict with the paper was found, but the time-series data needed to verify the complete loss curve is missing.",
+            "evidence": "Reused fabscore_claude/workspace/run_quick_out/all_results.npy (Session 3 artifact): confirmed keys include 'train_loss' alongside 'train_accuracy' (first=4.69, last=3.10 at step 300 of 7500). train_loss_x_div_y.png exists in repo root. all_results.npy absent from all run_0–run_5 directories. | Code: plot.py:17-18 — np.load(osp.join(folder, 'all_results.npy'), allow_pickle=True).item(); run_1.py:train() records train_loss per step",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "plot.py:17-18 — np.load(osp.join(folder, 'all_results.npy'), allow_pickle=True).item()",
+                    "run_1.py:train() records train_loss per step"
+                ],
+                "commands_executed": [
+                    "None (reused Session 3 artifact: fabscore_claude/workspace/run_quick_out/all_results.npy)"
+                ]
+            }
+        }
+    ],
+    "results_section": [],
+    "summary": {
+        "total": 2,
+        "verified": 0,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 2,
+        "error": 0
+    }
+}

@@ -1,0 +1,16 @@
+{
+  "optimize_index": 1,
+  "issues": [
+    {
+      "title": "Phantom entities confuse the model",
+      "description": "38.8% of entity assignments in the inventory never appear in the anonymized text (phantom entities from orig_path_labeled). These create noise and increase false UNKNOWN responses. Fixed by annotating phantom entries with '[not in text]' in the inventory block in build_inventory_block_C(). This alone improved Pc from 68.98 to 71.92 (+2.94) on the full 6,000."
+    },
+    {
+      "title": "Greedy decoding leaves accuracy on the table",
+      "description": "Single greedy decode misses correct answers that the model can produce with slight variation. Implemented self-consistency decoding (n=5 samples, temperature=0.7, majority vote preferring entity IDs over UNKNOWN) in a new script run_selfconsistency.py. Combined with phantom tagging, this further improved Pc from 71.92 to 74.75 (+2.83 additional, +5.77 total over baseline)."
+    }
+  ],
+  "experiment_result_path": "EXPERIMENT_RESULTS/optimize_trace/iteration_1/",
+  "success": true,
+  "summary": "Two complementary optimizations yielded a substantial +5.77 Pc improvement (68.98 -> 74.75) on the full 6,000 ConFiQA-MC benchmark. (1) Phantom entity tagging: annotating inventory entries that never appear in text with '[not in text]' improved Pc by +2.94. (2) Self-consistency decoding (5 samples, temp=0.7, majority vote) added another +2.83 Pc. All metrics improved: Po 12.38->10.77 (-1.61), MR 15.22->12.59 (-2.63), EM 75.68->81.80 (+6.12). Both optimizations are training-free and require no model modification."
+}

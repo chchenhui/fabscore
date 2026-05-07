@@ -1,0 +1,160 @@
+# Latent Navigation Supplementary Experiment Configuration
+# Validates representation alignment through interactive exploration
+
+experiment: latent_nav
+
+# Dataset configuration
+dataset:
+  name: dsprites  # or geometric_shapes
+  root_dir: data/dsprites
+  download: true
+  
+  # Factors of variation
+  factors:
+    - shape      # 3 shapes
+    - scale      # 6 scales  
+    - orientation # 40 orientations
+    - position_x  # 32 positions
+    - position_y  # 32 positions
+
+# VAE model configuration
+vae:
+  latent_dim: 10
+  beta: 4.0  # Beta-VAE for disentanglement
+  
+  # Encoder
+  encoder:
+    conv_layers: [32, 32, 64, 64]
+    kernel_sizes: [4, 4, 4, 4]
+    strides: [2, 2, 2, 2]
+    hidden_dim: 256
+  
+  # Decoder  
+  decoder:
+    hidden_dim: 256
+    conv_layers: [64, 64, 32, 32, 1]
+    kernel_sizes: [4, 4, 4, 4, 4]
+    strides: [2, 2, 2, 2, 1]
+
+# Projection network (latent space → 2D visualization)
+projection:
+  input_dim: 10      # VAE latent dim
+  output_dim: 2      # 2D visualization
+  hidden_dims: [64, 32]
+  method: umap       # umap, tsne, or pca
+
+# Scoring oracle configuration
+scoring:
+  target_factors:
+    - shape: 2       # Prefer hearts
+    - scale: 0.8     # Prefer large objects
+  
+  weights:
+    shape: 0.4
+    scale: 0.3
+    position: 0.2
+    orientation: 0.1
+
+# Human surrogate model
+human_model:
+  preference_dim: 16
+  exploration_bias: curiosity  # curiosity, exploitation, random
+  adaptation_rate: 0.1
+
+# Navigation configuration
+navigation:
+  max_clicks: 100
+  exploration_strategy: gaussian_process
+  
+  # Gaussian Process for AI suggestions
+  gp:
+    kernel: rbf
+    alpha: 0.1
+    length_scale: 0.5
+  
+  # AI suggestion parameters
+  suggestions:
+    num_suggestions: 3
+    diversity_weight: 0.3
+    exploitation_weight: 0.7
+
+# UI configuration
+ui:
+  window_size: [800, 600]
+  grid_resolution: 50
+  suggestion_marker_size: 8
+  history_marker_size: 4
+  
+  # Colors
+  colors:
+    background: white
+    visited: blue
+    suggestions: red
+    current: green
+    trajectory: gray
+
+# Training configuration
+training:
+  vae_epochs: 300          # Full experiment setting
+  projection_epochs: 150   # Half of VAE epochs
+  batch_size: 64
+  learning_rate: 0.001
+  
+  # Advanced training options
+  use_scheduler: true
+  early_stopping: true
+  patience: 25             # Increased patience for full training
+  
+  # Human model adaptation
+  human_adaptation_epochs: 50
+  adaptation_batch_size: 32
+  adaptation_learning_rate: 0.0005
+
+# Evaluation configuration  
+evaluation:
+  num_sessions: 10
+  session_length: 100  # clicks per session
+  
+  # Human surrogate evaluation
+  use_real_human: false  # Set to true for real human experiments
+  surrogate_strategy: adaptive  # adaptive, random, greedy
+  
+  # Metrics to compute
+  metrics:
+    - exploration_efficiency
+    - representation_alignment  
+    - preference_learning
+    - cognitive_compatibility
+    - discovery_rate
+
+# Alignment validation
+alignment:
+  # CCA between human preferences and AI representations
+  cca_components: 5
+  
+  # Representation similarity metrics
+  similarity_metrics:
+    - cosine_similarity
+    - euclidean_distance
+    - mutual_information
+  
+  # Preference alignment
+  preference_correlation_window: 10
+
+# Hardware settings
+device: auto
+mixed_precision: false
+
+# Logging
+logging:
+  save_trajectories: true
+  save_images: true
+  log_interval: 10
+  
+  # Wandb settings
+  use_wandb: true
+  project: bica-latent-nav
+  tags: [latent_navigation, supplementary]
+
+# Random seed
+seed: 42

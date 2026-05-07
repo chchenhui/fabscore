@@ -1,0 +1,74 @@
+[
+  {
+    "index": 0,
+    "category": "Environment Configuration",
+    "title": "Dependencies Installation and Project Structure Initialization",
+    "description": "Set up the development environment for the CUSUM-calibrated rollback controller experiments. The project requires PyTorch with CUDA support for training ResNet-18 and a character-level Transformer, torchvision for CIFAR-10 and ResNet-18, and scientific computing libraries (NumPy, SciPy) for CUSUM calibration and statistical analysis. The reference implementation from Or (2026) at https://github.com/BarakOr1/runtime-stability-controller will be cloned and used as a foundation for the baseline controller. The codebase will be organized to support three experimental conditions (no-controller, Or-epsilon, CUSUM-epsilon) with shared data processing, perturbation injection, probe measurement, and evaluation pipelines.",
+    "status": "completed",
+    "summary": "Environment configured: existing .venv with torch 2.9.1+cu129, torchvision 0.24.1+cu129 on A100-80GB GPUs. Installed seaborn (matplotlib, numpy, scipy, pandas, tqdm, tensorboard already present). Cloned Or (2026) reference repo to reference_repo/. Created cusum_controller/ project structure with all module stubs. All imports and GPU operations verified via TrainService."
+  },
+  {
+    "index": 1,
+    "category": "Baseline Experiment",
+    "title": "No-Controller Baseline on ResNet-18 / CIFAR-10",
+    "description": "Run the no-controller baseline: standard training of ResNet-18 on CIFAR-10 for 250 steps with injected gradient amplification perturbations (step and ramp variants) but without any accept/rollback mechanism. This establishes the unmitigated failure trajectory that both Or-epsilon and CUSUM-epsilon aim to improve upon. The no-controller condition also produces nominal (no-perturbation) runs used later for calibration statistics.\n\nThis item implements core shared infrastructure: data loading, probe set sampling, model initialization, perturbation injection, the main training loop, and metric computation \u2014 all reused by subsequent experiment items.\n\nReference: \"Automatic Stability and Recovery for Neural Network Training\" | https://github.com/BarakOr1/runtime-stability-controller",
+    "status": "completed",
+    "summary": "Implemented core shared infrastructure (data loading, probe sampling, model, perturbation injection, training loop with WandB, metrics) and ran 60 experiments (20 seeds x 3 conditions). No-controller results: step perturbation peak_excess_loss=16.94+/-8.77, excess_AUC=284.87+/-150.07; ramp perturbation peak_excess_loss=22.42+/-15.00, excess_AUC=409.36+/-195.26. 20 nominal probe traces saved for calibration. All results in cusum_controller/results/no_controller/."
+  },
+  {
+    "index": 2,
+    "category": "Baseline Experiment",
+    "title": "Or-epsilon Baseline on ResNet-18 / CIFAR-10",
+    "description": "Implement and evaluate the Or-epsilon one-step innovation threshold rollback controller on ResNet-18/CIFAR-10. This controller computes the innovation signal nu_t = y(theta_proposed) - y_hat_t at each step and triggers rollback if nu_t > epsilon. The threshold epsilon is calibrated from nominal (no-perturbation) training runs to achieve a target nominal rollback rate p_0 = 0.2% per step (ARL_0 \u2248 500 steps). The EMA smoothing parameter alpha is set to 0.1. Upon rollback, model parameters and optimizer state are restored to the last accepted snapshot, and y_hat is kept unchanged.\n\nThis item reuses shared infrastructure (data loading, probe set, model, perturbation, training loop, metrics) implemented in the No-Controller Baseline item. Only the Or-epsilon controller and its calibration are new.\n\nReference: \"Automatic Stability and Recovery for Neural Network Training\" | https://github.com/BarakOr1/runtime-stability-controller",
+    "status": "completed",
+    "summary": "Implemented OrController (one-step innovation threshold) and calibration protocol. Calibrated epsilon=1.1805 from 20 nominal probe traces (99.8th percentile, empirical rate=0.002). Ran 60 experiments (20 seeds x 3 conditions) via TrainService. Results: step perturbation peak_excess_loss=1.85+/-0.92, excess_AUC=124.08+/-65.77; ramp perturbation peak_excess_loss=2.06+/-0.70, excess_AUC=114.60+/-51.35. Nominal rollback fraction=0.0016 (within 20% of target p_0=0.002). Or-epsilon reduces peak excess loss by ~89-91% vs no-controller. All results in cusum_controller/results/or_epsilon/ and EXPERIMENT_RESULTS/or_epsilon_baseline/."
+  },
+  {
+    "index": 3,
+    "category": "Main Experiment",
+    "title": "CUSUM-epsilon on ResNet-18 / CIFAR-10",
+    "description": "Implement and evaluate the proposed CUSUM-epsilon rollback controller on ResNet-18/CIFAR-10. CUSUM-epsilon replaces the one-step innovation threshold in Or-epsilon with a one-sided CUSUM sequential test that accumulates evidence of sustained upward drift in standardized innovations. The CUSUM statistic is: S_t = max(0, S_{t-1} + r_t - k), where r_t = (nu_t - mu_0) / (sigma_0 + 1e-8) is the standardized innovation. Rollback is triggered when S_t > h, after which S_t is reset to 0. The reference value k=0.5 is pre-committed (targeting detection of roughly >=1 sigma sustained shifts). The threshold h is calibrated on nominal training runs by grid search over h in {2, 3, 4, 5, 6, 7, 8} to match the same target rollback rate p_0 = 0.2% per step as Or-epsilon.\n\nThis item reuses all shared infrastructure from previous items (data loading, probe set, model, perturbation, training loop, metrics) and the calibration statistics (mu_0, sigma_0) computed in the Or-epsilon calibration step. Only the CUSUM controller implementation and its h-calibration are new.",
+    "status": "completed",
+    "summary": "Implemented CUSUMController (one-sided CUSUM sequential test, S_t = max(0, S_{t-1} + r_t - k), rollback when S_t > h). Extended calibration to find h: original grid {2,...,8} all yielded rates >0.007, so extended to {2,...,20}; selected h=14 with exact alarm rate=0.002 matching p_0. Extended train_loop.py to log CUSUM-specific fields (r_t, S_t) to WandB. Ran 60 experiments (20 seeds x 3 conditions) via TrainService with 4 GPUs. Results: step perturbation peak_excess=5.40+/-1.72, excess_AUC=275.26+/-144.39; ramp perturbation peak_excess=5.62+/-1.03, excess_AUC=271.37+/-109.07. Nominal rollback fraction=0.0022 (10% rel. error from p_0=0.002, PASS). CUSUM-epsilon reduces peak excess by ~68-75% vs no-controller but is worse than Or-epsilon (~2.9x higher peak excess). However, CUSUM-epsilon has ~70% fewer false rollbacks outside perturbation window (26 vs 87). Cross-controller rate matching: 27.3% relative difference (marginal fail at 20% threshold). All results in cusum_controller/results/cusum_epsilon/ and EXPERIMENT_RESULTS/cusum_epsilon/."
+  },
+  {
+    "index": 4,
+    "category": "Optimization",
+    "title": "Optimize: CUSUM-epsilon on ResNet-18 / CIFAR-10",
+    "description": "Optimize the main experiment 'CUSUM-epsilon on ResNet-18 / CIFAR-10' to improve results.",
+    "status": "completed",
+    "summary": "Optimization succeeded after 1/2 iterations.\n  - Step 0: success, issues: [CUSUM reset blind spot: full reset to S_t=0 after rollback, FIR head start at initialization caused early false alarms, Re-calibration of h for FIR-CUSUM]\nDetails: EXPERIMENT_RESULTS/optimize_trace/"
+  },
+  {
+    "index": 5,
+    "category": "Effectiveness Evaluation",
+    "title": "Effectiveness Evaluation of CUSUM-epsilon vs Or-epsilon",
+    "description": "Evaluate whether the proposed CUSUM-epsilon controller is effective according to the pre-committed success criteria. The core question is: at matched nominal rollback rate p_0 = 0.2%, does CUSUM-epsilon reduce peak excess probe loss and/or excess AUC under catastrophic perturbation relative to the Or-epsilon baseline on ResNet-18/CIFAR-10? The decision rule is:\n- **Proceed**: CUSUM-epsilon beats Or-epsilon on either peak excess loss or excess AUC by a margin larger than the across-seed standard deviation (non-overlapping 1-std intervals), while keeping false rollbacks outside the perturbation window <= 1% of steps on average.\n- **Pivot**: CUSUM-epsilon is approximately equal to Or-epsilon (overlapping 1-std intervals on both metrics).\n- **Refute**: CUSUM-epsilon does not improve or increases false rollbacks substantially at matched nominal rate.",
+    "status": "completed",
+    "summary": "Verdict: bad (Refute). CUSUM-epsilon does not improve over Or-epsilon at matched nominal rollback rate p_0=0.002. Or-epsilon achieves lower peak excess loss (1.85 vs 3.47 for step, 2.06 vs 3.65 for ramp) and lower excess AUC (124.1 vs 182.6 for step, 114.6 vs 212.0 for ramp). On ramp perturbation, the difference is statistically significant with non-overlapping 1-std intervals on peak excess loss. Both methods massively exceed the 1% false rollback threshold. CUSUM has fewer false rollbacks outside the window (37 vs 87.5 for step) but this does not offset worse loss control. Root cause: multi-step evidence accumulation introduces detection delay allowing perturbed steps to damage the model before rollback triggers."
+  },
+  {
+    "index": 6,
+    "category": "Analysis Experiment",
+    "title": "Ablation Study: CUSUM with k=0 (No Reference Value Subtraction)",
+    "description": "Ablation study to validate the importance of the CUSUM reference value k=0.5. When k=0, the CUSUM statistic becomes S_t = max(0, S_{t-1} + r_t), which accumulates all positive standardized innovations without a slack term. This makes the detector much more sensitive to any upward fluctuation, not just sustained shifts, and is expected to produce substantially more false rollbacks under nominal training. The ablation isolates the effect of the 'targeting sustained shifts' design choice. This experiment is conducted on ResNet-18/CIFAR-10 with step perturbation only, using 20 seeds.",
+    "status": "pending",
+    "summary": ""
+  },
+  {
+    "index": 7,
+    "category": "Analysis Experiment",
+    "title": "Architectural Generalization: Character-Level Transformer Sanity Check",
+    "description": "Sanity check to verify that the CUSUM-epsilon controller generalizes beyond convolutional architectures. Replicate the main experiment protocol on a character-level Transformer model trained on a synthetic repeated-phrase corpus for next-character prediction, following Or (2026)'s sequence model experiment. This uses 20 seeds, step perturbation only, and all three conditions (no-controller, Or-epsilon, CUSUM-epsilon). Reported as a supplementary sanity check, not as the primary evaluation.",
+    "status": "pending",
+    "summary": ""
+  },
+  {
+    "index": 8,
+    "category": "Analysis Experiment",
+    "title": "Innovation Signal and CUSUM State Visualization",
+    "description": "Produce diagnostic visualizations of the innovation signal, CUSUM statistic, and probe loss trajectories to qualitatively illustrate how the CUSUM controller detects and responds to catastrophic perturbations compared to the Or-epsilon controller. These plots provide intuitive understanding of the evidence-accumulation mechanism and are essential for the main results presentation. All visualizations use data already collected from the ResNet-18/CIFAR-10 experiments.",
+    "status": "pending",
+    "summary": ""
+  }
+]

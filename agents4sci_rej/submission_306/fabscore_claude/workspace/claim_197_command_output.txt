@@ -1,0 +1,22 @@
+=== CLAIM 197 VERIFICATION: Table 1, P0A927, bcr_q_effect: 2.1 ===
+
+--- COMMAND 1: Fetch P0A927 AlphaFold PAE and compute bcr_q_ratio for k=2,3 with n_perm=1024, null_mode=rotation ---
+python3 -c "...fetch P0A927 PAE, run bcr_q_ratio for k=2,3 with n_perm=1024, null_mode=rotation..."
+OUTPUT:
+P0A927: PAE shape=(294, 294)
+k=2: bcr_q_ratio=2.120264, z=10.715095, p_perm=0.054634, blocks=[(0, 37), (37, 294)]
+k=3: bcr_q_ratio=2.140066, z=3.248885, p_perm=0.031220, blocks=[(0, 37), (37, 100), (100, 294)]
+  hinge_len=63
+Selected k=3
+Paper claims k=3, bcr_q_effect=2.1
+Code produces bcr_q_ratio=2.140066 for selected k=3
+
+KEY FINDINGS:
+1. AlphaFold PAE for P0A927 fetched via API (v6 PAE, length=294).
+2. Code selects k=3 (p_perm=0.031220 < k=2 p_perm=0.054634), matching paper's claim of k=3.
+3. bcr_q_ratio for selected k=3 = 2.140066, which rounds to 2.14 (or 2.1 at 1 decimal place).
+4. Paper claims bcr_q_effect=2.1 for P0A927. Code produces 2.140066 ≈ 2.1 at 1 decimal place.
+5. BCR formula in code: log((Q75_inter+eps)/(Q25_intra+eps)) with Q95 normalization.
+   Paper Eq.2 shows: Q75_inter/(Q25_intra+eps) (simple ratio, no log, no Q95 normalization).
+   This formula conflict is the systemic experiment fabrication established across claims 1-196.
+6. The numerical coincidence (2.140066 ≈ 2.1) does not resolve the formula-level conflict with paper Eq.2.

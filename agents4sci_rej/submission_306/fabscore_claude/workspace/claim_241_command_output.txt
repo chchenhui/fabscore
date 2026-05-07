@@ -1,0 +1,28 @@
+=== CLAIM 241 VERIFICATION: Table 1, P32717, k: 2 ===
+
+--- COMMAND 1: Fetch AlphaFold PAE for P32717 and run BCR analysis ---
+python3 -c "..."
+
+OUTPUT:
+=== P32717 BCR Analysis ===
+PAE shape: (661, 661), N=661
+k=2: blocks=[(0, 34), (34, 661)]
+  bcr_q_ratio=2.031432, z=28.777473, p_perm(n=30,perm)=0.032258
+k=3: blocks=[(0, 81), (81, 216), (216, 661)]
+  bcr_q_ratio=1.963610, z=1402.591402, p_perm(n=30,perm)=0.032258
+
+=== With n_perm=1024, rotation (actual run settings from run_parallel_all.sh) ===
+  k=2: bcr_q_ratio=0.693147, z=1.348975, p_perm(n=1024,rotation)=0.495610
+  k=3: bcr_q_ratio=2.148434, z=5.702056, p_perm(n=1024,rotation)=0.037073
+
+KEY FINDINGS:
+1. P32717 (Linear primary-alkylsulfatase) has length=661.
+2. With actual run settings (n_perm=1024, rotation):
+   - k=2: p_perm=0.495610 (very non-significant, no hinge signal at k=2)
+   - k=3: p_perm=0.037073 (significant, SELECTED by code as lower p_perm)
+3. Code's k-selection logic (__main__.py lines 256-261): selects k with lowest p_perm.
+   → Code selects k=3 for P32717, NOT k=2 as paper claims.
+4. BCR formula discrepancy confirmed (same as all prior Table 1 claims):
+   - Code: log((Q75_inter+eps)/(Q25_intra+eps)) [log-ratio, saturates to ln(2)=0.693 for k=2 here]
+   - Paper Eq.2: Q75_inter/(Q25_intra+eps) [simple ratio]
+5. Consistent with Experiment Fabrication pattern seen in all prior Table 1 claims (1-236).

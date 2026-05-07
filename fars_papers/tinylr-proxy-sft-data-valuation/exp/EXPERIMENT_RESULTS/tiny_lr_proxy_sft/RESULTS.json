@@ -1,0 +1,58 @@
+{
+  "experiment": "Tiny-LR Proxy SFT (Condition B) - Optimized",
+  "description": "Fine-tune Qwen2.5-1.5B on 12 math datasets at learning_rate=1e-5 (optimized tiny LR, up from 5e-6), 1000 steps (up from 500), evaluate on GSM8K and MATH-500, compute ranking agreement with target (Qwen2.5-7B) ground truth.",
+  "model": "Qwen/Qwen2.5-1.5B",
+  "learning_rate": 1e-5,
+  "max_steps": 1000,
+  "lora_rank": 16,
+  "seeds": [42, 123, 456],
+  "ranking_agreement": {
+    "pda": 0.5,
+    "pda_95ci_lower": 0.3788,
+    "pda_95ci_upper": 0.6212,
+    "spearman_rho": -0.0909,
+    "spearman_pvalue": 0.7787,
+    "top1_match": false,
+    "proxy_top1": "QwQ-LongCoT-130K-math",
+    "target_top1": "hkust-nlp__dart-math-hard"
+  },
+  "ranking_agreement_per_benchmark": {
+    "math500_only": {
+      "pda": 0.8182,
+      "spearman_rho": 0.8462,
+      "spearman_pvalue": 0.0005
+    },
+    "gsm8k_only": {
+      "pda": 0.5152,
+      "spearman_rho": 0.0629,
+      "spearman_pvalue": 0.8459
+    }
+  },
+  "proxy_ranking": [
+    {"rank": 1, "dataset": "QwQ-LongCoT-130K-math", "composite_score": 0.3579},
+    {"rank": 2, "dataset": "Magpie-Reasoning-V2-250K-CoT-QwQ-math", "composite_score": 0.3574},
+    {"rank": 3, "dataset": "hkust-nlp__dart-math-hard", "composite_score": 0.3348},
+    {"rank": 4, "dataset": "AM-Thinking-v1-Distilled-math", "composite_score": 0.2293},
+    {"rank": 5, "dataset": "numinamath1_5", "composite_score": 0.2272},
+    {"rank": 6, "dataset": "openmathinstruct-2", "composite_score": 0.2024},
+    {"rank": 7, "dataset": "mathplus", "composite_score": 0.1983},
+    {"rank": 8, "dataset": "numinamath-cot", "composite_score": 0.1934},
+    {"rank": 9, "dataset": "R1-Distill-SFT-math", "composite_score": 0.1881},
+    {"rank": 10, "dataset": "OpenR1-Math", "composite_score": 0.1759},
+    {"rank": 11, "dataset": "Maths-College", "composite_score": 0.1509},
+    {"rank": 12, "dataset": "DeepMath-309K", "composite_score": 0.1322}
+  ],
+  "comparison_with_baselines": {
+    "standard_lr_proxy": {"pda": 0.7121, "spearman_rho": 0.5944, "top1_match": true},
+    "base_nll_baseline": {"pda": 0.636, "spearman_rho": 0.371, "top1_match": false},
+    "original_tiny_lr_proxy_5e6": {"pda": 0.3485, "spearman_rho": -0.3776, "top1_match": false},
+    "optimized_tiny_lr_proxy_1e5": {"pda": 0.5, "spearman_rho": -0.0909, "top1_match": false}
+  },
+  "loss_diagnostics": {
+    "avg_loss_drop_pct": 22.1,
+    "min_loss_drop_pct": -27.1,
+    "max_loss_drop_pct": 46.8,
+    "note": "Most runs show meaningful loss decrease (8-47%), confirming non-degenerate training. Avg loss drop improved from 16.4% (original) to 22.1% (optimized)."
+  },
+  "optimization_notes": "Increased LR from 5e-6 to 1e-5 and steps from 500 to 1000. Composite PDA improved from 0.349 to 0.500. MATH500-only PDA is excellent at 0.818 (Spearman rho=0.846, p=0.0005). The remaining gap is driven by GSM8K response-length confound."
+}

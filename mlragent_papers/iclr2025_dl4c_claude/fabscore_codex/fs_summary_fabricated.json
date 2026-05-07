@@ -1,0 +1,295 @@
+{
+    "tables": [],
+    "figures": [
+        {
+            "claim_index": 1,
+            "claim": "1. time_to_solution_comparison.png: Time to Solution Comparison",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: The comparison figure depends on MACP task results, but the current MACP implementation cannot successfully return experiment metadata: `MACPFramework.solve_task()` builds `metadata` with undefined `model_name`, and `run_experiment.py` relies on that return value to record MACP metrics and generate figures. That is a concrete experiment-procedure conflict for the reported comparison figure.",
+            "evidence": "claude_code/macp_framework.py:1104-1111; claude_code/run_experiment.py:122-140; results/experiment_results.json:32-39; claude_code/create_visualizations.py:13-34",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "claude_code/macp_framework.py:1104-1111",
+                    "claude_code/run_experiment.py:122-140",
+                    "results/experiment_results.json:32-39",
+                    "claude_code/create_visualizations.py:13-34"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 2,
+            "claim": "2. radar_chart_comparison.png: Code Quality Metrics Radar Chart",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: This figure also depends on MACP-side experiment outputs, but the current MACP run path is statically broken before a valid metadata return. Because `run_experiment.py` consumes that metadata to save results and later plot comparison figures, the claimed radar chart lacks a valid executable provenance chain in the checked-in implementation.",
+            "evidence": "claude_code/macp_framework.py:1104-1111; claude_code/run_experiment.py:122-158; results/experiment_results.json:32-39; claude_code/evaluator.py:442-518",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "claude_code/macp_framework.py:1104-1111",
+                    "claude_code/run_experiment.py:122-158",
+                    "results/experiment_results.json:32-39",
+                    "claude_code/evaluator.py:442-518"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 3,
+            "claim": "3. message_flow.png: Distribution of Messages by Agent Role",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: The paper describes `message_flow.png` as a distribution-by-role figure, but the main experiment pipeline writes `message_flow.png` via `Visualizer.plot_message_flow()` as a timeline/arrow plot of sender/receiver traffic, not a role-distribution chart. The alternate pie-chart helper in `create_visualizations.py` does produce a distribution figure, but its `main()` points to `claude_code/results/experiment_results.json`, which does not match the repository's stored top-level `results/experiment_results.json`. This is a concrete figure-generation procedure conflict.",
+            "evidence": "claude_code/run_experiment.py:156-158; claude_code/evaluator.py:520-586; claude_code/create_visualizations.py:103-136; results/experiment_results.json:70-81",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "claude_code/run_experiment.py:156-158",
+                    "claude_code/evaluator.py:520-586",
+                    "claude_code/create_visualizations.py:103-136",
+                    "results/experiment_results.json:70-81"
+                ],
+                "commands_executed": []
+            }
+        }
+    ],
+    "results_section": [
+        {
+            "claim_index": 4,
+            "claim": "1. As illustrated, the single-agent approach was significantly faster at producing a solution (7.83 seconds) compared to the MACP framework (85.42 seconds).",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: The single-agent timing has support in the saved log, but the comparison claim includes the MACP timing, and the current MACP implementation cannot complete `solve_task()` as written because it references undefined `model_name` while constructing the returned metadata. Since `run_experiment.py` depends on that metadata to record MACP results, the reported comparison is not supported by a valid static implementation path.",
+            "evidence": "results/log.txt:9; results/log.txt:65; claude_code/macp_framework.py:1104-1111; claude_code/run_experiment.py:122-140; results/experiment_results.json:23-39",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "results/log.txt:9",
+                    "results/log.txt:65",
+                    "claude_code/macp_framework.py:1104-1111",
+                    "claude_code/run_experiment.py:122-140",
+                    "results/experiment_results.json:23-39"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 5,
+            "claim": "2. **Maintainability**: 89.8 vs. 85.2 for the single-agent",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: This comparison depends on a MACP evaluation record that the checked-in MACP experiment path cannot validly return, due to the undefined `model_name` in `MACPFramework.solve_task()`. Because the recorded MACP metrics are downstream of that broken return path, the maintainability comparison is experiment-side unsupported.",
+            "evidence": "claude_code/macp_framework.py:1104-1111; claude_code/run_experiment.py:122-140; claude_code/evaluator.py:48-55; results/experiment_results.json:28-39",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "claude_code/macp_framework.py:1104-1111",
+                    "claude_code/run_experiment.py:122-140",
+                    "claude_code/evaluator.py:48-55",
+                    "results/experiment_results.json:28-39"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 6,
+            "claim": "3. **Comment Ratio**: 0.8 vs. 0.6 for the single-agent",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: The reported comment-ratio comparison is downstream of the same broken MACP experiment return path. `run_experiment.py` records MACP evaluation outputs only after `MACPFramework.solve_task()` returns metadata, but the checked-in MACP code references undefined `model_name` while building that metadata. That creates a direct procedure-level conflict for the MACP side of the claim.",
+            "evidence": "claude_code/macp_framework.py:1104-1111; claude_code/run_experiment.py:122-140; claude_code/evaluator.py:48-55; results/experiment_results.json:28-39",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "claude_code/macp_framework.py:1104-1111",
+                    "claude_code/run_experiment.py:122-140",
+                    "claude_code/evaluator.py:48-55",
+                    "results/experiment_results.json:28-39"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 7,
+            "claim": "4. **Complexity**: The MACP solution shows lower cyclomatic complexity (6 vs. 8)",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: The complexity comparison requires the MACP evaluation output, but the current MACP execution path is statically broken before it can return the metadata consumed by `run_experiment.py`. That invalidates the checked-in experiment procedure for the MACP side of the comparison.",
+            "evidence": "claude_code/macp_framework.py:1104-1111; claude_code/run_experiment.py:122-140; claude_code/evaluator.py:51-55; results/experiment_results.json:29-39",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "claude_code/macp_framework.py:1104-1111",
+                    "claude_code/run_experiment.py:122-140",
+                    "claude_code/evaluator.py:51-55",
+                    "results/experiment_results.json:29-39"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 9,
+            "claim": "6. **Total Messages**: 32 messages exchanged during development",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: The reported message total is a MACP collaboration metric, but the checked-in MACP run path is statically inconsistent with successful experiment completion because `solve_task()` constructs metadata with undefined `model_name`. Since `run_experiment.py` and the evaluator consume those returned messages/metadata to populate collaboration metrics, the claimed total lacks a valid implementation provenance chain.",
+            "evidence": "claude_code/macp_framework.py:1104-1111; claude_code/macp_framework.py:1131-1159; claude_code/evaluator.py:139-174; results/experiment_results.json:40-49; results/log.txt:65",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "claude_code/macp_framework.py:1104-1111",
+                    "claude_code/macp_framework.py:1131-1159",
+                    "claude_code/evaluator.py:139-174",
+                    "results/experiment_results.json:40-49",
+                    "results/log.txt:65"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 10,
+            "claim": "7. Moderator (31.3%)",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: This role-share claim depends on MACP collaboration metrics whose checked-in generation path is statically broken before valid metadata return. There is also a figure-generation mismatch around `message_flow.png`, where the main pipeline writes a message-flow timeline rather than the role-distribution figure described in the paper.",
+            "evidence": "claude_code/macp_framework.py:1104-1111; claude_code/evaluator.py:152-156; claude_code/evaluator.py:520-586; results/experiment_results.json:42-49",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "claude_code/macp_framework.py:1104-1111",
+                    "claude_code/evaluator.py:152-156",
+                    "claude_code/evaluator.py:520-586",
+                    "results/experiment_results.json:42-49"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 11,
+            "claim": "8. Tester (25.0%)",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: This percentage is part of the MACP collaboration summary, but the MACP experiment path is statically broken at metadata construction and the main figure path for `message_flow.png` does not match the paper's described distribution plot. That is sufficient experiment-side conflict for the reported role share.",
+            "evidence": "claude_code/macp_framework.py:1104-1111; claude_code/evaluator.py:152-156; claude_code/evaluator.py:520-586; results/experiment_results.json:42-49",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "claude_code/macp_framework.py:1104-1111",
+                    "claude_code/evaluator.py:152-156",
+                    "claude_code/evaluator.py:520-586",
+                    "results/experiment_results.json:42-49"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 12,
+            "claim": "9. Reviewer (18.8%)",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: This reported role participation percentage is downstream of the same broken MACP experiment return path and the same `message_flow.png` figure-procedure mismatch. Static inspection already shows the checked-in implementation path is not a valid provenance chain for the claimed MACP collaboration distribution.",
+            "evidence": "claude_code/macp_framework.py:1104-1111; claude_code/evaluator.py:152-156; claude_code/evaluator.py:520-586; results/experiment_results.json:42-49",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "claude_code/macp_framework.py:1104-1111",
+                    "claude_code/evaluator.py:152-156",
+                    "claude_code/evaluator.py:520-586",
+                    "results/experiment_results.json:42-49"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 13,
+            "claim": "10. Implementer (15.6%)",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: This role-share metric depends on MACP collaboration artifacts whose checked-in generation path is statically inconsistent with successful run completion, because the MACP framework returns metadata using undefined `model_name`. The paper's collaboration distribution therefore does not have a valid executable provenance chain in the repository as checked in.",
+            "evidence": "claude_code/macp_framework.py:1104-1111; claude_code/evaluator.py:152-156; claude_code/evaluator.py:520-586; results/experiment_results.json:42-49",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "claude_code/macp_framework.py:1104-1111",
+                    "claude_code/evaluator.py:152-156",
+                    "claude_code/evaluator.py:520-586",
+                    "results/experiment_results.json:42-49"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 14,
+            "claim": "11. Architect (9.4%)",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: This collaboration percentage is part of the same MACP-side evidence chain that is statically broken before valid experiment metadata return, and the main saved `message_flow.png` generation path does not match the paper's described distribution figure. That makes the claim experiment-side unreliable on static inspection.",
+            "evidence": "claude_code/macp_framework.py:1104-1111; claude_code/evaluator.py:152-156; claude_code/evaluator.py:520-586; results/experiment_results.json:42-49",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "claude_code/macp_framework.py:1104-1111",
+                    "claude_code/evaluator.py:152-156",
+                    "claude_code/evaluator.py:520-586",
+                    "results/experiment_results.json:42-49"
+                ],
+                "commands_executed": []
+            }
+        }
+    ]
+}

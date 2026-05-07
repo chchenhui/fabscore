@@ -1,0 +1,48 @@
+=== CLAIM 1 VERIFICATION: Table 1, P75820, k: 3 ===
+
+--- COMMAND 1: Check AlphaFold API availability ---
+curl -s "https://alphafold.ebi.ac.uk/api/prediction/P75820"
+OUTPUT: ['toolUsed', 'providerId', ... ] (API accessible, protein exists)
+
+--- COMMAND 2: Load P75820 and run BCR with n_perm=30 (default) ---
+python3 -c "... bcr_q_ratio n_perm=30, default seed ..."
+OUTPUT:
+P75820: length=276
+k=2: bcr_q_ratio=2.302585, z=11.389580, p_perm=0.032258
+  blocks=[(0, 40), (40, 276)]
+k=3: bcr_q_ratio=2.302585, z=22.779312, p_perm=0.032258
+  blocks=[(0, 65), (65, 192), (192, 276)]
+  hinge_len=127
+Selected k=3 (p_perm=0.032258, z=22.779312)
+
+--- COMMAND 3: Run with actual run_parallel_all.sh settings (n_perm=1024, null_mode=rotation) ---
+python3 -c "... bcr_q_ratio n_perm=1024, null_mode='rotation', default seed=0 ..."
+OUTPUT:
+P75820: length=276
+k=2: bcr_q_ratio=2.302585, z=6.343800, p_perm=0.043902
+  bcr_diff=11.3595, z_diff=2.8203
+  blocks=[(0, 40), (40, 276)]
+k=3: bcr_q_ratio=2.302585, z=4.462747, p_perm=0.057561
+  bcr_diff=5.8621, z_diff=2.0501
+  blocks=[(0, 65), (65, 192), (192, 276)]
+  hinge_len=127
+Selected k=2 with n_perm=1024, null_mode=rotation
+
+--- COMMAND 4: Compare code formula vs paper formula ---
+python3 -c "... compute Q-values and both stat formulas ..."
+OUTPUT:
+k=2: Q75_inter=0.9600, Q25_intra=0.0600, eps=0.0400
+  Code (log-ratio): stat=2.3026   [log((0.96+0.04)/(0.06+0.04))]
+  Paper (simple ratio): stat=9.6000   [0.96/(0.06+0.04)]
+
+k=3: Q75_inter=0.7600, Q25_intra=0.0400, eps=0.0400
+  Code (log-ratio): stat=2.3026   [saturated same as k=2]
+  Paper (simple ratio): stat=9.5000   [0.76/(0.04+0.04)]
+
+KEY FINDINGS:
+1. Code formula (log-ratio) saturates both k=2 and k=3 stats at 2.3026 = log(10), making them identical.
+   This means k selection is driven entirely by null distribution shape, not by stat values.
+2. With actual settings (n_perm=1024, rotation), code selects k=2 (p_perm=0.0439) not k=3 (p_perm=0.0576).
+3. Paper reports P75820 with k=3 and pperm=0.0498 (consistent with n_perm=1024 but wrong k).
+4. Formula in code: log((Q_inter+eps)/(Q_intra+eps)) — differs from paper Eq.2: Q75_inter/(Q25_intra+eps).
+5. With paper formula, k=2 has higher stat (9.60) than k=3 (9.50), still not clearly selecting k=3.

@@ -1,0 +1,28 @@
+=== CLAIM 186 VERIFICATION: Table 1, P69924, k: 2 ===
+
+--- COMMAND: Run BCR pipeline for P69924 ---
+python3 (fetch v6 PAE and run partition_k_spectral + bcr_q_ratio for k=2,3)
+
+OUTPUT:
+v4 status: 404
+v6 status: 200
+P69924 PAE fetched: length=376
+
+k=2: blocks=[(0, 340), (340, 376)], num_blocks=2
+  bcr_q_ratio=2.233592, z=11.028633, p_perm=0.074146, hinge_len=0
+k=3: blocks=[(0, 169), (169, 340), (340, 376)], num_blocks=3
+  bcr_q_ratio=0.405465, z=-3.346804, p_perm=1.000000, hinge_len=171
+
+CODE SELECTS k=2 (p_perm=0.074146 < 1.000000)
+PAPER CLAIMS k=2 for P69924
+==> k MATCH
+
+KEY FINDINGS:
+1. AlphaFold PAE for P69924 fetched from v6 endpoint (v4 returns 404); length=376
+2. Code selects k=2 for P69924 (p_perm=0.074146 < p_perm=1.0 for k=3) -- matches paper's k=2 claim
+3. p_perm=0.074146 > 0.05 -- P69924 would NOT be a significant discovery at alpha=0.05 under actual code
+4. BCR formula in code: log((Q75_inter+eps)/(Q25_intra+eps)) -- log-ratio (differs from paper Eq.2)
+5. Paper Eq.2 formula: Q75_inter/(Q25_intra+eps) -- simple ratio
+6. BCR formula discrepancy (log-ratio vs simple ratio) is established systemic issue across claims 1-185
+7. AlphaFold v4 PAE data used in paper not available for P69924; only v6 data used (gives different quantitative results)
+8. k=2 selection coincidentally matches paper, but via code implementation that conflicts with paper's described method

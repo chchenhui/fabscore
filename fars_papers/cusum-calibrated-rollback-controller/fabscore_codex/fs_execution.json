@@ -1,0 +1,261 @@
+{
+    "tables": [
+        {
+            "claim_index": 36,
+            "claim": "36. Table 3, Original CUSUM (h=14, St=0), Peak (Step): 5.40±1.72",
+            "verdict": "Error",
+            "explanation": "Execution stage: The repository has a plausible original-CUSUM implementation path, but this environment cannot complete claim-specific verification. The committed artifacts only quote the 5.40±1.72 number in reports; they do not contain original-CUSUM raw/per-seed results. Minimal reproduction is blocked by missing nominal trace artifacts and by external network-unavailable CIFAR-10 download failure.",
+            "evidence": "Paper Table 3 / Section 4.3 states `Original CUSUM (h=14, St=0)` peak step = 5.40±1.72. Fresh execution log at `fabscore_codex/workspace/claim_36_command_output.txt` shows two concrete blockers: `exp/cusum_controller/results/no_controller/nominal_probe_traces/seed0.npy` is missing, so `calibrate.py --mode cusum --reset_fraction 0` raises `FileNotFoundError`; and a minimal original-CUSUM `run_single()` attempt fails because `exp/cusum_controller/data/cifar10.py` calls `torchvision.datasets.CIFAR10(..., download=True)` with no local `data/` directory, producing `urllib.error.URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>`. | Code: exp/cusum_controller/controllers/cusum_controller.py:35-37 (full-reset behavior via `self.S_t = self.h * self.reset_fraction`), exp/cusum_controller/calibration/calibrate.py:79-98 (requires `results/no_controller/nominal_probe_traces/seed*.npy`), exp/cusum_controller/training/train_loop.py:42-45 (loads CIFAR-10 before running), exp/cusum_controller/data/cifar10.py:18-25 (`download=True` for CIFAR-10)",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "exp/cusum_controller/controllers/cusum_controller.py:35-37 (full-reset behavior via `self.S_t = self.h * self.reset_fraction`), exp/cusum_controller/calibration/calibrate.py:79-98 (requires `results/no_controller/nominal_probe_traces/seed*.npy`), exp/cusum_controller/training/train_loop.py:42-45 (loads CIFAR-10 before running), exp/cusum_controller/data/cifar10.py:18-25 (`download=True` for CIFAR-10)"
+                ],
+                "commands_executed": [
+                    "python - <<'PY' >> fabscore_codex/workspace/claim_36_command_output.txt 2>&1\nimport os, json, traceback, sys\nprint('===== COMMAND: inspect original-CUSUM blockers =====')\nprint('cwd=', os.getcwd())\nprint('nominal_probe_traces exists:', os.path.exists('exp/cusum_controller/results/no_controller/nominal_probe_traces'))\nprint('data exists:', os.path.exists('data'))\nprint('calibration params exists:', os.path.exists('exp/cusum_controller/results/calibration/calibration_params.json'))\nif os.path.exists('exp/cusum_controller/results/calibration/calibration_params.json'):\n    with open('exp/cusum_controller/results/calibration/calibration_params.json') as f:\n        params = json.load(f)\n    print('saved mu_0=', params.get('mu_0'))\n    print('saved sigma_0=', params.get('sigma_0'))\n    print('saved cusum_h=', params.get('cusum_h'))\n    print('saved reset_fraction=', params.get('cusum_reset_fraction', 'missing'))\nprint('\\n===== COMMAND: python exp/cusum_controller/calibration/calibrate.py --mode cusum --reset_fraction 0 =====')\nos.system('python exp/cusum_controller/calibration/calibrate.py --mode cusum --reset_fraction 0')\nprint('\\n===== COMMAND: minimal original-CUSUM step run (seed=0, cpu, use_wandb=False) =====')\ntry:\n    sys.path.insert(0, os.path.abspath('exp'))\n    from cusum_controller.controllers.cusum_controller import CUSUMController\n    from cusum_controller.training.train_loop import run_single\n    from cusum_controller.evaluation.metrics import compute_all_metrics\n    import torch\n    controller = CUSUMController(alpha=0.1, k=0.5, h=14.0, mu_0=-0.04125521912250121, sigma_0=0.2260490837544573, reset_fraction=0.0)\n    result = run_single(seed=0, perturb_type='step', controller=controller, controller_name='cusum_original_claim36_probe', num_steps=5, data_root='./data', device=torch.device('cpu'), use_wandb=False)\n    metrics = compute_all_metrics(result)\n    print('minimal run metrics=', metrics)\nexcept Exception:\n    traceback.print_exc()\nPY"
+                ]
+            }
+        },
+        {
+            "claim_index": 37,
+            "claim": "37. Table 3, Original CUSUM (h=14, St=0), Peak (Ramp): 5.62±1.03",
+            "verdict": "Error",
+            "explanation": "Execution stage: The repository contains claim-matching summary prose for the old-CUSUM ramp value, but not the underlying original full-reset result artifact needed to verify it. Reproducing that exact path is currently prevented by external environment blockers already established on the same code path: missing nominal probe traces and unavailable local/network access for CIFAR-10.",
+            "evidence": "`exp/task_plan.json:32` and `exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:29` both quote the original full-reset CUSUM ramp result as `5.62 +/- 1.03`, but no committed original-CUSUM per-seed/raw metric file exists under `exp/cusum_controller/results/`. Reused prior execution artifact `fabscore_codex/workspace/claim_36_command_output.txt`, which shows the same original-CUSUM reproduction path is blocked by `FileNotFoundError` for `exp/cusum_controller/results/no_controller/nominal_probe_traces/seed0.npy` and by `urllib.error.URLError` when CIFAR-10 download is attempted with no local `./data`. | Code: `exp/cusum_controller/controllers/cusum_controller.py:35-37` (full-reset behavior when `reset_fraction=0`), `exp/cusum_controller/calibration/calibrate.py:79-98` (loads `nominal_probe_traces/seed*.npy` for CUSUM calibration), `exp/cusum_controller/training/train_loop.py:42-44` and `exp/cusum_controller/data/cifar10.py:18-25` (requires CIFAR-10 dataset, attempts download).",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "`exp/cusum_controller/controllers/cusum_controller.py:35-37` (full-reset behavior when `reset_fraction=0`), `exp/cusum_controller/calibration/calibrate.py:79-98` (loads `nominal_probe_traces/seed*.npy` for CUSUM calibration), `exp/cusum_controller/training/train_loop.py:42-44` and `exp/cusum_controller/data/cifar10.py:18-25` (requires CIFAR-10 dataset, attempts download)."
+                ],
+                "commands_executed": [
+                    "Reused prior attempted regeneration command from `fabscore_codex/workspace/claim_36_command_output.txt`: `python exp/cusum_controller/calibration/calibrate.py --mode cusum --reset_fraction 0` and a minimal `run_single()` original-CUSUM probe run. Current-session inspection commands are recorded in `fabscore_codex/workspace/claim_37_command_output.txt`."
+                ]
+            }
+        },
+        {
+            "claim_index": 38,
+            "claim": "38. Table 3, Original CUSUM (h=14, St=0), AUC (Step): 275.3±144.4",
+            "verdict": "Error",
+            "explanation": "Execution stage: The repository contains claim-matching summary numbers for old-CUSUM AUC (step), but not the underlying full-reset raw metrics needed for execution-stage verification. Attempted regeneration on the same code path is blocked by missing nominal probe traces and unavailable CIFAR-10 data/network access, so the claim cannot be fully verified in this environment.",
+            "evidence": "`exp/task_plan.json:32` reports `excess_AUC=275.26+/-144.39` for the original full-reset CUSUM step condition, and `exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:30` reports `Excess AUC (step) | 275.26 +/- 144.39`, matching the paper's rounded `275.3±144.4`. No original-CUSUM per-seed/raw result artifact is committed under `exp/cusum_controller/results/`. Reused `fabscore_codex/workspace/claim_36_command_output.txt`, which shows `python exp/cusum_controller/calibration/calibrate.py --mode cusum --reset_fraction 0` fails with `FileNotFoundError` for `exp/cusum_controller/results/no_controller/nominal_probe_traces/seed0.npy`, and a minimal original-CUSUM run fails with `urllib.error.URLError` because CIFAR-10 is not present locally and network download is unavailable. | Code: `exp/cusum_controller/controllers/cusum_controller.py:35-37` (full reset when `reset_fraction=0`), `exp/cusum_controller/calibration/calibrate.py:79-98` (requires `nominal_probe_traces/seed*.npy` to calibrate `h`), `exp/cusum_controller/training/train_loop.py:42-44` and `exp/cusum_controller/data/cifar10.py:18-25` (requires CIFAR-10 dataset, otherwise attempts download).",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "`exp/cusum_controller/controllers/cusum_controller.py:35-37` (full reset when `reset_fraction=0`), `exp/cusum_controller/calibration/calibrate.py:79-98` (requires `nominal_probe_traces/seed*.npy` to calibrate `h`), `exp/cusum_controller/training/train_loop.py:42-44` and `exp/cusum_controller/data/cifar10.py:18-25` (requires CIFAR-10 dataset, otherwise attempts download)."
+                ],
+                "commands_executed": [
+                    "Current-session repository commands are recorded in `fabscore_codex/workspace/claim_38_command_output.txt`. Reused prior attempted regeneration commands from `fabscore_codex/workspace/claim_36_command_output.txt`: `python exp/cusum_controller/calibration/calibrate.py --mode cusum --reset_fraction 0` and a minimal original-CUSUM `run_single()` execution path."
+                ]
+            }
+        },
+        {
+            "claim_index": 39,
+            "claim": "39. Table 3, Original CUSUM (h=14, St=0), AUC (Ramp): 271.4±109.1",
+            "verdict": "Error",
+            "explanation": "Execution stage: The claim-relevant number is quoted in repository summary/report prose and rounds exactly to the paper value, but there is no underlying original-CUSUM raw metric artifact to verify it directly. The plausible reproduction path exists, but execution is currently blocked by external environment issues already demonstrated on that exact path: missing nominal probe traces needed for calibration and unavailable local/network access for CIFAR-10. That prevents a fresh verification run for this claim.",
+            "evidence": "`paper.pdf` page 6 Table 3 lists `Original CUSUM (h=14, St=0) ... AUC (Ramp) 271.4±109.1`. Matching repository summary values appear in `exp/task_plan.json:32` (`ramp perturbation ... excess_AUC=271.37+/-109.07`) and `exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:31` (`Excess AUC (ramp) | 271.37 +/- 109.07`). `exp/cusum_controller/results/` contains only FIR-CUSUM (`cusum_epsilon`) plus `no_controller` and `or_epsilon` metrics, with no committed original full-reset CUSUM per-seed/raw artifact. Reused `fabscore_codex/workspace/claim_36_command_output.txt`, which shows attempted regeneration fails with `FileNotFoundError` for `exp/cusum_controller/results/no_controller/nominal_probe_traces/seed0.npy` and `urllib.error.URLError` when CIFAR-10 download is attempted because local `./data` is absent. | Code: `exp/task_plan.json:32`; `exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:31`; `exp/cusum_controller/controllers/cusum_controller.py:35-37`; `exp/cusum_controller/calibration/calibrate.py:79-81,95-97`; `exp/cusum_controller/data/cifar10.py:18-25`",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "`exp/task_plan.json:32`",
+                    "`exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:31`",
+                    "`exp/cusum_controller/controllers/cusum_controller.py:35-37`",
+                    "`exp/cusum_controller/calibration/calibrate.py:79-81,95-97`",
+                    "`exp/cusum_controller/data/cifar10.py:18-25`"
+                ],
+                "commands_executed": [
+                    "Current session commands are recorded in `fabscore_codex/workspace/claim_39_command_output.txt`, including: `python` extraction from `paper.pdf`, `nl -ba exp/task_plan.json | sed -n '28,36p'`, `nl -ba exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md | sed -n '24,32p'`, `find exp/cusum_controller/results -maxdepth 3 -type f ...`, code inspections, and `sed -n '1,240p' fabscore_codex/workspace/claim_36_command_output.txt`. Reused prior attempted regeneration commands from `claim_36_command_output.txt`: `python exp/cusum_controller/calibration/calibrate.py --mode cusum --reset_fraction 0` and a minimal original-CUSUM `run_single()` probe run."
+                ]
+            }
+        },
+        {
+            "claim_index": 44,
+            "claim": "44. Table 3, FIR-CUSUM (h=18, St=h/2), ∆% vs Original (Peak Step): -36%",
+            "verdict": "Verified",
+            "explanation": "Execution stage: This claim can be verified from existing repository artifacts without rerunning the blocked original-CUSUM baseline. The saved FIR result JSON already contains the derived percentage, and it is consistent with the generated optimization report table and the quoted original baseline value for the same Table 3 row.",
+            "evidence": "`paper.pdf` page 6 Table 3 reports `FIR-CUSUM (h=18, St=h/2)` with `-36%` for `Delta% vs Original` on `Peak (Step)`. Repository artifact `exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json` stores FIR step peak `3.471` and `improvement_vs_original.peak_excess_step_pct_change = -35.7`. Repository summaries `exp/task_plan.json:32` and `exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:28` give the corresponding original/full-reset step peak as `5.40+/-1.72` and the report table lists `Improvement -36%`. Recomputing from the repository values gives `(3.471 - 5.40) / 5.40 * 100 = -35.72%`, which rounds to `-36%`. | Code: `exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json`; `exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:28`; `exp/task_plan.json:32`; supporting implementation path: `exp/cusum_controller/scripts/run_cusum_epsilon.py` and `exp/cusum_controller/controllers/cusum_controller.py`.",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "`exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json`",
+                    "`exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:28`",
+                    "`exp/task_plan.json:32`",
+                    "supporting implementation path: `exp/cusum_controller/scripts/run_cusum_epsilon.py` and `exp/cusum_controller/controllers/cusum_controller.py`."
+                ],
+                "commands_executed": [
+                    "Commands recorded in `fabscore_codex/workspace/claim_44_command_output.txt`: PDF extraction from `paper.pdf`; `nl -ba exp/task_plan.json | sed -n '28,33p'`; `nl -ba exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md | sed -n '26,31p'`; Python recomputation from `exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json`; `nl -ba exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json | sed -n '1,80p'`; `sed -n '1,120p' fabscore_codex/workspace/claim_36_command_output.txt`."
+                ]
+            }
+        },
+        {
+            "claim_index": 45,
+            "claim": "45. Table 3, FIR-CUSUM (h=18, St=h/2), ∆% vs Original (Peak Ramp): -35%",
+            "verdict": "Verified",
+            "explanation": "Execution stage: Existing committed artifacts are sufficient for this exact claim, so rerunning the blocked original-CUSUM baseline was unnecessary. The saved FIR result JSON already contains the exact ramp percentage delta for the same Table 3 setting, and that value is consistent with both the generated report table and the paper.",
+            "evidence": "`paper.pdf` page 6 Table 3 reports `FIR-CUSUM (h=18, St=h/2)` with `Peak (Ramp) 3.65±0.75` and `∆% vs Original = -35%`. Repository artifact `exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json` stores `calibration.h = 18.0`, `reset_fraction = 0.5`, `metrics.ramp.peak_excess_loss.mean = 3.651`, and `improvement_vs_original.peak_excess_ramp_pct_change = -35.0`. `exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md` reports `Old CUSUM 5.62 +/- 1.03`, `FIR-CUSUM 3.65 +/- 0.75`, `Improvement -35%`. Recomputing from the saved FIR result gives `implied_original_ramp_peak = 5.616923076923`, which rounds to `5.62`, and `recomputed_pct_change = -35.0`. | Code: `exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json`; `exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:29`; `exp/task_plan.json:32`; producing path aggregated in `exp/cusum_controller/scripts/run_cusum_epsilon.py:157-183`.",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "`exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json`",
+                    "`exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:29`",
+                    "`exp/task_plan.json:32`",
+                    "producing path aggregated in `exp/cusum_controller/scripts/run_cusum_epsilon.py:157-183`."
+                ],
+                "commands_executed": [
+                    "Recorded in `fabscore_codex/workspace/claim_45_command_output.txt`: `python` extraction from `paper.pdf`; `nl -ba exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json | sed -n '1,120p'`; `nl -ba exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md | sed -n '24,34p'`; `nl -ba exp/task_plan.json | sed -n '28,35p'`; `python` recomputation from `exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json`; `nl -ba exp/cusum_controller/scripts/run_cusum_epsilon.py | sed -n '120,190p'`; `sed -n '1,160p' fabscore_codex/workspace/claim_36_command_output.txt`."
+                ]
+            }
+        },
+        {
+            "claim_index": 46,
+            "claim": "46. Table 3, FIR-CUSUM (h=18, St=h/2), ∆% vs Original (AUC Step): -34%",
+            "verdict": "Verified",
+            "explanation": "Execution stage: Existing committed artifacts are sufficient for this exact claim, so rerunning the blocked original-CUSUM baseline was unnecessary. The saved FIR result JSON already contains the exact step-AUC percentage delta for the same Table 3 setting, and that value is consistent with both the generated report table and the paper.",
+            "evidence": "paper.pdf Table 3 lists `FIR-CUSUM (h=18, St=h/2)` with `AUC (Step) 182.6±83.2` and `∆% vs Original = -34%`. The committed artifact `exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json` stores `calibration.h = 18.0`, `reset_fraction = 0.5`, `metrics.step.excess_auc.mean = 182.566`, and `improvement_vs_original.excess_auc_step_pct_change = -33.7`. The generated report `exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md` reports `Old CUSUM 275.26 +/- 144.39`, `FIR-CUSUM 182.57 +/- 83.21`, `Improvement -34%`. Recomputing from the saved FIR result gives `implied_original_auc_step = 275.36349924585215` and `recomputed_pct_change = -33.7`, which rounds to the paper's `-34%`. | Code: `exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json:47-51`; `exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:26-31`; producing path aggregated in `exp/cusum_controller/scripts/run_cusum_epsilon.py:157-183`.",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "`exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json:47-51`",
+                    "`exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:26-31`",
+                    "producing path aggregated in `exp/cusum_controller/scripts/run_cusum_epsilon.py:157-183`."
+                ],
+                "commands_executed": [
+                    "Recorded in `fabscore_codex/workspace/claim_46_command_output.txt`: `python` extraction from `paper.pdf`; `nl -ba exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json | sed -n '1,80p'`; `nl -ba exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md | sed -n '24,32p'`; `python` recomputation from `exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json`; `nl -ba exp/cusum_controller/scripts/run_cusum_epsilon.py | sed -n '145,185p'`."
+                ]
+            }
+        },
+        {
+            "claim_index": 47,
+            "claim": "47. Table 3, FIR-CUSUM (h=18, St=h/2), ∆% vs Original (AUC Ramp): -22%",
+            "verdict": "Verified",
+            "explanation": "Execution stage: Existing committed artifacts are sufficient for this exact claim, so rerunning the blocked original-CUSUM baseline was unnecessary. The saved FIR result JSON already contains the exact ramp-AUC percentage delta for the same Table 3 setting, and that value is consistent with both the generated report table and the paper.",
+            "evidence": "paper.pdf page 6 Table 3 lists `FIR-CUSUM (h=18, St=h/2)` with ramp `AUC 212.0±68.6` and `Δ% vs Original = -22%`. The committed artifact `exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json` stores `calibration.h = 18.0`, `reset_fraction = 0.5`, `metrics.ramp.excess_auc.mean = 211.950`, and `improvement_vs_original.excess_auc_ramp_pct_change = -21.9`. The generated comparison table in `exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md` reports `Old CUSUM 271.37 +/- 109.07`, `FIR-CUSUM 211.95 +/- 68.58`, `Improvement -22%`. Recomputing from the saved FIR result gives `implied_original_auc_ramp = 271.38284250960305` and `recomputed_pct_change = -21.9`, which rounds to the paper's `-22%`. | Code: `exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json:47-51`; `exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:26-31`; `exp/task_plan.json:32`; producing path aggregated in `exp/cusum_controller/scripts/run_cusum_epsilon.py:157-183`.",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "`exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json:47-51`",
+                    "`exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:26-31`",
+                    "`exp/task_plan.json:32`",
+                    "producing path aggregated in `exp/cusum_controller/scripts/run_cusum_epsilon.py:157-183`."
+                ],
+                "commands_executed": [
+                    "Recorded in `fabscore_codex/workspace/claim_47_command_output.txt`: `python` extraction from `paper.pdf`; `nl -ba exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json | sed -n '1,80p'`; `nl -ba exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md | sed -n '24,32p'`; `nl -ba exp/task_plan.json | sed -n '24,40p'`; `python` recomputation from `exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json`; `nl -ba exp/cusum_controller/scripts/run_cusum_epsilon.py | sed -n '157,183p'`."
+                ]
+            }
+        }
+    ],
+    "figures": [],
+    "results_section": [
+        {
+            "claim_index": 59,
+            "claim": "7. When perturbations cause large innovation spikes (>5σ above baseline), Or-ϵ detects immediately while CUSUM-ϵ needs 2–3 steps to accumulate sufficient evidence",
+            "verdict": "Result Fabrication",
+            "explanation": "Execution stage: The repository contains the relevant implementation and calibration outputs, and they directly conflict with the paper's claim. Under the committed Or-epsilon threshold, a `>5σ` innovation spike is not sufficient for immediate rollback; the threshold is about `5.40σ`. Under the committed FIR-CUSUM settings, initial detection from `S_0=0` needs 4 steps for spikes up to and including `6.5σ`, not `2-3` steps. So the paper's blanket statement that `>5σ` spikes imply immediate Or detection and `2-3` CUSUM steps is inconsistent with the implemented controller and saved calibration constants.",
+            "evidence": "Fresh command log `fabscore_codex/workspace/claim_59_command_output.txt` shows the implemented thresholds contradict the paper's timing statement. From `exp/cusum_controller/results/calibration/calibration_params.json`, `epsilon=1.1805052340427251`, `mu_0=-0.04125521912250121`, `sigma_0=0.2260490837544573`, `cusum_h=18.0`, `cusum_k=0.5`. Recomputed from those committed values: Or immediate alarm requires `(epsilon - mu_0) / sigma_0 = 5.404845854152397σ`, not merely `>5σ`. For CUSUM initial detection from `S_0=0`, the fresh calculation gave `initial_steps_at_5.01sigma=4`, `5.5sigma=4`, `6.5sigma=4`, `6.6sigma=3`, `9.5sigma=3`, `9.6sigma=2`. | Code: `exp/cusum_controller/controllers/or_controller.py:19-21`; `exp/cusum_controller/controllers/cusum_controller.py:30-37`; `exp/cusum_controller/results/calibration/calibration_params.json:2-12`; `exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json:3-12`.",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "`exp/cusum_controller/controllers/or_controller.py:19-21`",
+                    "`exp/cusum_controller/controllers/cusum_controller.py:30-37`",
+                    "`exp/cusum_controller/results/calibration/calibration_params.json:2-12`",
+                    "`exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json:3-12`."
+                ],
+                "commands_executed": [
+                    "Commands logged in `fabscore_codex/workspace/claim_59_command_output.txt`: `nl -ba exp/cusum_controller/controllers/or_controller.py | sed -n '1,120p'`; `nl -ba exp/cusum_controller/controllers/cusum_controller.py | sed -n '1,140p'`; `nl -ba exp/cusum_controller/results/calibration/calibration_params.json | sed -n '1,120p'`; `python` calculation of sigma thresholds and required CUSUM steps from the committed calibration JSON."
+                ]
+            }
+        },
+        {
+            "claim_index": 60,
+            "claim": "8. approximately 3 steps were needed to re-accumulate evidence during ongoing perturbation.",
+            "verdict": "Error",
+            "explanation": "Execution stage: The claim-relevant code path exists, and the repository’s generated report repeats the `~3 steps` statement, but there is no underlying committed raw trace or per-step artifact for the original full-reset CUSUM needed for execution-stage verification. Reasonable repo-native regeneration was already attempted on the same path and is blocked by external environment issues: missing nominal probe traces plus unavailable local/network access for CIFAR-10. Because execution cannot proceed in this environment, the appropriate verdict is `Error` rather than a fabrication label.",
+            "evidence": "Reused prior execution artifact `fabscore_codex/workspace/claim_36_command_output.txt`, which shows the exact original full-reset CUSUM regeneration path is blocked by `FileNotFoundError: exp/cusum_controller/results/no_controller/nominal_probe_traces/seed0.npy` and `urllib.error.URLError` when CIFAR-10 download is attempted with no local `./data`. Current-session inspection also found no committed original-CUSUM raw trace artifact under `exp/cusum_controller/results/` or `exp/EXPERIMENT_RESULTS/optimize_trace/`; only summary prose exists in `exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md` and `exp/task_plan.json`. | Code: `exp/cusum_controller/controllers/cusum_controller.py:30-37` (CUSUM update and reset behavior), `exp/cusum_controller/training/train_loop.py:130-179` (records innovations / `S_t` / perturbation-active traces), `exp/cusum_controller/scripts/run_cusum_epsilon.py:54-66` (writes per-seed `traces/*.npz`), `exp/cusum_controller/calibration/calibrate.py:79-98,141-152` (requires `results/no_controller/nominal_probe_traces/seed*.npy` and supports `--reset_fraction`), `exp/cusum_controller/data/cifar10.py:18-25` (downloads CIFAR-10), `exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:9` (summary-only `~3 steps` statement).",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "`exp/cusum_controller/controllers/cusum_controller.py:30-37` (CUSUM update and reset behavior), `exp/cusum_controller/training/train_loop.py:130-179` (records innovations / `S_t` / perturbation-active traces), `exp/cusum_controller/scripts/run_cusum_epsilon.py:54-66` (writes per-seed `traces/*.npz`), `exp/cusum_controller/calibration/calibrate.py:79-98,141-152` (requires `results/no_controller/nominal_probe_traces/seed*.npy` and supports `--reset_fraction`), `exp/cusum_controller/data/cifar10.py:18-25` (downloads CIFAR-10), `exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:9` (summary-only `~3 steps` statement)."
+                ],
+                "commands_executed": [
+                    "Current session commands are logged in `fabscore_codex/workspace/claim_60_command_output.txt`, including inspection of `paper.pdf`, `exp/EXPERIMENT_RESULTS/optimize_trace/*`, and the controller/calibration code. Reused prior attempted regeneration command from `fabscore_codex/workspace/claim_36_command_output.txt`: `python exp/cusum_controller/calibration/calibrate.py --mode cusum --reset_fraction 0`, plus the minimal original-CUSUM `run_single()` probe run recorded there."
+                ]
+            }
+        },
+        {
+            "claim_index": 61,
+            "claim": "9. FIR partial reset (St ← h/2) allows re-triggering within 1–2 anomalous steps.",
+            "verdict": "Error",
+            "explanation": "Execution stage: The repository contains the FIR implementation and summary prose for the claim, but not the raw per-step FIR trace artifact needed to verify the asserted 1–2-step re-trigger behavior directly. A minimal repo-native rerun for the exact FIR path was attempted and failed because dataset download is blocked by the external environment, so execution-stage verification cannot proceed here. That makes this an external execution failure, not a fabrication verdict.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_61_command_output.txt` captures the paper text snippet stating FIR should \"re-trigger within 1–2 anomalous steps\", confirms there were no committed FIR trace files under `exp/cusum_controller/results/cusum_epsilon/traces/`, and records a failed minimal regeneration attempt. The attempted debug run `python exp/cusum_controller/scripts/run_cusum_epsilon.py --debug --num_seeds 1 --data_root ./data` hit `urllib.error.URLError: [Errno 8] nodename nor servname provided, or not known` inside CIFAR-10 download, produced no `traces/*.npz`, and rewrote `exp/cusum_controller/results/cusum_epsilon/metrics_summary.json` to `{\"step\": {}}` and `per_seed_metrics.json` to `{\"step\": []}`. | Code: `exp/cusum_controller/controllers/cusum_controller.py:30-37` (FIR reset to `h * reset_fraction`), `exp/cusum_controller/training/train_loop.py:118-138,170-183` (records `decisions`, `perturbation_active`, `standardized_innovations`, `cusum_stats`), `exp/cusum_controller/scripts/run_cusum_epsilon.py:42-66,95-101` (runs FIR experiment and writes `results/cusum_epsilon/traces/*.npz`), `exp/cusum_controller/data/cifar10.py:18-25` (always downloads CIFAR-10), `exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:13` (summary-only `1-2 anomalous steps` claim), `exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/RESULTS.json:4-15` (FIR calibration with `h=18.0`, `reset_fraction=0.5`, reset value `9.0`).",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "`exp/cusum_controller/controllers/cusum_controller.py:30-37` (FIR reset to `h * reset_fraction`), `exp/cusum_controller/training/train_loop.py:118-138,170-183` (records `decisions`, `perturbation_active`, `standardized_innovations`, `cusum_stats`), `exp/cusum_controller/scripts/run_cusum_epsilon.py:42-66,95-101` (runs FIR experiment and writes `results/cusum_epsilon/traces/*.npz`), `exp/cusum_controller/data/cifar10.py:18-25` (always downloads CIFAR-10), `exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:13` (summary-only `1-2 anomalous steps` claim), `exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/RESULTS.json:4-15` (FIR calibration with `h=18.0`, `reset_fraction=0.5`, reset value `9.0`)."
+                ],
+                "commands_executed": [
+                    "python exp/cusum_controller/scripts/run_cusum_epsilon.py --debug --num_seeds 1 --data_root ./data ; supporting inspection command logged in the same artifact: python -c \"from pathlib import Path; from pypdf import PdfReader; ...\". Raw stdout/stderr for both commands is saved in `fabscore_codex/workspace/claim_61_command_output.txt`."
+                ]
+            }
+        },
+        {
+            "claim_index": 62,
+            "claim": "10. peak excess loss decreases by 35–36% for both perturbation types",
+            "verdict": "Verified",
+            "explanation": "Execution stage: The paper's Section 4.3/Table 3 claim that peak excess loss decreases by 35-36% for both perturbation types is supported by existing claim-relevant result artifacts. The saved FIR results directly encode the percentage improvements versus the original CUSUM baseline, and the generated optimization report provides the matching original and FIR peak values for both step and ramp perturbations. A fresh recomputation from the saved values matches the claimed 35-36% reduction.",
+            "evidence": "Reused committed artifacts `exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json` and `exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md`. `RESULTS.json` stores `peak_excess_step_pct_change=-35.7` and `peak_excess_ramp_pct_change=-35.0` with FIR peak excess values `3.471` (step) and `3.651` (ramp). `REPORT.md` reports original-CUSUM peaks `5.40 +/- 1.72` and `5.62 +/- 1.03` and lists improvements `-36%` and `-35%`. Fresh artifact `fabscore_codex/workspace/claim_62_command_output.txt` recomputes implied original peaks `5.3981337480559874` and `5.616923076923077`, with recomputed percentage changes `-35.699999999999996` and `-35.0`. | Code: exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json:17-18,24-25,47-49; exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:26-31,46",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json:17-18,24-25,47-49",
+                    "exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:26-31,46"
+                ],
+                "commands_executed": [
+                    "python-derived extraction written via shell wrapper to `fabscore_codex/workspace/claim_62_command_output.txt`:\n{\n  echo '$ nl -ba exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json | sed -n \"1,120p\"';\n  nl -ba exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json | sed -n '1,120p';\n  echo;\n  echo '$ nl -ba exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md | sed -n \"1,120p\"';\n  nl -ba exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md | sed -n '1,120p';\n  echo;\n  echo '$ python - <<\"PY\"';\n  python - <<'PY'\nimport json\nfrom pathlib import Path\nfir = json.loads(Path('exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json').read_text())\nstep_fir = fir['metrics']['step']['peak_excess_loss']['mean']\nramp_fir = fir['metrics']['ramp']['peak_excess_loss']['mean']\nstep_pct = fir['improvement_vs_original']['peak_excess_step_pct_change']\nramp_pct = fir['improvement_vs_original']['peak_excess_ramp_pct_change']\nstep_orig = step_fir / (1 + step_pct/100)\nramp_orig = ramp_fir / (1 + ramp_pct/100)\nstep_recomputed = (step_fir - step_orig) / step_orig * 100\nramp_recomputed = (ramp_fir - ramp_orig) / ramp_orig * 100\nprint({\n    'step_fir_peak': step_fir,\n    'ramp_fir_peak': ramp_fir,\n    'step_pct_saved': step_pct,\n    'ramp_pct_saved': ramp_pct,\n    'step_orig_implied': step_orig,\n    'ramp_orig_implied': ramp_orig,\n    'step_pct_recomputed': step_recomputed,\n    'ramp_pct_recomputed': ramp_recomputed,\n})\nPY\n} > fabscore_codex/workspace/claim_62_command_output.txt 2>&1"
+                ]
+            }
+        },
+        {
+            "claim_index": 63,
+            "claim": "11. excess AUC decreases by 22–34%.",
+            "verdict": "Verified",
+            "explanation": "Execution stage: The paper's statement that excess AUC decreases by 22-34% is supported by repository artifacts for the FIR-vs-original CUSUM comparison. The saved machine-readable percentage changes are -33.7% for step and -21.9% for ramp, which round to the reported 34% and 22%.",
+            "evidence": "Reused committed artifacts `exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json` and `exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md`. `RESULTS.json` stores `improvement_vs_original.excess_auc_step_pct_change = -33.7` and `excess_auc_ramp_pct_change = -21.9`. `REPORT.md` lists old vs FIR AUCs as step `275.26 -> 182.57` and ramp `271.37 -> 211.95`. Fresh recomputation in `fabscore_codex/workspace/claim_63_command_output.txt` reproduces `-33.7%` and `-21.9%`. | Code: exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json:47; exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:30; exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:31; exp/cusum_controller/controllers/cusum_controller.py:35; exp/cusum_controller/scripts/run_cusum_epsilon.py:54",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json:47",
+                    "exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:30",
+                    "exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:31",
+                    "exp/cusum_controller/controllers/cusum_controller.py:35",
+                    "exp/cusum_controller/scripts/run_cusum_epsilon.py:54"
+                ],
+                "commands_executed": [
+                    "python - <<'PY' > fabscore_codex/workspace/claim_63_command_output.txt 2>&1\nimport json, re\nfrom pathlib import Path\nprint('COMMAND: python recompute_claim_63_from_artifacts')\nresults = json.loads(Path('exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json').read_text())\nreport = Path('exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md').read_text()\nstep_old = float(re.search(r'\\| Excess AUC \\(step\\) \\| ([0-9.]+) \\+/- ([0-9.]+) \\| ([0-9.]+) \\+/- ([0-9.]+) \\|', report).group(1))\nstep_new = results['metrics']['step']['excess_auc']['mean']\nramp_old = float(re.search(r'\\| Excess AUC \\(ramp\\) \\| ([0-9.]+) \\+/- ([0-9.]+) \\| ([0-9.]+) \\+/- ([0-9.]+) \\|', report).group(1))\nramp_new = results['metrics']['ramp']['excess_auc']['mean']\nstep_pct = (step_new - step_old) / step_old * 100\nramp_pct = (ramp_new - ramp_old) / ramp_old * 100\nprint({'step_old_auc': step_old, 'step_new_auc': step_new, 'step_pct_change': round(step_pct, 1)})\nprint({'ramp_old_auc': ramp_old, 'ramp_new_auc': ramp_new, 'ramp_pct_change': round(ramp_pct, 1)})\nprint({'stored_step_pct_change': results['improvement_vs_original']['excess_auc_step_pct_change'], 'stored_ramp_pct_change': results['improvement_vs_original']['excess_auc_ramp_pct_change']})\nPY"
+                ]
+            }
+        }
+    ],
+    "summary": {
+        "total": 13,
+        "verified": 6,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 1,
+        "no_code_files": 0,
+        "insufficient_evidence": 0,
+        "error": 6
+    }
+}

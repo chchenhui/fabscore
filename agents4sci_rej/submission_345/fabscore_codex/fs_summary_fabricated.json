@@ -1,0 +1,371 @@
+{
+  "tables": [],
+  "figures": [
+    {
+      "claim_index": 2,
+      "claim": "2. Figure 2: Global sensitivity of NPV to key drivers (market size, list price, GTN, adherence, SG&A) showing the impact of each parameter on NPV variance.",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The paper claims a global sensitivity/variance analysis, but the figure-generation path in `generate_shap_summary()` does not compute variance or SHAP values. It explicitly uses a simplified tornado chart with fixed hand-assigned impacts in an `if/elif` ladder (for example market size -> 1.8, list price -> 1.5, GTN -> 1.2), so the reported sensitivity figure is not generated from an actual NPV variance analysis.",
+      "evidence": "345_Multi_Agent_AI_System_for__Supplementary Material/reports/generate_paper_figures.py::generate_shap_summary; 345_Multi_Agent_AI_System_for__Supplementary Material/src/econ/npv.py::explain_npv_drivers; 345_Multi_Agent_AI_System_for__Supplementary Material/reports/complete_conference_paper.tex",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "345_Multi_Agent_AI_System_for__Supplementary Material/reports/generate_paper_figures.py::generate_shap_summary",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/src/econ/npv.py::explain_npv_drivers",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/reports/complete_conference_paper.tex"
+        ],
+        "commands_executed": []
+      }
+    }
+  ],
+  "results_section": [
+    {
+      "claim_index": 3,
+      "claim": "1. Multi-agent System: 41.3% MAPE (approaching 40% consultant baseline)",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Static repo evidence conflicts with this headline result. `validation/README.md` states the current Phase 5 status is 81.3% MAPE, not 41.3%. The claimed validation path also performs a quick-test slice over only two drugs (`select_validation_drugs()[:2]`), and the forecasting code contains explicit Keytruda/Repatha calibration against known historical targets, so the reported Phase 5 benchmark is not a clean evaluation.",
+      "evidence": "345_Multi_Agent_AI_System_for__Supplementary Material/validation/README.md; 345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py::run_full_validation; 345_Multi_Agent_AI_System_for__Supplementary Material/ai_scientist/gpt5_orchestrator.py::_patient_flow_method; 345_Multi_Agent_AI_System_for__Supplementary Material/ai_scientist/gpt5_orchestrator.py::_ml_ensemble_method",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "345_Multi_Agent_AI_System_for__Supplementary Material/validation/README.md",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py::run_full_validation",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/ai_scientist/gpt5_orchestrator.py::_patient_flow_method",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/ai_scientist/gpt5_orchestrator.py::_ml_ensemble_method"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 7,
+      "claim": "5. Golden Validation: 76.9% pass rate (10/13 tests within±10% tolerance)",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The available golden-validation entrypoint is a demonstration path that validates hardcoded example forecasts from `create_test_forecasts()` rather than forecasts produced by the forecasting system. It expects a missing `data_proc/golden_set.parquet`, and the repo even references a missing `build_golden_set.py`. The reported 10/13 structure matches this demo-style setup, so the paper-level validation claim is not backed by a valid implemented experiment path.",
+      "evidence": "345_Multi_Agent_AI_System_for__Supplementary Material/src/validation/golden_framework.py::create_test_forecasts; 345_Multi_Agent_AI_System_for__Supplementary Material/src/validation/golden_framework.py::__main__; 345_Multi_Agent_AI_System_for__Supplementary Material/Makefile; 345_Multi_Agent_AI_System_for__Supplementary Material/data_raw/golden_drugs.csv",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "345_Multi_Agent_AI_System_for__Supplementary Material/src/validation/golden_framework.py::create_test_forecasts",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/src/validation/golden_framework.py::__main__",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/Makefile",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/data_raw/golden_drugs.csv"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 8,
+      "claim": "6. Multi-agent forecast: $16.3B peak (65% of actual, 34.6% peak APE)",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The Keytruda validation forecast is statically compromised by target leakage. The validator selects named historical drugs such as Keytruda, while the orchestrator's forecasting methods are explicitly calibrated against known historical targets in comments and calibration tables (for example 'Keytruda ... target $25B'). That makes the claimed historical forecast an invalid evaluation result.",
+      "evidence": "345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py::select_validation_drugs; 345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py::run_multi_agent_forecast; 345_Multi_Agent_AI_System_for__Supplementary Material/ai_scientist/gpt5_orchestrator.py::_patient_flow_method; 345_Multi_Agent_AI_System_for__Supplementary Material/ai_scientist/gpt5_orchestrator.py::_ml_ensemble_method",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py::select_validation_drugs",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py::run_multi_agent_forecast",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/ai_scientist/gpt5_orchestrator.py::_patient_flow_method",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/ai_scientist/gpt5_orchestrator.py::_ml_ensemble_method"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 9,
+      "claim": "7. Multi-agent MAPE: 41.1% (approaching consultant-level accuracy)",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: This Keytruda-specific MAPE is produced under the same compromised setup as the Keytruda forecast claim. The validator evaluates Keytruda directly, and the multi-agent forecast code is tuned using Keytruda's known actual peak. Static inspection therefore shows experiment-side leakage rather than an unbiased held-out evaluation.",
+      "evidence": "345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py::run_full_validation; 345_Multi_Agent_AI_System_for__Supplementary Material/ai_scientist/gpt5_orchestrator.py::_patient_flow_method; 345_Multi_Agent_AI_System_for__Supplementary Material/ai_scientist/gpt5_orchestrator.py::_ml_ensemble_method",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py::run_full_validation",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/ai_scientist/gpt5_orchestrator.py::_patient_flow_method",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/ai_scientist/gpt5_orchestrator.py::_ml_ensemble_method"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 12,
+      "claim": "10. Multi-agent forecast: $996M peak (66% of actual, 33.6% peak APE)",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The Repatha validation forecast is also compromised by target leakage. Repatha is explicitly listed among the validation drugs, and the orchestrator contains therapeutic-area and drug-specific calibration comments/factors aimed at Repatha's known historical outcome ('target Repatha $1.5B'). This is not a clean historical forecast evaluation.",
+      "evidence": "345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py::select_validation_drugs; 345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py::run_multi_agent_forecast; 345_Multi_Agent_AI_System_for__Supplementary Material/ai_scientist/gpt5_orchestrator.py::_patient_flow_method; 345_Multi_Agent_AI_System_for__Supplementary Material/ai_scientist/gpt5_orchestrator.py::_ml_ensemble_method",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py::select_validation_drugs",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py::run_multi_agent_forecast",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/ai_scientist/gpt5_orchestrator.py::_patient_flow_method",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/ai_scientist/gpt5_orchestrator.py::_ml_ensemble_method"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 13,
+      "claim": "11. Multi-agent MAPE: 41.5% (approaching consultant-level accuracy)",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: This Repatha-specific MAPE is generated under the same leaked setup as the Repatha forecast claim. The validation script tests Repatha directly, while the forecasting code embeds Repatha-specific calibration toward the known historical target, so the reported MAPE is not the output of an unbiased evaluation protocol.",
+      "evidence": "345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py::run_full_validation; 345_Multi_Agent_AI_System_for__Supplementary Material/ai_scientist/gpt5_orchestrator.py::_patient_flow_method; 345_Multi_Agent_AI_System_for__Supplementary Material/ai_scientist/gpt5_orchestrator.py::_ml_ensemble_method",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py::run_full_validation",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/ai_scientist/gpt5_orchestrator.py::_patient_flow_method",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/ai_scientist/gpt5_orchestrator.py::_ml_ensemble_method"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 5,
+      "claim": "3. Ensemble Baseline: 80.8% MAPE (traditional ensemble approach)",
+      "verdict": "Result Fabrication",
+      "explanation": "Execution stage: The repository contains a working, claim-relevant ensemble baseline path, but reproducing it with the current code and local data does not support the paper's reported 80.8% MAPE. The reproduced value is about 851.8% on the script's selected two-drug quick-test subset, and the script's own aggregation logic would omit ensemble_baseline entirely because both MAPEs exceed the `< 5.0` inclusion threshold.",
+      "evidence": "Fresh reproduction saved to /home/chenhui/fabscore/agent4sci_rej/submission_345/fabscore_codex/workspace/claim_5_metrics.json and raw log /home/chenhui/fabscore/agent4sci_rej/submission_345/fabscore_codex/workspace/claim_5_command_output.txt. Using the repository's local parquet data and the same selection logic as the validation script, the two drugs selected by the script's quick-test slice were Keytruda and Humira. Their ensemble baseline MAPEs were 10.669651475026221 and 6.366933226955429, for a raw mean of 8.518292350990825 (851.8292350990824%). Under the script's own summary filter (`mape < 5.0`), ensemble_baseline has 0 valid predictions and no aggregate MAPE would be reported. | Code: 345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py:264 (run_baseline_forecasts), 314 (calculate_accuracy_metrics), 372 (run_full_validation uses `select_validation_drugs()[:2]`), 475-502 (analyze_validation_results outlier filter and average MAPE reporting); 345_Multi_Agent_AI_System_for__Supplementary Material/src/models/baselines.py:323-371 (ensemble_baseline)",
+      "detection_mode": "code_execution",
+      "decision_stage": "execution",
+      "verification_process": {
+        "files_analyzed": [
+          "345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py:264 (run_baseline_forecasts), 314 (calculate_accuracy_metrics), 372 (run_full_validation uses `select_validation_drugs()[:2]`), 475-502 (analyze_validation_results outlier filter and average MAPE reporting)",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/src/models/baselines.py:323-371 (ensemble_baseline)"
+        ],
+        "commands_executed": [
+          "python - <<'PY'\nimport os, sys, json\nfrom pathlib import Path\nimport numpy as np\nimport pandas as pd\nrepo = Path('/home/chenhui/fabscore/agent4sci_rej/submission_345')\nproj = repo / '345_Multi_Agent_AI_System_for__Supplementary Material'\nworkspace = repo / 'fabscore_codex' / 'workspace'\nworkspace.mkdir(parents=True, exist_ok=True)\nmetrics_path = workspace / 'claim_5_metrics.json'\nlog_path = workspace / 'claim_5_command_output.txt'\ncmd_desc = \"python baseline reproduction for claim 5\"\nwith log_path.open('a') as log:\n    log.write('='*80 + '\\n')\n    log.write(f'COMMAND: {cmd_desc}\\n')\n    log.write('='*80 + '\\n')\nos.chdir(proj)\nsys.path.insert(0, str(proj / 'src'))\nfrom models.baselines import peak_sales_heuristic, ensemble_baseline\nlaunches = pd.read_parquet('data_proc/launches.parquet')\nrevenues = pd.read_parquet('data_proc/launch_revenues.parquet')\nmust_get_right = {\n    'blockbusters': ['Keytruda', 'Humira', 'Eliquis'],\n    'failures': ['Exubera', 'Belsomra', 'Addyi'],\n    'moderate': ['Repatha', 'Entresto', 'Aimovig']\n}\nall_must = [d for drugs in must_get_right.values() for d in drugs]\ndef get_actual_revenues(launch_id, years=5):\n    drug_revenues = revenues[revenues['launch_id'] == launch_id].sort_values('year_since_launch')\n    actual = np.zeros(years)\n    for _, row in drug_revenues.iterrows():\n        year = int(row['year_since_launch'])\n        if 0 <= year < years:\n            actual[year] = row['revenue_usd']\n    return actual\ndef calculate_accuracy_metrics(forecast, actual):\n    if len(forecast) == 0 or len(actual) == 0:\n        return {'mape': 999.0, 'peak_ape': 999.0, 'y2_ape': 999.0}\n    valid_errors = []\n    for i in range(min(len(forecast), len(actual))):\n        if actual[i] > 0:\n            valid_errors.append(abs(forecast[i] - actual[i]) / actual[i])\n    mape = float(np.mean(valid_errors)) if valid_errors else 999.0\n    actual_peak = float(np.max(actual))\n    forecast_peak = float(np.max(forecast))\n    peak_ape = abs(forecast_peak - actual_peak) / actual_peak if actual_peak > 0 else 999.0\n    y2_ape = abs(forecast[1] - actual[1]) / actual[1] if len(actual) > 1 and actual[1] > 0 else 999.0\n    return {'mape': float(mape), 'peak_ape': float(peak_ape), 'y2_ape': float(y2_ape)}\ndrugs_with_revenue = set(revenues['launch_id'].unique())\navailable_drugs = launches[launches['launch_id'].isin(drugs_with_revenue)]\nvalidation_drugs = []\npriority_drugs = available_drugs[available_drugs['drug_name'].isin(all_must)]\nfor _, drug in priority_drugs.iterrows():\n    actual = get_actual_revenues(drug['launch_id'])\n    if np.max(actual) > 0:\n        validation_drugs.append({'drug': drug, 'actual_revenues': actual, 'priority': 'must_get_right'})\nother_drugs = available_drugs[~available_drugs['drug_name'].isin(all_must)]\nfor _, drug in other_drugs.head(3).iterrows():\n    actual = get_actual_revenues(drug['launch_id'])\n    if np.max(actual) > 0:\n        validation_drugs.append({'drug': drug, 'actual_revenues': actual, 'priority': 'additional'})\nselected = validation_drugs[:2]\nout = {'selected_drugs': [], 'summary_like_script': {}, 'all_selected_count_before_slice': len(validation_drugs)}\nensemble_mapes = []\npeak_mapes = []\nfor item in selected:\n    drug = item['drug']\n    actual = item['actual_revenues']\n    peak_forecast = peak_sales_heuristic(drug)\n    peak_traj = np.array([peak_forecast * 0.2, peak_forecast * 0.6, peak_forecast * 1.0, peak_forecast * 0.9, peak_forecast * 0.8]) if peak_forecast > 0 else np.zeros(5)\n    ens = ensemble_baseline(drug, years=5)['ensemble']\n    peak_metrics = calculate_accuracy_metrics(peak_traj, actual)\n    ens_metrics = calculate_accuracy_metrics(ens, actual)\n    peak_mapes.append(peak_metrics['mape'])\n    ensemble_mapes.append(ens_metrics['mape'])\n    out['selected_drugs'].append({'drug_name': drug['drug_name'], 'launch_id': drug['launch_id'], 'peak_heuristic_mape_fraction': peak_metrics['mape'], 'peak_heuristic_mape_percent': peak_metrics['mape'] * 100, 'ensemble_mape_fraction': ens_metrics['mape'], 'ensemble_mape_percent': ens_metrics['mape'] * 100, 'ensemble_peak': float(np.max(ens)), 'actual_peak': float(np.max(actual))})\nout['summary_like_script'] = {'peak_heuristic_avg_mape_fraction_included': float(np.mean([m for m in peak_mapes if m < 5.0])) if any(m < 5.0 for m in peak_mapes) else None, 'peak_heuristic_avg_mape_percent_included': float(np.mean([m for m in peak_mapes if m < 5.0]) * 100) if any(m < 5.0 for m in peak_mapes) else None, 'ensemble_avg_mape_fraction_included': float(np.mean([m for m in ensemble_mapes if m < 5.0])) if any(m < 5.0 for m in ensemble_mapes) else None, 'ensemble_avg_mape_percent_included': float(np.mean([m for m in ensemble_mapes if m < 5.0]) * 100) if any(m < 5.0 for m in ensemble_mapes) else None, 'peak_heuristic_valid_predictions': int(sum(m < 5.0 for m in peak_mapes)), 'ensemble_valid_predictions': int(sum(m < 5.0 for m in ensemble_mapes)), 'raw_peak_mean_fraction_selected_two': float(np.mean(peak_mapes)), 'raw_peak_mean_percent_selected_two': float(np.mean(peak_mapes) * 100), 'raw_ensemble_mean_fraction_selected_two': float(np.mean(ensemble_mapes)), 'raw_ensemble_mean_percent_selected_two': float(np.mean(ensemble_mapes) * 100)}\nmetrics_path.write_text(json.dumps(out, indent=2))\ntext = json.dumps(out, indent=2)\nprint(text)\nwith log_path.open('a') as log:\n    log.write(text)\n    log.write('\\n')\nPY"
+        ]
+      }
+    },
+    {
+      "claim_index": 6,
+      "claim": "4. Enhanced Analog Forecasting: 100.2% MAPE (TA priors with DTW similarity)",
+      "verdict": "Data Fabrication",
+      "explanation": "Execution stage: The paper presents this as a Phase 5 real historical validation result, but the repository-native dataset builder explicitly generates synthetic repeated-template launch and revenue data. Because the claim-relevant evaluation is operating on synthetic data instead of a real historical dataset, the highest-priority supported classification is Data Fabrication. The reproduced analog MAPE also fails to match the reported 100.2%, but that lower-priority result mismatch is downstream of the data conflict.",
+      "evidence": "Fresh reproduction saved to /home/chenhui/fabscore/agent4sci_rej/submission_345/fabscore_codex/workspace/claim_6_metrics.json and raw log saved to /home/chenhui/fabscore/agent4sci_rej/submission_345/fabscore_codex/workspace/claim_6_command_output.txt. The analog-only quick-test path selected DRUG_0000 Keytruda and DRUG_0001 Humira and produced analog MAPEs 0.1012826727962552 and 0.23217528570730006, average 0.16672897925177763 (16.67%), not 100.2%. The same run also showed data_proc/launches.parquet has 60 rows but only 4 unique drug names repeated 15 times each. The saved artifact 345_Multi_Agent_AI_System_for__Supplementary Material/results/phase5_validation_results.json likewise reports analog_enhanced.avg_mape = 0.1643589666773781. | Code: 345_Multi_Agent_AI_System_for__Supplementary Material/src/data/build_dataset.py:71-78 and :82-135; 345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py:298-340 and :474-502; 345_Multi_Agent_AI_System_for__Supplementary Material/src/models/analogs.py:413-620",
+      "detection_mode": "code_execution",
+      "decision_stage": "execution",
+      "verification_process": {
+        "files_analyzed": [
+          "345_Multi_Agent_AI_System_for__Supplementary Material/src/data/build_dataset.py:71-78 and :82-135",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py:298-340 and :474-502",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/src/models/analogs.py:413-620"
+        ],
+        "commands_executed": [
+          "python - <<'PY' ... (repo-root here-doc that chdir'ed into '345_Multi_Agent_AI_System_for__Supplementary Material', instantiated RealHistoricalValidator, ran AnalogForecaster().forecast_from_analogs(...) on select_validation_drugs()[:2], and wrote fabscore_codex/workspace/claim_6_metrics.json; full exact command and raw stdout/stderr are recorded in /home/chenhui/fabscore/agent4sci_rej/submission_345/fabscore_codex/workspace/claim_6_command_output.txt)"
+        ]
+      }
+    },
+    {
+      "claim_index": 10,
+      "claim": "8. Peak heuristic: $4.6B peak (18% of actual, 81.5% peak APE)",
+      "verdict": "Data Fabrication",
+      "explanation": "Execution stage: This claim is presented as part of Phase 5 real historical validation on actual launches, but the repository-native data builder explicitly constructs synthetic data by repeating four template drugs fifteen times. The fresh reproduction also fails to recover the claimed Keytruda peak-heuristic result. Because the dataset itself concretely conflicts with the paper's claimed real-world validation setup, the highest-priority supported verdict is Data Fabrication.",
+      "evidence": "Fresh artifact `/home/chenhui/fabscore/agent4sci_rej/submission_345/fabscore_codex/workspace/claim_10_metrics.json` shows the local validator dataset has 60 launch rows but only 4 unique drug names, with 15 repeated `Keytruda` rows. Reproducing the paper's peak-heuristic path for all local `Keytruda` rows yielded peak forecasts from 2.259B to 10.847B USD and peak APEs from 628.37% to 2719.11%; no row matched the paper's claimed 4.6B peak or 81.5% peak APE. The raw stdout/stderr are recorded in `/home/chenhui/fabscore/agent4sci_rej/submission_345/fabscore_codex/workspace/claim_10_command_output.txt`. | Code: 345_Multi_Agent_AI_System_for__Supplementary Material/src/data/build_dataset.py:75-78 and 82-135; 345_Multi_Agent_AI_System_for__Supplementary Material/src/models/baselines.py:17-80; 345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py:272-344",
+      "detection_mode": "execution_artifact_analysis",
+      "decision_stage": "execution",
+      "verification_process": {
+        "files_analyzed": [
+          "345_Multi_Agent_AI_System_for__Supplementary Material/src/data/build_dataset.py:75-78 and 82-135",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/src/models/baselines.py:17-80",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py:272-344"
+        ],
+        "commands_executed": [
+          "1. `python - <<'PY'` (repo-root here-doc that loaded `345_Multi_Agent_AI_System_for__Supplementary Material/data_proc/launches.parquet` and `launch_revenues.parquet`, imported `peak_sales_heuristic`, reproduced the validator's `[0.2, 0.6, 1.0, 0.9, 0.8]` peak-heuristic trajectory for every local `Keytruda` row, computed peak APE with the same formula as `calculate_accuracy_metrics()`, and wrote `fabscore_codex/workspace/claim_10_metrics.json`; full exact shell command is preserved in `fabscore_codex/workspace/claim_10_command_output.txt`). 2. `nl -ba \"345_Multi_Agent_AI_System_for__Supplementary Material/src/data/build_dataset.py\" | sed -n '68,140p'` and `nl -ba \"345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py\" | sed -n '272,344p'`."
+        ]
+      }
+    },
+    {
+      "claim_index": 11,
+      "claim": "9. Enhanced analog: $3.6B peak (14% of actual, 85.7% peak APE)",
+      "verdict": "Data Fabrication",
+      "explanation": "Execution stage: The enhanced-analog code path exists and was reproduced, but the repository's Phase 5 validation data are synthetic repeated-template records rather than real historical launch data. Since the paper presents this Keytruda result as real historical validation, the dataset itself conflicts with the claim. The fresh claim-specific execution also fails to reproduce the reported Keytruda numbers.",
+      "evidence": "Fresh artifact `fabscore_codex/workspace/claim_11_metrics.json` shows 15 local Keytruda rows with enhanced-analog forecast peaks ranging from 158775799.16583073 to 381913091.60063684 USD, forecast_pct_of_actual from 0.5286826815388808 to 1.1288018798686368, and peak_ape from 0.031607250021604666 to 0.47131731846111924; none match the paper's claimed 3600000000 USD peak, 0.14 of actual, and 0.857 peak APE. Existing fresh artifact `fabscore_codex/workspace/claim_6_metrics.json` also showed Keytruda `DRUG_0000` at forecast_peak 227100589.90509847 and peak_ape 0.009041319502056082. Repository code in `src/data/build_dataset.py` states `# For now, create synthetic data that looks real` and repeats four template drugs 15 times to create 60 rows. | Code: 345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py:264-344 (`run_baseline_forecasts`, `calculate_accuracy_metrics`); 345_Multi_Agent_AI_System_for__Supplementary Material/src/models/analogs.py:413-470 (`AnalogForecaster.forecast_from_analogs`); 345_Multi_Agent_AI_System_for__Supplementary Material/src/data/build_dataset.py:71-113 (`load_raw_data`, `_create_synthetic_launches`)",
+      "detection_mode": "code_execution",
+      "decision_stage": "execution",
+      "verification_process": {
+        "files_analyzed": [
+          "345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py:264-344 (`run_baseline_forecasts`, `calculate_accuracy_metrics`)",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/src/models/analogs.py:413-470 (`AnalogForecaster.forecast_from_analogs`)",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/src/data/build_dataset.py:71-113 (`load_raw_data`, `_create_synthetic_launches`)"
+        ],
+        "commands_executed": [
+          "python - <<'PY'\nimport json\nfrom pathlib import Path\nimport numpy as np\nimport pandas as pd\nimport sys\nroot = Path('/home/chenhui/fabscore/agent4sci_rej/submission_345/345_Multi_Agent_AI_System_for__Supplementary Material')\nsys.path.insert(0, str(root / 'src'))\nfrom models.analogs import AnalogForecaster\nlaunches = pd.read_parquet(root / 'data_proc' / 'launches.parquet')\nrevenues = pd.read_parquet(root / 'data_proc' / 'launch_revenues.parquet')\nresults_path = Path('/home/chenhui/fabscore/agent4sci_rej/submission_345/fabscore_codex/workspace/claim_11_metrics.json')\nforecaster = AnalogForecaster(data_dir=root / 'data_proc')\nkeytruda_rows = launches[launches['drug_name'] == 'Keytruda'].copy()\noutput = []\nfor _, drug in keytruda_rows.iterrows():\n    launch_id = drug['launch_id']\n    actual = revenues[revenues['launch_id'] == launch_id].sort_values('year_since_launch')['revenue_usd'].to_numpy()\n    best_analogs = forecaster.find_best_analogs_enhanced(drug, n_analogs=5, require_same_ta=True)\n    forecast = forecaster.forecast_from_analogs(drug, years=5, n_analogs=5, normalization='y2', require_same_ta=True)\n    actual_peak = float(np.max(actual))\n    forecast_peak = float(np.max(forecast))\n    pct_of_actual = float(forecast_peak / actual_peak) if actual_peak > 0 else None\n    peak_ape = float(abs(forecast_peak - actual_peak) / actual_peak) if actual_peak > 0 else None\n    output.append({'launch_id': launch_id, 'actual_peak_usd': actual_peak, 'forecast_peak_usd': forecast_peak, 'forecast_pct_of_actual': pct_of_actual, 'peak_ape': peak_ape, 'best_analogs': best_analogs})\nobj = {'summary': {'n_keytruda_rows': len(output), 'forecast_peak_min_usd': min(x['forecast_peak_usd'] for x in output), 'forecast_peak_max_usd': max(x['forecast_peak_usd'] for x in output), 'forecast_pct_of_actual_min': min(x['forecast_pct_of_actual'] for x in output), 'forecast_pct_of_actual_max': max(x['forecast_pct_of_actual'] for x in output), 'peak_ape_min': min(x['peak_ape'] for x in output), 'peak_ape_max': max(x['peak_ape'] for x in output)}, 'paper_claim': {'forecast_peak_usd': 3.6e9, 'forecast_pct_of_actual': 0.14, 'peak_ape': 0.857}, 'keytruda_rows': output}\nresults_path.write_text(json.dumps(obj, indent=2))\nprint(json.dumps(obj, indent=2))\nPY"
+        ]
+      }
+    },
+    {
+      "claim_index": 14,
+      "claim": "12. Peak heuristic: $218M peak (15% of actual, 85.4% peak APE)",
+      "verdict": "Data Fabrication",
+      "explanation": "Execution stage: The paper presents this as Phase 5 real historical validation for Repatha, but the repository-native data builder generates synthetic repeated-template data instead of real launches. The saved validator output from the relevant code path already contradicts the claimed Repatha peak-heuristic values, so the highest-priority supported classification is a dataset-level conflict.",
+      "evidence": "Reused repository-native artifact `345_Multi_Agent_AI_System_for__Supplementary Material/results/phase5_validation_results.json` from the exact Phase 5 validator path. Its saved Repatha entries show 5 validation rows with actual peaks of 175902814.2239358 to 358533238.7308445 USD and peak-heuristic forecast peaks of 1774518270.8513796 to 4116724141.8234196 USD, giving forecast/actual ratios of 9.314020292953696 to 13.321663872323168 and peak APE values of 8.314020292953696 to 12.321663872323168 (831.4% to 1232.2%), not the paper’s 218000000 USD, 15%, and 85.4%. Local parquet inspection also shows 15 `Repatha` rows in the validation data, while `src/data/build_dataset.py` explicitly states `# For now, create synthetic data that looks real` and repeats four template drugs 15 times. Raw inspection logs were saved to `fabscore_codex/workspace/claim_14_command_output.txt`. | Code: 345_Multi_Agent_AI_System_for__Supplementary Material/src/data/build_dataset.py:71-113; 345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py:264-344; 345_Multi_Agent_AI_System_for__Supplementary Material/results/phase5_validation_results.json",
+      "detection_mode": "code_execution",
+      "decision_stage": "execution",
+      "verification_process": {
+        "files_analyzed": [
+          "345_Multi_Agent_AI_System_for__Supplementary Material/src/data/build_dataset.py:71-113",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py:264-344",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/results/phase5_validation_results.json"
+        ],
+        "commands_executed": [
+          "python - <<'PY' ... PdfReader extract of pages 5-8 for the Repatha claim ... PY; nl -ba '345_Multi_Agent_AI_System_for__Supplementary Material/src/data/build_dataset.py' | sed -n '68,118p'; nl -ba '345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py' | sed -n '264,344p'; python - <<'PY' ... load results/phase5_validation_results.json and print Repatha peak_heuristic rows ... PY; python - <<'PY' ... inspect data_proc/launches.parquet and data_proc/launch_revenues.parquet for Repatha rows ... PY"
+        ]
+      }
+    },
+    {
+      "claim_index": 15,
+      "claim": "13. Enhanced analog: $3.6B peak (238% of actual, 138.3% peak APE)",
+      "verdict": "Data Fabrication",
+      "explanation": "Execution stage: The claim is presented as Phase 5 real historical validation on actual launches, but the repository-native data path is synthetic. A fresh claim-specific reproduction of the Repatha enhanced-analog method did not produce anything close to the reported values, and the higher-priority conflict is that the underlying validation dataset is synthetic rather than real.",
+      "evidence": "Fresh artifact `fabscore_codex/workspace/claim_15_metrics.json` from the exact enhanced-analog path shows 15 local Repatha rows with forecast peaks only $197.3M-$350.2M, forecast/actual ratios 0.7227-1.2745, and peak APE 0.0275-0.2773; none match the paper's claimed $3.6B, 238% of actual, and 138.3% peak APE. The repository dataset builder also states `For now, create synthetic data that looks real` and repeats 4 drug templates 15 times, including Repatha. | Code: 345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py:264-336,388-423; 345_Multi_Agent_AI_System_for__Supplementary Material/src/models/analogs.py:413-560; 345_Multi_Agent_AI_System_for__Supplementary Material/src/data/build_dataset.py:75-78,82-115",
+      "detection_mode": "code_execution",
+      "decision_stage": "execution",
+      "verification_process": {
+        "files_analyzed": [
+          "345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py:264-336,388-423",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/src/models/analogs.py:413-560",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/src/data/build_dataset.py:75-78,82-115"
+        ],
+        "commands_executed": [
+          "python fabscore_codex/workspace/claim_15_repro.py (first attempt failed because `phase5_real_validation.py` assumes the supplementary-material directory as cwd; after updating the workspace-only repro script to `chdir` there, rerunning the same command succeeded). Additional inspected commands: `python -c \"from pypdf import PdfReader; ...\"` to extract the paper claim text, `rg -n \"enhanced_analog|forecast_from_analogs|calculate_accuracy_metrics|run_baseline_forecasts\" ...`, and `nl -ba \"345_Multi_Agent_AI_System_for__Supplementary Material/src/data/build_dataset.py\" | sed -n '70,120p'`."
+        ]
+      }
+    },
+    {
+      "claim_index": 16,
+      "claim": "14. Cost efficiency: ACHIEVED (estimated $0.16 per forecast vs $2M consultant cost)",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Execution stage: The paper claims an achieved estimated cost of `$0.16 per forecast`, but the repository’s Phase 5 implementation cannot produce that value through its stated validation path. `phase5_real_validation.py` reads cost from `SystemMonitor.generate_audit_trail()['execution_summary']['total_cost_usd']`, while actual provider cost tracking is isolated inside `ModelRouter._log_usage()` / `get_usage_report()` and is never bridged into `SystemMonitor.log_api_call()`. A claim-specific reproduction showed that even after recording a simulated `$0.16` router usage event, the validator-visible cost remained `0`. This is a concrete implementation conflict in the experiment pipeline, not just a missing artifact.",
+      "evidence": "Fresh artifact `fabscore_codex/workspace/claim_16_metrics.json` shows `simulated_router_usage_cost_usd=0.16` and `router_total_cost_usd=0.16`, but the exact cost field extracted by Phase 5 (`phase5_extracted_actual_cost_usd`) stayed `0` with `cost_plumbing_connected=false`. Fresh raw log saved to `fabscore_codex/workspace/claim_16_command_output.txt`. Existing repository artifact `345_Multi_Agent_AI_System_for__Supplementary Material/results/usage_log.jsonl` is missing. | Code: 345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py:236-245,364-437; 345_Multi_Agent_AI_System_for__Supplementary Material/ai_scientist/model_router.py:534-578; 345_Multi_Agent_AI_System_for__Supplementary Material/ai_scientist/system_monitor.py:108-155",
+      "detection_mode": "execution_artifact_analysis",
+      "decision_stage": "execution",
+      "verification_process": {
+        "files_analyzed": [
+          "345_Multi_Agent_AI_System_for__Supplementary Material/validation/phase5_real_validation.py:236-245,364-437",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/ai_scientist/model_router.py:534-578",
+          "345_Multi_Agent_AI_System_for__Supplementary Material/ai_scientist/system_monitor.py:108-155"
+        ],
+        "commands_executed": [
+          "cd '345_Multi_Agent_AI_System_for__Supplementary Material' && python - <<'PY'\nimport json\nfrom pathlib import Path\nfrom ai_scientist.system_monitor import reset_system_monitor, get_system_monitor\nfrom ai_scientist.model_router import get_router\nfrom validation.phase5_real_validation import RealHistoricalValidator\n\nreset_system_monitor()\nmonitor = get_system_monitor()\nrouter = get_router()\nvalidator = RealHistoricalValidator()\n\nbefore_cost = monitor.generate_audit_trail()['execution_summary']['total_cost_usd']\nrouter._log_usage('openai', 'gpt-5-test', 1000, 500, 16.0, 'complex_reasoning')\nafter_cost = monitor.generate_audit_trail()['execution_summary']['total_cost_usd']\nrouter_report = router.get_usage_report()\nextracted_actual_cost = monitor.generate_audit_trail()['execution_summary']['total_cost_usd']\n\nout = {\n    'launch_count': int(len(validator.launches)),\n    'revenue_count': int(len(validator.revenues)),\n    'monitor_total_cost_before_usd': before_cost,\n    'simulated_router_usage_cost_cents': 16.0,\n    'simulated_router_usage_cost_usd': 0.16,\n    'router_total_cost_cents': router_report['total_cost_cents'],\n    'router_total_cost_usd': router_report['total_cost_cents'] / 100.0,\n    'monitor_total_cost_after_usd': after_cost,\n    'phase5_extracted_actual_cost_usd': extracted_actual_cost,\n    'cost_plumbing_connected': after_cost > 0\n}\nworkspace = Path('../fabscore_codex/workspace')\nworkspace.mkdir(parents=True, exist_ok=True)\n(workspace / 'claim_16_metrics.json').write_text(json.dumps(out, indent=2))\nprint(json.dumps(out, indent=2))\nPY"
+        ]
+      }
+    }
+  ],
+  "summary": {
+    "total": 16,
+    "verified": 1,
+    "data_fabrication": 5,
+    "experiment_fabrication": 8,
+    "result_fabrication": 1,
+    "no_code_files": 0,
+    "insufficient_evidence": 1
+  },
+  "analysis_summary": {
+    "total_claims": 16,
+    "no_code_files": 0,
+    "obvious_hallucination": 7,
+    "data_fabrication": 0,
+    "experiment_fabrication": 7,
+    "result_fabrication": 0,
+    "static_verifiable": 0,
+    "insufficient_evidence": 0,
+    "execution_required": 9,
+    "error": 0
+  },
+  "execution_summary": {
+    "total": 9,
+    "verified": 1,
+    "data_fabrication": 5,
+    "experiment_fabrication": 1,
+    "result_fabrication": 1,
+    "no_code_files": 0,
+    "insufficient_evidence": 0,
+    "error": 1
+  },
+  "final_assessment": {
+    "fab_score": 0.0625,
+    "total_claims": 16,
+    "verified": 1,
+    "data_fabrication": 5,
+    "experiment_fabrication": 8,
+    "result_fabrication": 1,
+    "no_code_files": 0,
+    "insufficient_evidence": 1,
+    "static_code_analysis_breakdown": {
+      "verified": 0,
+      "no_code_files": 0,
+      "data_fabrication": 0,
+      "experiment_fabrication": 7,
+      "result_fabrication": 0,
+      "insufficient_evidence": 0
+    },
+    "execution_artifact_analysis_breakdown": {
+      "verified": 0,
+      "no_code_files": 0,
+      "data_fabrication": 1,
+      "experiment_fabrication": 1,
+      "result_fabrication": 0,
+      "insufficient_evidence": 1
+    },
+    "code_execution_breakdown": {
+      "verified": 1,
+      "no_code_files": 0,
+      "data_fabrication": 4,
+      "experiment_fabrication": 0,
+      "result_fabrication": 1,
+      "insufficient_evidence": 0
+    }
+  },
+  "filtered_summary": {
+    "total_claims": 14,
+    "tables": 0,
+    "figures": 1,
+    "results_section": 13,
+    "verdict_breakdown": {
+      "Verified": 0,
+      "Data Fabrication": 5,
+      "Experiment Fabrication": 8,
+      "Result Fabrication": 1,
+      "No Code Files": 0,
+      "Insufficient Evidence": 0,
+      "Error": 0,
+      "Other": 0
+    }
+  }
+}

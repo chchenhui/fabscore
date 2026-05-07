@@ -1,0 +1,343 @@
+===== COMMAND =====
+python - <<'PY'
+import json
+from pathlib import Path
+import numpy as np
+import pandas as pd
+import sys
+
+root = Path('/home/chenhui/fabscore/agent4sci_rej/submission_345/345_Multi_Agent_AI_System_for__Supplementary Material')
+sys.path.insert(0, str(root / 'src'))
+from models.analogs import AnalogForecaster
+
+launches = pd.read_parquet(root / 'data_proc' / 'launches.parquet')
+revenues = pd.read_parquet(root / 'data_proc' / 'launch_revenues.parquet')
+results_path = Path('/home/chenhui/fabscore/agent4sci_rej/submission_345/fabscore_codex/workspace/claim_11_metrics.json')
+
+forecaster = AnalogForecaster(data_dir=root / 'data_proc')
+keytruda_rows = launches[launches['drug_name'] == 'Keytruda'].copy()
+output = []
+for _, drug in keytruda_rows.iterrows():
+    launch_id = drug['launch_id']
+    actual = revenues[revenues['launch_id'] == launch_id].sort_values('year_since_launch')['revenue_usd'].to_numpy()
+    analogs = forecaster.find_best_analogs_enhanced(drug, n_analogs=5, require_same_ta=True)
+    forecast = forecaster.forecast_from_analogs(drug, analogs)
+    actual_peak = float(np.max(actual))
+    forecast_peak = float(np.max(forecast))
+    peak_ape = float(abs(forecast_peak - actual_peak) / actual_peak) if actual_peak > 0 else None
+    output.append({
+        'launch_id': launch_id,
+        'therapeutic_area': drug.get('therapeutic_area'),
+        'actual_peak_usd': actual_peak,
+        'forecast_peak_usd': forecast_peak,
+        'forecast_pct_of_actual': (forecast_peak / actual_peak) if actual_peak > 0 else None,
+        'peak_ape': peak_ape,
+        'best_analogs': analogs,
+    })
+
+summary = {
+    'n_keytruda_rows': int(len(output)),
+    'forecast_peak_min_usd': float(min(x['forecast_peak_usd'] for x in output)),
+    'forecast_peak_max_usd': float(max(x['forecast_peak_usd'] for x in output)),
+    'peak_ape_min': float(min(x['peak_ape'] for x in output)),
+    'peak_ape_max': float(max(x['peak_ape'] for x in output)),
+}
+obj = {'summary': summary, 'keytruda_rows': output}
+results_path.write_text(json.dumps(obj, indent=2))
+print(json.dumps(obj, indent=2))
+PY
+
+===== OUTPUT =====
+Traceback (most recent call last):
+  File "<stdin>", line 22, in <module>
+  File "/home/chenhui/fabscore/agent4sci_rej/submission_345/345_Multi_Agent_AI_System_for__Supplementary Material/src/models/analogs.py", line 473, in forecast_from_analogs
+    traj = np.zeros(years)
+TypeError: 'str' object cannot be interpreted as an integer
+
+===== COMMAND =====
+python - <<'PY'
+import json
+from pathlib import Path
+import numpy as np
+import pandas as pd
+import sys
+
+root = Path('/home/chenhui/fabscore/agent4sci_rej/submission_345/345_Multi_Agent_AI_System_for__Supplementary Material')
+sys.path.insert(0, str(root / 'src'))
+from models.analogs import AnalogForecaster
+
+launches = pd.read_parquet(root / 'data_proc' / 'launches.parquet')
+revenues = pd.read_parquet(root / 'data_proc' / 'launch_revenues.parquet')
+results_path = Path('/home/chenhui/fabscore/agent4sci_rej/submission_345/fabscore_codex/workspace/claim_11_metrics.json')
+
+forecaster = AnalogForecaster(data_dir=root / 'data_proc')
+keytruda_rows = launches[launches['drug_name'] == 'Keytruda'].copy()
+output = []
+for _, drug in keytruda_rows.iterrows():
+    launch_id = drug['launch_id']
+    actual = revenues[revenues['launch_id'] == launch_id].sort_values('year_since_launch')['revenue_usd'].to_numpy()
+    best_analogs = forecaster.find_best_analogs_enhanced(drug, n_analogs=5, require_same_ta=True)
+    forecast = forecaster.forecast_from_analogs(drug, years=5, n_analogs=5, normalization='y2', require_same_ta=True)
+    actual_peak = float(np.max(actual))
+    forecast_peak = float(np.max(forecast))
+    pct_of_actual = float(forecast_peak / actual_peak) if actual_peak > 0 else None
+    peak_ape = float(abs(forecast_peak - actual_peak) / actual_peak) if actual_peak > 0 else None
+    output.append({
+        'launch_id': launch_id,
+        'actual_peak_usd': actual_peak,
+        'forecast_peak_usd': forecast_peak,
+        'forecast_pct_of_actual': pct_of_actual,
+        'peak_ape': peak_ape,
+        'best_analogs': best_analogs,
+    })
+
+obj = {
+    'summary': {
+        'n_keytruda_rows': len(output),
+        'forecast_peak_min_usd': min(x['forecast_peak_usd'] for x in output),
+        'forecast_peak_max_usd': max(x['forecast_peak_usd'] for x in output),
+        'forecast_pct_of_actual_min': min(x['forecast_pct_of_actual'] for x in output),
+        'forecast_pct_of_actual_max': max(x['forecast_pct_of_actual'] for x in output),
+        'peak_ape_min': min(x['peak_ape'] for x in output),
+        'peak_ape_max': max(x['peak_ape'] for x in output),
+    },
+    'paper_claim': {
+        'forecast_peak_usd': 3.6e9,
+        'forecast_pct_of_actual': 0.14,
+        'peak_ape': 0.857,
+    },
+    'keytruda_rows': output,
+}
+results_path.write_text(json.dumps(obj, indent=2))
+print(json.dumps(obj, indent=2))
+PY
+
+===== OUTPUT =====
+{
+  "summary": {
+    "n_keytruda_rows": 15,
+    "forecast_peak_min_usd": 158775799.16583073,
+    "forecast_peak_max_usd": 381913091.60063684,
+    "forecast_pct_of_actual_min": 0.5286826815388808,
+    "forecast_pct_of_actual_max": 1.1288018798686368,
+    "peak_ape_min": 0.031607250021604666,
+    "peak_ape_max": 0.47131731846111924
+  },
+  "paper_claim": {
+    "forecast_peak_usd": 3600000000.0,
+    "forecast_pct_of_actual": 0.14,
+    "peak_ape": 0.857
+  },
+  "keytruda_rows": [
+    {
+      "launch_id": "DRUG_0000",
+      "actual_peak_usd": 239897766.1490775,
+      "forecast_peak_usd": 227100589.90509847,
+      "forecast_pct_of_actual": 0.9466557090155371,
+      "peak_ape": 0.05334429098446295,
+      "best_analogs": [
+        "DRUG_0004",
+        "DRUG_0008",
+        "DRUG_0012",
+        "DRUG_0016",
+        "DRUG_0020"
+      ]
+    },
+    {
+      "launch_id": "DRUG_0004",
+      "actual_peak_usd": 240465302.34255582,
+      "forecast_peak_usd": 248065749.27521774,
+      "forecast_pct_of_actual": 1.0316072500216047,
+      "peak_ape": 0.031607250021604666,
+      "best_analogs": [
+        "DRUG_0000",
+        "DRUG_0008",
+        "DRUG_0012",
+        "DRUG_0016",
+        "DRUG_0020"
+      ]
+    },
+    {
+      "launch_id": "DRUG_0008",
+      "actual_peak_usd": 248710313.27487385,
+      "forecast_peak_usd": 201758293.61744645,
+      "forecast_pct_of_actual": 0.8112180430349256,
+      "peak_ape": 0.18878195696507438,
+      "best_analogs": [
+        "DRUG_0000",
+        "DRUG_0004",
+        "DRUG_0012",
+        "DRUG_0016",
+        "DRUG_0020"
+      ]
+    },
+    {
+      "launch_id": "DRUG_0012",
+      "actual_peak_usd": 467974424.10162693,
+      "forecast_peak_usd": 316873097.23067975,
+      "forecast_pct_of_actual": 0.6771162715547602,
+      "peak_ape": 0.32288372844523977,
+      "best_analogs": [
+        "DRUG_0000",
+        "DRUG_0004",
+        "DRUG_0008",
+        "DRUG_0016",
+        "DRUG_0020"
+      ]
+    },
+    {
+      "launch_id": "DRUG_0016",
+      "actual_peak_usd": 207119936.17278224,
+      "forecast_peak_usd": 187160886.3962976,
+      "forecast_pct_of_actual": 0.9036353035574782,
+      "peak_ape": 0.09636469644252174,
+      "best_analogs": [
+        "DRUG_0000",
+        "DRUG_0004",
+        "DRUG_0008",
+        "DRUG_0012",
+        "DRUG_0020"
+      ]
+    },
+    {
+      "launch_id": "DRUG_0020",
+      "actual_peak_usd": 221595256.3273165,
+      "forecast_peak_usd": 250137141.9122473,
+      "forecast_pct_of_actual": 1.1288018798686368,
+      "peak_ape": 0.12880187986863684,
+      "best_analogs": [
+        "DRUG_0000",
+        "DRUG_0004",
+        "DRUG_0008",
+        "DRUG_0012",
+        "DRUG_0016"
+      ]
+    },
+    {
+      "launch_id": "DRUG_0024",
+      "actual_peak_usd": 444222155.72805065,
+      "forecast_peak_usd": 296046904.8985929,
+      "forecast_pct_of_actual": 0.6664388551565863,
+      "peak_ape": 0.33356114484341365,
+      "best_analogs": [
+        "DRUG_0000",
+        "DRUG_0004",
+        "DRUG_0008",
+        "DRUG_0012",
+        "DRUG_0016"
+      ]
+    },
+    {
+      "launch_id": "DRUG_0028",
+      "actual_peak_usd": 232366482.56334424,
+      "forecast_peak_usd": 204784010.03910333,
+      "forecast_pct_of_actual": 0.8812975424856216,
+      "peak_ape": 0.11870245751437837,
+      "best_analogs": [
+        "DRUG_0000",
+        "DRUG_0004",
+        "DRUG_0008",
+        "DRUG_0012",
+        "DRUG_0016"
+      ]
+    },
+    {
+      "launch_id": "DRUG_0032",
+      "actual_peak_usd": 518452091.77921605,
+      "forecast_peak_usd": 381913091.60063684,
+      "forecast_pct_of_actual": 0.7366410467937226,
+      "peak_ape": 0.26335895320627745,
+      "best_analogs": [
+        "DRUG_0000",
+        "DRUG_0004",
+        "DRUG_0008",
+        "DRUG_0012",
+        "DRUG_0016"
+      ]
+    },
+    {
+      "launch_id": "DRUG_0036",
+      "actual_peak_usd": 592835512.5057507,
+      "forecast_peak_usd": 313421868.4630169,
+      "forecast_pct_of_actual": 0.5286826815388808,
+      "peak_ape": 0.47131731846111924,
+      "best_analogs": [
+        "DRUG_0000",
+        "DRUG_0004",
+        "DRUG_0008",
+        "DRUG_0012",
+        "DRUG_0016"
+      ]
+    },
+    {
+      "launch_id": "DRUG_0040",
+      "actual_peak_usd": 255752522.02938047,
+      "forecast_peak_usd": 158775799.16583073,
+      "forecast_pct_of_actual": 0.62081811708426,
+      "peak_ape": 0.3791818829157399,
+      "best_analogs": [
+        "DRUG_0000",
+        "DRUG_0004",
+        "DRUG_0008",
+        "DRUG_0012",
+        "DRUG_0016"
+      ]
+    },
+    {
+      "launch_id": "DRUG_0044",
+      "actual_peak_usd": 246453720.31577283,
+      "forecast_peak_usd": 233645841.67667598,
+      "forecast_pct_of_actual": 0.9480313033104691,
+      "peak_ape": 0.05196869668953081,
+      "best_analogs": [
+        "DRUG_0000",
+        "DRUG_0004",
+        "DRUG_0008",
+        "DRUG_0012",
+        "DRUG_0016"
+      ]
+    },
+    {
+      "launch_id": "DRUG_0048",
+      "actual_peak_usd": 287102871.0264652,
+      "forecast_peak_usd": 215173493.94183624,
+      "forecast_pct_of_actual": 0.7494647934816421,
+      "peak_ape": 0.2505352065183579,
+      "best_analogs": [
+        "DRUG_0000",
+        "DRUG_0004",
+        "DRUG_0008",
+        "DRUG_0012",
+        "DRUG_0016"
+      ]
+    },
+    {
+      "launch_id": "DRUG_0052",
+      "actual_peak_usd": 363474553.09261197,
+      "forecast_peak_usd": 239046765.047648,
+      "forecast_pct_of_actual": 0.6576712537747856,
+      "peak_ape": 0.3423287462252143,
+      "best_analogs": [
+        "DRUG_0000",
+        "DRUG_0004",
+        "DRUG_0008",
+        "DRUG_0012",
+        "DRUG_0016"
+      ]
+    },
+    {
+      "launch_id": "DRUG_0056",
+      "actual_peak_usd": 310209308.2675601,
+      "forecast_peak_usd": 282756766.0574326,
+      "forecast_pct_of_actual": 0.9115031642233982,
+      "peak_ape": 0.08849683577660186,
+      "best_analogs": [
+        "DRUG_0000",
+        "DRUG_0004",
+        "DRUG_0008",
+        "DRUG_0012",
+        "DRUG_0016"
+      ]
+    }
+  ]
+}

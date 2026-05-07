@@ -1,0 +1,83 @@
+{
+  "experiment": "K-ablation: k=1 vs k=3 discriminative checks",
+  "benchmark": "ErdosConventionsBench (300 items, 3 families)",
+  "inference_settings": {
+    "temperature": 0.0,
+    "max_tokens": 2048,
+    "tensor_parallel_size": 1,
+    "dtype": "bfloat16"
+  },
+  "models": {
+    "qwen25_math_7b": {
+      "model": "Qwen/Qwen2.5-Math-7B-Instruct",
+      "overall_accuracy": {
+        "A": 0.903,
+        "B_neutral_k3": 0.900,
+        "C_k1": 0.923,
+        "C_k3": 0.950
+      },
+      "per_family_accuracy": {
+        "asymptotics": {"A": 0.99, "B": 0.97, "C_k1": 0.99, "C_k3": 0.99},
+        "completeness": {"A": 0.80, "B": 0.79, "C_k1": 0.88, "C_k3": 0.91},
+        "convolution": {"A": 0.92, "B": 0.94, "C_k1": 0.90, "C_k3": 0.95}
+      },
+      "alternate_convention_rate": {"A": 0.063, "B": 0.070, "C_k1": 0.027, "C_k3": 0.013},
+      "bootstrap_ci_k3_minus_k1": {
+        "observed_diff": 0.027,
+        "ci_lower": -0.007,
+        "ci_upper": 0.060,
+        "excludes_zero": false
+      },
+      "bootstrap_ci_k1_minus_b": {
+        "observed_diff": 0.023,
+        "ci_lower": -0.017,
+        "ci_upper": 0.063,
+        "excludes_zero": false
+      },
+      "bootstrap_ci_k1_minus_a": {
+        "observed_diff": 0.020,
+        "ci_lower": -0.020,
+        "ci_upper": 0.060,
+        "excludes_zero": false
+      }
+    },
+    "llama31_8b": {
+      "model": "meta-llama/Llama-3.1-8B-Instruct",
+      "overall_accuracy": {
+        "A": 0.567,
+        "B_neutral_k3": 0.587,
+        "C_k1": 0.630,
+        "C_k3": 0.813
+      },
+      "per_family_accuracy": {
+        "asymptotics": {"A": 0.74, "B": 0.92, "C_k1": 0.77, "C_k3": 0.96},
+        "completeness": {"A": 0.30, "B": 0.21, "C_k1": 0.44, "C_k3": 0.82},
+        "convolution": {"A": 0.66, "B": 0.63, "C_k1": 0.68, "C_k3": 0.66}
+      },
+      "alternate_convention_rate": {"A": 0.110, "B": 0.093, "C_k1": 0.063, "C_k3": 0.020},
+      "bootstrap_ci_k3_minus_k1": {
+        "observed_diff": 0.183,
+        "ci_lower": 0.120,
+        "ci_upper": 0.247,
+        "excludes_zero": true
+      },
+      "bootstrap_ci_k1_minus_b": {
+        "observed_diff": 0.043,
+        "ci_lower": -0.023,
+        "ci_upper": 0.110,
+        "excludes_zero": false
+      },
+      "bootstrap_ci_k1_minus_a": {
+        "observed_diff": 0.063,
+        "ci_lower": -0.007,
+        "ci_upper": 0.130,
+        "excludes_zero": false
+      }
+    }
+  },
+  "key_findings": {
+    "qwen_k1_captures_most_benefit": "k=1 achieves 92.3% vs k=3 at 95.0% (+2.7pp, not significant). DUT is lightweight for strong models.",
+    "llama_needs_k3": "k=1 achieves only 63.0% vs k=3 at 81.3% (+18.3pp, significant). Repeated definition binding is essential for weaker models.",
+    "completeness_drives_gap": "Largest k-effect on Llama is in completeness family (44% k=1 vs 82% k=3, +38pp)."
+  }
+}

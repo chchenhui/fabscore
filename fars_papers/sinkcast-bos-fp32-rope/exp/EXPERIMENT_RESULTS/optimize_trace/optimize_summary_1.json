@@ -1,0 +1,16 @@
+{
+  "optimize_index": 1,
+  "issues": [
+    {
+      "title": "SinkCast hook replaces HF's entire attention path, causing d=0 divergence",
+      "description": "The old hook replaced HF's attention forward with direct flash_attn_func calls. This produced numerically different results from HF's pipeline (which uses _upad_input + flash_attn_varlen_func when padding is present), causing d=0 accuracy to diverge between BF16 baseline and SinkCast (e.g., Mistral NIAH d=0: 54% vs 60%, Llama QA d=0: 9.75 vs 50.07). Fixed by rewriting the hook infrastructure to preserve HF's exact attention path: monkey-patch flash functions to capture softmax_lse as a side-channel, capture pre-RoPE Q/K and pre-o_proj attention output via forward hooks, then apply SinkCast correction on top of HF's identical output."
+    },
+    {
+      "title": "Duplicate hook code in ruler and longbench scripts",
+      "description": "Both ruler_shift_sinkcast.py and longbench_shift_sinkcast.py had independent copies of the hook machinery. Created shared sinkcast/core/sinkcast_hooks.py module with find_attention_layers() and sinkcast_hooks() context manager, used by both scripts."
+    }
+  ],
+  "experiment_result_path": "EXPERIMENT_RESULTS/optimize_trace/iteration_1/",
+  "success": false,
+  "summary": "Rewrote hook infrastructure to preserve HF's exact attention path (new sinkcast/core/sinkcast_hooks.py). Verified d=0 accuracy matches BF16 for LongBench tasks (diff < 0.3%). However, sinkcast_correct still applies non-trivial corrections at d=0 for RULER tasks (QA d=0 changes from 9.75 to 50.07 for Llama), because BF16-to-FP32 RoPE precision differences accumulate across 32 layers. Overall avg improvement: -1.03 (was -0.91 in Step 0). The optimization did not improve results because: (1) BF16 position-shift degradation on downstream tasks is already near-zero, leaving no room for SinkCast to help; (2) the SinkCast correction changes model behavior at d=0, making the drop comparison unreliable; (3) attention-level precision improvement (23-36% gap closure) does not translate to downstream accuracy improvement when the degradation signal is negligible."
+}

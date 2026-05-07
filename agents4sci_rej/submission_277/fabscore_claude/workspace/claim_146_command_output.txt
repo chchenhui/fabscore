@@ -1,0 +1,100 @@
+============================================================
+Claim 146 Verification: Strategic Layer Dropout Speedup
+============================================================
+Device: CUDA
+
+Loading BERT tokenizer...
+
+Batch size: 1, seq_len: 128
+  Testing baseline (0 layers dropped)...
+    Mean time: 4.28 ms
+  Testing random_15% (3 layers dropped)...
+    Mean time: 3.30 ms
+  Testing strategic_15% (6 layers dropped)...
+    Mean time: 2.29 ms
+  Testing aggressive_25% (8 layers dropped)...
+    Mean time: 1.63 ms
+
+Batch size: 8, seq_len: 128
+  Testing baseline (0 layers dropped)...
+    Mean time: 6.98 ms
+  Testing random_15% (3 layers dropped)...
+    Mean time: 5.33 ms
+  Testing strategic_15% (6 layers dropped)...
+    Mean time: 3.60 ms
+  Testing aggressive_25% (8 layers dropped)...
+    Mean time: 2.51 ms
+
+Batch size: 16, seq_len: 128
+  Testing baseline (0 layers dropped)...
+    Mean time: 10.35 ms
+  Testing random_15% (3 layers dropped)...
+    Mean time: 7.85 ms
+  Testing strategic_15% (6 layers dropped)...
+    Mean time: 5.34 ms
+  Testing aggressive_25% (8 layers dropped)...
+    Mean time: 3.65 ms
+
+Batch size: 32, seq_len: 128
+  Testing baseline (0 layers dropped)...
+    Mean time: 19.15 ms
+  Testing random_15% (3 layers dropped)...
+    Mean time: 14.46 ms
+  Testing strategic_15% (6 layers dropped)...
+    Mean time: 9.77 ms
+  Testing aggressive_25% (8 layers dropped)...
+    Mean time: 6.62 ms
+
+============================================================
+SPEEDUP RESULTS
+============================================================
+
+Batch size 1:
+  random_15%: 1.298x speedup
+  strategic_15%: 1.868x speedup
+  aggressive_25%: 2.628x speedup
+
+Batch size 8:
+  random_15%: 1.308x speedup
+  strategic_15%: 1.940x speedup
+  aggressive_25%: 2.783x speedup
+
+Batch size 16:
+  random_15%: 1.318x speedup
+  strategic_15%: 1.939x speedup
+  aggressive_25%: 2.835x speedup
+
+Batch size 32:
+  random_15%: 1.324x speedup
+  strategic_15%: 1.961x speedup
+  aggressive_25%: 2.891x speedup
+
+============================================================
+AVERAGE SPEEDUPS (across batch sizes)
+============================================================
+  random_15%: avg=1.312x, max=1.324x (batch speedups: ['1.298', '1.308', '1.318', '1.324'])
+  strategic_15%: avg=1.927x, max=1.961x (batch speedups: ['1.868', '1.940', '1.939', '1.961'])
+  aggressive_25%: avg=2.784x, max=2.891x (batch speedups: ['2.628', '2.783', '2.835', '2.891'])
+
+============================================================
+CLAIM 146 VERIFICATION
+Paper: strategic dropout achieves 1.28x avg speedup, theoretical 1.33x max
+
+  strategic_15% avg: 1.927x (paper: 1.28x)
+  strategic_15% max: 1.961x (paper: approaching 1.33x)
+  random_15% avg: 1.312x
+  random_15% max: 1.324x
+
+Configuration analysis:
+  random_15% drops 3/12 layers -> theoretical max = 1.333x
+  strategic_15% drops 6/12 layers -> theoretical max = 2.000x
+  Code docstring says 'validate the theoretical 3.1x speedup claim' (MISMATCH)
+
+Which config matches paper's 1.33x theoretical?
+  random_15% (3 layers dropped): 12/(12-3) = 1.333x theoretical <- matches 1.33x
+  strategic_15% (6 layers dropped): 12/(12-6) = 2.000x theoretical <- does NOT match 1.33x
+
+VERDICT ANALYSIS:
+  strategic_15% avg speedup (1.927x) CONFLICTS with paper claim (1.28x)
+============================================================
+Results saved to claim_146_results.json

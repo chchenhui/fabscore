@@ -1,0 +1,53 @@
+{
+    "tables": [],
+    "figures": [
+        {
+            "claim_index": 58,
+            "claim": "3. Figure 3: Iterative De Novo Design of Potent Inhibitors via Agent-Driven Generation and Evaluation. (A) A pool of known inhibitors for each target (CGAS, DYRK1A, HDAC, SEH, SGLT2), from which the Medicinal Chemist Agent selects three seeds to initiate the generative drug design process. (B) Top three novel molecules produced by the Molecule Generation Engine and successfully passed through the ADME/Tox and potency filtering cascade managed by the Molecule Evaluator Agent. The parenthetical value represents the predicted probability of bioactivity from the target-specific XGBoost classifier. The generated molecules often possess chemical scaffolds distinct from their seeds while retaining high predicted potency, demonstrating the framework's capacity for chemical space exploration.",
+            "verdict": "Error",
+            "explanation": "Execution stage: The repository strongly supports the Figure 3 structure: seed selection, the 15 final molecules, and the code path that renders parenthetical target-bioactivity probabilities. However, exact execution-based verification of Figure 3B is blocked in this environment because the notebook inference path depends on `rdkit`, `mordred`, and `xgboost`, which are not installed locally. The notebook preserves explicit picked probability tuples only for SGLT2, while the non-SGLT2 parenthetical scores are only visible in the pre-existing final image rather than in a raw saved table/log. Because the claim was classified as execution-required and the needed execution cannot proceed due to external environment dependencies, this run is an `Error` rather than a repository-side fabrication finding.",
+            "evidence": "Inspected `agentic-drug-discovery-main/results/target_inhibitors/seeds.csv` (15 seeds, 3 each for CGAS/DYRK1A/HDAC/SEH/SGLT2), `agentic-drug-discovery-main/results/target_inhibitors/summary_pred.csv` (15 final picked molecules with ADMET outputs), `agentic-drug-discovery-main/notebooks/2_molecule_evaluation_stanfordAIAgentConf.ipynb` (generation/filtering code with `CANDIDATE_TH = 0.90`, figure titles sourced from picked `(SMILES, probability)` tuples, and an embedded SGLT2 picked-molecule output showing probabilities `0.9054189, 0.9005101, 0.90543234`), and `agentic-drug-discovery-main/figures/final/result_mols.png` (visible parenthetical scores for all five targets). Fresh blocker: local import check failed for `rdkit`, `mordred`, and `xgboost`. | Code: agentic-drug-discovery-main/notebooks/2_molecule_evaluation_stanfordAIAgentConf.ipynb:1911-1955 (feature building and `inference`), 2587-2636 (target inhibition filtering with `CANDIDATE_TH = 0.90`), 2665-2668 (picked `(SMILES, probability)` tuples used for figure labels), 2700-2709 (`visualize_smiles(picked_smis, ...)` figure rendering), 2768-2797 (ADMET summary generation for picked molecules); agentic-drug-discovery-main/results/target_inhibitors/seeds.csv; agentic-drug-discovery-main/results/target_inhibitors/summary_pred.csv",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "agentic-drug-discovery-main/notebooks/2_molecule_evaluation_stanfordAIAgentConf.ipynb:1911-1955 (feature building and `inference`), 2587-2636 (target inhibition filtering with `CANDIDATE_TH = 0.90`), 2665-2668 (picked `(SMILES, probability)` tuples used for figure labels), 2700-2709 (`visualize_smiles(picked_smis, ...)` figure rendering), 2768-2797 (ADMET summary generation for picked molecules)",
+                    "agentic-drug-discovery-main/results/target_inhibitors/seeds.csv",
+                    "agentic-drug-discovery-main/results/target_inhibitors/summary_pred.csv"
+                ],
+                "commands_executed": [
+                    "pwd; rg --files fabscore_codex agentic-drug-discovery-main | rg 'progress\\.md|execution_log\\.json|fs_execution\\.json|summary_pred\\.csv|seeds\\.csv|result_mols\\.png|2_molecule_evaluation_stanfordAIAgentConf\\.ipynb|333_Multi_target_Parallel_Drug\\.pdf'; sed -n '1,220p' fabscore_codex/progress.md; find fabscore_codex/workspace -maxdepth 3 -type f | sort; python - <<'PY' ... PdfReader('333_Multi_target_Parallel_Drug.pdf') ... PY; python - <<'PY' ... read seeds.csv and summary_pred.csv ... PY; rg -n 'Figure 3|summary_pred|seeds.csv|CANDIDATE_TH|MolMIM|XGBoost|result_mols|top_targets' agentic-drug-discovery-main -g '*'; nl -ba agentic-drug-discovery-main/notebooks/2_molecule_evaluation_stanfordAIAgentConf.ipynb | sed -n '1940,2055p'; nl -ba agentic-drug-discovery-main/notebooks/2_molecule_evaluation_stanfordAIAgentConf.ipynb | sed -n '2560,2665p'; nl -ba agentic-drug-discovery-main/notebooks/2_molecule_evaluation_stanfordAIAgentConf.ipynb | sed -n '2660,2725p'; nl -ba agentic-drug-discovery-main/notebooks/2_molecule_evaluation_stanfordAIAgentConf.ipynb | sed -n '2768,2840p'; find agentic-drug-discovery-main -maxdepth 4 \\( -path '*models*' -o -path '*results*' \\) -type f | sort; python - <<'PY' ... import-check pandas/numpy/joblib/pickle/rdkit/mordred/xgboost/sklearn ... PY"
+                ]
+            }
+        }
+    ],
+    "results_section": [
+        {
+            "claim_index": 63,
+            "claim": "5. The results, summarized in Figure 3B, show the framework consistently produced novel molecules with high predicted bioactivity scores, often exceeding 0.90.",
+            "verdict": "Error",
+            "explanation": "Execution stage: The repository supports the intended Figure 3B logic and partially supports the claim: the code filters generated candidates at 0.90 and one embedded executed output shows SGLT2 picked molecules above 0.90. But the repository does not save raw target-bioactivity probabilities for all 15 final molecules outside the pre-existing figure image, and fresh execution of the claim-relevant notebook path cannot proceed in this environment because required dependencies are missing. Per the execution rules, this is an external environment blocker, so the verdict is `Error` rather than a fabrication finding.",
+            "evidence": "Created `fabscore_codex/workspace/claim_63_command_output.txt` and `fabscore_codex/workspace/claim_63_evidence.json`. Reused `fabscore_codex/workspace/claim_58_evidence.json`, which extracted Figure 3B's visible parenthetical scores from `result_mols.png` (`CGAS`: 0.96/0.96/0.96, `DYRK1A`: 0.92/0.94/0.90, `HDAC`: 0.96/0.95/0.96, `SEH`: 0.98/0.96/0.95, `SGLT2`: 0.91/0.90/0.91). Confirmed `summary_pred.csv` has 15 final molecules but only ADMET columns, not target-bioactivity probabilities. Confirmed notebook cell lines 2587-2636 use `CANDIDATE_TH = 0.90` but the saved loop is `for TARGET in [\"SGLT2\"]`, and lines 2684-2689 preserve explicit picked scores only for `SGLT2` (`0.9054189`, `0.9005101`, `0.90543234`). Dependency check showed `rdkit`, `mordred`, and `xgboost` are missing locally. | Code: Paper context from `333_Multi_target_Parallel_Drug.pdf` (Figure 3B results sentence). Claim-relevant code/data at `agentic-drug-discovery-main/notebooks/2_molecule_evaluation_stanfordAIAgentConf.ipynb:2587-2636` (generation filter with `CANDIDATE_TH = 0.90`), `agentic-drug-discovery-main/notebooks/2_molecule_evaluation_stanfordAIAgentConf.ipynb:2665-2689` (picked `(SMILES, probability)` tuples, explicit only for `SGLT2`), `agentic-drug-discovery-main/notebooks/2_molecule_evaluation_stanfordAIAgentConf.ipynb:2767-2817` (ADMET summary for all 15 molecules), and `agentic-drug-discovery-main/results/target_inhibitors/summary_pred.csv`.",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "Paper context from `333_Multi_target_Parallel_Drug.pdf` (Figure 3B results sentence). Claim-relevant code/data at `agentic-drug-discovery-main/notebooks/2_molecule_evaluation_stanfordAIAgentConf.ipynb:2587-2636` (generation filter with `CANDIDATE_TH = 0.90`), `agentic-drug-discovery-main/notebooks/2_molecule_evaluation_stanfordAIAgentConf.ipynb:2665-2689` (picked `(SMILES, probability)` tuples, explicit only for `SGLT2`), `agentic-drug-discovery-main/notebooks/2_molecule_evaluation_stanfordAIAgentConf.ipynb:2767-2817` (ADMET summary for all 15 molecules), and `agentic-drug-discovery-main/results/target_inhibitors/summary_pred.csv`."
+                ],
+                "commands_executed": [
+                    "Commands logged in `fabscore_codex/workspace/claim_63_command_output.txt`: `python - <<'PY'` using `pypdf.PdfReader` to extract the Figure 3B claim text from `333_Multi_target_Parallel_Drug.pdf`; `sed -n '1,220p' fabscore_codex/workspace/claim_58_evidence.json`; `python - <<'PY'` to inspect `agentic-drug-discovery-main/results/target_inhibitors/summary_pred.csv`; `python - <<'PY'` to inspect `agentic-drug-discovery-main/notebooks/2_molecule_evaluation_stanfordAIAgentConf.ipynb` for `CANDIDATE_TH`, the saved generation loop, and embedded picked-score outputs; `python - <<'PY'` import checks for `rdkit`, `mordred`, and `xgboost`; `nl -ba agentic-drug-discovery-main/notebooks/2_molecule_evaluation_stanfordAIAgentConf.ipynb | sed -n '2587,2818p'`."
+                ]
+            }
+        }
+    ],
+    "summary": {
+        "total": 2,
+        "verified": 0,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 0,
+        "error": 2
+    }
+}

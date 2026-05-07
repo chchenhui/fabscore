@@ -1,0 +1,38 @@
+=== CLAIM 226 VERIFICATION: Table 1, P0AEL6, k: 3 ===
+
+--- COMMAND 1: Check pre-computed CSV files ---
+grep "P0AEL6" /home/chenhui/fabscore/agents4sci_rej/submission_306/for_submission/results/bcrparts/topN.csv
+OUTPUT: (no output - P0AEL6 not in topN.csv, which only has 2 lines total: header + P0AEW6)
+
+--- COMMAND 2: Fetch P0AEL6 PAE data and run BCR ---
+python3 -c "... fetch PAE, run bcr_q_ratio with n_perm=30 and n_perm=1024 ..."
+
+OUTPUT:
+P0AEL6: length=318
+
+--- With n_perm=30 (default) ---
+k=2: bcr_q_ratio=1.021651, z=1.853425, p_perm=0.193548
+  blocks=[(0, 230), (230, 318)]
+  Q25_intra=0.1000, Q75_inter=0.3667
+k=3: bcr_q_ratio=1.139434, z=3.052329, p_perm=0.032258
+  blocks=[(0, 227), (227, 318)]
+  Q25_intra=0.0833, Q75_inter=0.3667
+  [NOTE: k=3 partition returns only 2 blocks, not 3]
+
+--- With n_perm=1024, null_mode=rotation (actual run settings from run_parallel_all.sh) ---
+k=2: bcr_q_ratio=1.021651, z=-0.000000, p_perm=0.550244
+  blocks=[(0, 229), (229, 318)]
+k=3: bcr_q_ratio=1.021651, z=-0.000000, p_perm=0.550244
+  blocks=[(0, 229), (229, 318)]
+
+Selected k=2 (lowest p_perm, tie broken by order)
+
+KEY FINDINGS:
+1. P0AEL6 not in any pre-computed output CSV files.
+2. With actual run settings (n_perm=1024, rotation): p_perm=0.550 for both k=2 and k=3.
+   This means P0AEL6 is NOT significant and would NOT appear in Table 1.
+3. With n_perm=30 (default): k=3 is selected (p=0.032258, the minimum possible with n_perm=30),
+   but the partition gives only 2 blocks, not 3. Paper claims k=3 with protein in Table 1.
+4. Code selects k=2 with actual run settings.
+5. BCR formula discrepancy (log-ratio vs simple ratio) confirmed as in claim_1 analysis.
+6. Same experiment fabrication pattern as P75820 (claim_1): code does not reproduce paper's k=3.

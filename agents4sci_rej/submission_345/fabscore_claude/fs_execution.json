@@ -1,0 +1,126 @@
+{
+    "tables": [],
+    "figures": [
+        {
+            "claim_index": 1,
+            "claim": "1. Figure 1: NPV distribution from Monte Carlo simulation (n=10,000) showing P10/P50/P90 percentiles and probability of positive NPV.",
+            "verdict": "Verified",
+            "explanation": "Execution stage: Running generate_npv_histogram() from reports/generate_paper_figures.py with hardcoded seed=42 reproduces all four values stated in Figure 1 of the paper: P10=$4.1B, P50=$7.7B, P90=$15.3B, and Prob(NPV>0)=100%. The Monte Carlo simulation is fully deterministic given the fixed seed.",
+            "evidence": "Executed monte_carlo_npv() with seed=42, n=10000: P10=$4.1B, P50=$7.7B, P90=$15.3B, Prob(NPV>0)=100.0% — all match paper exactly. Output saved in workspace/claim_1_command_output.txt. | Code: reports/generate_paper_figures.py:generate_npv_histogram() (line 94); src/econ/npv.py:monte_carlo_npv() (line 257)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "reports/generate_paper_figures.py:generate_npv_histogram() (line 94)",
+                    "src/econ/npv.py:monte_carlo_npv() (line 257)"
+                ],
+                "commands_executed": [
+                    "cd '345_Multi_Agent_AI_System_for__Supplementary Material' && python reports/generate_paper_figures.py; python3 -c \"...monte_carlo_npv(base_params, uncertainty_params, n_simulations=10000, random_seed=42)...\""
+                ]
+            }
+        }
+    ],
+    "results_section": [
+        {
+            "claim_index": 4,
+            "claim": "2. Peak Heuristic Baseline: 71.2% MAPE (industry standard method)",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The paper claims to validate the Peak Heuristic Baseline on real pharmaceutical launch data (2015-2020) and reports 71.2% MAPE. However, build_dataset.py explicitly generates synthetic data (not real historical data) via _create_synthetic_launches() and _create_synthetic_revenues(). Fresh execution produced peak_heuristic MAPE values of 1110%-2307%, nowhere near the claimed 71.2%. The validation dataset itself is fabricated rather than real historical pharmaceutical data.",
+            "evidence": "Executed build_dataset.py + phase5_historical_validation.py. build_dataset.py:75-79 explicitly uses _create_synthetic_launches() and _create_synthetic_revenues() (comment: 'For now, create synthetic data that looks real'). Actual peak_heuristic MAPE values ranged from 1110% to 2307% across 10 drugs, all filtered out of the validation summary as >500%. No result near 71.2% MAPE was observed. | Code: src/data/build_dataset.py:75-79 (_create_synthetic_launches, _create_synthetic_revenues); validation/phase5_historical_validation.py:35-36 (reads data_proc/*.parquet)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "src/data/build_dataset.py:75-79 (_create_synthetic_launches, _create_synthetic_revenues)",
+                    "validation/phase5_historical_validation.py:35-36 (reads data_proc/*.parquet)"
+                ],
+                "commands_executed": [
+                    "cd '345_Multi_Agent_AI_System_for__Supplementary Material' && python src/data/build_dataset.py && python validation/phase5_historical_validation.py"
+                ]
+            }
+        },
+        {
+            "claim_index": 5,
+            "claim": "3. Ensemble Baseline: 80.8% MAPE (traditional ensemble approach)",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The claimed 80.8% ensemble baseline MAPE cannot be reproduced because the dataset is synthetically generated, not real 2015-2020 pharmaceutical launch data as the paper claims. The actual ensemble MAPE values range from 647% to 1165% on the synthetic data. This is a data fabrication issue: the paper reports results as if validated against real historical pharmaceutical launch data, but the repository's build_dataset.py generates synthetic data with a Bass diffusion formula and random noise.",
+            "evidence": "Reused claim_4_command_output.txt from Session 4 (same validation run). Per-drug ensemble MAPE values: Drug 8 (Repatha) 647.2%, Drug 9 (Keytruda) 1165.6%, Drug 10 (Repatha) 711.6% — all vastly different from the claimed 80.8%. build_dataset.py explicitly uses _create_synthetic_launches() and _create_synthetic_revenues() with comment 'For now, create synthetic data that looks real. In production, this would load actual scraped data'. | Code: src/data/build_dataset.py:75-79 (_create_synthetic_launches, _create_synthetic_revenues); src/models/baselines.py:323-373 (ensemble_baseline function)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "src/data/build_dataset.py:75-79 (_create_synthetic_launches, _create_synthetic_revenues)",
+                    "src/models/baselines.py:323-373 (ensemble_baseline function)"
+                ],
+                "commands_executed": [
+                    "No new command executed — reused existing artifact from Session 4: python src/data/build_dataset.py && python validation/phase5_historical_validation.py"
+                ]
+            }
+        },
+        {
+            "claim_index": 6,
+            "claim": "4. Enhanced Analog Forecasting: 100.2% MAPE (TA priors with DTW similarity)",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The paper claims Enhanced Analog Forecasting achieves 100.2% MAPE with TA priors and DTW similarity, validated against real 2015-2020 pharmaceutical launch data. The actual dataset is synthetically generated (not real historical data), and execution with synthetic data produces 16.4% MAPE — not 100.2%. The claimed result cannot be reproduced because the underlying dataset is fabricated synthetic data rather than real pharmaceutical launches.",
+            "evidence": "Session 4 execution (claim_4_command_output.txt) shows analog_enhanced Average MAPE: 16.4% across 10 drugs using synthetic data. README.md:87 confirms the claimed 100.2% MAPE. Individual drug results: Drug 8 (Repatha) 32.5%, Drug 9 (Keytruda) 13.3%, Drug 10 (Repatha) 21.1%. build_dataset.py explicitly uses _create_synthetic_launches() and _create_synthetic_revenues() with comment 'For now, create synthetic data that looks real.' | Code: src/data/build_dataset.py:75-79 (_create_synthetic_launches, _create_synthetic_revenues); validation/phase5_historical_validation.py:151-164 (analog_enhanced); README.md:87",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "src/data/build_dataset.py:75-79 (_create_synthetic_launches, _create_synthetic_revenues)",
+                    "validation/phase5_historical_validation.py:151-164 (analog_enhanced)",
+                    "README.md:87"
+                ],
+                "commands_executed": [
+                    "Reused existing artifact from Session 4: python src/data/build_dataset.py && python validation/phase5_historical_validation.py"
+                ]
+            }
+        },
+        {
+            "claim_index": 7,
+            "claim": "5. Golden Validation: 76.9% pass rate (10/13 tests within ±10% tolerance)",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The golden validation requires data_proc/golden_set.parquet which does not exist. The only available related dataset (golden_drugs.csv) shows values that completely contradict the implicit 'actual' values needed to produce the claimed 76.9% pass rate. Three of the five tested drugs (Mounjaro, Trikafta, Verzenio, accounting for 9/13 tests) do not appear in golden_drugs.csv. For the two drugs that do appear (Repatha, Ibrance), the real CSV values differ drastically from the values that would be needed to yield the claimed result. The 76.9% claim can only be reproduced if the parquet file uses fabricated actual values specifically crafted to pass 10/13 tests, not real pharmaceutical data.",
+            "evidence": "golden_set.parquet does not exist. create_test_forecasts() in golden_framework.py defines 13 tests across 5 drugs (Repatha, Ibrance, Mounjaro, Trikafta, Verzenio). The 76.9% result (10/13) is mathematically reproduced ONLY using fabricated 'actual' values from code comments. Real data in golden_drugs.csv yields 0/3 pass for available drugs: Repatha y2 real=$0.61B vs comment-implied=$1.0B (80.3% error), Repatha y3 real=$0.82B vs comment-implied=$4.2B (387.8% error), Ibrance y5 real=$5.07B vs comment-implied=$0.2B (95.1% error). Mounjaro, Trikafta, Verzenio are absent from golden_drugs.csv. | Code: src/validation/golden_framework.py:487-514 (create_test_forecasts()), data_raw/golden_drugs.csv",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "src/validation/golden_framework.py:487-514 (create_test_forecasts()), data_raw/golden_drugs.csv"
+                ],
+                "commands_executed": [
+                    "python3 -c \"...(mathematical analysis of test forecasts vs. golden_drugs.csv values and code comment actuals)...\""
+                ]
+            }
+        },
+        {
+            "claim_index": 19,
+            "claim": "17. Current validation results show 76.9% pass rate (10/13 tests passed) across 5 drugs: Mounjaro (100% pass rate, 3/3 tests), Verzenio (100% pass rate, 3/3 tests), Trikafta (66.7% pass rate, 2/3 tests), Repatha (50% pass rate, 1/2 tests), and Ibrance (50% pass rate, 1/2 tests).",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The 76.9% pass rate is only achievable using fabricated 'actual' revenue values hardcoded in code comments, not from real pharmaceutical data. With the actual CSV data available (golden_drugs.csv), the pass rate is 0% for the drugs present, and three of the five drugs (Mounjaro, Verzenio, Trikafta) don't even exist in the real dataset. Furthermore, the per-drug breakdown in the claim conflicts with what even the fabricated code-comment actuals produce: Verzenio shows 66.7% (not 100%) and Repatha shows 100% (not 50%), confirming the claimed per-drug results were separately fabricated.",
+            "evidence": "Session 7's claim_7_command_output.txt already executed the golden validation analysis. Code output using fabricated comment 'actuals': Mounjaro 3/3=100% (matches claim), Trikafta 2/3=66.7% (matches), Ibrance 1/2=50% (matches), BUT Verzenio 2/3=66.7% (claim says 100%/3/3) and Repatha 2/2=100% (claim says 50%/1/2). Total 10/13=76.9% matches. With real CSV data (golden_drugs.csv): 0/3 available tests pass (0%); Mounjaro, Trikafta, and Verzenio are absent from the real dataset. golden_set.parquet does not exist. | Code: src/validation/golden_framework.py (create_test_forecasts function); data_raw/golden_drugs.csv (missing Mounjaro, Trikafta, Verzenio); data_proc/golden_set.parquet (does not exist)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "src/validation/golden_framework.py (create_test_forecasts function)",
+                    "data_raw/golden_drugs.csv (missing Mounjaro, Trikafta, Verzenio)",
+                    "data_proc/golden_set.parquet (does not exist)"
+                ],
+                "commands_executed": [
+                    "Reused artifact from Session 7: python3 mathematical analysis of golden_framework.py's create_test_forecasts() function comparing code comment 'actuals' vs real CSV data"
+                ]
+            }
+        }
+    ],
+    "summary": {
+        "total": 6,
+        "verified": 1,
+        "data_fabrication": 5,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 0,
+        "error": 0
+    }
+}

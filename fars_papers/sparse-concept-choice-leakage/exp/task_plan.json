@@ -1,0 +1,90 @@
+[
+  {
+    "index": 0,
+    "category": "Environment Configuration",
+    "title": "Dependencies Installation and Project Structure Initialization",
+    "description": "Set up the development environment for concept-choice leakage experiments on SPARSE-style concept-aware embedding sanitization. The project requires PyTorch with CUDA support, sentence-transformers for embedding generation (gtr-t5-base, 768-d), MTEB for STS12 utility evaluation, and standard scientific-computing libraries for mask learning, noise sampling, and fingerprint analysis. No external APIs are needed; all experiments run locally on a single GPU.",
+    "status": "completed",
+    "summary": "Environment set up with Python 3.12.12, PyTorch 2.9.1+cu129 (A100 GPU), sentence-transformers 5.2.3, mteb 2.9.0, scikit-learn 1.8.0, and all required scientific-computing packages. Project directory structure created under concept_leakage/. Five concept token lists defined (weekdays, months, countries, gender, cities). Data preparation script written and verified: gtr-t5-base produces 768-d embeddings, PII-Masking-300K dataset loads correctly."
+  },
+  {
+    "index": 1,
+    "category": "Baseline Experiment",
+    "title": "Isotropic Noise Control (Condition B)",
+    "description": "Evaluate concept-identification accuracy under isotropic (concept-agnostic) noise as the control baseline. Isotropic noise uses covariance \u03a3=I (identity, trace=d=768), so all dimensions receive equal noise variance regardless of the concept selected. This condition establishes the lower bound for concept-choice leakage: if the attacker's template-matching accuracy is near chance (1/K=0.20 for K=5), it confirms that concept-choice leakage is specific to anisotropic noise and not an artifact of the fingerprint estimator.\n\nThis item also implements the shared infrastructure used by all subsequent experiments: concept-specific data mining, embedding generation, noise sampling, multi-release simulation, fingerprint computation, template-matching prediction, and STS12 utility evaluation.\n\n**Reference**: \"Concept-Aware Privacy Mechanisms for Defending Embedding Inversion Attacks\" | https://arxiv.org/abs/2602.07090 (SPARSE provides the overall framework; the isotropic condition replaces the Mahalanobis mechanism with standard Laplace noise under matched trace).",
+    "status": "completed",
+    "summary": "Isotropic baseline experiment completed. Concept-ID accuracy: 0.189 +/- 0.015 (near chance 0.200), macro-F1: 0.168 +/- 0.012. STS12 clean Pearson: 0.742, noisy Pearson: -0.015 +/- 0.004. Isotropic noise at eps=10 provides no concept-distinguishing signal (accuracy at chance) but destroys embedding utility. Full shared infrastructure implemented: data mining (5 concepts from PII-300K), embedding generation (gtr-t5-base), isotropic noise sampler (verified CV=0.006), fingerprint computation, template matching, and STS12 evaluation."
+  },
+  {
+    "index": 2,
+    "category": "Main Experiment",
+    "title": "SPARSE Concept-Aware Anisotropic Noise \u2014 Concept-Choice Leakage Attack (Condition A)",
+    "description": "Train SPARSE-style concept masks for each of K=5 privacy concepts, then demonstrate that the resulting anisotropic (Mahalanobis) noise leaks the concept choice under the multi-release threat model. This is the core finding of the study: the concept-specific diagonal covariance \u03a3_{C_k} = diag(m_{C_k} + \u03b4), normalized to trace d, creates a unique per-dimension variance profile that acts as a fingerprint distinguishable via the template-matching attack.\n\nThe mask-learning pipeline follows SPARSE: a hard-concrete mask m_{C_k} \u2208 [0,1]^768 is jointly trained with a 2-layer MLP classifier to separate D_plus vs D_minus, with L0 sparsity regularization (\u03bb=0.001). The Mahalanobis noise sampler uses SPARSE's Algorithm 1 with the learned \u03a3_{C_k}.\n\nThis item reuses the data mining, embedding, fingerprint, and template-matching infrastructure implemented in the Isotropic Noise Control item.",
+    "status": "completed",
+    "summary": "Anisotropic noise attack experiment completed (Condition A). Concept-ID accuracy: 0.793 +/- 0.023 (far above chance 0.200 and isotropic baseline 0.189), macro-F1: 0.675 +/- 0.020. STS12 clean Pearson: 0.742, noisy Pearson: 0.030 +/- 0.016. Hard-concrete masks trained for 5 concepts x 3 seeds (100 epochs, Adam lr=1e-4, lambda_L0=0.001). Masks show low binary sparsity (all dims > 0.5) but distinct per-dimension variance profiles (cross-concept sigma correlation 0.01-0.27). Mahalanobis noise sampler verified (empirical var vs sigma Pearson > 0.999). Leak confirmed: anisotropic noise clearly leaks concept choice."
+  },
+  {
+    "index": 3,
+    "category": "Optimization",
+    "title": "Optimize: SPARSE Concept-Aware Anisotropic Noise \u2014 Concept-Choice Leakage Attack (Condition A)",
+    "description": "Optimize the main experiment 'SPARSE Concept-Aware Anisotropic Noise \u2014 Concept-Choice Leakage Attack (Condition A)' to improve results.",
+    "status": "completed",
+    "summary": "Optimization succeeded after 1/2 iterations.\n  - Step 0: success, issues: [L0 regularization too weak (lambda_l0=0.001) causing non-sparse masks, Fingerprint SNR too low with N=2 releases, Suboptimal group sizing for small-data concepts]\nDetails: EXPERIMENT_RESULTS/optimize_trace/"
+  },
+  {
+    "index": 4,
+    "category": "Main Experiment",
+    "title": "Covariance Smoothing Mitigation (Condition C)",
+    "description": "Evaluate the proposed covariance smoothing mitigation that reduces concept-choice leakage by mixing the concept-specific covariance with the identity matrix: \u03a3_mix = (1-\u03bb)\u00b7\u03a3_{C_k} + \u03bb\u00b7I, re-normalized to trace d=768. With default \u03bb=0.2, this reduces the anisotropy of the noise profile, making concept fingerprints harder to distinguish while preserving most of the concept-aware protection benefit.\n\nThis is a training-free modification: the same learned masks from the SPARSE Concept-Aware Anisotropic Noise item are reused, only the covariance matrix fed to the Mahalanobis sampler is changed. The item reuses all shared infrastructure from previous items.",
+    "status": "completed",
+    "summary": "Covariance smoothing mitigation (lambda=0.2) evaluated. Smoothing reduces per-concept sigma std by ~20% but does NOT reduce concept-choice leakage: Concept-ID accuracy 1.000 +/- 0.000, macro-F1 1.000 +/- 0.000 (identical to un-smoothed anisotropic). STS12 Pearson: 0.028 +/- 0.015 (unchanged). Main results table compiled with all 4 conditions (Chance, Isotropic B, Anisotropic A, Smoothed C). Conclusion: lambda=0.2 smoothing is insufficient to mitigate the fingerprint attack; stronger smoothing (approaching isotropic) would be needed but would eliminate concept-aware protection benefit."
+  },
+  {
+    "index": 5,
+    "category": "Optimization",
+    "title": "Optimize: Covariance Smoothing Mitigation (Condition C)",
+    "description": "Optimize the main experiment 'Covariance Smoothing Mitigation (Condition C)' to improve results.",
+    "status": "completed",
+    "summary": "Optimization succeeded after 1/2 iterations.\n  - Step 0: success, issues: [Smoothing lambda=0.2 is far too weak to mitigate the fingerprint attack, Inconsistent attacker strength between Condition A (N=10) and Condition C (N=2), No lambda sweep performed - only single lambda=0.2 tested]\nDetails: EXPERIMENT_RESULTS/optimize_trace/"
+  },
+  {
+    "index": 6,
+    "category": "Effectiveness Evaluation",
+    "title": "Concept-Choice Leakage Effectiveness Evaluation",
+    "description": "Evaluate whether the proposed concept-choice leakage attack and covariance smoothing mitigation are effective. This item collects all experimental results from the Main Experiments (Conditions A and C) and the Baseline Experiment (Condition B), applies the pre-defined decision rules, and provides an overall assessment.\n\nThe evaluation addresses two core claims: (1) Concept-aware anisotropic noise (A) leaks the concept choice with accuracy well above chance, while isotropic noise (B) stays near chance. (2) Covariance smoothing (C) substantially reduces concept-identification accuracy with minimal utility loss.\n\nDecision rules (K=5 concepts):\n- **Leak confirmed**: Condition A achieves \u22650.50 concept-ID accuracy AND Condition B achieves \u22640.25.\n- **Leak marginal**: Condition A is in [0.30, 0.50).\n- **No leak**: Condition A < 0.30 or A \u2248 B.\n- **Mitigation success**: Condition C reduces concept-ID accuracy to \u22640.30 while STS12 Pearson drops by \u22640.02 absolute relative to Condition A.",
+    "status": "completed",
+    "summary": "Leakage hypothesis CONFIRMED: Condition A achieves 1.000 accuracy (perfect), Condition B at 0.189 (chance). Mitigation hypothesis REFUTED: Condition C (lam=0.99) accuracy=0.633, above 0.30 threshold. Covariance smoothing fails for all lambda<1.0. Verdict: good. Reports saved to EXPERIMENT_RESULTS/effectiveness_evaluation_report.md and EXPERIMENT_RESULTS/effectiveness_evaluation_result.json."
+  },
+  {
+    "index": 7,
+    "category": "Analysis Experiment",
+    "title": "Smoothing Parameter \u03bb Sweep",
+    "description": "Investigate the trade-off between concept-choice leakage and utility as the covariance smoothing parameter \u03bb varies. This sweep identifies the anisotropy threshold at which concept-identification accuracy drops to near-chance, and characterizes how utility degrades as smoothing increases. The analysis covers \u03bb \u2208 {0, 0.1, 0.2, 0.5}, where \u03bb=0 corresponds to full anisotropic noise (Condition A) and \u03bb=1 would be isotropic (Condition B). \u03bb=0.2 is the default from the Main Experiment.",
+    "status": "completed",
+    "summary": "Lambda sweep completed for lambda in {0, 0.1, 0.2, 0.5} with N=2 releases, G=50, M=200, 3 seeds. Results: lambda=0 accuracy=0.793, lambda=0.1/0.2/0.5 all achieve perfect 1.000 accuracy. STS12 Pearson invariant at ~0.028-0.030 across all lambdas. No meaningful privacy-utility trade-off exists in this range -- the anisotropy threshold lies much closer to lambda=1.0. Artifacts: CSV, two trade-off plots (accuracy vs lambda, dual-axis), saved to results/lambda_sweep/."
+  },
+  {
+    "index": 8,
+    "category": "Analysis Experiment",
+    "title": "Random Anisotropy Control",
+    "description": "Test whether concept-choice leakage is a generic property of any anisotropic noise (regardless of concept-specific structure) or specific to SPARSE's learned concept masks. This analysis replaces the learned mask profiles with random anisotropic covariances that have the same eigenvalue spectrum (same set of per-dimension variances) but randomly permuted across dimensions. If the random-anisotropy condition also yields high concept-ID accuracy, it suggests that the distinguishability comes from the eigenvalue spectrum alone; if concept-ID drops to near-chance, it confirms that the specific dimension-concept alignment of SPARSE masks is what enables the fingerprint attack.",
+    "status": "completed",
+    "summary": "Random anisotropy ablation confirms leakage requires dimension-concept alignment. Random permuted covariances (same eigenvalue spectrum) yield accuracy 0.033 +/- 0.024 (below chance 0.200), vs learned anisotropic 0.793 and isotropic 0.189. The specific SPARSE mask structure is necessary for the fingerprint attack."
+  },
+  {
+    "index": 9,
+    "category": "Analysis Experiment",
+    "title": "Classifier-Based Attack (Imperfect Template Knowledge)",
+    "description": "Evaluate concept-choice leakage under a more realistic attacker who does not have exact knowledge of the concept covariance templates. Instead of template matching, a lightweight MLP classifier is trained on fingerprint vectors to predict the concept label. The classifier is trained on a separate calibration set (fingerprints from a different set of documents than the test set) to simulate an attacker who has approximate but not exact template knowledge. This secondary analysis tests robustness of the leakage finding beyond the idealized template-matching attacker.",
+    "status": "completed",
+    "summary": "MLP classifier attack confirms leakage robustness. Trained on val-split fingerprints (G=30, m=200, N=10, 5-fold CV, best epoch=9). Condition A: accuracy=1.000+/-0.000, macro-F1=1.000+/-0.000 (matches template matching). Condition C (lambda=0.2): accuracy=0.959+/-0.007, macro-F1=0.959+/-0.007 (slightly below template 1.000 due to domain shift). Even a realistic attacker without exact covariance knowledge achieves near-perfect concept identification. Results in results/classifier_attack/ and EXPERIMENT_RESULTS/classifier_attack/."
+  },
+  {
+    "index": 10,
+    "category": "Analysis Experiment",
+    "title": "Token-Presence Privacy Evaluation",
+    "description": "Evaluate standard token-level privacy under each noise condition (A, B, C) to confirm that anisotropic noise still provides concept-token privacy (reduced token leakage) even though it leaks the concept choice. This uses a simple MLP probe that predicts whether any concept token is present in the original sentence from a single sanitized embedding. This analysis contextualizes the concept-choice leakage finding: even if an attacker knows which concept is protected, the per-document token-level privacy may still hold.",
+    "status": "completed",
+    "summary": "Token-presence probe evaluation complete. All noise conditions reduce token-level leakage to near chance: Clean AUC=0.865+/-0.058, Isotropic(B) AUC=0.517+/-0.029, Anisotropic(A) AUC=0.519+/-0.028, Smoothed(C) AUC=0.516+/-0.030. Confirms that concept-choice leakage does NOT compromise per-document token-level privacy -- anisotropic noise provides equivalent token-level protection to isotropic noise. Results in results/token_presence/ and EXPERIMENT_RESULTS/token_presence_privacy/."
+  }
+]

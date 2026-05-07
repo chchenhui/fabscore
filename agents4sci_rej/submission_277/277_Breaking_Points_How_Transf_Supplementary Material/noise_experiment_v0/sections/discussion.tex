@@ -1,0 +1,51 @@
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Architectural Factors in Robustness}
+
+RoBERTa's superior robustness (0.988) compared to ELECTRA (0.527) stems from specific training choices that align with identified phase boundaries. Dynamic masking during pretraining forces the model to handle corrupted contexts, creating implicit robustness at transition layers. The removal of next-sentence prediction allows clearer specialization within each phase, while larger batch sizes (8K vs 256) provide more diverse noise patterns during training. These factors combine to produce smoother transitions (measured by lower $|\Delta R^{(l)}|$) that preserve information while enabling necessary transformations.
+
+\subsection{Limitations of Encoder-Only Analysis}
+
+Our analysis focuses on encoder architectures (BERT family), which process text bidirectionally for understanding tasks. Decoder architectures like GPT and LLaMA employ causal attention for autoregressive generation, potentially exhibiting different vulnerability patterns:
+
+\begin{enumerate}
+\item \textbf{Attention Patterns}: Decoders use unidirectional attention, preventing error correction from future context.
+\item \textbf{Generation vs Understanding}: Noise may compound differently during sequential generation compared to parallel encoding.
+\item \textbf{Scale Effects}: Modern decoders (100B+ parameters) may show emergent robustness properties not observable in our 110M-parameter models.
+\end{enumerate}
+
+Preliminary analysis suggests decoder models may have transitions at different layers, potentially aligned with generation stages (copying, paraphrasing, abstraction) rather than linguistic hierarchy. Full investigation requires extensive computational resources beyond this study's scope.
+
+\subsection{Practical Deployment Considerations}
+
+For production systems, our findings suggest several strategies:
+
+\textbf{Model Selection}: Choose RoBERTa-based architectures for noise-critical applications. ELECTRA's discriminative pretraining, while sample-efficient, creates brittleness under perturbation.
+
+\textbf{Adaptive Processing}: Implement quality-aware routing—clean inputs can use accelerated inference with layer dropout, while noisy inputs require full processing.
+
+\textbf{Targeted Denoising}: Apply preprocessing at identified vulnerable points. Character-level denoising before layer 3 and syntactic validation before layer 8 can prevent cascading failures.
+
+\subsection{Comparison with Existing Robustness Methods}
+
+Our layer-dropout approach differs from existing robustness techniques:
+
+\textbf{Adversarial Training} \cite{madry2018towards}: Augments training with adversarial examples. Complementary to our approach but computationally expensive.
+
+\textbf{Certified Defenses} \cite{cohen2019certified}: Provides provable robustness guarantees through randomized smoothing. Our method offers practical speedup without certification.
+
+\textbf{Robust Fine-tuning} \cite{hendrycks2020augmax}: Uses augmented data during fine-tuning. Can be combined with our architectural insights for enhanced robustness.
+
+Our approach uniquely exploits architectural properties for efficiency gains while maintaining robustness, rather than explicitly training for robustness.
+
+\subsection{Future Research Directions}
+
+Several directions warrant investigation:
+
+\begin{enumerate}
+\item \textbf{Decoder Analysis}: Systematic study of GPT-family models to identify generation-specific vulnerabilities.
+\item \textbf{Multilingual Patterns}: Cross-linguistic analysis to determine if transitions are universal or language-specific.
+\item \textbf{Adaptive Architectures}: Dynamic models that adjust depth based on input complexity and noise level.
+\item \textbf{Runtime Validation}: Actual deployment measurements to confirm theoretical speedup predictions.
+\end{enumerate}

@@ -1,0 +1,15 @@
+===== Command =====
+cd supplimental_submission/code && python3 -c "
+from dataset import SyntheticFairnessDataset; from model import ModelFactory; from evaluate import FairnessMetrics
+dataset = SyntheticFairnessDataset(n_samples=1000, bias_strength=0.3, random_state=42)
+X_train, X_test, y_train, y_test, s_train, s_test, scaler = dataset.get_train_test_split(test_size=0.2)
+models = ModelFactory.create_baseline_models()
+rf = models['RandomForest']
+rf.fit(X_train, y_train)
+y_pred = rf.predict(X_test)
+eo = FairnessMetrics.equal_opportunity(y_test, y_pred, s_test)
+print(f'RF Equal Opportunity: {eo:.10f}')
+"
+
+===== Output =====
+RF Equal Opportunity: 0.0370370370

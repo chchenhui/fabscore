@@ -1,0 +1,79 @@
+{
+  "experiment": "debiased_k1",
+  "model": "togethercomputer/LLaMA-2-7B-32K-Instruct",
+  "benchmark": "SynthWiki",
+  "context_length_tokens": 28000,
+  "num_examples_per_seed": 200,
+  "seeds": [42, 123, 456],
+  "conditions": {
+    "debiased_k1": {
+      "accuracy_per_seed": {
+        "42": 0.94,
+        "123": 0.965,
+        "456": 0.94
+      },
+      "mean_accuracy": 0.9483,
+      "std_accuracy": 0.0144,
+      "prefill_passes_per_query": 2,
+      "alpha": 0.05,
+      "num_bins": 20,
+      "strategy": "minimal_swap",
+      "swap_count_per_seed": {"42": 4, "123": 4, "456": 2},
+      "mean_raw_gold_rank": 164.845,
+      "mean_debiased_gold_rank": 164.862
+    }
+  },
+  "comparison": {
+    "attnsort_k1": {
+      "mean_accuracy": 0.9483,
+      "std_accuracy": 0.0144,
+      "prefill_passes_per_query": 2,
+      "paired_vs_debiased": {
+        "wins": 0,
+        "ties": 600,
+        "losses": 0,
+        "total": 600
+      }
+    },
+    "attnsort_k5": {
+      "mean_accuracy": 0.955,
+      "std_accuracy": 0.0071,
+      "prefill_passes_per_query": 6
+    },
+    "no_sorting": {
+      "mean_accuracy": 0.7283,
+      "std_accuracy": 0.0284,
+      "prefill_passes_per_query": 1
+    }
+  },
+  "config": {
+    "prompt_type": "together_instruct",
+    "max_new_tokens": 100,
+    "decoding": "greedy",
+    "dtype": "float16",
+    "attn_implementation": "flash_attention_2",
+    "sorting": "raw_attention_ascending_with_debiased_top1_swap",
+    "best_doc_last": true,
+    "attention_extraction": "first_generated_token_all_layers_all_heads",
+    "bias_estimation": {
+      "method": "trim_bin_interpolate",
+      "alpha": 0.05,
+      "num_bins": 20,
+      "aggregation": "median_per_bin",
+      "interpolation": "linear"
+    }
+  },
+  "optimization_history": {
+    "original_method": {
+      "strategy": "full_sort_by_debiased_scores",
+      "mean_accuracy": 0.9433,
+      "accuracy_per_seed": {"42": 0.945, "123": 0.955, "456": 0.93}
+    },
+    "optimized_method": {
+      "strategy": "minimal_swap",
+      "mean_accuracy": 0.9483,
+      "accuracy_per_seed": {"42": 0.94, "123": 0.965, "456": 0.94},
+      "improvement": 0.005
+    }
+  }
+}

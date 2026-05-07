@@ -1,0 +1,230 @@
+METHODS DOCUMENTATION - NMF AND cNMF ANALYSIS OF ENDOCRINE CELLS
+=================================================================
+
+This document describes the computational methods used for Non-negative Matrix Factorization (NMF) and consensus NMF (cNMF) analysis of endocrine cell populations.
+
+1. DATA PREPARATION
+-------------------
+Input Data:
+- Single-cell RNA-seq data from strict endocrine cell populations
+- Data stored in h5ad format (AnnData structure)
+- Metadata includes: cell_type, disease, tissue annotations
+
+Quality Control and Filtering:
+- Minimal filtering approach to preserve biological signal
+- Cell filtering: minimum 10 genes expressed per cell
+- Gene filtering: minimum 3 cells expressing each gene
+- Additional filtering for cNMF: cells with total counts > 100
+- Removed potential empty droplets and low-quality cells
+
+Data Normalization:
+- Library size normalization to 10,000 counts per cell
+- Log transformation (log1p) for variance stabilization
+- Highly variable gene selection (top 1500-2000 genes)
+- Preservation of raw counts for downstream analysis
+
+2. NON-NEGATIVE MATRIX FACTORIZATION (NMF)
+-------------------------------------------
+Standard NMF Implementation:
+- Applied scikit-learn NMF with Frobenius norm
+- Decomposition: X ≈ W × H
+  * X: cell × gene expression matrix
+  * W: cell × program usage matrix
+  * H: program × gene loading matrix
+- Non-negativity constraints ensure interpretable gene programs
+
+Parameter Selection:
+- Tested k values from 10 to 50 components
+- Systematic evaluation of different k values
+- Each k analyzed independently with dedicated output folders
+- Multiple iterations (n_iter=100) for stability assessment
+
+NMF Algorithm Settings:
+- Initialization: Non-negative Double Singular Value Decomposition (NNDSVD)
+- Solver: Coordinate descent or multiplicative update
+- Maximum iterations: 1000
+- Tolerance: 1e-4
+- Random state fixed for reproducibility
+
+3. CONSENSUS NMF (cNMF) ANALYSIS
+---------------------------------
+cNMF Pipeline Overview:
+- Enhanced NMF approach for robust program identification
+- Three-step process: prepare, factorize, consensus
+- Addresses technical variability through consensus approach
+
+Step 1 - Data Preparation:
+- Selection of overdispersed genes
+- Gene filtering based on mean-variance relationship
+- Z-score normalization of selected genes
+- Generation of count matrix for factorization
+
+Step 2 - Factorization:
+- Multiple NMF runs per k value (100 iterations)
+- Independent random initializations
+- Parallel processing for computational efficiency
+- Storage of all factorization results
+
+Step 3 - Consensus Building:
+- Clustering of factorization results
+- Identification of stable gene programs
+- Outlier detection and removal (distance threshold: 0.2)
+- Generation of consensus gene scores
+
+Output Files per k:
+- gene_scores_k*.csv: Gene importance scores per program
+- gene_tpm_k*.csv: Normalized gene expression per program
+- usage_k*.csv: Program usage per cell
+- spectra_consensus_k*.txt: Consensus program definitions
+
+4. PROGRAM CHARACTERIZATION
+----------------------------
+Top Gene Identification:
+- Ranked genes by loading scores within each program
+- Selected top 20-50 genes per program
+- Generated gene lists for biological interpretation
+- Exported as CSV and text files
+
+Activity Score Calculation:
+- Computed program usage scores for each cell
+- Normalized usage values (0-1 scale)
+- Mean activity per metadata group (cell type, tissue, disease)
+- Standard deviation and fold change calculations
+
+Statistical Analysis:
+- Mean and standard deviation per group
+- Fold change between conditions
+- Coefficient of variation for stability assessment
+- Program specificity scores
+
+5. ENRICHMENT ANALYSIS
+----------------------
+Gene Set Enrichment:
+- KEGG pathway enrichment using gseapy
+- Gene Ontology (GO) term analysis
+- Biological process, molecular function, cellular component
+- False discovery rate (FDR) correction for multiple testing
+
+Enrichment Metrics:
+- Enrichment score (ES)
+- Normalized enrichment score (NES)
+- P-values and adjusted p-values (q-values)
+- Gene ratio and background ratio
+
+Database Resources:
+- KEGG pathway database
+- Gene Ontology database
+- MSigDB gene sets (when applicable)
+- Custom gene sets for endocrine functions
+
+6. VISUALIZATION
+----------------
+Heatmaps:
+- Program × cell activity matrices
+- Gene × program loading matrices
+- Hierarchical clustering with Ward's method
+- Color scales: viridis, RdBu, coolwarm
+
+Activity Plots by Metadata:
+- Box plots showing program activity by cell type
+- Distribution plots by tissue origin
+- Disease vs normal comparisons
+- Violin plots for activity distributions
+
+Combined Visualizations:
+- Multi-panel figures for all k values
+- Comparative plots across different k selections
+- Program correlation matrices
+- UMAP projections colored by program activity
+
+PDF Generation:
+- Automated compilation of all plots
+- Organized by analysis type and k value
+- High-resolution outputs for publication
+
+7. COMPARATIVE ANALYSIS
+------------------------
+K Value Comparison:
+- Systematic comparison across k=10 to k=50
+- Reconstruction error evaluation
+- Program stability assessment
+- Biological interpretability scoring
+
+Cross-validation:
+- Split-sample validation when applicable
+- Consistency checks across iterations
+- Technical replicate concordance
+
+Program Correlation:
+- Pearson correlation between programs
+- Identification of co-activated programs
+- Module detection for coordinated expression
+
+8. OUTPUT ORGANIZATION
+-----------------------
+Directory Structure:
+```
+nmf/
+├── nmf_results_k*/        # Results for each k value
+│   ├── gene_scores.csv
+│   ├── usage_matrix.csv
+│   ├── activity_by_*.csv
+│   └── top_genes_per_program.txt
+├── cnmf_results/          # cNMF specific results
+│   └── k_*/               # Per k value results
+├── cnmf_results_corrected/ # Corrected cNMF results
+└── figures/               # All visualizations
+```
+
+Key Output Files:
+- Gene score matrices (CSV format)
+- Cell usage matrices (CSV format)
+- Activity summaries by metadata (CSV format)
+- Top gene lists (TXT format)
+- Analysis summaries (TXT/JSON format)
+- Visualization compilations (PDF format)
+
+9. COMPUTATIONAL RESOURCES
+---------------------------
+Software Requirements:
+- Python 3.x
+- scanpy for single-cell analysis
+- scikit-learn for NMF implementation
+- cnmf package for consensus NMF
+- pandas, numpy for data manipulation
+- matplotlib, seaborn for visualization
+- gseapy for enrichment analysis
+
+Hardware Specifications:
+- Memory: 32-64 GB RAM recommended
+- Processing: Multi-core CPU for parallel processing
+- Storage: ~10-20 GB for complete analysis
+- Runtime: 2-6 hours depending on k range
+
+10. REPRODUCIBILITY
+--------------------
+Version Control:
+- Fixed random seeds (seed=14)
+- Documented software versions
+- Parameter logging in output files
+- Comprehensive analysis logs
+
+Code Organization:
+- Modular Python scripts for each analysis component
+- Shell scripts for batch processing
+- Clear naming conventions for outputs
+- Detailed comments and documentation
+
+Quality Assurance:
+- Error handling and logging
+- Validation checks at each step
+- Output verification procedures
+- Reproducibility testing with subsampled data
+
+NOTES:
+------
+- All analysis code stored in paper_analysis folder
+- Multiple analysis iterations for optimization
+- Both standard NMF and cNMF approaches implemented
+- Comprehensive parameter sweep from k=10 to k=50
+- Results suitable for biological interpretation and validation

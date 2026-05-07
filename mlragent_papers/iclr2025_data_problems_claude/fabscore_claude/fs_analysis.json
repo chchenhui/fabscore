@@ -1,0 +1,1124 @@
+{
+    "no_code_files": [],
+    "obvious_hallucination": [
+        {
+            "index": 2,
+            "category": "table",
+            "content": "2. Table 1, AGT-MLM, Precision: 0.8451",
+            "reason": "In evaluation.py:43, binary_truth = [1] * len(true_sources) sets all ground truth to positive. This means FP is always 0, so precision_recall_fscore_support always returns precision=1.0 (when any predictions exceed threshold). The reported value 0.8451 is impossible with this code.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:43",
+                "code/evaluation.py:46-48"
+            ]
+        },
+        {
+            "index": 3,
+            "category": "table",
+            "content": "3. Table 1, AGT-MLM, Recall: 0.8723",
+            "reason": "The code's binary_truth=[1,...,1] means recall=count(pred_probs>=threshold)/total, which measures model confidence rather than attribution accuracy. The evaluation formulation is fundamentally incorrect for measuring source attribution quality.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 4,
+            "category": "table",
+            "content": "4. Table 1, AGT-MLM, F1: 0.8585",
+            "reason": "F1 is derived from precision (always 1.0 from broken binary_truth=[1,...,1]) and recall=fraction above threshold. With precision=1.0, F1=2*recall/(1+recall). If recall=0.8723, F1=0.932, not 0.8585. The reported value is impossible with this code.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 5,
+            "category": "table",
+            "content": "5. Table 1, AGT-MLM, Attribution F1: 0.8342",
+            "reason": "In evaluation.py lines 244-256, attribution_f1_score is computed as af1=compute_attribution_f1_score(aps,ars) where both aps=ars=mean(correct_attributions)=accuracy. So attribution_f1_score equals accuracy (0.8642), but paper reports 0.8342. These should be equal but differ.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256"
+            ]
+        },
+        {
+            "index": 6,
+            "category": "table",
+            "content": "6. Table 1, AGT-MLM, Content Originality: 0.7865",
+            "reason": "In evaluation.py lines 249-256, content_originality_score=mean([1-int(p!=t)])=mean([int(p==t)])=accuracy=0.8642. But paper reports 0.7865. These should be equal but differ, indicating fabrication.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:249-256"
+            ]
+        },
+        {
+            "index": 8,
+            "category": "table",
+            "content": "8. Table 1, Post-hoc, Precision: 0.7645",
+            "reason": "Same broken binary_truth=[1,...,1] applies to all model evaluations. Precision is always 1.0 when any predictions exceed threshold. Reported 0.7645 is impossible.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:43",
+                "code/evaluation.py:46-48"
+            ]
+        },
+        {
+            "index": 9,
+            "category": "table",
+            "content": "9. Table 1, Post-hoc, Recall: 0.7834",
+            "reason": "Evaluation formulation incorrect: binary_truth=[1,...,1] means recall measures fraction of high-confidence predictions, not attribution accuracy.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 10,
+            "category": "table",
+            "content": "10. Table 1, Post-hoc, F1: 0.7738",
+            "reason": "With precision=1.0 (from broken binary_truth), F1=2*recall/(1+recall). For F1=0.7738, recall would need to be 0.631, but paper reports recall=0.7834. Impossible with this code.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 11,
+            "category": "table",
+            "content": "11. Table 1, Post-hoc, Attribution F1: 0.6982",
+            "reason": "attribution_f1_score=accuracy in code (both are mean of correct source predictions). Should equal accuracy=0.7912 but paper reports 0.6982.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256"
+            ]
+        },
+        {
+            "index": 12,
+            "category": "table",
+            "content": "12. Table 1, Post-hoc, Content Originality: 0.7324",
+            "reason": "content_originality_score=accuracy in code. Should equal accuracy=0.7912 but paper reports 0.7324.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:249-256"
+            ]
+        },
+        {
+            "index": 14,
+            "category": "table",
+            "content": "14. Table 1, Data Shapley, Precision: 0.7753",
+            "reason": "Same broken binary_truth=[1,...,1] yields precision=1.0. Reported 0.7753 is impossible.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:43",
+                "code/evaluation.py:46-48"
+            ]
+        },
+        {
+            "index": 15,
+            "category": "table",
+            "content": "15. Table 1, Data Shapley, Recall: 0.7921",
+            "reason": "Evaluation formulation incorrect for attribution recall measurement due to binary_truth=[1,...,1].",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 16,
+            "category": "table",
+            "content": "16. Table 1, Data Shapley, F1: 0.7836",
+            "reason": "With precision=1.0, F1=2*recall/(1+recall) implies recall≈0.644 for F1=0.7836. But paper reports recall=0.7921. Inconsistent.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 17,
+            "category": "table",
+            "content": "17. Table 1, Data Shapley, Attribution F1: 0.7123",
+            "reason": "attribution_f1_score=accuracy in code. Should equal accuracy=0.8015 but paper reports 0.7123.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256"
+            ]
+        },
+        {
+            "index": 18,
+            "category": "table",
+            "content": "18. Table 1, Data Shapley, Content Originality: 0.7458",
+            "reason": "content_originality_score=accuracy in code. Should equal accuracy=0.8015 but paper reports 0.7458.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:249-256"
+            ]
+        },
+        {
+            "index": 20,
+            "category": "table",
+            "content": "20. Table 1, MinimalSubset, Precision: 0.7952",
+            "reason": "Same broken binary_truth=[1,...,1] yields precision=1.0. Reported 0.7952 is impossible.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:43",
+                "code/evaluation.py:46-48"
+            ]
+        },
+        {
+            "index": 21,
+            "category": "table",
+            "content": "21. Table 1, MinimalSubset, Recall: 0.8142",
+            "reason": "Evaluation formulation incorrect for attribution recall measurement due to binary_truth=[1,...,1].",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 22,
+            "category": "table",
+            "content": "22. Table 1, MinimalSubset, F1: 0.8045",
+            "reason": "With precision=1.0, F1 would not match reported value given reported recall=0.8142. Inconsistent.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 23,
+            "category": "table",
+            "content": "23. Table 1, MinimalSubset, Attribution F1: 0.7589",
+            "reason": "attribution_f1_score=accuracy in code. Should equal accuracy=0.8245 but paper reports 0.7589.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256"
+            ]
+        },
+        {
+            "index": 24,
+            "category": "table",
+            "content": "24. Table 1, MinimalSubset, Content Originality: 0.7623",
+            "reason": "content_originality_score=accuracy in code. Should equal accuracy=0.8245 but paper reports 0.7623.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:249-256"
+            ]
+        },
+        {
+            "index": 25,
+            "category": "table",
+            "content": "25. Table 2, AGT-MLM, Test F1: 0.8585",
+            "reason": "Same F1 metric as Table 1 (from broken binary_truth=[1,...,1] evaluation). precision=1.0 always; reported F1=0.8585 is inconsistent with the code's evaluation logic.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 26,
+            "category": "table",
+            "content": "26. Table 2, AGT-MLM, Adversarial F1: 0.7924",
+            "reason": "Adversarial F1 uses same evaluate_model function with broken binary_truth=[1,...,1]. All precision/F1 values are unreliable from this evaluation code.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48",
+                "code/run_experiment.py:163-170"
+            ]
+        },
+        {
+            "index": 27,
+            "category": "table",
+            "content": "27. Table 2, AGT-MLM, F1 Drop: 0.0661",
+            "reason": "F1 Drop is derived from fabricated Test F1 and Adversarial F1 values. The underlying F1 metric is broken (precision always 1.0 from binary_truth=[1,...,1]).",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 28,
+            "category": "table",
+            "content": "28. Table 2, AGT-MLM, Test Attribution F1: 0.8342",
+            "reason": "attribution_f1_score=accuracy in code. Should equal accuracy but differs. Derived from same broken evaluation logic.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256"
+            ]
+        },
+        {
+            "index": 29,
+            "category": "table",
+            "content": "29. Table 2, AGT-MLM, Adversarial Attribution F1: 0.7658",
+            "reason": "Adversarial attribution F1 uses same evaluate_model function where attribution_f1_score=accuracy. Value would not match paper's claim.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256"
+            ]
+        },
+        {
+            "index": 30,
+            "category": "table",
+            "content": "30. Table 2, AGT-MLM, Attribution F1 Drop: 0.0684",
+            "reason": "Derived from fabricated Test Attribution F1 and Adversarial Attribution F1 values.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256"
+            ]
+        },
+        {
+            "index": 31,
+            "category": "table",
+            "content": "31. Table 2, Post-hoc, Test F1: 0.7738",
+            "reason": "Same F1 metric as Table 1 (broken binary_truth=[1,...,1]). precision=1.0 always; F1 value is inconsistent with code.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 32,
+            "category": "table",
+            "content": "32. Table 2, Post-hoc, Adversarial F1: 0.6452",
+            "reason": "Same broken evaluation with binary_truth=[1,...,1] for adversarial set.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 33,
+            "category": "table",
+            "content": "33. Table 2, Post-hoc, F1 Drop: 0.1286",
+            "reason": "Derived from fabricated Test F1 and Adversarial F1.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 34,
+            "category": "table",
+            "content": "34. Table 2, Post-hoc, Test Attribution F1: 0.6982",
+            "reason": "attribution_f1_score=accuracy in code. Should equal 0.7912 (reported accuracy) but paper reports 0.6982.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256"
+            ]
+        },
+        {
+            "index": 35,
+            "category": "table",
+            "content": "35. Table 2, Post-hoc, Adversarial Attribution F1: 0.5324",
+            "reason": "attribution_f1_score=accuracy in code on adversarial set. Value is unsupported by code logic.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256"
+            ]
+        },
+        {
+            "index": 36,
+            "category": "table",
+            "content": "36. Table 2, Post-hoc, Attribution F1 Drop: 0.1658",
+            "reason": "Derived from fabricated attribution F1 values.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256"
+            ]
+        },
+        {
+            "index": 37,
+            "category": "table",
+            "content": "37. Table 2, Data Shapley, Test F1: 0.7836",
+            "reason": "Same broken F1 metric from binary_truth=[1,...,1].",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 38,
+            "category": "table",
+            "content": "38. Table 2, Data Shapley, Adversarial F1: 0.6734",
+            "reason": "Same broken F1 metric applied to adversarial set.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 39,
+            "category": "table",
+            "content": "39. Table 2, Data Shapley, F1 Drop: 0.1102",
+            "reason": "Derived from fabricated F1 values.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 40,
+            "category": "table",
+            "content": "40. Table 2, Data Shapley, Test Attribution F1: 0.7123",
+            "reason": "attribution_f1_score=accuracy in code. Should equal 0.8015 but paper reports 0.7123.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256"
+            ]
+        },
+        {
+            "index": 41,
+            "category": "table",
+            "content": "41. Table 2, Data Shapley, Adversarial Attribution F1: 0.5742",
+            "reason": "attribution_f1_score=accuracy; adversarial value unsupported by code logic.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256"
+            ]
+        },
+        {
+            "index": 42,
+            "category": "table",
+            "content": "42. Table 2, Data Shapley, Attribution F1 Drop: 0.1381",
+            "reason": "Derived from fabricated attribution F1 values.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256"
+            ]
+        },
+        {
+            "index": 43,
+            "category": "table",
+            "content": "43. Table 2, MinimalSubset, Test F1: 0.8045",
+            "reason": "Same broken F1 metric from binary_truth=[1,...,1].",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 44,
+            "category": "table",
+            "content": "44. Table 2, MinimalSubset, Adversarial F1: 0.7012",
+            "reason": "Same broken F1 metric applied to adversarial set.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 45,
+            "category": "table",
+            "content": "45. Table 2, MinimalSubset, F1 Drop: 0.1033",
+            "reason": "Derived from fabricated F1 values.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 46,
+            "category": "table",
+            "content": "46. Table 2, MinimalSubset, Test Attribution F1: 0.7589",
+            "reason": "attribution_f1_score=accuracy in code. Should equal 0.8245 but paper reports 0.7589.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256"
+            ]
+        },
+        {
+            "index": 47,
+            "category": "table",
+            "content": "47. Table 2, MinimalSubset, Adversarial Attribution F1: 0.6245",
+            "reason": "attribution_f1_score=accuracy on adversarial set; unsupported by code logic.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256"
+            ]
+        },
+        {
+            "index": 48,
+            "category": "table",
+            "content": "48. Table 2, MinimalSubset, Attribution F1 Drop: 0.1344",
+            "reason": "Derived from fabricated attribution F1 values.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256"
+            ]
+        },
+        {
+            "index": 49,
+            "category": "table",
+            "content": "49. Table 3, Lambda=0.01, Attribution F1: 0.7256",
+            "reason": "attribution_f1_score=accuracy in code. Lambda ablation trains with fewer epochs but uses same broken evaluate_model. Attribution F1 should equal accuracy for each lambda value, but paper reports them differently.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256",
+                "code/run_experiment.py:442"
+            ]
+        },
+        {
+            "index": 51,
+            "category": "table",
+            "content": "51. Table 3, Lambda=0.01, F1: 0.8621",
+            "reason": "Same broken binary_truth=[1,...,1] F1 metric applies to ablation experiments. Precision=1.0 always; F1 is inconsistent with code.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 52,
+            "category": "table",
+            "content": "52. Table 3, Lambda=0.05, Attribution F1: 0.7945",
+            "reason": "attribution_f1_score=accuracy in code. Should equal accuracy for lambda=0.05 but paper reports different value.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256"
+            ]
+        },
+        {
+            "index": 54,
+            "category": "table",
+            "content": "54. Table 3, Lambda=0.05, F1: 0.8597",
+            "reason": "Same broken binary_truth=[1,...,1] F1 metric.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 55,
+            "category": "table",
+            "content": "55. Table 3, Lambda=0.1, Attribution F1: 0.8342",
+            "reason": "attribution_f1_score=accuracy in code. Should equal accuracy=0.8642 (Table 1 AGT-MLM) but paper reports 0.8342.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256"
+            ]
+        },
+        {
+            "index": 57,
+            "category": "table",
+            "content": "57. Table 3, Lambda=0.1, F1: 0.8585",
+            "reason": "Same broken binary_truth F1 metric. With precision=1.0, F1 value cannot match reported given the reported recall.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 58,
+            "category": "table",
+            "content": "58. Table 3, Lambda=0.5, Attribution F1: 0.8412",
+            "reason": "attribution_f1_score=accuracy in code; paper reports attribution_F1 as different from reported accuracy (0.8521).",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256"
+            ]
+        },
+        {
+            "index": 60,
+            "category": "table",
+            "content": "60. Table 3, Lambda=0.5, F1: 0.8472",
+            "reason": "Same broken binary_truth F1 metric.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 61,
+            "category": "table",
+            "content": "61. Table 3, Lambda=1.0, Attribution F1: 0.8376",
+            "reason": "attribution_f1_score=accuracy in code; paper reports attribution_F1 as different from reported accuracy (0.8389).",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256"
+            ]
+        },
+        {
+            "index": 63,
+            "category": "table",
+            "content": "63. Table 3, Lambda=1.0, F1: 0.8352",
+            "reason": "Same broken binary_truth F1 metric.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 64,
+            "category": "table",
+            "content": "64. Table 4, layer_specific, Attribution F1: 0.7982",
+            "reason": "attribution_f1_score=accuracy in code. Should equal accuracy=0.8412 but paper reports 0.7982.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256"
+            ]
+        },
+        {
+            "index": 66,
+            "category": "table",
+            "content": "66. Table 4, layer_specific, Precision: 0.8253",
+            "reason": "Same broken binary_truth=[1,...,1] yields precision=1.0. Reported 0.8253 is impossible.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:43",
+                "code/evaluation.py:46-48"
+            ]
+        },
+        {
+            "index": 67,
+            "category": "table",
+            "content": "67. Table 4, layer_specific, Recall: 0.8489",
+            "reason": "Evaluation formulation incorrect for attribution recall measurement due to binary_truth=[1,...,1].",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 68,
+            "category": "table",
+            "content": "68. Table 4, layer_specific, F1: 0.8369",
+            "reason": "With precision=1.0, F1=2*recall/(1+recall). For recall=0.8489, F1=0.919, not 0.8369. Impossible with this code.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 69,
+            "category": "table",
+            "content": "69. Table 4, multi_layer, Attribution F1: 0.8342",
+            "reason": "attribution_f1_score=accuracy in code. Should equal accuracy=0.8642 but paper reports 0.8342.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256"
+            ]
+        },
+        {
+            "index": 71,
+            "category": "table",
+            "content": "71. Table 4, multi_layer, Precision: 0.8451",
+            "reason": "Same broken binary_truth=[1,...,1] yields precision=1.0. Reported 0.8451 is impossible.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:43",
+                "code/evaluation.py:46-48"
+            ]
+        },
+        {
+            "index": 72,
+            "category": "table",
+            "content": "72. Table 4, multi_layer, Recall: 0.8723",
+            "reason": "Evaluation formulation incorrect for attribution recall measurement.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 73,
+            "category": "table",
+            "content": "73. Table 4, multi_layer, F1: 0.8585",
+            "reason": "With precision=1.0, F1 would be ~0.932 for recall=0.8723. Reported 0.8585 is impossible.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 74,
+            "category": "table",
+            "content": "74. Table 4, attention, Attribution F1: 0.8213",
+            "reason": "attribution_f1_score=accuracy in code. Should equal accuracy=0.8573 but paper reports 0.8213.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256"
+            ]
+        },
+        {
+            "index": 76,
+            "category": "table",
+            "content": "76. Table 4, attention, Precision: 0.8392",
+            "reason": "Same broken binary_truth=[1,...,1] yields precision=1.0. Reported 0.8392 is impossible.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:43",
+                "code/evaluation.py:46-48"
+            ]
+        },
+        {
+            "index": 77,
+            "category": "table",
+            "content": "77. Table 4, attention, Recall: 0.8645",
+            "reason": "Evaluation formulation incorrect for attribution recall measurement.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 78,
+            "category": "table",
+            "content": "78. Table 4, attention, F1: 0.8516",
+            "reason": "With precision=1.0, F1 would be ~0.927 for recall=0.8645. Reported 0.8516 is impossible.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 79,
+            "category": "table",
+            "content": "79. Table 5, Threshold=0.1, Precision: 0.7234",
+            "reason": "At threshold=0.1, nearly all examples exceed threshold, so TP is high and FP=0 (binary_truth=[1,...,1]). Precision=1.0. Reported 0.7234 is impossible.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48",
+                "code/run_experiment.py:542-548"
+            ]
+        },
+        {
+            "index": 80,
+            "category": "table",
+            "content": "80. Table 5, Threshold=0.1, Recall: 0.9112",
+            "reason": "Evaluation formulation incorrect for attribution recall measurement due to binary_truth=[1,...,1].",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 81,
+            "category": "table",
+            "content": "81. Table 5, Threshold=0.1, F1: 0.8068",
+            "reason": "With precision=1.0, F1=2*0.9112/(1+0.9112)=0.954, not 0.8068. Impossible with this code.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 82,
+            "category": "table",
+            "content": "82. Table 5, Threshold=0.3, Precision: 0.7856",
+            "reason": "binary_truth=[1,...,1] ensures FP=0 always, so precision=1.0. Reported 0.7856 is impossible.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 83,
+            "category": "table",
+            "content": "83. Table 5, Threshold=0.3, Recall: 0.8723",
+            "reason": "Evaluation formulation incorrect for attribution recall due to binary_truth=[1,...,1].",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 84,
+            "category": "table",
+            "content": "84. Table 5, Threshold=0.3, F1: 0.8265",
+            "reason": "With precision=1.0, F1=2*0.8723/(1.8723)=0.932, not 0.8265. Impossible.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 85,
+            "category": "table",
+            "content": "85. Table 5, Threshold=0.5, Precision: 0.8451",
+            "reason": "binary_truth=[1,...,1] ensures precision=1.0 regardless of threshold. Reported 0.8451 is impossible.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 86,
+            "category": "table",
+            "content": "86. Table 5, Threshold=0.5, Recall: 0.8723",
+            "reason": "Evaluation formulation incorrect for attribution recall measurement.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 87,
+            "category": "table",
+            "content": "87. Table 5, Threshold=0.5, F1: 0.8585",
+            "reason": "With precision=1.0, F1 would be ~0.932 for recall=0.8723. Reported 0.8585 is impossible.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 88,
+            "category": "table",
+            "content": "88. Table 5, Threshold=0.7, Precision: 0.9023",
+            "reason": "binary_truth=[1,...,1] ensures precision=1.0 whenever any predictions exceed threshold. Reported 0.9023 < 1.0 is impossible.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 89,
+            "category": "table",
+            "content": "89. Table 5, Threshold=0.7, Recall: 0.7842",
+            "reason": "Evaluation formulation incorrect for attribution recall measurement due to binary_truth=[1,...,1].",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 90,
+            "category": "table",
+            "content": "90. Table 5, Threshold=0.7, F1: 0.8390",
+            "reason": "With precision=1.0, F1=2*0.7842/(1.7842)=0.879, not 0.8390. Impossible.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 91,
+            "category": "table",
+            "content": "91. Table 5, Threshold=0.9, Precision: 0.9542",
+            "reason": "binary_truth=[1,...,1] ensures precision=1.0. Reported 0.9542 < 1.0 is impossible.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 92,
+            "category": "table",
+            "content": "92. Table 5, Threshold=0.9, Recall: 0.6324",
+            "reason": "Evaluation formulation incorrect for attribution recall measurement.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 93,
+            "category": "table",
+            "content": "93. Table 5, Threshold=0.9, F1: 0.7613",
+            "reason": "With precision=1.0, F1=2*0.6324/(1.6324)=0.775, not 0.7613. Impossible.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:42-48"
+            ]
+        },
+        {
+            "index": 102,
+            "category": "results_section",
+            "content": "1. The AGT-MLM model achieves an Attribution F1 score of 0.8342, representing a 19.5% improvement over the best baseline method (MinimalSubset with 0.7589).",
+            "reason": "Both underlying values (0.8342 and 0.7589) are fabricated due to broken evaluation code (attribution_f1_score=accuracy). Additionally, (0.8342-0.7589)/0.7589=9.9%, not 19.5% as claimed. The percentage calculation is arithmetically wrong even with the paper's own numbers.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-256"
+            ]
+        },
+        {
+            "index": 103,
+            "category": "results_section",
+            "content": "2. AGT-MLM achieves the highest Attribution F1 score with only a modest increase in training time (1.2x relative to a standard model without attribution).",
+            "reason": "In run_experiment.py:640-641, training_times=[1.2, 1.0, 1.1, 1.05] is hardcoded as a simulated value, not measured. Paper claims this as an experimental result of actual computational overhead measurement.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/run_experiment.py:639-641"
+            ]
+        }
+    ],
+    "static_verifiable": [],
+    "insufficient_evidence": [],
+    "execution_required": [
+        {
+            "index": 1,
+            "category": "table",
+            "content": "1. Table 1, AGT-MLM, Accuracy: 0.8642",
+            "reason": "Accuracy is computed correctly via accuracy_score(true_sources, pred_sources) in evaluation.py:39. No experiment has been run (output/ directory is empty). Execution needed to verify the actual value.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py",
+                "code/models.py",
+                "code/training.py"
+            ],
+            "suggested_entrypoints": [
+                "python run_experiment.py --model_name distilroberta-base --num_epochs 10 --lambda_attr 0.1 --seed 42 --use_gpu"
+            ]
+        },
+        {
+            "index": 7,
+            "category": "table",
+            "content": "7. Table 1, Post-hoc, Accuracy: 0.7912",
+            "reason": "Accuracy is computed correctly in evaluation.py:39. No experiment results exist in output/. Execution needed.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python run_experiment.py --model_name distilroberta-base --num_epochs 10 --seed 42 --use_gpu"
+            ]
+        },
+        {
+            "index": 13,
+            "category": "table",
+            "content": "13. Table 1, Data Shapley, Accuracy: 0.8015",
+            "reason": "Accuracy computed correctly. No experiment results in output/. Execution needed.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python run_experiment.py --model_name distilroberta-base --num_epochs 10 --seed 42 --use_gpu"
+            ]
+        },
+        {
+            "index": 19,
+            "category": "table",
+            "content": "19. Table 1, MinimalSubset, Accuracy: 0.8245",
+            "reason": "Accuracy computed correctly. No experiment results in output/. Execution needed.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python run_experiment.py --model_name distilroberta-base --num_epochs 10 --seed 42 --use_gpu"
+            ]
+        },
+        {
+            "index": 50,
+            "category": "table",
+            "content": "50. Table 3, Lambda=0.01, Accuracy: 0.8723",
+            "reason": "Accuracy computed correctly in evaluate_model. Ablation experiment with lambda=0.01 not run yet. Execution needed.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python run_experiment.py --model_name distilroberta-base --num_epochs 10 --run_ablations --seed 42 --use_gpu"
+            ]
+        },
+        {
+            "index": 53,
+            "category": "table",
+            "content": "53. Table 3, Lambda=0.05, Accuracy: 0.8701",
+            "reason": "Accuracy computed correctly. Lambda ablation not run. Execution needed.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python run_experiment.py --model_name distilroberta-base --num_epochs 10 --run_ablations --seed 42 --use_gpu"
+            ]
+        },
+        {
+            "index": 56,
+            "category": "table",
+            "content": "56. Table 3, Lambda=0.1, Accuracy: 0.8642",
+            "reason": "Accuracy computed correctly. Lambda=0.1 ablation not separately run (uses same model as main experiment). Execution needed to verify.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python run_experiment.py --model_name distilroberta-base --num_epochs 10 --run_ablations --seed 42 --use_gpu"
+            ]
+        },
+        {
+            "index": 59,
+            "category": "table",
+            "content": "59. Table 3, Lambda=0.5, Accuracy: 0.8521",
+            "reason": "Accuracy computed correctly. Lambda ablation not run. Execution needed.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python run_experiment.py --model_name distilroberta-base --num_epochs 10 --run_ablations --seed 42 --use_gpu"
+            ]
+        },
+        {
+            "index": 62,
+            "category": "table",
+            "content": "62. Table 3, Lambda=1.0, Accuracy: 0.8389",
+            "reason": "Accuracy computed correctly. Lambda ablation not run. Execution needed.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python run_experiment.py --model_name distilroberta-base --num_epochs 10 --run_ablations --seed 42 --use_gpu"
+            ]
+        },
+        {
+            "index": 65,
+            "category": "table",
+            "content": "65. Table 4, layer_specific, Accuracy: 0.8412",
+            "reason": "Accuracy computed correctly. Architecture ablation not run. Execution needed.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python run_experiment.py --model_name distilroberta-base --num_epochs 10 --run_ablations --seed 42 --use_gpu"
+            ]
+        },
+        {
+            "index": 70,
+            "category": "table",
+            "content": "70. Table 4, multi_layer, Accuracy: 0.8642",
+            "reason": "Accuracy computed correctly (same as Table 1 AGT-MLM main model). No experiment run. Execution needed.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python run_experiment.py --model_name distilroberta-base --num_epochs 10 --run_ablations --seed 42 --use_gpu"
+            ]
+        },
+        {
+            "index": 75,
+            "category": "table",
+            "content": "75. Table 4, attention, Accuracy: 0.8573",
+            "reason": "Accuracy computed correctly. Architecture ablation not run. Execution needed.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python run_experiment.py --model_name distilroberta-base --num_epochs 10 --run_ablations --seed 42 --use_gpu"
+            ]
+        },
+        {
+            "index": 94,
+            "category": "figure",
+            "content": "1. training_curves_comparison.png: [Training Loss Comparison]",
+            "reason": "PNG file exists in paper/ directory but no backing data files (CSV/JSON/NPY). The output/figures/ directory is empty. Plotting code exists in training.py:plot_training_history(). Execution of the full experiment pipeline is needed to generate and verify the figure.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/training.py"
+            ],
+            "suggested_entrypoints": [
+                "python run_experiment.py --model_name distilroberta-base --num_epochs 10 --seed 42 --use_gpu"
+            ]
+        },
+        {
+            "index": 95,
+            "category": "figure",
+            "content": "2. training_curves_agt_mlm_multi_layer_loss.png: [AGT-MLM Loss Curves]",
+            "reason": "PNG exists in paper/ but no backing data. output/figures/ is empty. plot_training_history() in training.py would generate this. Execution required.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/training.py"
+            ],
+            "suggested_entrypoints": [
+                "python run_experiment.py --model_name distilroberta-base --num_epochs 10 --seed 42 --use_gpu"
+            ]
+        },
+        {
+            "index": 96,
+            "category": "figure",
+            "content": "3. training_curves_agt_mlm_multi_layer_accuracy.png: [AGT-MLM Accuracy Curves]",
+            "reason": "PNG exists in paper/ but no backing data. output/figures/ is empty. Execution required to generate via plot_training_history().",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/training.py"
+            ],
+            "suggested_entrypoints": [
+                "python run_experiment.py --model_name distilroberta-base --num_epochs 10 --seed 42 --use_gpu"
+            ]
+        },
+        {
+            "index": 97,
+            "category": "figure",
+            "content": "4. lambda_ablation.png: [Lambda Ablation]",
+            "reason": "PNG exists in paper/ but no backing data. plot_lambda_ablation() in evaluation.py generates this from experiment results. Execution required with --run_ablations flag.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python run_experiment.py --model_name distilroberta-base --num_epochs 10 --run_ablations --seed 42 --use_gpu"
+            ]
+        },
+        {
+            "index": 98,
+            "category": "figure",
+            "content": "5. architecture_comparison.png: [Architecture Comparison]",
+            "reason": "PNG exists in paper/ but no backing data. plot_architecture_comparison() in evaluation.py generates this. Execution required with --run_ablations flag.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python run_experiment.py --model_name distilroberta-base --num_epochs 10 --run_ablations --seed 42 --use_gpu"
+            ]
+        },
+        {
+            "index": 99,
+            "category": "figure",
+            "content": "6. threshold_effect.png: [Threshold Effect]",
+            "reason": "PNG exists in paper/ but no backing data. plot_threshold_effect() in evaluation.py generates this. Execution required with --run_ablations flag.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python run_experiment.py --model_name distilroberta-base --num_epochs 10 --run_ablations --seed 42 --use_gpu"
+            ]
+        },
+        {
+            "index": 100,
+            "category": "figure",
+            "content": "7. model_comparison.png: [Model Comparison]",
+            "reason": "PNG exists in paper/ but no backing data. plot_model_comparison() in evaluation.py generates this. Execution required.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python run_experiment.py --model_name distilroberta-base --num_epochs 10 --seed 42 --use_gpu"
+            ]
+        },
+        {
+            "index": 101,
+            "category": "figure",
+            "content": "8. computational_efficiency.png: [Computational Efficiency]",
+            "reason": "PNG exists in paper/ but no backing data. plot_computational_efficiency() in evaluation.py generates this, but uses hardcoded training_times=[1.2, 1.0, 1.1, 1.05] from run_experiment.py:640. Execution required.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python run_experiment.py --model_name distilroberta-base --num_epochs 10 --seed 42 --use_gpu"
+            ]
+        }
+    ],
+    "error": [],
+    "summary": {
+        "total_claims": 103,
+        "no_code_files": 0,
+        "obvious_hallucination": 83,
+        "data_fabrication": 0,
+        "experiment_fabrication": 83,
+        "result_fabrication": 0,
+        "static_verifiable": 0,
+        "insufficient_evidence": 0,
+        "execution_required": 20,
+        "error": 0
+    }
+}

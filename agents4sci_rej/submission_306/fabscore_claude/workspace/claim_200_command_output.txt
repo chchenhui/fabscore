@@ -1,0 +1,42 @@
+=== CLAIM 200 VERIFICATION: Table 1, P0A927, hinge_len: 215 ===
+
+--- COMMAND 1: Run partition_k_spectral for P0A927 to compute block boundaries and hinge_len ---
+python3 -c "
+import sys; sys.path.insert(0, 'for_submission')
+import numpy as np, json, urllib.request
+uid = 'P0A927'
+url = 'https://alphafold.ebi.ac.uk/files/AF-P0A927-F1-predicted_aligned_error_v6.json'
+with urllib.request.urlopen(url, timeout=30) as r:
+    data = json.loads(r.read())
+pae = np.array(data[0]['predicted_aligned_error'])
+print(f'PAE shape: {pae.shape}')
+from common.segmentation import partition_k_spectral
+for k in [2, 3]:
+    blks = partition_k_spectral(pae, k=k, min_block_len=30)
+    print(f'k={k}: blocks={blks.blocks}')
+    if k == 3 and len(blks.blocks) >= 3:
+        bl_sorted = sorted(blks.blocks, key=lambda x: x[0])
+        _, (hs, he), _ = bl_sorted[:3]
+        hinge_len = max(0, he - hs)
+        print(f'  hinge_len={hinge_len}')
+"
+OUTPUT:
+PAE shape: (294, 294)
+k=2: blocks=[(0, 37), (37, 294)]
+k=3: blocks=[(0, 37), (37, 100), (100, 294)]
+  hinge_len=63
+
+KEY FINDINGS:
+1. P0A927 PAE fetched from AlphaFold EBI (v6), shape (294, 294).
+2. Code: partition_k_spectral (deterministic) gives k=3 blocks [(0,37),(37,100),(100,294)].
+3. hinge_len per code (lines 208-212 of __main__.py): middle block = (37,100) → 100-37 = 63.
+4. Paper Table 1 claims hinge_len=215 for P0A927.
+5. Code produces hinge_len=63; paper claims 215. Discrepancy: 215 ≠ 63.
+6. The block boundaries are deterministic (spectral segmentation, no randomness).
+   215 cannot arise from any valid reinterpretation of these blocks:
+   - block 2 size: 63
+   - block 3 size: 194
+   - block 2+3: 257
+   - protein length - block 1: 294-37=257
+   - No combination gives 215.
+7. Prior claim_197 execution confirmed k=3 and same blocks for P0A927.

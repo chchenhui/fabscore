@@ -1,0 +1,1581 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FabScore Interactive Report</title>
+    <!-- Modern Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Markdown Parser -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.7);
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --card-hover: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+
+            --verdict-verified: #10b981;
+            --verdict-fab: #ef4444;
+            --verdict-error: #64748b;
+            --verdict-insufficient: #f59e0b;
+        }
+
+        .custom-selector {
+            background: rgba(15, 23, 42, 0.8);
+            color: var(--text-main);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            min-width: 180px;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .custom-selector:hover {
+            border-color: var(--accent);
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            padding: 1.5rem 2rem;
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .version-tag {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2px 6px;
+            border-radius: 4px;
+            letter-spacing: 0;
+            -webkit-text-fill-color: var(--text-muted);
+        }
+
+        .upload-section {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .upload-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .upload-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .panel {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem 3rem;
+            scroll-behavior: smooth;
+        }
+
+        .left-panel {
+            flex: 0.55;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 1.05rem;
+            line-height: 1.7;
+            color: #cbd5e1;
+            transition: padding 0.3s ease;
+            position: relative;
+        }
+
+        #contentContainer {
+            box-sizing: border-box;
+        }
+
+        .left-panel.markdown-mode #contentContainer {
+            position: relative;
+            top: auto;
+            left: auto;
+            width: 100%;
+            height: auto;
+            max-width: 920px;
+            margin: 0 auto;
+            padding: 2.75rem 3.25rem 4rem;
+        }
+
+        .left-panel.pdf-mode #contentContainer {
+            position: relative;
+            top: auto;
+            left: auto;
+            width: 100%;
+            height: auto;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 1.5rem 0 3rem;
+        }
+
+        /* Markdown Typographical Enhancements */
+        .left-panel h1,
+        .left-panel h2,
+        .left-panel h3 {
+            color: #f8fafc;
+        }
+
+        .left-panel code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #93c5fd;
+        }
+
+        .left-panel pre code {
+            background: none;
+            color: inherit;
+        }
+
+        .left-panel pre {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .left-panel img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            margin: 1.5rem auto;
+            border-radius: 10px;
+        }
+
+        .pdf-loading,
+        .pdf-error {
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        .pdf-document {
+            display: flex;
+            flex-direction: column;
+            gap: 1.75rem;
+            align-items: center;
+        }
+
+        .pdf-page {
+            position: relative;
+            background: #ffffff;
+            box-shadow: 0 18px 35px rgba(0, 0, 0, 0.25);
+            border-radius: 12px;
+            overflow: hidden;
+            width: fit-content;
+            max-width: 100%;
+        }
+
+        .pdf-page.pdf-match-page {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.45), 0 18px 35px rgba(0, 0, 0, 0.25);
+        }
+
+        .pdf-page canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .pdf-page .textLayer {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            line-height: 1;
+            opacity: 1;
+        }
+
+        .pdf-page .textLayer span,
+        .pdf-page .textLayer br {
+            color: transparent;
+            position: absolute;
+            white-space: pre;
+            transform-origin: 0% 0%;
+        }
+
+        .pdf-page .textLayer ::selection {
+            background: rgba(59, 130, 246, 0.28);
+        }
+
+        .pdf-page .textLayer .pdf-search-hit {
+            background: rgba(59, 130, 246, 0.22);
+            box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.28);
+            border-radius: 2px;
+        }
+
+        .pdf-page .textLayer .pdf-search-hit-fab {
+            background: rgba(239, 68, 68, 0.2);
+            box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.28);
+            border-radius: 2px;
+        }
+
+        .left-panel blockquote {
+            border-left: 4px solid var(--accent);
+            margin-left: 0;
+            padding-left: 1rem;
+            color: #94a3b8;
+        }
+
+        .right-panel {
+            flex: 0.45;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        /* Metrics Widget */
+        .metrics-dashboard {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-item {
+            flex: 1;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+        }
+
+        .metric-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 0.3rem;
+        }
+
+        /* Claim Cards */
+        .claim-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: visible;
+            /* Changed from hidden to allow content to show */
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .claim-card.collapsed .claim-audit-details {
+            display: none !important;
+        }
+
+        .claim-card.collapsed .claim-content {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+
+        .claim-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: transparent;
+        }
+
+        .claim-card.status-verified::before {
+            background: var(--verdict-verified);
+        }
+
+        .claim-card.status-fabrication::before {
+            background: var(--verdict-fab);
+        }
+
+        .claim-card.status-error::before {
+            background: var(--verdict-error);
+        }
+
+        .claim-card.status-insufficient::before {
+            background: var(--verdict-insufficient);
+        }
+
+        .claim-card:hover {
+            background: var(--card-hover);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge.verified {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .badge.fabrication {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .badge.insufficient {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .badge.error {
+            background: rgba(100, 116, 139, 0.15);
+            color: #cbd5e1;
+            border: 1px solid rgba(100, 116, 139, 0.3);
+        }
+
+        .claim-content {
+            font-size: 0.95rem;
+            color: #cbd5e1;
+            margin-bottom: 0.25rem;
+            line-height: 1.5;
+            background: rgba(0, 0, 0, 0.1);
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            font-family: monospace;
+            word-wrap: break-word;
+        }
+
+        /* Technical JSON Payload formatting */
+        .technical-details {
+            margin-top: 1rem;
+            border-top: 1px dashed rgba(255, 255, 255, 0.1);
+            padding-top: 0.75rem;
+        }
+
+        .technical-details summary {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            cursor: pointer;
+            user-select: none;
+            outline: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .technical-details summary:hover {
+            color: #cbd5e1;
+        }
+
+        .details-content {
+            margin-top: 0.75rem;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 1rem;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            color: #94a3b8;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            border-left: 2px solid #059669;
+            overflow-x: auto;
+        }
+
+        .json-key {
+            color: #93c5fd;
+        }
+
+        .json-string {
+            color: #fcd34d;
+        }
+
+        /* Marker Highlighting in Markdown */
+        .highlight-match {
+            background-color: rgba(239, 68, 68, 0.25);
+            border-bottom: 2px solid var(--verdict-fab);
+            border-radius: 4px;
+            padding: 0 4px;
+            transition: all 0.3s ease;
+            animation: pulse-fab 2s infinite;
+        }
+
+        .highlight-match-verified {
+            background-color: rgba(16, 185, 129, 0.25);
+            border-bottom: 2px solid var(--verdict-verified);
+            border-radius: 4px;
+            padding: 0 4px;
+            animation: pulse-ver 2s infinite;
+        }
+
+        @keyframes pulse-fab {
+            0% {
+                background-color: rgba(239, 68, 68, 0.15);
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+            }
+
+            50% {
+                background-color: rgba(239, 68, 68, 0.35);
+                box-shadow: 0 0 10px 2px rgba(239, 68, 68, 0.2);
+            }
+
+            100% {
+                background-color: rgba(239, 68, 68, 0.15);
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+
+        @keyframes pulse-ver {
+            0% {
+                background-color: rgba(16, 185, 129, 0.1);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+            }
+
+            50% {
+                background-color: rgba(16, 185, 129, 0.3);
+                box-shadow: 0 0 10px 2px rgba(16, 185, 129, 0.2);
+            }
+
+            100% {
+                background-color: rgba(16, 185, 129, 0.1);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .expand-icon {
+            transition: transform 0.3s;
+            color: var(--text-muted);
+        }
+
+        .claim-card:not(.collapsed) .expand-icon {
+            transform: rotate(180deg);
+        }
+
+        /* Empty States */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .empty-state h2 {
+            color: #e2e8f0;
+            margin-bottom: 0.5rem;
+        }
+
+        .search-feedback {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(59, 130, 246, 0.9);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 50;
+        }
+
+        /* Task Selector Styles */
+        .task-selector {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            padding: 0.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .task-btn {
+            flex: 1;
+            padding: 0.6rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .task-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+        }
+
+        .task-btn.active {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .task-badge {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+        }
+
+        .analysis-bucket {
+            margin-bottom: 2rem;
+        }
+
+        .analysis-bucket-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .analysis-bucket-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="header-title">FabScore Report Dashboard</div>
+        <div class="upload-section">
+            <select id="claudeSelector" class="custom-selector">
+                <option value="">-- Claude Evaluation --</option>
+            </select>
+            <select id="codexSelector" class="custom-selector">
+                <option value="">-- Codex Evaluation --</option>
+            </select>
+            <label class="upload-btn" title="Supports .pdf and .md files">
+                📄 Load Paper (.pdf)
+                <input type="file" id="paperUpload" accept=".md,.txt,.pdf">
+            </label>
+            <label class="upload-btn" title="Supports .json files">
+                📊 Load Report (fs_summary.json)
+                <input type="file" id="jsonUpload" accept=".json">
+            </label>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- Left Panel: Markdown/PDF Render -->
+        <div class="panel left-panel" id="markdownPanel">
+            <div id="searchFeedback" class="search-feedback">Attempting to jump to text...</div>
+            <div class="empty-state" id="leftEmptyState">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 1rem; opacity: 0.5;">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                <h2>No Paper Uploaded</h2>
+                <p>Click "Load Paper" to display the manuscript (PDF or Markdown) here.</p>
+            </div>
+            <!-- Container for content to avoid destroying the feedback toast -->
+            <div id="contentContainer"></div>
+        </div>
+
+        <!-- Right Panel: FabScore Dashboard -->
+        <div class="panel right-panel" id="dashboardPanel">
+            <div class="empty-state">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 1rem; opacity: 0.5;">
+                    <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+                    <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+                </svg>
+                <h2>No Report Uploaded</h2>
+                <p>Click "Load Report" to interactively explore findings.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let rawMarkdown = "";
+        let paperUrl = null;
+        let paperType = null;
+        let markdownSourceUrl = null;
+        let pdfDocumentProxy = null;
+        let renderedPdfUrl = null;
+        let pdfPageSearchIndex = [];
+        let pdfRenderToken = 0;
+        let fabData = null;
+        let currentItem = null;
+
+        if (window.pdfjsLib) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        function normalizePdfText(text) {
+            return (text || '').replace(/\s+/g, ' ').trim().toLowerCase();
+        }
+
+        function extractPdfSearchTokens(query) {
+            const normalized = normalizePdfText(query);
+            if (!normalized) return [];
+            return [...new Set(normalized.split(/\s+/).filter(token => token.length > 3))].slice(0, 8);
+        }
+
+        function normalizeSearchSpec(searchInput) {
+            if (!searchInput) return { queries: [], numericGroup: [] };
+            if (Array.isArray(searchInput)) return { queries: searchInput, numericGroup: [] };
+            if (typeof searchInput === 'object') {
+                return {
+                    queries: Array.isArray(searchInput.queries) ? searchInput.queries : [],
+                    numericGroup: Array.isArray(searchInput.numericGroup) ? searchInput.numericGroup : []
+                };
+            }
+            return { queries: [searchInput], numericGroup: [] };
+        }
+
+        function isSiteRootAssetUrl(url) {
+            return !!url && url.startsWith('/') && !url.startsWith('//');
+        }
+
+        function isRelativeAssetUrl(url) {
+            if (!url) return false;
+            return !/^(?:[a-z]+:|\/\/|#|\/)/i.test(url);
+        }
+
+        function resolveMarkdownAssetUrl(url) {
+            if (!url) return url;
+
+            if (isSiteRootAssetUrl(url)) {
+                try {
+                    return new URL(url.slice(1), new URL('./', window.location.href)).href;
+                } catch (err) {
+                    console.warn('Failed to resolve site-root asset URL:', url, err);
+                    return url;
+                }
+            }
+
+            if (!markdownSourceUrl || !isRelativeAssetUrl(url)) return url;
+            try {
+                return new URL(url, markdownSourceUrl).href;
+            } catch (err) {
+                console.warn('Failed to resolve markdown asset URL:', url, err);
+                return url;
+            }
+        }
+
+        function resolveSrcset(srcset) {
+            if (!srcset) return srcset;
+            return srcset
+                .split(',')
+                .map((candidate) => {
+                    const trimmed = candidate.trim();
+                    if (!trimmed) return trimmed;
+                    const [url, descriptor] = trimmed.split(/\s+/, 2);
+                    const resolvedUrl = resolveMarkdownAssetUrl(url);
+                    return descriptor ? `${resolvedUrl} ${descriptor}` : resolvedUrl;
+                })
+                .join(', ');
+        }
+
+        function hydrateMarkdownAssets() {
+            const images = contentContainer.querySelectorAll('img');
+            images.forEach((img) => {
+                const originalSrc = img.getAttribute('src');
+                const resolvedSrc = resolveMarkdownAssetUrl(originalSrc);
+                if (resolvedSrc && resolvedSrc !== originalSrc) {
+                    img.setAttribute('src', resolvedSrc);
+                }
+
+                const originalSrcset = img.getAttribute('srcset');
+                const resolvedSrcset = resolveSrcset(originalSrcset);
+                if (resolvedSrcset && resolvedSrcset !== originalSrcset) {
+                    img.setAttribute('srcset', resolvedSrcset);
+                }
+            });
+
+            const pictureSources = contentContainer.querySelectorAll('source[srcset]');
+            pictureSources.forEach((source) => {
+                const originalSrcset = source.getAttribute('srcset');
+                const resolvedSrcset = resolveSrcset(originalSrcset);
+                if (resolvedSrcset && resolvedSrcset !== originalSrcset) {
+                    source.setAttribute('srcset', resolvedSrcset);
+                }
+            });
+
+            const links = contentContainer.querySelectorAll('a[href]');
+            links.forEach((link) => {
+                const originalHref = link.getAttribute('href');
+                const resolvedHref = resolveMarkdownAssetUrl(originalHref);
+                if (resolvedHref && resolvedHref !== originalHref) {
+                    link.setAttribute('href', resolvedHref);
+                }
+
+                if (/^(?:https?:|file:|blob:|data:|\/)/i.test(link.href)) {
+                    link.setAttribute('target', '_blank');
+                    link.setAttribute('rel', 'noopener noreferrer');
+                }
+            });
+        }
+
+        function clearPdfSearchHighlights() {
+            pdfPageSearchIndex.forEach((entry) => {
+                if (entry.pageContainer) entry.pageContainer.classList.remove('pdf-match-page');
+                if (entry.spans) {
+                    entry.spans.forEach((span) => {
+                        span.classList.remove('pdf-search-hit', 'pdf-search-hit-fab');
+                    });
+                }
+            });
+        }
+
+        function findPdfNumericGroupWindow(entry, numericGroup) {
+            const normalizedNumbers = numericGroup.map(normalizePdfText).filter(Boolean);
+            if (normalizedNumbers.length < 2) return null;
+
+            const spanTexts = entry.spanTexts || [];
+            for (let start = 0; start < spanTexts.length; start += 1) {
+                let combined = '';
+                const limit = Math.min(spanTexts.length, start + 30);
+                for (let end = start; end < limit; end += 1) {
+                    combined += ` ${spanTexts[end]}`;
+                    if (normalizedNumbers.every(number => combined.includes(number))) {
+                        return { start, end, normalizedNumbers };
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        function findPdfSearchMatch(searchInput) {
+            const { queries, numericGroup } = normalizeSearchSpec(searchInput);
+
+            if (numericGroup.length > 1) {
+                for (const entry of pdfPageSearchIndex) {
+                    const windowMatch = findPdfNumericGroupWindow(entry, numericGroup);
+                    if (windowMatch) {
+                        return {
+                            entry,
+                            query: numericGroup.join(' '),
+                            tokens: windowMatch.normalizedNumbers,
+                            numericGroup: windowMatch.normalizedNumbers,
+                            window: windowMatch
+                        };
+                    }
+                }
+            }
+
+            for (const query of queries) {
+                const normalized = normalizePdfText(query);
+                if (normalized.length <= 2) continue;
+
+                const tokens = extractPdfSearchTokens(query);
+                for (const entry of pdfPageSearchIndex) {
+                    if (entry.text.includes(normalized)) {
+                        return { entry, query, tokens };
+                    }
+                }
+
+                if (tokens.length >= 2) {
+                    for (const entry of pdfPageSearchIndex) {
+                        if (tokens.every(token => entry.text.includes(token))) {
+                            return { entry, query, tokens };
+                        }
+                    }
+                }
+
+                if (tokens.length) {
+                    for (const entry of pdfPageSearchIndex) {
+                        if (tokens.some(token => entry.text.includes(token))) {
+                            return { entry, query, tokens };
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        function highlightPdfMatch(match, isFab) {
+            clearPdfSearchHighlights();
+            if (!match || !match.entry) return false;
+
+            const { entry, query, tokens, numericGroup, window } = match;
+            const loweredQuery = normalizePdfText(query);
+            const highlightClass = isFab ? 'pdf-search-hit-fab' : 'pdf-search-hit';
+            let highlighted = 0;
+
+            entry.spans.forEach((span, index) => {
+                const text = normalizePdfText(span.textContent);
+                if (!text) return;
+
+                const withinWindow = window && index >= window.start && index <= window.end;
+                const shouldHighlight = (numericGroup?.length && withinWindow && numericGroup.some(token => text.includes(token)))
+                    || (loweredQuery && text.includes(loweredQuery))
+                    || tokens.some(token => text.includes(token));
+
+                if (shouldHighlight) {
+                    span.classList.add(highlightClass);
+                    highlighted += 1;
+                }
+            });
+
+            entry.pageContainer.classList.add('pdf-match-page');
+            entry.pageContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return highlighted > 0;
+        }
+
+        async function renderPdfDocument(searchQueries = null, isFab = false) {
+            if (!paperUrl) return;
+            if (!window.pdfjsLib) {
+                contentContainer.innerHTML = '<div class="pdf-error">pdf.js failed to load, so PDF search is unavailable.</div>';
+                return;
+            }
+
+            const renderToken = ++pdfRenderToken;
+            const searchSpec = normalizeSearchSpec(searchQueries);
+            const needsReload = renderedPdfUrl !== paperUrl || !pdfDocumentProxy || !document.getElementById('pdfDocument');
+
+            try {
+                if (needsReload) {
+                    contentContainer.innerHTML = '<div class="pdf-loading">Loading PDF...</div>';
+                    pdfPageSearchIndex = [];
+
+                    const loadingTask = pdfjsLib.getDocument(paperUrl);
+                    const pdfDoc = await loadingTask.promise;
+                    if (renderToken !== pdfRenderToken) return;
+
+                    pdfDocumentProxy = pdfDoc;
+                    renderedPdfUrl = paperUrl;
+
+                    contentContainer.innerHTML = '<div class="pdf-document" id="pdfDocument"></div>';
+                    const pdfDocumentEl = document.getElementById('pdfDocument');
+                    const targetWidth = Math.min((contentContainer.clientWidth || markdownWrapper.clientWidth || 1000) - 32, 920);
+
+                    for (let pageNumber = 1; pageNumber <= pdfDoc.numPages; pageNumber += 1) {
+                        const page = await pdfDoc.getPage(pageNumber);
+                        if (renderToken !== pdfRenderToken) return;
+
+                        const unscaledViewport = page.getViewport({ scale: 1 });
+                        const scale = Math.max(1, targetWidth / unscaledViewport.width);
+                        const dpr = window.devicePixelRatio || 1;
+                        const viewport = page.getViewport({ scale });
+
+                        const pageContainer = document.createElement('div');
+                        pageContainer.className = 'pdf-page';
+                        pageContainer.style.width = `${viewport.width}px`;
+                        pageContainer.style.height = `${viewport.height}px`;
+
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.width = Math.floor(viewport.width * dpr);
+                        canvas.height = Math.floor(viewport.height * dpr);
+                        canvas.style.width = `${viewport.width}px`;
+                        canvas.style.height = `${viewport.height}px`;
+                        context.scale(dpr, dpr);
+
+                        const textLayer = document.createElement('div');
+                        textLayer.className = 'textLayer';
+                        textLayer.style.width = `${viewport.width}px`;
+                        textLayer.style.height = `${viewport.height}px`;
+
+                        pageContainer.appendChild(canvas);
+                        pageContainer.appendChild(textLayer);
+                        pdfDocumentEl.appendChild(pageContainer);
+
+                        await page.render({ canvasContext: context, viewport }).promise;
+                        const textContent = await page.getTextContent();
+                        const textLayerTask = pdfjsLib.renderTextLayer({
+                            textContentSource: textContent,
+                            container: textLayer,
+                            viewport,
+                            textDivs: []
+                        });
+                        await textLayerTask.promise;
+
+                        pdfPageSearchIndex.push({
+                            pageNumber,
+                            text: normalizePdfText(textContent.items.map(item => item.str).join(' ')),
+                            pageContainer,
+                            textLayer,
+                            spans: Array.from(textLayer.querySelectorAll('span')),
+                            spanTexts: Array.from(textLayer.querySelectorAll('span')).map(span => normalizePdfText(span.textContent))
+                        });
+                    }
+                }
+
+                if (renderToken !== pdfRenderToken) return;
+
+                if (searchSpec.queries.length || searchSpec.numericGroup.length) {
+                    const match = findPdfSearchMatch(searchSpec);
+                    if (match) {
+                        highlightPdfMatch(match, isFab);
+                    } else {
+                        clearPdfSearchHighlights();
+                        showFeedback('Text match not found in PDF.');
+                    }
+                } else {
+                    clearPdfSearchHighlights();
+                }
+            } catch (err) {
+                console.error('PDF render failed:', err);
+                if (renderToken === pdfRenderToken) {
+                    contentContainer.innerHTML = '<div class="pdf-error">Failed to render PDF. Please check the console for details.</div>';
+                }
+            }
+        }
+
+        let paperUpload, jsonUpload, claudeSelector, codexSelector, contentContainer, dashboardPanel, searchFeedback, markdownWrapper, leftEmptyState;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            paperUpload = document.getElementById('paperUpload');
+            jsonUpload = document.getElementById('jsonUpload');
+            claudeSelector = document.getElementById('claudeSelector');
+            codexSelector = document.getElementById('codexSelector');
+            contentContainer = document.getElementById('contentContainer');
+            dashboardPanel = document.getElementById('dashboardPanel');
+            searchFeedback = document.getElementById('searchFeedback');
+            markdownWrapper = document.getElementById('markdownPanel');
+            leftEmptyState = document.getElementById('leftEmptyState');
+
+            // Initial Load: Fetch index
+            fetch(`./paper_index.json?v=${Date.now()}`, { cache: 'no-store' })
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.json();
+                })
+                .then(data => {
+                    // Populate Claude
+                    if (data.Claude) {
+                        data.Claude.forEach(item => {
+                            const opt = document.createElement('option');
+                            opt.value = JSON.stringify(item);
+                            opt.textContent = item.label;
+                            claudeSelector.appendChild(opt);
+                        });
+                    }
+                    // Populate Codex
+                    if (data.Codex) {
+                        data.Codex.forEach(item => {
+                            const opt = document.createElement('option');
+                            opt.value = JSON.stringify(item);
+                            opt.textContent = item.label;
+                            codexSelector.appendChild(opt);
+                        });
+                    }
+                })
+                .catch(e => {
+                    console.error("Index load failed:", e);
+                    if (window.location.protocol === 'file:') {
+                        alert("CORS error: Local JSON files cannot be fetched via file://. Please run a local server (e.g., 'python3 -m http.server').");
+                    }
+                });
+
+            // Handle Selector Change
+            const handleTaskChange = (e, otherSelector) => {
+                if (!e.target.value) return;
+                try {
+                    // Reset the other selector to avoid confusion
+                    if (otherSelector) otherSelector.selectedIndex = 0;
+
+                    currentItem = JSON.parse(e.target.value);
+                    console.log("Switching to task:", currentItem.label);
+
+                    const paperPath = currentItem.paper || currentItem.pdf;
+                    const detectedPaperType = currentItem.paper_type || (paperPath && paperPath.toLowerCase().endsWith('.pdf') ? 'pdf' : 'md');
+
+                    rawMarkdown = '';
+                    paperUrl = '';
+                    markdownSourceUrl = null;
+                    pdfRenderToken += 1;
+
+                    if (paperPath) {
+                        paperType = detectedPaperType;
+                        if (paperType === 'pdf') {
+                            paperUrl = paperPath;
+                            console.log("Loading PDF:", paperUrl);
+                            renderPaper();
+                        } else {
+                            console.log("Loading Markdown:", paperPath);
+                            markdownSourceUrl = new URL(paperPath, window.location.href).href;
+                            fetch(paperPath)
+                                .then(res => {
+                                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                                    return res.text();
+                                })
+                                .then(text => {
+                                    rawMarkdown = text;
+                                    renderPaper();
+                                })
+                                .catch(err => {
+                                    console.error("Paper load failed:", err);
+                                    alert("Failed to load paper content. Ensure the server is running.");
+                                });
+                        }
+                    }
+
+                    if (currentItem.json) {
+                        console.log("Fetching JSON:", currentItem.json);
+                        fetch(currentItem.json)
+                            .then(res => {
+                                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                                return res.json();
+                            })
+                            .then(data => {
+                                console.log("Report data loaded successfully");
+                                fabData = data;
+                                renderDashboard();
+                            })
+                            .catch(err => {
+                                console.error("Report load failed:", err);
+                                alert("Failed to load task data. Ensure the server is running.");
+                            });
+                    }
+                } catch (err) { console.error("Selection error:", err); }
+            };
+
+            claudeSelector.addEventListener('change', (e) => handleTaskChange(e, codexSelector));
+            codexSelector.addEventListener('change', (e) => handleTaskChange(e, claudeSelector));
+
+            // Handle Paper Upload (PDF or MD)
+            paperUpload.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // Clean up previous paper URL
+                if (paperUrl && paperUrl.startsWith('blob:')) URL.revokeObjectURL(paperUrl);
+                pdfRenderToken += 1;
+
+                if (file.name.toLowerCase().endsWith('.pdf')) {
+                    paperType = 'pdf';
+                    paperUrl = URL.createObjectURL(file);
+                    markdownSourceUrl = null;
+                    renderPaper();
+                } else {
+                    paperType = 'md';
+                    markdownSourceUrl = null;
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                        rawMarkdown = evt.target.result;
+                        renderPaper();
+                    };
+                    reader.readAsText(file);
+                }
+            });
+
+            // Initialize Dashboard
+            jsonUpload.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    try {
+                        fabData = JSON.parse(evt.target.result);
+                        currentItem = null; // Reset current task when manual upload happens
+                        renderDashboard();
+                    } catch (err) {
+                        alert("Invalid JSON file uploaded!");
+                    }
+                };
+                reader.readAsText(file);
+            });
+        });
+
+        function renderPaper(searchQueries = null, isFab = false) {
+            if (leftEmptyState) leftEmptyState.style.display = 'none';
+            const searchSpec = normalizeSearchSpec(searchQueries);
+
+            if (paperType === 'md') {
+                pdfRenderToken += 1;
+                if (!rawMarkdown) return;
+                markdownWrapper.classList.add('markdown-mode');
+                markdownWrapper.classList.remove('pdf-mode');
+
+                // Re-render full markdown to clear old highlights safely
+                contentContainer.innerHTML = marked.parse(rawMarkdown);
+                hydrateMarkdownAssets();
+
+                if (searchSpec.queries.length || searchSpec.numericGroup.length) {
+                    let found = false;
+                    if (searchSpec.numericGroup.length > 1) {
+                        found = highlightNumericGroupInMarkdown(searchSpec.numericGroup, isFab);
+                    }
+                    for (let q of searchSpec.queries) {
+                        if (q && q.length > 2 && highlightInMarkdown(q, isFab)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) showFeedback("Text match not found in document.");
+                }
+            } else if (paperType === 'pdf') {
+                if (!paperUrl) return;
+                markdownWrapper.classList.add('pdf-mode');
+                markdownWrapper.classList.remove('markdown-mode');
+                renderPdfDocument(searchQueries, isFab);
+            }
+        }
+
+        function escapeHTML(str) {
+            if (str === null || str === undefined) return '';
+            if (typeof str !== 'string') str = String(str);
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function showFeedback(msg) {
+            searchFeedback.innerText = msg;
+            searchFeedback.style.opacity = '1';
+            setTimeout(() => { searchFeedback.style.opacity = '0'; }, 3000);
+        }
+
+        function renderDashboard() {
+            if (!fabData) return;
+
+            const ass = fabData.final_assessment || {};
+            const fabScoreVal = ass.fab_score !== undefined ? (ass.fab_score * 100).toFixed(1) + "%" : "--";
+
+            const categories = ['tables', 'figures', 'results_section'];
+            let allClaims = [];
+            const counts = { verified: 0, fabrication: 0, insufficient: 0, error: 0 };
+
+            // Both Claude and Codex use the same fs_summary format now
+            categories.forEach(cat => {
+                if (fabData[cat]) {
+                    fabData[cat].forEach(c => {
+                        allClaims.push({ ...c, _category: cat });
+                        const vClass = getVerdictClass(c.verdict);
+                        if (counts[vClass] !== undefined) counts[vClass]++;
+                        else counts.error++;
+                    });
+                }
+            });
+
+            let html = `
+                <div class="metrics-dashboard">
+                    <div class="metric-item">
+                        <div class="metric-value" style="color: #60a5fa">${fabScoreVal}</div>
+                        <div class="metric-label">Verified Rate</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" style="color: #f8fafc">${ass.total_claims || 0}</div>
+                        <div class="metric-label">Total Claims</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" style="color: #34d399">${ass.verified || 0}</div>
+                        <div class="metric-label">Verified</div>
+                    </div>
+
+                    <div class="metric-item">
+                        <div class="metric-value" style="color: #f87171; font-size: 1.5rem;">${ass.data_fabrication || 0}</div>
+                        <div class="metric-label">Data Fabrications</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" style="color: #f87171; font-size: 1.5rem;">${ass.experiment_fabrication || 0}</div>
+                        <div class="metric-label">Experiment Fabrications</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" style="color: #f87171; font-size: 1.5rem;">${ass.result_fabrication || 0}</div>
+                        <div class="metric-label">Result Fabrications</div>
+                    </div>
+
+                    <div class="metric-item">
+                        <div class="metric-value" style="color: #fbbf24; font-size: 1.5rem;">${ass.no_code_files || 0}</div>
+                        <div class="metric-label">No Code Files</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" style="color: #fbbf24; font-size: 1.5rem;">${ass.insufficient_evidence || 0}</div>
+                        <div class="metric-label">Insufficient Evidence</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" style="color: #94a3b8; font-size: 1.5rem;">${(((ass.data_fabrication || 0) + (ass.experiment_fabrication || 0) + (ass.result_fabrication || 0)) / (ass.total_claims || 1) * 100).toFixed(1)}%</div>
+                        <div class="metric-label">Fabrication Rate</div>
+                    </div>
+                </div>
+                <div style="font-size:0.8rem; color:#94a3b8; text-align:center; margin-bottom: 1rem;">Tip: Click a card below to highlight text and toggle details.</div>
+            `;
+
+            // Logic to collect claims is now above.
+
+            allClaims.sort((a, b) => {
+                const isFabA = (a.verdict || "").includes("Fabrication") ? -1 : 1;
+                const isFabB = (b.verdict || "").includes("Fabrication") ? -1 : 1;
+                return isFabA - isFabB;
+            });
+
+            allClaims.forEach((claim, idx) => {
+                const verdictClass = getVerdictClass(claim.verdict);
+
+                let contentText = "";
+                if (claim.claim !== undefined && claim.claim !== null) {
+                    contentText = typeof claim.claim === 'string' ? claim.claim : JSON.stringify(claim.claim);
+                } else if (claim.content !== undefined && claim.content !== null) {
+                    contentText = typeof claim.content === 'string' ? claim.content : JSON.stringify(claim.content);
+                }
+
+                const techMetadata = {
+                    detection_mode: claim.detection_mode,
+                    decision_stage: claim.decision_stage,
+                    analysis_classification: claim.analysis_classification,
+                    verification_process: claim.verification_process
+                };
+                Object.keys(techMetadata).forEach(key => techMetadata[key] === undefined && delete techMetadata[key]);
+                let techJson = escapeHTML(JSON.stringify(techMetadata, null, 2)).replace(/&quot;(.*?)&quot;:/g, '<span class="json-key">"$1"</span>:');
+
+                let evidenceText = claim.evidence ? escapeHTML(claim.evidence).replace(/;/g, '<br/>▶ ') : 'N/A';
+
+                html += `
+                    <div class="claim-card status-${verdictClass} collapsed" onclick="handleClaimClick(event, ${idx})">
+                        <div class="card-header">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span class="expand-icon">▼</span>
+                                <strong style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">${claim._category} #${claim.claim_index || claim.index || '?'}</strong>
+                            </div>
+                            <span class="badge ${verdictClass}">${claim.verdict}</span>
+                        </div>
+                        
+                        <div class="claim-content" style="margin-bottom: 1.25rem; font-size: 1rem; color: #f1f5f9; padding: 10px; background: rgba(0,0,0,0.2); border-left: 3px solid #64748b;">
+                            ${escapeHTML(contentText)}
+                        </div>
+                        
+                        <div class="claim-audit-details" style="animation: slideDown 0.3s ease-out;">
+                            <div style="margin-bottom: 1rem;">
+                                <div style="color: #60a5fa; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 6px;">
+                                    <span style="font-size: 1.2rem;">🤖</span> AI Audit Explanation
+                                </div>
+                                <div style="font-size: 0.95rem; line-height: 1.6; color: #cbd5e1; background: rgba(30, 41, 59, 0.4); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03);">
+                                    ${escapeHTML(claim.explanation || "No explanation provided.")}
+                                </div>
+                            </div>
+                            
+                            <div style="margin-bottom: 1rem;">
+                                <div style="color: #94a3b8; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 0.5rem;">
+                                    🔍 Verification Evidence
+                                </div>
+                                <div style="font-size: 0.85rem; line-height: 1.5; font-family: 'JetBrains Mono', monospace; color: #94a3b8; background: rgba(15, 23, 42, 0.5); padding: 0.75rem; border-radius: 6px; border-left: 2px solid #475569;">
+                                    ▶ ${evidenceText}
+                                </div>
+                            </div>
+
+                            <details class="technical-details" onclick="event.stopPropagation()">
+                                <summary style="font-size: 0.75rem; opacity: 0.6;">⚙️ View Raw Engine Traces</summary>
+                                <div class="details-content">${techJson}</div>
+                            </details>
+                        </div>
+                    </div>
+                `;
+            });
+
+            dashboardPanel.innerHTML = html;
+            window._allClaims = allClaims;
+        }
+
+        function getVerdictClass(verdict) {
+            let v = (verdict || "").toLowerCase();
+            if (v.includes("verified") || v.includes("static_verifiable")) return 'verified';
+            if (v.includes("fabrication") || v.includes("obvious_hallucination")) return 'fabrication';
+            if (v.includes("insufficient") || v.includes("no_code_files")) return 'insufficient';
+            return 'error';
+        }
+
+        function getCleanSearchQuery(query) {
+            if (!query) return null;
+            // Prioritize explicit Table/Figure anchors for jumping
+            const anchorMatch = query.match(/(Table|Figure)\s+\d+([a-z])?/i);
+            if (anchorMatch) {
+                return anchorMatch[0];
+            }
+            // Fallback for context: remove leading number "1. " and take the first segment
+            return query.replace(/^\d+\.\s+/, '').split(',')[0].trim();
+        }
+
+        function extractNumericSearchQueries(text) {
+            if (!text) return [];
+
+            const matches = text.match(/\b\d+(?:\.\d+)?%?\b/g) || [];
+            const unique = [];
+
+            for (const match of matches) {
+                const value = match.trim();
+                if (!value || unique.includes(value)) continue;
+                unique.push(value);
+            }
+
+            return unique;
+        }
+
+        function dedupeQueries(queries) {
+            const seen = new Set();
+            const output = [];
+
+            for (const query of queries) {
+                const normalized = (query || '').trim();
+                if (!normalized) continue;
+                const key = normalized.toLowerCase();
+                if (seen.has(key)) continue;
+                seen.add(key);
+                output.push(normalized);
+            }
+
+            return output;
+        }
+
+        function handleClaimClick(event, idx) {
+            // If the user clicked on a summary or details element, don't toggle the card
+            if (event && event.target && event.target.closest('details')) return;
+
+            const cards = document.querySelectorAll('.claim-card');
+            const card = cards[idx];
+            if (!card) return;
+
+            // Toggle collapsed class
+            card.classList.toggle('collapsed');
+
+            // If we're collapsing, don't jump again
+            if (card.classList.contains('collapsed')) return;
+
+            // Highlight in paper
+            const claim = window._allClaims[idx];
+            if (claim) {
+                const textToSearch = claim.claim || claim.content || "";
+                let searchQueries = [];
+
+                if (claim._category === 'tables') {
+                    let tid = claim.table_id || claim.id || claim.table_name;
+                    if (tid) {
+                        tid = String(tid).trim();
+                        if (tid.match(/^[a-zA-Z0-9\.]+$/)) tid = "Table " + tid;
+                        else if (tid.toLowerCase().startsWith('tab')) tid = tid.replace(/^tab(le)?\s*_?/i, 'Table ');
+                        searchQueries.push(tid);
+                    }
+                    const match = textToSearch.match(/Table\s+[a-zA-Z0-9\.]+/i);
+                    if (match) searchQueries.push(match[0]);
+                } else if (claim._category === 'figures') {
+                    let fid = claim.figure_id || claim.id || claim.figure_name;
+                    if (fid) {
+                        fid = String(fid).trim();
+                        if (fid.match(/^[a-zA-Z0-9\.]+$/)) fid = "Figure " + fid;
+                        else if (fid.toLowerCase().startsWith('fig')) fid = fid.replace(/^fig(ure)?\s*_?/i, 'Figure ');
+                        searchQueries.push(fid);
+                    }
+                    const match = textToSearch.match(/Figure\s+[a-zA-Z0-9\.]+/i);
+                    if (match) searchQueries.push(match[0]);
+                } else if (claim._category === 'results_section') {
+                    searchQueries.push(...extractNumericSearchQueries(textToSearch));
+                }
+
+                const cleanQuery = getCleanSearchQuery(textToSearch);
+                if (cleanQuery) searchQueries.push(cleanQuery);
+
+                if (claim._category === 'results_section') {
+                    searchQueries.push(textToSearch.split(/\s+/).slice(0, 12).join(' '));
+                    searchQueries.push(textToSearch);
+                } else {
+                    searchQueries.push(textToSearch);
+                    searchQueries.push(textToSearch.split(/\s+/).slice(0, 10).join(' ')); // Fallback to first 10 words
+                }
+
+                const numericGroup = claim._category === 'results_section'
+                    ? extractNumericSearchQueries(textToSearch)
+                    : [];
+                searchQueries = dedupeQueries(searchQueries);
+                const searchSpec = {
+                    queries: searchQueries,
+                    numericGroup
+                };
+
+                const isFab = (claim.verdict || "").toLowerCase().includes("fabrication");
+
+                console.log("Searching for queries:", searchSpec);
+                renderPaper(searchSpec, isFab);
+            }
+        }
+
+        function attemptHighlight(elements, term, lowerTerm, isFab) {
+            for (let el of elements) {
+                if (el.textContent.toLowerCase().includes(lowerTerm)) {
+                    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null, false);
+                    let node;
+                    while (node = walker.nextNode()) {
+                        const nodeValLower = node.nodeValue.toLowerCase();
+                        const i = nodeValLower.indexOf(lowerTerm);
+                        if (i !== -1) {
+                            const span = document.createElement('span');
+                            span.className = isFab ? 'highlight-match' : 'highlight-match-verified';
+                            span.textContent = node.nodeValue.substring(i, i + term.length);
+
+                            const val = node.nodeValue;
+                            const before = document.createTextNode(val.substring(0, i));
+                            const after = document.createTextNode(val.substring(i + term.length));
+
+                            node.parentNode.insertBefore(before, node);
+                            node.parentNode.insertBefore(span, node);
+                            node.parentNode.insertBefore(after, node);
+                            node.parentNode.removeChild(node);
+
+                            span.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function highlightNumericGroupInMarkdown(numbers, isFab) {
+            const normalizedNumbers = numbers.map(number => String(number).trim()).filter(Boolean);
+            if (normalizedNumbers.length < 2) return false;
+
+            const elements = contentContainer.querySelectorAll('p, li, td, th, h5, h6, span, em');
+            for (const element of elements) {
+                const text = element.textContent.toLowerCase();
+                if (!normalizedNumbers.every(number => text.includes(number.toLowerCase()))) continue;
+
+                let highlightedAny = false;
+                for (const number of normalizedNumbers) {
+                    if (attemptHighlight([element], number, number.toLowerCase(), isFab)) {
+                        highlightedAny = true;
+                    }
+                }
+
+                if (highlightedAny) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        function highlightInMarkdown(query, isFab) {
+            if (!query || query.length < 3) return false;
+
+            const terms = [
+                query,
+                query.split(',').pop().trim(),
+                query.includes(':') ? query.split(':').pop().trim() : null
+            ].filter(t => t && t.length > 2);
+
+            for (let term of terms) {
+                const lowerTerm = term.toLowerCase();
+
+                // Phase 1: Try to match in headers or captions first (crucial for accurate section/table jumping)
+                const headers = contentContainer.querySelectorAll('h1, h2, h3, h4, caption, figcaption, strong, b');
+                if (attemptHighlight(headers, term, lowerTerm, isFab)) return true;
+
+                // Phase 2: Try to match anywhere else as fallback
+                const elements = contentContainer.querySelectorAll('p, li, td, th, h5, h6, span, em');
+                if (attemptHighlight(elements, term, lowerTerm, isFab)) return true;
+            }
+            return false;
+        }
+    </script>
+</body>
+
+</html>

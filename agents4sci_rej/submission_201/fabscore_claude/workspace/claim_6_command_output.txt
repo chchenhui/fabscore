@@ -1,0 +1,29 @@
+==== Command 1 ====
+python3 -c "import numpy as np; d=np.load('logs/0-run/experiment_results/experiment_b13540f014c245cd92fd745ad33c32f8_proc_1522608/experiment_data.npy', allow_pickle=True).item(); perm = d['permute_order_ablation']; ..."
+
+OUTPUT:
+Top-level keys: ['permute_order_ablation']
+Datasets: ['mnist', 'fashion_mnist', 'svhn']
+Dataset: mnist, metrics keys: ['train', 'val', 'train_logic', 'val_logic']
+Dataset: fashion_mnist, metrics keys: ['train', 'val', 'train_logic', 'val_logic']
+Dataset: svhn, metrics keys: ['train', 'val', 'train_logic', 'val_logic']
+
+==== Command 2 ====
+python3 -c "...extract val_logic values per dataset..."
+
+OUTPUT:
+mnist: val_logic_acc length=50, final=0.6687, max=0.6896
+fashion_mnist: val_logic_acc length=50, final=0.8604, max=0.8833
+svhn: val_logic_acc length=50, final=0.5563, max=0.7146
+
+==== File listing ====
+val_logic_acc_compare_permuted_ablation.png exists in experiment directory
+
+==== Plotting code (lines 106-125) ====
+For dsname in ["mnist", "fashion_mnist", "svhn"]:
+    epochs = experiment_data["permute_order_ablation"][dsname]["epochs"]
+    val_logic = experiment_data["permute_order_ablation"][dsname]["metrics"]["val_logic"]
+    plt.plot(epochs, val_logic, label=f"{dsname}", color=colors[dsname])
+plt.ylabel("Validation Logical Consistency Accuracy")
+plt.title("Logical Consistency Accuracy Comparison (Permuted Order Ablation)")
+plt.savefig("val_logic_acc_compare_permuted_ablation.png")

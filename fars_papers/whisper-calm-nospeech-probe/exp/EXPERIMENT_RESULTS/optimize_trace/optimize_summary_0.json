@@ -1,0 +1,16 @@
+{
+  "optimize_index": 0,
+  "issues": [
+    {
+      "title": "HF model.generate() never suppresses output for non-speech clips",
+      "description": "The original SCHM implementation applied head masking when p_nospeech >= tau but still called model.generate(), which always produces non-empty text. This meant hallucination rate remained 100% even when SCHM correctly identified non-speech clips. Fixed by adding a 'suppress' mode where triggered clips get empty string transcription instead of decoded text, mimicking OpenAI Whisper's native no-speech suppression behavior."
+    },
+    {
+      "title": "Single tau threshold (0.6) was too conservative",
+      "description": "The original Condition C only used tau=0.6, triggering on only 21.6% of non-speech clips. Extended to sweep tau in {0.3, 0.4, 0.5, 0.6}. At tau=0.3, 39.9% of UrbanSound8K clips trigger, providing much better hallucination reduction. The lower tau only affects 5/2620 (0.19%) LibriSpeech clean utterances with negligible WER impact (+0.19 pp)."
+    }
+  ],
+  "experiment_result_path": "EXPERIMENT_RESULTS/optimize_trace/iteration_0/",
+  "success": true,
+  "summary": "Added no-speech suppression mode to SCHM and swept tau thresholds. At best setting (suppress, tau=0.3): UrbanSound8K hallucination rate dropped from 100% to 60.1% (-39.9 pp), LibriSpeech clean WER increased only from 2.83% to 3.02% (+0.19 pp), LibriSpeech other WER unchanged at 5.10%. Head masking alone (mask mode) shows 100% halluc at all tau, confirming that output suppression is the effective mechanism. The method is training-free and requires only 1-step decoder forward pass for p_nospeech computation."
+}

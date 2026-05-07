@@ -1,0 +1,589 @@
+{
+  "tables": [
+    {
+      "claim_index": 9,
+      "claim": "9. Table 1, Single-scale Grid, Eval Loss (mean): 0.5975",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The paper's stated single-scale experiment is not the protocol implemented in the repository. `latex/template.tex` says evaluation loss is measured on a held-out validation set and that all experiments use a fixed random seed, but `run_1.py` computes evaluation loss by iterating over the same training `dataloader` and sets no seeds. Static inspection therefore shows this row is not produced by the described experiment.",
+      "evidence": "latex/template.tex; run_1.py; datasets.py",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex",
+          "run_1.py",
+          "datasets.py"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 10,
+      "claim": "10. Table 1, Single-scale Grid, Eval Loss (std): 0.1312",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The single-scale row is attached to an experiment description that conflicts with the code. The paper says evaluation is on a held-out validation set with a fixed random seed, but `run_1.py` reuses the training `dataloader` for evaluation and contains no `torch.manual_seed`, `np.random.seed`, or `random.seed` call. The reported standard deviation is therefore not from the stated protocol.",
+      "evidence": "latex/template.tex; run_1.py",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex",
+          "run_1.py"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 11,
+      "claim": "11. Table 1, Single-scale Grid, KL Divergence (mean): 0.4221",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The repository's single-scale implementation conflicts with the paper's described experimental protocol. `run_1.py` evaluates on training data rather than a held-out set, never fixes seeds despite the paper claiming fixed-seed reproducibility, and implements grid lookup by discrete cell indexing rather than the paper's described interpolation-based adaptive procedure. The KL result is therefore not from the stated experiment.",
+      "evidence": "latex/template.tex; run_1.py",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex",
+          "run_1.py"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 12,
+      "claim": "12. Table 1, Single-scale Grid, KL Divergence (std): 0.3712",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Static inspection shows the single-scale experiment in the paper does not match the implementation used to produce repository outputs: the code evaluates on the training loader and does not set the fixed seed claimed in the paper. That protocol conflict is sufficient to mark the reported dispersion as experiment-side fabrication.",
+      "evidence": "latex/template.tex; run_1.py",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex",
+          "run_1.py"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 13,
+      "claim": "13. Table 1, Single-scale Grid, Training Time (s) (mean): 66.53",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The claimed single-scale row is tied to an experiment description that is not what the code runs. The paper specifies a single 10x10 single-scale setup under a fixed-seed protocol, but the repository has both `run_1.py` (10x10) and `run_2.py` (20x20), with no seed control and no repository explanation for how one table row was formed from these variants. This is a concrete experiment-definition mismatch rather than a missing-artifact issue.",
+      "evidence": "latex/template.tex; run_1.py; run_2.py",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex",
+          "run_1.py",
+          "run_2.py"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 14,
+      "claim": "14. Table 1, Single-scale Grid, Training Time (s) (std): 5.78",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The paper presents one fixed single-scale experiment, but the repository contains multiple single-scale variants and no fixed-seed setup. Because the implemented experiment family does not match the paper's stated one-row setup, the reported training-time spread is not attributable to the described experimental object.",
+      "evidence": "latex/template.tex; run_1.py; run_2.py",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex",
+          "run_1.py",
+          "run_2.py"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 15,
+      "claim": "15. Table 1, Single-scale Grid, Inference Time (s) (mean): 0.1903",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The single-scale result row is not backed by the experimental protocol stated in the paper. The paper claims a held-out validation setup with fixed seeds for a single 10x10 model, but the repository's single-scale scripts do not set seeds and expose two different single-scale variants. Static evidence therefore shows an experiment-definition mismatch.",
+      "evidence": "latex/template.tex; run_1.py; run_2.py",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex",
+          "run_1.py",
+          "run_2.py"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 16,
+      "claim": "16. Table 1, Single-scale Grid, Inference Time (s) (std): 0.0068",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The repository does not implement the single-scale experiment exactly as described in the paper: no fixed-seed control is present, evaluation is not held-out, and the paper collapses single-scale into one row while the repository keeps distinct variants. That concrete protocol mismatch makes the reported standard deviation unreliable.",
+      "evidence": "latex/template.tex; run_1.py; run_2.py",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex",
+          "run_1.py",
+          "run_2.py"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 17,
+      "claim": "17. Table 1, Multi-scale Grid, Eval Loss (mean): 0.5473",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The paper's multi-scale method description conflicts directly with `run_3.py`. `latex/template.tex` says the coarse and fine grids are bilinearly interpolated and that sampling uses alpha-dependent variance, but `run_3.py` uses discrete integer grid indexing in `get_grid_noise_adjustment` and `NoiseScheduler.step()` ignores any grid adjustment in the reverse-process variance. The code also evaluates on the training `dataloader` rather than a held-out validation set. This is a concrete experiment-side contradiction.",
+      "evidence": "latex/template.tex; run_3.py",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex",
+          "run_3.py"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 18,
+      "claim": "18. Table 1, Multi-scale Grid, Eval Loss (std): 0.1234",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The multi-scale experiment reported in the paper is not the one implemented in `run_3.py`: the paper claims bilinear interpolation, alpha-dependent sampling variance, held-out evaluation, and fixed seeds, while the code uses direct grid-cell lookup, standard DDPM reverse variance, evaluation on the training loader, and no seed control. The reported standard deviation is therefore experiment-side inconsistent.",
+      "evidence": "latex/template.tex; run_3.py",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex",
+          "run_3.py"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 19,
+      "claim": "19. Table 1, Multi-scale Grid, KL Divergence (mean): 0.3934",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Static inspection is already sufficient to show the paper's multi-scale procedure does not match the code. The method section describes an alpha-adjusted reverse process and interpolated grids, but `run_3.py` applies grid factors only in forward noising and uses plain DDPM variance in `step()`. Combined with evaluation on the training loader instead of a held-out set, this makes the reported KL value an experiment-side mismatch.",
+      "evidence": "latex/template.tex; run_3.py",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex",
+          "run_3.py"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 20,
+      "claim": "20. Table 1, Multi-scale Grid, KL Divergence (std): 0.3501",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The multi-scale row is attached to a protocol that is not implemented: the paper states interpolated coarse/fine grids, held-out validation, and fixed-seed reproducibility, while `run_3.py` uses discrete lookup, training-data evaluation, and no seed-setting. This is a concrete experimental-procedure conflict.",
+      "evidence": "latex/template.tex; run_3.py",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex",
+          "run_3.py"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 21,
+      "claim": "21. Table 1, Multi-scale Grid, Training Time (s) (mean): 68.75",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The reported multi-scale training-time statistic is tied to a method description that the repository does not implement faithfully. Because `run_3.py` departs from the paper on core control flow and evaluation protocol, the table row does not correspond to the stated experimental object.",
+      "evidence": "latex/template.tex; run_3.py",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex",
+          "run_3.py"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 22,
+      "claim": "22. Table 1, Multi-scale Grid, Training Time (s) (std): 5.42",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Static analysis shows a concrete mismatch between the described multi-scale experiment and the actual implementation. Since the code omits the paper's stated interpolation, alpha-dependent reverse variance, held-out validation, and seed control, the reported training-time spread is not from the stated procedure.",
+      "evidence": "latex/template.tex; run_3.py",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex",
+          "run_3.py"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 23,
+      "claim": "23. Table 1, Multi-scale Grid, Inference Time (s) (mean): 0.1950",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The paper attributes this statistic to the described multi-scale method, but `run_3.py` implements a materially different procedure: direct grid-cell lookup instead of bilinear interpolation and standard reverse variance instead of alpha-adjusted variance. That experiment-side mismatch is sufficient for an analysis-stage fabrication verdict.",
+      "evidence": "latex/template.tex; run_3.py",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex",
+          "run_3.py"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 24,
+      "claim": "24. Table 1, Multi-scale Grid, Inference Time (s) (std): 0.0072",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The implemented multi-scale experiment is not the same as the paper's stated one. The repository lacks the paper's interpolation and alpha-dependent reverse variance, and it also lacks the claimed fixed-seed setup. The reported inference-time spread is therefore attached to the wrong experimental procedure.",
+      "evidence": "latex/template.tex; run_3.py",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex",
+          "run_3.py"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 25,
+      "claim": "25. Table 1, Multi-scale + L1 Reg, Eval Loss (mean): 0.5938",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The paper says the full model uses L1 weight 0.001, but `run_4.py` uses `fine_grid_l1_weight=0.01` while `run_5.py` uses 0.001 and even defaults to writing into `run_4`. The repository therefore contains a concrete hyperparameter/provenance conflict for the claimed full-model row, in addition to the same held-out-evaluation and seed-control mismatches seen elsewhere.",
+      "evidence": "latex/template.tex; run_4.py; run_5.py; run_4/final_info.json; run_5/final_info.json",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex",
+          "run_4.py",
+          "run_5.py",
+          "run_4/final_info.json",
+          "run_5/final_info.json"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 26,
+      "claim": "26. Table 1, Multi-scale + L1 Reg, Eval Loss (std): 0.1591",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The paper's claimed full-model configuration is not cleanly implemented in the repository. The manuscript states L1 weight 0.001, but the main saved run for this row is ambiguous between `run_4.py` (0.01) and `run_5.py` (0.001, but default `out_dir` still `run_4`). That hyperparameter/provenance conflict is a concrete experiment-side contradiction.",
+      "evidence": "latex/template.tex; run_4.py; run_5.py; run_4/final_info.json; run_5/final_info.json",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex",
+          "run_4.py",
+          "run_5.py",
+          "run_4/final_info.json",
+          "run_5/final_info.json"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 27,
+      "claim": "27. Table 1, Multi-scale + L1 Reg, KL Divergence (mean): 0.3473",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Static inspection already shows the full-model experiment in the paper does not match the repository. The claimed L1 weight is 0.001 in the paper, but `run_4.py` uses 0.01; `run_5.py` changes the weight but has conflicting output-directory defaults. The code also evaluates on the training loader and never fixes seeds. This is a direct experiment-definition conflict.",
+      "evidence": "latex/template.tex; run_4.py; run_5.py",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex",
+          "run_4.py",
+          "run_5.py"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 28,
+      "claim": "28. Table 1, Multi-scale + L1 Reg, KL Divergence (std): 0.3112",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The paper's full-model row is not tied to a consistent implemented experiment: the stated lambda, the saved runs, and the script defaults conflict. Because the repository does not provide a clean implementation/provenance chain for the paper's described L1-regularized setup, this reported dispersion is experiment-side unreliable.",
+      "evidence": "latex/template.tex; run_4.py; run_5.py; run_4/final_info.json; run_5/final_info.json",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex",
+          "run_4.py",
+          "run_5.py",
+          "run_4/final_info.json",
+          "run_5/final_info.json"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 29,
+      "claim": "29. Table 1, Multi-scale + L1 Reg, Training Time (s) (mean): 79.20",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The paper says the full model uses L1 weight 0.001, but the repository script that matches the paper's named full-model run most directly is `run_4.py`, which uses 0.01. `run_5.py` switches to 0.001 but still defaults to output directory `run_4`, creating a provenance conflict. This is a concrete experiment-side mismatch, not merely a missing artifact.",
+      "evidence": "latex/template.tex; run_4.py; run_5.py; run_4/final_info.json",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex",
+          "run_4.py",
+          "run_5.py",
+          "run_4/final_info.json"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 30,
+      "claim": "30. Table 1, Multi-scale + L1 Reg, Training Time (s) (std): 4.32",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The L1-regularized row is associated with a mismatched experimental object. The paper specifies lambda 0.001, while the main implementation and saved outputs in the repository are split between `run_4.py` (0.01) and `run_5.py` (0.001 with conflicting output defaults). That is a direct hyperparameter/provenance conflict for the reported timing spread.",
+      "evidence": "latex/template.tex; run_4.py; run_5.py; run_4/final_info.json; run_5/final_info.json",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex",
+          "run_4.py",
+          "run_5.py",
+          "run_4/final_info.json",
+          "run_5/final_info.json"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 31,
+      "claim": "31. Table 1, Multi-scale + L1 Reg, Inference Time (s) (mean): 0.1975",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The repository does not provide a clean implementation path for the paper's stated full-model experiment. The manuscript claims lambda 0.001, but the code and saved runs split between 0.01 and 0.001 with conflicting defaults. That concrete setup mismatch is sufficient for an experiment-fabrication classification.",
+      "evidence": "latex/template.tex; run_4.py; run_5.py",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex",
+          "run_4.py",
+          "run_5.py"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 32,
+      "claim": "32. Table 1, Multi-scale + L1 Reg, Inference Time (s) (std): 0.0061",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Static evidence already shows the claimed full-model row does not correspond to a single consistent implemented experiment. The paper's lambda setting, the repository scripts, and the output-directory defaults conflict, and the code still lacks the claimed fixed-seed protocol. This is a concrete experiment-side contradiction.",
+      "evidence": "latex/template.tex; run_4.py; run_5.py",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "latex/template.tex",
+          "run_4.py",
+          "run_5.py"
+        ],
+        "commands_executed": []
+      }
+    }
+  ],
+  "figures": [],
+  "results_section": [],
+  "summary": {
+    "total": 35,
+    "verified": 0,
+    "data_fabrication": 0,
+    "experiment_fabrication": 24,
+    "result_fabrication": 0,
+    "no_code_files": 0,
+    "insufficient_evidence": 11
+  },
+  "analysis_summary": {
+    "total_claims": 35,
+    "no_code_files": 0,
+    "obvious_hallucination": 24,
+    "data_fabrication": 0,
+    "experiment_fabrication": 24,
+    "result_fabrication": 0,
+    "static_verifiable": 0,
+    "insufficient_evidence": 9,
+    "execution_required": 2,
+    "error": 0
+  },
+  "execution_summary": {
+    "total": 2,
+    "verified": 0,
+    "data_fabrication": 0,
+    "experiment_fabrication": 0,
+    "result_fabrication": 0,
+    "no_code_files": 0,
+    "insufficient_evidence": 2,
+    "error": 0
+  },
+  "final_assessment": {
+    "fab_score": 0.0,
+    "total_claims": 35,
+    "verified": 0,
+    "data_fabrication": 0,
+    "experiment_fabrication": 24,
+    "result_fabrication": 0,
+    "no_code_files": 0,
+    "insufficient_evidence": 11,
+    "static_code_analysis_breakdown": {
+      "verified": 0,
+      "no_code_files": 0,
+      "data_fabrication": 0,
+      "experiment_fabrication": 24,
+      "result_fabrication": 0,
+      "insufficient_evidence": 9
+    },
+    "execution_artifact_analysis_breakdown": {
+      "verified": 0,
+      "no_code_files": 0,
+      "data_fabrication": 0,
+      "experiment_fabrication": 0,
+      "result_fabrication": 0,
+      "insufficient_evidence": 1
+    },
+    "code_execution_breakdown": {
+      "verified": 0,
+      "no_code_files": 0,
+      "data_fabrication": 0,
+      "experiment_fabrication": 0,
+      "result_fabrication": 0,
+      "insufficient_evidence": 1
+    }
+  },
+  "filtered_summary": {
+    "total_claims": 24,
+    "tables": 24,
+    "figures": 0,
+    "results_section": 0,
+    "verdict_breakdown": {
+      "Verified": 0,
+      "Data Fabrication": 0,
+      "Experiment Fabrication": 24,
+      "Result Fabrication": 0,
+      "No Code Files": 0,
+      "Insufficient Evidence": 0,
+      "Error": 0,
+      "Other": 0
+    }
+  }
+}

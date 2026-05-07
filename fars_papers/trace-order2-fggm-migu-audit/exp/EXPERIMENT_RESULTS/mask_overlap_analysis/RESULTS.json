@@ -1,0 +1,57 @@
+{
+  "experiment": "FGGM Mask Overlap Analysis (Default Order vs Order 2)",
+  "hypothesis_tested": "Order 2's front-loaded NumGLUE tasks produce higher consecutive mask overlap, reducing plasticity",
+  "hypothesis_verdict": "NOT SUPPORTED - Order 2 has slightly LOWER avg consecutive Jaccard",
+  "alternative_mechanism": "Low-overlap disruption: NumGLUE tasks produce atypical Fisher patterns causing radical early parameter shifts that disrupt smooth mask transitions",
+  "avg_consecutive_jaccard": {
+    "default_seed42": 0.4839,
+    "order2_mean": 0.4672,
+    "order2_std": 0.0011,
+    "order2_seed42": 0.4675,
+    "order2_seed123": 0.4657,
+    "order2_seed456": 0.4684,
+    "difference_default_minus_order2": 0.0167
+  },
+  "first_pair_jaccard_task0_to_task1": {
+    "note": "Always 0.300 because task0=all-ones and alpha=0.7 => 30% trainable",
+    "default": 0.300,
+    "order2": 0.300
+  },
+  "numglue_pair_jaccard": {
+    "note": "NumGLUE-cm -> NumGLUE-ds Jaccard, despite both being numerical reasoning",
+    "order2_pair1_2_seed42": 0.368,
+    "order2_pair1_2_seed123": 0.368,
+    "order2_pair1_2_seed456": 0.368,
+    "default_pair5_6": 0.455,
+    "default_pair6_7": 0.432,
+    "verdict": "Low overlap - NumGLUE tasks produce distinctive Fisher patterns"
+  },
+  "consecutive_jaccard_per_pair": {
+    "default_seed42": {
+      "pair_labels": ["All->C-STANCE", "C-STANCE->FOMC", "FOMC->MeetingBank", "MeetingBank->Py150", "Py150->ScienceQA", "ScienceQA->NumGLUE-cm", "NumGLUE-cm->NumGLUE-ds"],
+      "values": [0.300, 0.527, 0.571, 0.517, 0.587, 0.455, 0.432]
+    },
+    "order2_seed42": {
+      "pair_labels": ["All->NumGLUE-cm", "NumGLUE-cm->NumGLUE-ds", "NumGLUE-ds->FOMC", "FOMC->20Minuten", "20Minuten->C-STANCE", "C-STANCE->Py150", "Py150->MeetingBank"],
+      "values": [0.300, 0.368, 0.492, 0.473, 0.497, 0.553, 0.589]
+    }
+  },
+  "layerwise_peak_layers": {
+    "both_orders": "Layers 5-7 (early attention) show highest consecutive Jaccard",
+    "default_peak": {"layer_6": 0.701, "layer_5": 0.675},
+    "order2_peak": {"layer_6": 0.665, "layer_5": 0.595},
+    "trough_layers": "Layers 20-25 show lowest Jaccard (most task-specific masks)"
+  },
+  "performance_context": {
+    "fggm_default_trace_op": 45.84,
+    "fggm_order2_trace_op": 40.77,
+    "fggm_order2_trace_op_std": 1.06,
+    "drop": 5.07
+  },
+  "output_files": {
+    "figures_dir": "audit/results/analysis/mask_overlap/",
+    "figures": ["heatmap_jaccard.png", "bar_consecutive_jaccard.png", "layerwise_jaccard.png", "consecutive_per_pair.png"],
+    "metrics": "audit/results/analysis/mask_overlap/metrics.json",
+    "script": "audit/analysis/mask_overlap.py"
+  }
+}

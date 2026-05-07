@@ -1,0 +1,2007 @@
+{
+    "tables": [
+        {
+            "claim_index": 2,
+            "claim": "2. Table 1, AGT-MLM, Precision: 0.8451",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: In evaluation.py:43, binary_truth = [1] * len(true_sources) sets all ground truth to positive. This means FP is always 0, so precision_recall_fscore_support always returns precision=1.0 (when any predictions exceed threshold). The reported value 0.8451 is impossible with this code.",
+            "evidence": "code/evaluation.py:43; code/evaluation.py:46-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:43",
+                    "code/evaluation.py:46-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 3,
+            "claim": "3. Table 1, AGT-MLM, Recall: 0.8723",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: The code's binary_truth=[1,...,1] means recall=count(pred_probs>=threshold)/total, which measures model confidence rather than attribution accuracy. The evaluation formulation is fundamentally incorrect for measuring source attribution quality.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 4,
+            "claim": "4. Table 1, AGT-MLM, F1: 0.8585",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: F1 is derived from precision (always 1.0 from broken binary_truth=[1,...,1]) and recall=fraction above threshold. With precision=1.0, F1=2*recall/(1+recall). If recall=0.8723, F1=0.932, not 0.8585. The reported value is impossible with this code.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 5,
+            "claim": "5. Table 1, AGT-MLM, Attribution F1: 0.8342",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: In evaluation.py lines 244-256, attribution_f1_score is computed as af1=compute_attribution_f1_score(aps,ars) where both aps=ars=mean(correct_attributions)=accuracy. So attribution_f1_score equals accuracy (0.8642), but paper reports 0.8342. These should be equal but differ.",
+            "evidence": "code/evaluation.py:244-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 6,
+            "claim": "6. Table 1, AGT-MLM, Content Originality: 0.7865",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: In evaluation.py lines 249-256, content_originality_score=mean([1-int(p!=t)])=mean([int(p==t)])=accuracy=0.8642. But paper reports 0.7865. These should be equal but differ, indicating fabrication.",
+            "evidence": "code/evaluation.py:249-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:249-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 8,
+            "claim": "8. Table 1, Post-hoc, Precision: 0.7645",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Same broken binary_truth=[1,...,1] applies to all model evaluations. Precision is always 1.0 when any predictions exceed threshold. Reported 0.7645 is impossible.",
+            "evidence": "code/evaluation.py:43; code/evaluation.py:46-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:43",
+                    "code/evaluation.py:46-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 9,
+            "claim": "9. Table 1, Post-hoc, Recall: 0.7834",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Evaluation formulation incorrect: binary_truth=[1,...,1] means recall measures fraction of high-confidence predictions, not attribution accuracy.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 10,
+            "claim": "10. Table 1, Post-hoc, F1: 0.7738",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: With precision=1.0 (from broken binary_truth), F1=2*recall/(1+recall). For F1=0.7738, recall would need to be 0.631, but paper reports recall=0.7834. Impossible with this code.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 11,
+            "claim": "11. Table 1, Post-hoc, Attribution F1: 0.6982",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: attribution_f1_score=accuracy in code (both are mean of correct source predictions). Should equal accuracy=0.7912 but paper reports 0.6982.",
+            "evidence": "code/evaluation.py:244-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 12,
+            "claim": "12. Table 1, Post-hoc, Content Originality: 0.7324",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: content_originality_score=accuracy in code. Should equal accuracy=0.7912 but paper reports 0.7324.",
+            "evidence": "code/evaluation.py:249-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:249-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 14,
+            "claim": "14. Table 1, Data Shapley, Precision: 0.7753",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Same broken binary_truth=[1,...,1] yields precision=1.0. Reported 0.7753 is impossible.",
+            "evidence": "code/evaluation.py:43; code/evaluation.py:46-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:43",
+                    "code/evaluation.py:46-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 15,
+            "claim": "15. Table 1, Data Shapley, Recall: 0.7921",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Evaluation formulation incorrect for attribution recall measurement due to binary_truth=[1,...,1].",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 16,
+            "claim": "16. Table 1, Data Shapley, F1: 0.7836",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: With precision=1.0, F1=2*recall/(1+recall) implies recall≈0.644 for F1=0.7836. But paper reports recall=0.7921. Inconsistent.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 17,
+            "claim": "17. Table 1, Data Shapley, Attribution F1: 0.7123",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: attribution_f1_score=accuracy in code. Should equal accuracy=0.8015 but paper reports 0.7123.",
+            "evidence": "code/evaluation.py:244-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 18,
+            "claim": "18. Table 1, Data Shapley, Content Originality: 0.7458",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: content_originality_score=accuracy in code. Should equal accuracy=0.8015 but paper reports 0.7458.",
+            "evidence": "code/evaluation.py:249-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:249-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 20,
+            "claim": "20. Table 1, MinimalSubset, Precision: 0.7952",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Same broken binary_truth=[1,...,1] yields precision=1.0. Reported 0.7952 is impossible.",
+            "evidence": "code/evaluation.py:43; code/evaluation.py:46-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:43",
+                    "code/evaluation.py:46-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 21,
+            "claim": "21. Table 1, MinimalSubset, Recall: 0.8142",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Evaluation formulation incorrect for attribution recall measurement due to binary_truth=[1,...,1].",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 22,
+            "claim": "22. Table 1, MinimalSubset, F1: 0.8045",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: With precision=1.0, F1 would not match reported value given reported recall=0.8142. Inconsistent.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 23,
+            "claim": "23. Table 1, MinimalSubset, Attribution F1: 0.7589",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: attribution_f1_score=accuracy in code. Should equal accuracy=0.8245 but paper reports 0.7589.",
+            "evidence": "code/evaluation.py:244-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 24,
+            "claim": "24. Table 1, MinimalSubset, Content Originality: 0.7623",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: content_originality_score=accuracy in code. Should equal accuracy=0.8245 but paper reports 0.7623.",
+            "evidence": "code/evaluation.py:249-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:249-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 25,
+            "claim": "25. Table 2, AGT-MLM, Test F1: 0.8585",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Same F1 metric as Table 1 (from broken binary_truth=[1,...,1] evaluation). precision=1.0 always; reported F1=0.8585 is inconsistent with the code's evaluation logic.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 26,
+            "claim": "26. Table 2, AGT-MLM, Adversarial F1: 0.7924",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Adversarial F1 uses same evaluate_model function with broken binary_truth=[1,...,1]. All precision/F1 values are unreliable from this evaluation code.",
+            "evidence": "code/evaluation.py:42-48; code/run_experiment.py:163-170",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48",
+                    "code/run_experiment.py:163-170"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 27,
+            "claim": "27. Table 2, AGT-MLM, F1 Drop: 0.0661",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: F1 Drop is derived from fabricated Test F1 and Adversarial F1 values. The underlying F1 metric is broken (precision always 1.0 from binary_truth=[1,...,1]).",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 28,
+            "claim": "28. Table 2, AGT-MLM, Test Attribution F1: 0.8342",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: attribution_f1_score=accuracy in code. Should equal accuracy but differs. Derived from same broken evaluation logic.",
+            "evidence": "code/evaluation.py:244-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 29,
+            "claim": "29. Table 2, AGT-MLM, Adversarial Attribution F1: 0.7658",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Adversarial attribution F1 uses same evaluate_model function where attribution_f1_score=accuracy. Value would not match paper's claim.",
+            "evidence": "code/evaluation.py:244-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 30,
+            "claim": "30. Table 2, AGT-MLM, Attribution F1 Drop: 0.0684",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Derived from fabricated Test Attribution F1 and Adversarial Attribution F1 values.",
+            "evidence": "code/evaluation.py:244-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 31,
+            "claim": "31. Table 2, Post-hoc, Test F1: 0.7738",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Same F1 metric as Table 1 (broken binary_truth=[1,...,1]). precision=1.0 always; F1 value is inconsistent with code.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 32,
+            "claim": "32. Table 2, Post-hoc, Adversarial F1: 0.6452",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Same broken evaluation with binary_truth=[1,...,1] for adversarial set.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 33,
+            "claim": "33. Table 2, Post-hoc, F1 Drop: 0.1286",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Derived from fabricated Test F1 and Adversarial F1.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 34,
+            "claim": "34. Table 2, Post-hoc, Test Attribution F1: 0.6982",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: attribution_f1_score=accuracy in code. Should equal 0.7912 (reported accuracy) but paper reports 0.6982.",
+            "evidence": "code/evaluation.py:244-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 35,
+            "claim": "35. Table 2, Post-hoc, Adversarial Attribution F1: 0.5324",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: attribution_f1_score=accuracy in code on adversarial set. Value is unsupported by code logic.",
+            "evidence": "code/evaluation.py:244-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 36,
+            "claim": "36. Table 2, Post-hoc, Attribution F1 Drop: 0.1658",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Derived from fabricated attribution F1 values.",
+            "evidence": "code/evaluation.py:244-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 37,
+            "claim": "37. Table 2, Data Shapley, Test F1: 0.7836",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Same broken F1 metric from binary_truth=[1,...,1].",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 38,
+            "claim": "38. Table 2, Data Shapley, Adversarial F1: 0.6734",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Same broken F1 metric applied to adversarial set.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 39,
+            "claim": "39. Table 2, Data Shapley, F1 Drop: 0.1102",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Derived from fabricated F1 values.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 40,
+            "claim": "40. Table 2, Data Shapley, Test Attribution F1: 0.7123",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: attribution_f1_score=accuracy in code. Should equal 0.8015 but paper reports 0.7123.",
+            "evidence": "code/evaluation.py:244-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 41,
+            "claim": "41. Table 2, Data Shapley, Adversarial Attribution F1: 0.5742",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: attribution_f1_score=accuracy; adversarial value unsupported by code logic.",
+            "evidence": "code/evaluation.py:244-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 42,
+            "claim": "42. Table 2, Data Shapley, Attribution F1 Drop: 0.1381",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Derived from fabricated attribution F1 values.",
+            "evidence": "code/evaluation.py:244-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 43,
+            "claim": "43. Table 2, MinimalSubset, Test F1: 0.8045",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Same broken F1 metric from binary_truth=[1,...,1].",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 44,
+            "claim": "44. Table 2, MinimalSubset, Adversarial F1: 0.7012",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Same broken F1 metric applied to adversarial set.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 45,
+            "claim": "45. Table 2, MinimalSubset, F1 Drop: 0.1033",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Derived from fabricated F1 values.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 46,
+            "claim": "46. Table 2, MinimalSubset, Test Attribution F1: 0.7589",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: attribution_f1_score=accuracy in code. Should equal 0.8245 but paper reports 0.7589.",
+            "evidence": "code/evaluation.py:244-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 47,
+            "claim": "47. Table 2, MinimalSubset, Adversarial Attribution F1: 0.6245",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: attribution_f1_score=accuracy on adversarial set; unsupported by code logic.",
+            "evidence": "code/evaluation.py:244-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 48,
+            "claim": "48. Table 2, MinimalSubset, Attribution F1 Drop: 0.1344",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Derived from fabricated attribution F1 values.",
+            "evidence": "code/evaluation.py:244-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 49,
+            "claim": "49. Table 3, Lambda=0.01, Attribution F1: 0.7256",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: attribution_f1_score=accuracy in code. Lambda ablation trains with fewer epochs but uses same broken evaluate_model. Attribution F1 should equal accuracy for each lambda value, but paper reports them differently.",
+            "evidence": "code/evaluation.py:244-256; code/run_experiment.py:442",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256",
+                    "code/run_experiment.py:442"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 51,
+            "claim": "51. Table 3, Lambda=0.01, F1: 0.8621",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Same broken binary_truth=[1,...,1] F1 metric applies to ablation experiments. Precision=1.0 always; F1 is inconsistent with code.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 52,
+            "claim": "52. Table 3, Lambda=0.05, Attribution F1: 0.7945",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: attribution_f1_score=accuracy in code. Should equal accuracy for lambda=0.05 but paper reports different value.",
+            "evidence": "code/evaluation.py:244-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 54,
+            "claim": "54. Table 3, Lambda=0.05, F1: 0.8597",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Same broken binary_truth=[1,...,1] F1 metric.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 55,
+            "claim": "55. Table 3, Lambda=0.1, Attribution F1: 0.8342",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: attribution_f1_score=accuracy in code. Should equal accuracy=0.8642 (Table 1 AGT-MLM) but paper reports 0.8342.",
+            "evidence": "code/evaluation.py:244-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 57,
+            "claim": "57. Table 3, Lambda=0.1, F1: 0.8585",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Same broken binary_truth F1 metric. With precision=1.0, F1 value cannot match reported given the reported recall.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 58,
+            "claim": "58. Table 3, Lambda=0.5, Attribution F1: 0.8412",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: attribution_f1_score=accuracy in code; paper reports attribution_F1 as different from reported accuracy (0.8521).",
+            "evidence": "code/evaluation.py:244-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 60,
+            "claim": "60. Table 3, Lambda=0.5, F1: 0.8472",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Same broken binary_truth F1 metric.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 61,
+            "claim": "61. Table 3, Lambda=1.0, Attribution F1: 0.8376",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: attribution_f1_score=accuracy in code; paper reports attribution_F1 as different from reported accuracy (0.8389).",
+            "evidence": "code/evaluation.py:244-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 63,
+            "claim": "63. Table 3, Lambda=1.0, F1: 0.8352",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Same broken binary_truth F1 metric.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 64,
+            "claim": "64. Table 4, layer_specific, Attribution F1: 0.7982",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: attribution_f1_score=accuracy in code. Should equal accuracy=0.8412 but paper reports 0.7982.",
+            "evidence": "code/evaluation.py:244-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 66,
+            "claim": "66. Table 4, layer_specific, Precision: 0.8253",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Same broken binary_truth=[1,...,1] yields precision=1.0. Reported 0.8253 is impossible.",
+            "evidence": "code/evaluation.py:43; code/evaluation.py:46-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:43",
+                    "code/evaluation.py:46-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 67,
+            "claim": "67. Table 4, layer_specific, Recall: 0.8489",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Evaluation formulation incorrect for attribution recall measurement due to binary_truth=[1,...,1].",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 68,
+            "claim": "68. Table 4, layer_specific, F1: 0.8369",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: With precision=1.0, F1=2*recall/(1+recall). For recall=0.8489, F1=0.919, not 0.8369. Impossible with this code.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 69,
+            "claim": "69. Table 4, multi_layer, Attribution F1: 0.8342",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: attribution_f1_score=accuracy in code. Should equal accuracy=0.8642 but paper reports 0.8342.",
+            "evidence": "code/evaluation.py:244-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 71,
+            "claim": "71. Table 4, multi_layer, Precision: 0.8451",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Same broken binary_truth=[1,...,1] yields precision=1.0. Reported 0.8451 is impossible.",
+            "evidence": "code/evaluation.py:43; code/evaluation.py:46-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:43",
+                    "code/evaluation.py:46-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 72,
+            "claim": "72. Table 4, multi_layer, Recall: 0.8723",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Evaluation formulation incorrect for attribution recall measurement.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 73,
+            "claim": "73. Table 4, multi_layer, F1: 0.8585",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: With precision=1.0, F1 would be ~0.932 for recall=0.8723. Reported 0.8585 is impossible.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 74,
+            "claim": "74. Table 4, attention, Attribution F1: 0.8213",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: attribution_f1_score=accuracy in code. Should equal accuracy=0.8573 but paper reports 0.8213.",
+            "evidence": "code/evaluation.py:244-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 76,
+            "claim": "76. Table 4, attention, Precision: 0.8392",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Same broken binary_truth=[1,...,1] yields precision=1.0. Reported 0.8392 is impossible.",
+            "evidence": "code/evaluation.py:43; code/evaluation.py:46-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:43",
+                    "code/evaluation.py:46-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 77,
+            "claim": "77. Table 4, attention, Recall: 0.8645",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Evaluation formulation incorrect for attribution recall measurement.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 78,
+            "claim": "78. Table 4, attention, F1: 0.8516",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: With precision=1.0, F1 would be ~0.927 for recall=0.8645. Reported 0.8516 is impossible.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 79,
+            "claim": "79. Table 5, Threshold=0.1, Precision: 0.7234",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: At threshold=0.1, nearly all examples exceed threshold, so TP is high and FP=0 (binary_truth=[1,...,1]). Precision=1.0. Reported 0.7234 is impossible.",
+            "evidence": "code/evaluation.py:42-48; code/run_experiment.py:542-548",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48",
+                    "code/run_experiment.py:542-548"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 80,
+            "claim": "80. Table 5, Threshold=0.1, Recall: 0.9112",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Evaluation formulation incorrect for attribution recall measurement due to binary_truth=[1,...,1].",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 81,
+            "claim": "81. Table 5, Threshold=0.1, F1: 0.8068",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: With precision=1.0, F1=2*0.9112/(1+0.9112)=0.954, not 0.8068. Impossible with this code.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 82,
+            "claim": "82. Table 5, Threshold=0.3, Precision: 0.7856",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: binary_truth=[1,...,1] ensures FP=0 always, so precision=1.0. Reported 0.7856 is impossible.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 83,
+            "claim": "83. Table 5, Threshold=0.3, Recall: 0.8723",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Evaluation formulation incorrect for attribution recall due to binary_truth=[1,...,1].",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 84,
+            "claim": "84. Table 5, Threshold=0.3, F1: 0.8265",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: With precision=1.0, F1=2*0.8723/(1.8723)=0.932, not 0.8265. Impossible.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 85,
+            "claim": "85. Table 5, Threshold=0.5, Precision: 0.8451",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: binary_truth=[1,...,1] ensures precision=1.0 regardless of threshold. Reported 0.8451 is impossible.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 86,
+            "claim": "86. Table 5, Threshold=0.5, Recall: 0.8723",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Evaluation formulation incorrect for attribution recall measurement.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 87,
+            "claim": "87. Table 5, Threshold=0.5, F1: 0.8585",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: With precision=1.0, F1 would be ~0.932 for recall=0.8723. Reported 0.8585 is impossible.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 88,
+            "claim": "88. Table 5, Threshold=0.7, Precision: 0.9023",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: binary_truth=[1,...,1] ensures precision=1.0 whenever any predictions exceed threshold. Reported 0.9023 < 1.0 is impossible.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 89,
+            "claim": "89. Table 5, Threshold=0.7, Recall: 0.7842",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Evaluation formulation incorrect for attribution recall measurement due to binary_truth=[1,...,1].",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 90,
+            "claim": "90. Table 5, Threshold=0.7, F1: 0.8390",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: With precision=1.0, F1=2*0.7842/(1.7842)=0.879, not 0.8390. Impossible.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 91,
+            "claim": "91. Table 5, Threshold=0.9, Precision: 0.9542",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: binary_truth=[1,...,1] ensures precision=1.0. Reported 0.9542 < 1.0 is impossible.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 92,
+            "claim": "92. Table 5, Threshold=0.9, Recall: 0.6324",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Evaluation formulation incorrect for attribution recall measurement.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 93,
+            "claim": "93. Table 5, Threshold=0.9, F1: 0.7613",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: With precision=1.0, F1=2*0.6324/(1.6324)=0.775, not 0.7613. Impossible.",
+            "evidence": "code/evaluation.py:42-48",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:42-48"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 1,
+            "claim": "1. Table 1, AGT-MLM, Accuracy: 0.8642",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The experiment pipeline requires load_dataset('gutenberg', split='train') in data_processing.py:117. This dataset identifier has never existed on Hugging Face — confirmed by both the DatasetNotFoundError and an explicit search. The paper claims a 124-source Project Gutenberg corpus, but the actual dataset object used in code is fabricated (non-existent HuggingFace identifier), blocking any experiment from running and making the reported accuracy of 0.8642 unverifiable and unsupported.",
+            "evidence": "load_dataset('gutenberg', split='train') raises DatasetNotFoundError: Dataset 'gutenberg' doesn't exist on the Hub or cannot be accessed. HuggingFace search for 'gutenberg' returns only community datasets (e.g., sedthh/gutenberg_english), never a bare 'gutenberg' identifier. | Code: code/data_processing.py:117",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/data_processing.py:117"
+                ],
+                "commands_executed": [
+                    "python3 -c \"from datasets import load_dataset; d = load_dataset('gutenberg', split='train'); print(d)\""
+                ]
+            }
+        },
+        {
+            "claim_index": 7,
+            "claim": "7. Table 1, Post-hoc, Accuracy: 0.7912",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The Post-hoc model experiment (claim 7) requires the 'gutenberg' dataset via load_dataset('gutenberg', split='train'), but this dataset identifier has never existed on HuggingFace. The dataset blocker prevents the experiment from running at all, making the reported accuracy of 0.7912 unverifiable and the dataset itself fabricated.",
+            "evidence": "Prior execution (claim_1_command_output.txt) confirmed: `load_dataset('gutenberg', split='train')` raises DatasetNotFoundError — dataset identifier 'gutenberg' has never existed on HuggingFace Hub. run_experiment.py lines 186-200 show PostHocAttributionModel is trained using the same train_loader/val_loader derived from this dataset. | Code: code/data_processing.py:18 (load_dataset import), code/run_experiment.py:186-200 (PostHocAttributionModel training with same train_loader/val_loader)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/data_processing.py:18 (load_dataset import), code/run_experiment.py:186-200 (PostHocAttributionModel training with same train_loader/val_loader)"
+                ],
+                "commands_executed": [
+                    "Reused prior artifact from Session 3: `python3 -c \"from datasets import load_dataset; d = load_dataset('gutenberg', split='train'); print(d)\"` → DatasetNotFoundError"
+                ]
+            }
+        },
+        {
+            "claim_index": 13,
+            "claim": "13. Table 1, Data Shapley, Accuracy: 0.8015",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: Claim 13 requires running DataShapleySimulator which uses the same data pipeline as all other models. The pipeline calls load_dataset('gutenberg', ...) which fails because 'gutenberg' has never existed as a standalone dataset on HuggingFace Hub. The experiment cannot be executed to produce the reported accuracy of 0.8015.",
+            "evidence": "DataShapleySimulator in run_experiment.py (lines 252-307) uses the same train_loader/val_loader/test_loader from prepare_datasets, which calls load_dataset('gutenberg', split='train'). Prior Session 3 execution confirmed: DatasetNotFoundError: Dataset 'gutenberg' doesn't exist on the Hub or cannot be accessed. | Code: code/run_experiment.py:252-307 (DataShapleySimulator training), code/data_processing.py (load_dataset('gutenberg', split='train'))",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/run_experiment.py:252-307 (DataShapleySimulator training), code/data_processing.py (load_dataset('gutenberg', split='train'))"
+                ],
+                "commands_executed": [
+                    "None (reused artifact from Session 3: python3 -c \"from datasets import load_dataset; d = load_dataset('gutenberg', split='train'); print(d)\" → DatasetNotFoundError)"
+                ]
+            }
+        },
+        {
+            "claim_index": 19,
+            "claim": "19. Table 1, MinimalSubset, Accuracy: 0.8245",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: MinimalSubset uses the same data pipeline as all other models. The pipeline calls `load_dataset('gutenberg', split='train')`, but the 'gutenberg' dataset identifier has never existed on Hugging Face Hub. The experiment cannot be executed and the claimed accuracy of 0.8245 cannot be reproduced.",
+            "evidence": "claim_1_command_output.txt (Session 3): `DatasetNotFoundError: Dataset 'gutenberg' doesn't exist on the Hub or cannot be accessed.` MinimalSubsetAttributionModel uses the same `prepare_datasets` pipeline (run_experiment.py:318-376) which calls `load_dataset('gutenberg', split='train')` in data_processing.py. | Code: code/data_processing.py (load_dataset('gutenberg', split='train')); code/run_experiment.py:318-376 (MinimalSubsetAttributionModel training/eval using same test_loader)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/data_processing.py (load_dataset('gutenberg', split='train'))",
+                    "code/run_experiment.py:318-376 (MinimalSubsetAttributionModel training/eval using same test_loader)"
+                ],
+                "commands_executed": [
+                    "None (reused artifact from Session 3: `python3 -c \"from datasets import load_dataset; d = load_dataset('gutenberg', split='train'); print(d)\"`)"
+                ]
+            }
+        },
+        {
+            "claim_index": 50,
+            "claim": "50. Table 3, Lambda=0.01, Accuracy: 0.8723",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The lambda ablation experiment (Table 3) requires loading the 'gutenberg' dataset via load_dataset('gutenberg', split='train'). This dataset identifier has never existed on HuggingFace Hub, as confirmed by prior execution. The experiment cannot run, and the reported accuracy of 0.8723 for lambda=0.01 cannot be reproduced.",
+            "evidence": "code/run_experiment.py lines 386-452: lambda ablation loop uses same prepare_datasets pipeline; code/data_processing.py: load_dataset('gutenberg', split='train') fails — dataset 'gutenberg' has never existed on HuggingFace Hub (confirmed in Session 3, workspace/claim_1_command_output.txt) | Code: code/run_experiment.py:392-445 (lambda_values loop), code/data_processing.py:load_dataset('gutenberg')",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/run_experiment.py:392-445 (lambda_values loop), code/data_processing.py:load_dataset('gutenberg')"
+                ],
+                "commands_executed": [
+                    "None — reused prior artifact from Session 3 (claim_1_command_output.txt) which confirmed DatasetNotFoundError for 'gutenberg'"
+                ]
+            }
+        },
+        {
+            "claim_index": 53,
+            "claim": "53. Table 3, Lambda=0.05, Accuracy: 0.8701",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The lambda ablation experiment (Table 3, Lambda=0.05, Accuracy=0.8701) requires loading dataset 'gutenberg' via load_dataset('gutenberg', split='train'), but this dataset identifier has never existed on the HuggingFace Hub. This is the same blocker confirmed across claims 1, 7, 13, 19, and 50. The accuracy value cannot be reproduced.",
+            "evidence": "paper/paper.md line 260 confirms Lambda=0.05 → Accuracy=0.8701 in Table 3. code/data_processing.py uses load_dataset('gutenberg', split='train') which has never existed on HuggingFace Hub (confirmed by claim_1_command_output.txt: DatasetNotFoundError). Lambda ablation loop in run_experiment.py lines 386-452 uses the same prepare_datasets pipeline. | Code: code/data_processing.py (load_dataset call); code/run_experiment.py:386-452 (lambda ablation loop)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/data_processing.py (load_dataset call)",
+                    "code/run_experiment.py:386-452 (lambda ablation loop)"
+                ],
+                "commands_executed": [
+                    "None (reused artifact from Session 3: python3 -c \"from datasets import load_dataset; d = load_dataset('gutenberg', split='train'); print(d)\" → DatasetNotFoundError)"
+                ]
+            }
+        },
+        {
+            "claim_index": 56,
+            "claim": "56. Table 3, Lambda=0.1, Accuracy: 0.8642",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: Claim 56 (Table 3, Lambda=0.1, Accuracy=0.8642) requires the lambda ablation experiment to run, which uses the same data pipeline: prepare_datasets() → load_dataset('gutenberg', split='train'). This dataset identifier has never existed on HuggingFace Hub, so the experiment cannot be executed and the reported accuracy cannot be reproduced.",
+            "evidence": "Reused fabscore_claude/workspace/claim_1_command_output.txt: HuggingFace Hub search shows no bare 'gutenberg' dataset exists (only community datasets like sedthh/gutenberg_english). All prior sessions (3-8) confirmed this same blocker for all accuracy claims. | Code: code/data_processing.py: load_dataset('gutenberg', split='train')",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/data_processing.py: load_dataset('gutenberg', split='train')"
+                ],
+                "commands_executed": [
+                    "None (reused existing artifact from Session 3: python3 -c \"from datasets import load_dataset; d = load_dataset('gutenberg', split='train'); print(d)\" → DatasetNotFoundError)"
+                ]
+            }
+        },
+        {
+            "claim_index": 59,
+            "claim": "59. Table 3, Lambda=0.5, Accuracy: 0.8521",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: Claim 59 (Table 3, Lambda=0.5, Accuracy=0.8521) is a lambda ablation experiment that requires the 'gutenberg' dataset via load_dataset('gutenberg', split='train'). This dataset identifier has never existed on HuggingFace Hub, making the experiment unreproducible. All lambda ablation values share the same data pipeline, so this is the same data fabrication blocker as established in prior sessions.",
+            "evidence": "Existing artifact claim_1_command_output.txt (Session 3) confirms `load_dataset('gutenberg', split='train')` raises DatasetNotFoundError — 'gutenberg' has never existed on HuggingFace Hub. Session 7 confirmed lambda_values=[0.01, 0.05, 0.1, 0.5, 1.0] all use the same prepare_datasets pipeline. | Code: code/data_processing.py: load_dataset('gutenberg', split='train'); code/run_experiment.py lines 386-452: lambda ablation loop over [0.01, 0.05, 0.1, 0.5, 1.0]",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/data_processing.py: load_dataset('gutenberg', split='train')",
+                    "code/run_experiment.py lines 386-452: lambda ablation loop over [0.01, 0.05, 0.1, 0.5, 1.0]"
+                ],
+                "commands_executed": [
+                    "None (reused prior artifact from Session 3)"
+                ]
+            }
+        },
+        {
+            "claim_index": 62,
+            "claim": "62. Table 3, Lambda=1.0, Accuracy: 0.8389",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: Table 3 Lambda=1.0 accuracy (0.8389) cannot be reproduced. The code pipeline for all lambda ablation experiments calls load_dataset('gutenberg', split='train') via prepare_datasets(), but the dataset identifier 'gutenberg' has never existed on HuggingFace Hub (verified in Session 3). All five lambda values share this same broken data pipeline.",
+            "evidence": "Prior sessions (3-10) confirmed that load_dataset('gutenberg', split='train') fails with DatasetNotFoundError because 'gutenberg' has never existed on HuggingFace Hub. Session 7 confirmed all lambda values [0.01, 0.05, 0.1, 0.5, 1.0] in Table 3 use the same data pipeline. Artifact: fabscore_claude/workspace/claim_1_command_output.txt | Code: code/data_processing.py: load_dataset('gutenberg', split='train'); code/run_experiment.py:386-452: lambda_values = [0.01, 0.05, 0.1, 0.5, 1.0] ablation loop using same prepare_datasets pipeline",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/data_processing.py: load_dataset('gutenberg', split='train')",
+                    "code/run_experiment.py:386-452: lambda_values = [0.01, 0.05, 0.1, 0.5, 1.0] ablation loop using same prepare_datasets pipeline"
+                ],
+                "commands_executed": [
+                    "None (reused prior artifact from Session 3: python3 -c \"from datasets import load_dataset; d = load_dataset('gutenberg', split='train'); print(d)\" → DatasetNotFoundError)"
+                ]
+            }
+        },
+        {
+            "claim_index": 65,
+            "claim": "65. Table 4, layer_specific, Accuracy: 0.8412",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The layer_specific architecture ablation in Table 4 uses the same data pipeline as all other experiments: prepare_datasets() calls load_dataset('gutenberg', split='train'), which fails with DatasetNotFoundError because no bare 'gutenberg' dataset has ever existed on HuggingFace Hub. The claimed accuracy 0.8412 cannot be reproduced.",
+            "evidence": "code/run_experiment.py:463-495 shows architecture ablation iterates ['layer_specific', 'multi_layer', 'attention'] using same prepare_datasets → load_dataset('gutenberg') pipeline; Session 3 confirmed dataset 'gutenberg' has never existed on HuggingFace Hub (DatasetNotFoundError) | Code: code/run_experiment.py:463-495 (architecture ablation loop using AttributionGuidedMLM with train/val/test loaders from prepare_datasets); code/data_processing.py (load_dataset('gutenberg', split='train'))",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/run_experiment.py:463-495 (architecture ablation loop using AttributionGuidedMLM with train/val/test loaders from prepare_datasets)",
+                    "code/data_processing.py (load_dataset('gutenberg', split='train'))"
+                ],
+                "commands_executed": [
+                    "None (reused artifact from Session 3: python3 -c \"from datasets import load_dataset; d = load_dataset('gutenberg', split='train')\" → DatasetNotFoundError)"
+                ]
+            }
+        },
+        {
+            "claim_index": 70,
+            "claim": "70. Table 4, multi_layer, Accuracy: 0.8642",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The multi_layer architecture ablation in Table 4 uses the same data pipeline as all other experiments: prepare_datasets() calls load_dataset('gutenberg', split='train') which fails because the dataset 'gutenberg' has never existed on HuggingFace Hub. The experiment cannot be executed to produce Accuracy 0.8642.",
+            "evidence": "Existing artifact fabscore_claude/workspace/claim_1_command_output.txt (Session 3) shows load_dataset('gutenberg') fails with dataset not found on HuggingFace Hub. Session 12 confirmed run_experiment.py lines 460-529 shows architecture_types = ['layer_specific', 'multi_layer', 'attention'] all use the same prepare_datasets pipeline with load_dataset('gutenberg', split='train'). | Code: code/run_experiment.py:470 (prepare_datasets call in architecture ablation loop), code/run_experiment.py:460-529 (architecture ablation section)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/run_experiment.py:470 (prepare_datasets call in architecture ablation loop), code/run_experiment.py:460-529 (architecture ablation section)"
+                ],
+                "commands_executed": [
+                    "None (reused existing artifact from Session 3 — claim_1_command_output.txt confirming 'gutenberg' dataset not found on HuggingFace)"
+                ]
+            }
+        },
+        {
+            "claim_index": 75,
+            "claim": "75. Table 4, attention, Accuracy: 0.8573",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The 'attention' architecture ablation in Table 4 uses the same data pipeline as all other experiments. The required dataset 'gutenberg' has never existed on HuggingFace Hub, making it impossible to reproduce the claimed Accuracy of 0.8573.",
+            "evidence": "Session 12 confirmed architecture_types=['layer_specific','multi_layer','attention'] all use prepare_datasets→load_dataset('gutenberg',split='train') in run_experiment.py lines 460-529. Session 3 artifact (claim_1_command_output.txt) shows DatasetNotFoundError: Dataset 'gutenberg' doesn't exist on the Hub. | Code: code/run_experiment.py:460-529 (architecture ablation loop using prepare_datasets→load_dataset('gutenberg'))",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/run_experiment.py:460-529 (architecture ablation loop using prepare_datasets→load_dataset('gutenberg'))"
+                ],
+                "commands_executed": [
+                    "None — reused existing artifact from Session 3: fabscore_claude/workspace/claim_1_command_output.txt"
+                ]
+            }
+        }
+    ],
+    "figures": [
+        {
+            "claim_index": 94,
+            "claim": "1. training_curves_comparison.png: [Training Loss Comparison]",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The figure training_curves_comparison.png in paper/ is a manually placed artifact with no backing data. No repository code generates a file with that exact filename. The underlying training experiment uses load_dataset('gutenberg', split='train') which has never existed on HuggingFace Hub, making it impossible to generate or verify the training curves that would back this figure.",
+            "evidence": "training_curves_comparison.png exists in paper/ but no code generates this filename (plot_training_history() generates {model_name}_loss.png only); no backing data files exist; load_dataset('gutenberg') → DatasetNotFoundError (confirmed Session 3); output/figures/ is empty | Code: code/training.py:583 (plot_training_history generates {model_name}_loss.png, not training_curves_comparison.png); code/data_processing.py (load_dataset('gutenberg') blocker)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/training.py:583 (plot_training_history generates {model_name}_loss.png, not training_curves_comparison.png)",
+                    "code/data_processing.py (load_dataset('gutenberg') blocker)"
+                ],
+                "commands_executed": [
+                    "None (reused claim_1_command_output.txt from Session 3: python3 -c \"from datasets import load_dataset; d = load_dataset('gutenberg', split='train')\" → DatasetNotFoundError)"
+                ]
+            }
+        },
+        {
+            "claim_index": 95,
+            "claim": "2. training_curves_agt_mlm_multi_layer_loss.png: [AGT-MLM Loss Curves]",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The figure training_curves_agt_mlm_multi_layer_loss.png in paper/ has no backing data in output/figures/. The code (run_experiment.py:143-147) would generate agt_mlm_multi_layer_loss.png, not training_curves_agt_mlm_multi_layer_loss.png. The training experiment cannot be reproduced because it calls load_dataset('gutenberg') which has never existed on HuggingFace Hub, making the loss curves unverifiable.",
+            "evidence": "paper/training_curves_agt_mlm_multi_layer_loss.png exists as manually placed artifact; output/figures/ is empty (no backing data); code/run_experiment.py:138-147 would generate 'agt_mlm_multi_layer_loss.png' (naming mismatch with claimed filename); training pipeline requires load_dataset('gutenberg') which has never existed on HuggingFace Hub (DatasetNotFoundError confirmed in Session 3) | Code: code/run_experiment.py:143-147 (plot_training_history call), code/training.py:614 (generates {model_name}_loss.png), code/data_processing.py (load_dataset('gutenberg'))",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/run_experiment.py:143-147 (plot_training_history call), code/training.py:614 (generates {model_name}_loss.png), code/data_processing.py (load_dataset('gutenberg'))"
+                ],
+                "commands_executed": [
+                    "None (reused claim_1_command_output.txt artifact from Session 3 showing DatasetNotFoundError for load_dataset('gutenberg'))"
+                ]
+            }
+        },
+        {
+            "claim_index": 96,
+            "claim": "3. training_curves_agt_mlm_multi_layer_accuracy.png: [AGT-MLM Accuracy Curves]",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The accuracy curve figure has no backing data. The code would generate a differently-named file (agt_mlm_multi_layer_accuracy.png vs training_curves_agt_mlm_multi_layer_accuracy.png). More critically, the entire training pipeline depends on load_dataset('gutenberg') which has never existed on HuggingFace Hub, making it impossible to generate these training curves.",
+            "evidence": "paper/paper.md:323 references training_curves_agt_mlm_multi_layer_accuracy.png. code/training.py:631 shows plot_training_history() generates {model_name}_accuracy.png (would output agt_mlm_multi_layer_accuracy.png, not training_curves_agt_mlm_multi_layer_accuracy.png). output/figures/ is empty. load_dataset('gutenberg') raises DatasetNotFoundError (confirmed in Session 3, workspace/claim_1_command_output.txt). | Code: code/training.py:631 (accuracy plot generation), code/run_experiment.py:470 (load_dataset('gutenberg', split='train'))",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/training.py:631 (accuracy plot generation), code/run_experiment.py:470 (load_dataset('gutenberg', split='train'))"
+                ],
+                "commands_executed": [
+                    "None (reused prior artifact from Session 3: claim_1_command_output.txt confirming DatasetNotFoundError for 'gutenberg')"
+                ]
+            }
+        },
+        {
+            "claim_index": 97,
+            "claim": "4. lambda_ablation.png: [Lambda Ablation]",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The lambda_ablation.png figure in paper/ has no backing experimental data. The lambda ablation in run_experiment.py uses the same prepare_datasets pipeline that calls load_dataset('gutenberg', split='train'), which has never existed on HuggingFace Hub (confirmed in Session 3). The output/ directory is empty with no saved experiment results. The figure is a manually placed artifact that cannot be reproduced from the repository.",
+            "evidence": "paper/lambda_ablation.png exists as manually placed artifact; output/ directory is completely empty (no backing data); code/run_experiment.py:417-453 shows lambda ablation requires prepare_datasets which calls load_dataset('gutenberg') — confirmed in prior sessions to never have existed on HuggingFace Hub | Code: code/run_experiment.py:417-453 (lambda ablation loop), code/evaluation.py:413-467 (plot_lambda_ablation)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/run_experiment.py:417-453 (lambda ablation loop), code/evaluation.py:413-467 (plot_lambda_ablation)"
+                ],
+                "commands_executed": [
+                    "None (reused prior artifact from Session 3: claim_1_command_output.txt showing DatasetNotFoundError for 'gutenberg')"
+                ]
+            }
+        },
+        {
+            "claim_index": 98,
+            "claim": "5. architecture_comparison.png: [Architecture Comparison]",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: The architecture_comparison.png figure (Figure 5) cannot be verified because the backing data cannot be generated. The architecture ablation experiment requires the 'gutenberg' dataset via load_dataset('gutenberg', split='train'), which has never existed on HuggingFace Hub. No intermediate data files, metrics, or experiment outputs exist to support the figure. The PNG in paper/ is a manually uploaded artifact with no reproducible backing data.",
+            "evidence": "paper/architecture_comparison.png exists as a pre-existing PNG with no backing data files in code/output/. plot_architecture_comparison() in evaluation.py:469 is called by run_experiment.py:521 during architecture ablation, which requires prepare_datasets() -> load_dataset('gutenberg', split='train'). The 'gutenberg' dataset has never existed on HuggingFace Hub (confirmed in Session 3). All output directories (code/output/figures/, code/output/results/, code/output/models/) are empty. | Code: code/evaluation.py:469 (plot_architecture_comparison), code/run_experiment.py:461-529 (architecture ablation calling prepare_datasets -> load_dataset('gutenberg'))",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:469 (plot_architecture_comparison), code/run_experiment.py:461-529 (architecture ablation calling prepare_datasets -> load_dataset('gutenberg'))"
+                ],
+                "commands_executed": [
+                    "None (reused prior artifact from Session 3: load_dataset('gutenberg') confirmed to never exist on HuggingFace Hub)"
+                ]
+            }
+        },
+        {
+            "claim_index": 99,
+            "claim": "6. threshold_effect.png: [Threshold Effect]",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: threshold_effect.png in paper/ has no backing data. The threshold ablation calls plot_threshold_effect() with data from agt_mlm_model and test_loader, both produced by the same prepare_datasets → load_dataset('gutenberg', split='train') pipeline. Dataset identifier 'gutenberg' has never existed on HuggingFace Hub, making the experiment unreproducible. The PNG is a manually placed artifact.",
+            "evidence": "paper/threshold_effect.png exists as manually placed artifact. code/run_experiment.py:531-568 shows threshold ablation requires agt_mlm_model and test_loader from prepare_datasets pipeline. code/data_processing.py uses load_dataset('gutenberg', split='train') which fails with DatasetNotFoundError (confirmed in Session 3 artifact: fabscore_claude/workspace/claim_1_command_output.txt). code/output/figures/ is empty. | Code: code/run_experiment.py:531-568 (threshold ablation), code/evaluation.py:511-550 (plot_threshold_effect), code/data_processing.py:load_dataset('gutenberg')",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/run_experiment.py:531-568 (threshold ablation), code/evaluation.py:511-550 (plot_threshold_effect), code/data_processing.py:load_dataset('gutenberg')"
+                ],
+                "commands_executed": [
+                    "None (reused prior Session 3 artifact confirming load_dataset('gutenberg') → DatasetNotFoundError)"
+                ]
+            }
+        },
+        {
+            "claim_index": 100,
+            "claim": "7. model_comparison.png: [Model Comparison]",
+            "verdict": "Data Fabrication",
+            "explanation": "Execution stage: model_comparison.png in paper/ has no backing data. The plot_model_comparison() call (run_experiment.py:629) depends on model metrics from the full training/evaluation pipeline, which uses load_dataset('gutenberg') — a dataset that has never existed on HuggingFace Hub. No output artifacts exist in code/output/figures/. The figure cannot be reproduced.",
+            "evidence": "plot_model_comparison() at run_experiment.py:629 requires results['model_metrics'] populated by prepare_datasets -> load_dataset('gutenberg', split='train'), which DatasetNotFoundError confirms has never existed on HuggingFace Hub (Session 3 artifact). code/output/figures/ directory is empty. paper/model_comparison.png is a manually placed artifact with no backing data. | Code: code/run_experiment.py:629 (plot_model_comparison call); code/evaluation.py:371 (plot_model_comparison definition)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/run_experiment.py:629 (plot_model_comparison call)",
+                    "code/evaluation.py:371 (plot_model_comparison definition)"
+                ],
+                "commands_executed": [
+                    "None (reused prior Session 3 artifact: claim_1_command_output.txt confirming load_dataset('gutenberg') -> DatasetNotFoundError)"
+                ]
+            }
+        },
+        {
+            "claim_index": 101,
+            "claim": "8. computational_efficiency.png: [Computational Efficiency]",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The computational efficiency figure purports to show measured training/inference overhead, but the timing values are explicitly hardcoded and labeled as 'Simulated' in the code at run_experiment.py:640-641. No actual timing measurements are performed anywhere in the repository. The figure is built from fabricated timing data passed to plot_computational_efficiency().",
+            "evidence": "run_experiment.py:640-641: `training_times = [1.2, 1.0, 1.1, 1.05]` and `inference_times = [1.1, 1.0, 1.05, 1.15]` with comment '# Simulated relative training and inference times'. paper/computational_efficiency.png exists as a manually placed PNG. code/output/figures/ is empty. | Code: code/run_experiment.py:640-641, code/evaluation.py:555",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/run_experiment.py:640-641, code/evaluation.py:555"
+                ],
+                "commands_executed": [
+                    "None (static code inspection sufficient; fabrication is explicit in the code comment 'Simulated relative training and inference times')"
+                ]
+            }
+        }
+    ],
+    "results_section": [
+        {
+            "claim_index": 102,
+            "claim": "1. The AGT-MLM model achieves an Attribution F1 score of 0.8342, representing a 19.5% improvement over the best baseline method (MinimalSubset with 0.7589).",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: Both underlying values (0.8342 and 0.7589) are fabricated due to broken evaluation code (attribution_f1_score=accuracy). Additionally, (0.8342-0.7589)/0.7589=9.9%, not 19.5% as claimed. The percentage calculation is arithmetically wrong even with the paper's own numbers.",
+            "evidence": "code/evaluation.py:244-256",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/evaluation.py:244-256"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 103,
+            "claim": "2. AGT-MLM achieves the highest Attribution F1 score with only a modest increase in training time (1.2x relative to a standard model without attribution).",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Analysis stage: In run_experiment.py:640-641, training_times=[1.2, 1.0, 1.1, 1.05] is hardcoded as a simulated value, not measured. Paper claims this as an experimental result of actual computational overhead measurement.",
+            "evidence": "code/run_experiment.py:639-641",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "experiment_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "code/run_experiment.py:639-641"
+                ],
+                "commands_executed": []
+            }
+        }
+    ],
+    "summary": {
+        "total": 103,
+        "verified": 0,
+        "data_fabrication": 19,
+        "experiment_fabrication": 84,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 0
+    },
+    "analysis_summary": {
+        "total_claims": 103,
+        "no_code_files": 0,
+        "obvious_hallucination": 83,
+        "data_fabrication": 0,
+        "experiment_fabrication": 83,
+        "result_fabrication": 0,
+        "static_verifiable": 0,
+        "insufficient_evidence": 0,
+        "execution_required": 20,
+        "error": 0
+    },
+    "execution_summary": {
+        "total": 20,
+        "verified": 0,
+        "data_fabrication": 19,
+        "experiment_fabrication": 1,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 0,
+        "error": 0
+    },
+    "final_assessment": {
+        "fab_score": 0.0,
+        "total_claims": 103,
+        "verified": 0,
+        "data_fabrication": 19,
+        "experiment_fabrication": 84,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 0,
+        "static_code_analysis_breakdown": {
+            "verified": 0,
+            "no_code_files": 0,
+            "data_fabrication": 0,
+            "experiment_fabrication": 83,
+            "result_fabrication": 0,
+            "insufficient_evidence": 0
+        },
+        "execution_artifact_analysis_breakdown": {
+            "verified": 0,
+            "no_code_files": 0,
+            "data_fabrication": 18,
+            "experiment_fabrication": 1,
+            "result_fabrication": 0,
+            "insufficient_evidence": 0
+        },
+        "code_execution_breakdown": {
+            "verified": 0,
+            "no_code_files": 0,
+            "data_fabrication": 1,
+            "experiment_fabrication": 0,
+            "result_fabrication": 0,
+            "insufficient_evidence": 0
+        }
+    }
+}

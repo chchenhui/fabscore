@@ -1,0 +1,33 @@
+{
+    "tables": [],
+    "figures": [
+        {
+            "claim_index": 81,
+            "claim": "1. Figure 1: Training and validation loss curves for the 'x_div_y' dataset across different noise levels.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The experiment framework is functional and produces valid training trajectories with distinct loss curves for different noise levels (verified with 1-seed runs). However, all_results.npy — the training trajectory data required by plot.py to generate Figure 1 — is absent from all run directories (run_0 through run_5). Full reproduction requires 18+ training runs (~33 min) for x_div_y across all noise levels. Additionally, run_1.py has a bug where it omits noise_level=0.1 in the run() call (defaulting to baseline), and run_1/final_info.json shows anomalous per-seed results inconsistent with either baseline or noise_level=0.1. Without the original training trajectory data, the exact curves in Figure 1 cannot be verified.",
+            "evidence": "fabscore_claude/workspace/verify_trajectories.npy: 750-step training trajectories for x_div_y baseline (final val_loss=0.0085, val_acc=1.0) and noise_level=0.1 (final val_loss=0.0508, val_acc=0.999). run_0-run_5 directories all lack all_results.npy. run_1.py has code bug (no noise_level argument passed). run_1/final_info_x_div_y seed 2 shows anomalous val_loss=2.87. | Code: experiment.py:309 (run function), plot.py:15-20 (loads all_results.npy), run_1.py:405 (missing noise_level=0.1 argument)",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "experiment.py:309 (run function), plot.py:15-20 (loads all_results.npy), run_1.py:405 (missing noise_level=0.1 argument)"
+                ],
+                "commands_executed": [
+                    "python3 -c 'from experiment import run; run(..., augment=False, noise_level=0.0) and run(..., augment=True, noise_level=0.1) for x_div_y, seed_offset=0'"
+                ]
+            }
+        }
+    ],
+    "results_section": [],
+    "summary": {
+        "total": 1,
+        "verified": 0,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 1,
+        "error": 0
+    }
+}

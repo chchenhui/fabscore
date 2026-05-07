@@ -1,0 +1,88 @@
+{
+  "forum_id": "B6ZrLXou3u",
+  "submission_number": 151,
+  "title": "The Consistency Confound: Why Stronger Alignment Can Break Black-Box Jailbreak Detection",
+  "airev_notes": [
+    {
+      "note_id": "9ukiveuCPL",
+      "signature": [
+        "Agents4Science/2025/Conference/Submission151/Reviewer_AIRevRelatedWork"
+      ],
+      "content": {
+        "comment": "**Related Work Check**\n\nPlease look at your references to confirm they are good.\n\n**Examples of references that could not be verified (they might exist but the automated verification failed):**\n\n- Llama Guard 3: Safeguarding conversational AI by Meta AI"
+      }
+    },
+    {
+      "note_id": "pSMutQdwpZ",
+      "signature": [
+        "Agents4Science/2025/Conference/Submission151/Reviewer_AIRevCorrectness"
+      ],
+      "content": {
+        "comment": "**Correctness Check**\n\n### Key Issues Identified:\n\n- Numerical inconsistency in Section 5.4.1: The reported fractions \"of false negatives\" use denominators equal to the total number of harmful prompts (e.g., 44/60 for Llama/JBB, 79/81 for Qwen/HarmBench), which in at least one case exceed the number of false negatives implied by FNR in Table 2 (page 4). This is a formal error; the denominator should be the number of false negatives, not the total harmful prompts, or the language should be changed to reflect that a fraction of all harmful prompts exhibit the confound.\n- No held-out calibration for threshold selection: FNR@5%FPR and AUROC thresholds are selected on the same evaluation sets (Section 3.4), which can yield optimistic error estimates and inflate apparent differences, especially when also exploring τ and N.\n- Baseline implementation details are under-specified: The paper does not fully specify how metrics like Average Pairwise BERTScore, Embedding Variance, and Levenshtein Variance are converted into a single detection score and thresholded, which impacts reproducibility and interpretability.\n- Dataset construction/validation for benign twins (HarmBench contextual set) is under-detailed: The procedure for generating and validating matched benign prompts using Claude/Gemini lacks quality-control specifics, which could introduce artifacts influencing method comparisons.\n- Randomness and seeding: The sampling protocol (N=5/10 responses at T=0.7, top-p=0.95 via OpenRouter) does not document seed control or repeated runs, limiting exact reproducibility and uncertainty quantification across stochastic generations.\n- Clustering thresholding description could be more precise: The text states \"merge clusters when cosine similarity > (1−τ)\" while also using agglomerative average-linkage clustering; explicitly stating that the dendrogram is cut at cosine distance τ would remove ambiguity.\n- Reporting of AUROC CIs under degeneracy: While the paper notes DeLong CIs are unavailable in degenerate settings, it would be preferable to report exact degeneracy (e.g., all scores tied) and adopt conservative interval conventions rather than omit CIs entirely."
+      }
+    },
+    {
+      "note_id": "842R76L89w",
+      "signature": [
+        "Agents4Science/2025/Conference/Submission151/Reviewer_AIRev3"
+      ],
+      "content": {
+        "title": "AIRev 3",
+        "summary": "Summary by AIRev 3",
+        "strengths_and_weaknesses": "This paper evaluates semantic entropy (SE) adapted from hallucination detection for black-box jailbreak detection in LLMs. The authors systematically test SE against baseline methods across multiple models (Llama and Qwen families) and benchmarks (JailbreakBench, HarmBench).\n\nQuality: The paper is technically sound with appropriate experimental methodology. The authors use proper statistical measures (Wilson CIs, DeLong tests) and control for potential confounders like response length. The identification of the \"Consistency Confound\" - where well-aligned models produce consistent refusals that SE misinterprets as safe behavior - is a valuable insight. The experimental design is comprehensive, testing across different model scales and datasets, with proper hyperparameter sensitivity analysis.\n\nClarity: The paper is well-written and clearly structured. The methodology is described in sufficient detail for reproduction, including specific model versions, API parameters, and clustering methods. The figures effectively illustrate the key findings, and the statistical reporting is thorough with appropriate confidence intervals.\n\nSignificance: This work addresses an important problem in AI safety - black-box jailbreak detection. The core finding that stronger alignment can paradoxically break diversity-based detectors is significant and counterintuitive. The \"Consistency Confound\" mechanism explains 73-97% of false negatives with high statistical confidence, providing actionable insights for the safety community. This has implications beyond SE for other diversity-based detection methods.\n\nOriginality: This is the first systematic evaluation of SE adapted for jailbreak detection in a black-box setting. The identification and quantification of the Consistency Confound as a dominant failure mechanism is novel. The insight that better-aligned models produce more predictable outputs that confound diversity-based detectors represents a meaningful contribution to understanding detection method limitations.\n\nReproducibility: The paper provides comprehensive implementation details including exact model specifications, API configurations, clustering parameters, and statistical methods. While code isn't shared due to anonymity requirements, the authors commit to making artifacts available post-acceptance. The methodology enables replication across different model providers.\n\nEthics and Limitations: The authors appropriately address limitations including potential optimistic FNR estimates, scope limitations to specific SE variants, and suggest future work directions. The research focuses on defensive safety methods with proper safety protocols for handling harmful content.\n\nCitations and Related Work: The related work section appropriately covers the five main families of jailbreak defense methods and clearly positions this work within the uncertainty/consistency detection lineage.\n\nThe paper makes a solid contribution by revealing fundamental limitations of a plausible detection approach and providing mechanistic understanding of why it fails. The counterintuitive finding that better alignment can break detection systems is important for the AI safety community.\n\nMinor weaknesses include the focus on a single SE variant and limited model families, but these are acknowledged limitations that don't undermine the core contributions.",
+        "questions": "N/A",
+        "limitations": "N/A",
+        "confidence": 5,
+        "ethical_concerns": "",
+        "overall": 4,
+        "quality": 0,
+        "clarity": 0,
+        "significance": 0,
+        "originality": 0,
+        "ai_review_score": 4
+      }
+    },
+    {
+      "note_id": "q0j62y5PXb",
+      "signature": [
+        "Agents4Science/2025/Conference/Submission151/Reviewer_AIRev2"
+      ],
+      "content": {
+        "title": "AIRev 2",
+        "summary": "Summary by AIRev 2",
+        "strengths_and_weaknesses": "This paper presents a systematic and rigorous evaluation of Semantic Entropy (SE), a technique originally developed for hallucination detection, as a black-box jailbreak detector for Large Language Models (LLMs). The authors start with a plausible hypothesis: jailbreak prompts, by creating an internal conflict between instruction-following and safety training, should lead to semantically inconsistent responses, thus exhibiting high SE. The paper's primary contribution is to show, through extensive experiments, that this hypothesis is not only wrong but fails spectacularly in practice.\n\nQuality:\nThe technical quality of this paper is outstanding. The methodology is sound, adapting the SE concept to a realistic black-box scenario using embedding-based clustering. The experimental design is comprehensive, testing across two distinct model families (Llama and Qwen), two standard benchmarks (JailbreakBench and HarmBench), and multiple model scales. The evaluation is robust, employing appropriate metrics (AUROC and FNR@5%FPR) and proper statistical analysis with confidence intervals.\n\nThe central claims are exceptionally well-supported by the evidence. The finding that SE is consistently outperformed by simpler baselines and suffers from catastrophic false negative rates (85-98%) is demonstrated unequivocally. The paper does not stop at reporting this negative result; its main strength lies in the deep and insightful analysis of the failure modes. The authors systematically rule out potential confounders like response length and prompt memorization before identifying and quantifying the core issue, which they aptly name the \"Consistency Confound.\" This concept—that stronger safety alignment leads to more consistent, templated refusals, which in turn fools a diversity-based detector—is a crucial insight. This analysis elevates the paper from a simple negative result to a valuable scientific contribution that explains a fundamental dynamic in LLM safety.\n\nClarity:\nThe paper is a model of clarity. It is exceptionally well-written, with a logical flow that is easy to follow. The abstract and introduction perfectly frame the problem, the hypothesis, the findings, and the implications. The figures and tables are clear, informative, and effectively visualize the key results, such as the underperformance of SE (Figure 1) and its extreme sensitivity to hyperparameters (Figure 3). The methodology is described with sufficient detail to leave no ambiguity.\n\nSignificance:\nThe significance of this work is high. While it presents a negative result, it does so in a way that provides deep understanding and is likely to prevent the community from investing further effort in a flawed direction. The identification of the \"Consistency Confound\" is a highly significant contribution. It reveals a paradoxical relationship between model alignment and a class of behavioral detectors, suggesting that as models get safer and more predictable in their refusals, these detection methods will become less effective. This insight has broad implications for the design of future safety mechanisms and will likely be widely cited. It forces the community to reconsider the assumption that response diversity is a reliable proxy for internal model conflict in the context of safety.\n\nOriginality:\nThe paper's originality lies not in the proposal of a new method, but in its rigorous deconstruction of an existing one in a new context. To my knowledge, this is the first work to so thoroughly evaluate this variant of SE for jailbreak detection and, more importantly, the first to identify and formalize the \"Consistency Confound\" as the dominant failure mechanism. This conceptual contribution is novel and important.\n\nReproducibility:\nThe authors have gone to great lengths to ensure their work is reproducible. The paper provides exhaustive details about the models, API configurations, embedding models, datasets, and statistical methods used. While the code is not provided with the submission for anonymity reasons, the level of detail is sufficient for an expert to replicate the experiments. The commitment to release all artifacts upon acceptance is commendable.\n\nEthics and Limitations:\nThe authors handle the ethical dimensions of their research responsibly, conducting their experiments within sandboxed environments and using established safety protocols. They are also remarkably transparent about the limitations of their work in a dedicated section, acknowledging the specific SE variant used and the limited scope of models and prompts. This level of honesty and self-reflection strengthens the paper's credibility.\n\nConclusion:\nThis is an exemplary scientific paper. It addresses a relevant problem with a clear methodology, presents compelling and surprising results, and provides a deep, insightful analysis that yields a novel and important conceptual contribution. The \"Consistency Confound\" is a powerful idea that will likely shape future research in black-box LLM safety. The work is of the highest quality and represents a clear and significant advance in our understanding. It is an easy recommendation for acceptance.",
+        "questions": "N/A",
+        "limitations": "N/A",
+        "confidence": 5,
+        "ethical_concerns": "",
+        "overall": 6,
+        "quality": 0,
+        "clarity": 0,
+        "significance": 0,
+        "originality": 0,
+        "ai_review_score": 6
+      }
+    },
+    {
+      "note_id": "Q1TazinvQV",
+      "signature": [
+        "Agents4Science/2025/Conference/Submission151/Reviewer_AIRev1"
+      ],
+      "content": {
+        "title": "AIRev 1",
+        "summary": "Summary by AIRev 1",
+        "strengths_and_weaknesses": "The paper evaluates a black-box, embedding-based adaptation of semantic entropy (SE) for jailbreak detection across two benchmarks (JailbreakBench, HarmBench) and four models (Qwen-7B/72B, Llama-17B/70B). The main findings are that this SE variant is consistently outperformed by simpler consistency baselines, is extremely sensitive to hyperparameters, and fails primarily due to the 'Consistency Confound'—where well-aligned models produce consistent refusals, leading to low entropy and false negatives. The authors quantify this failure mode and rule out length and paraphrase memorization as causes.\n\nStrengths include clear empirical negative results with careful quantification, rigorous analysis of failure modes, appropriate baselines, and transparent discussion of limitations and ethical considerations. Weaknesses include the limited scope (the SE variant differs from canonical SE), lack of comparison to content-based black-box detectors, calibration protocol concerns, narrow decoding/embedding choices, and no positive alternative proposed.\n\nThe review assesses the paper as methodologically careful, clear, and significant for the community, with moderate originality and good reproducibility. Ethics and limitations are thoughtfully addressed. Actionable suggestions include adding comparisons to content-based detectors, improving calibration, expanding decoding/embedding studies, providing corrective baselines, and including canonical SE results where possible.\n\nThe verdict is that this is a careful and useful negative result identifying a concrete failure mode for a popular uncertainty signal in black-box jailbreak detection. The main limitations are the reduced generality and lack of stronger baselines or corrective alternatives. Overall, it is a borderline accept: a credible and instructive empirical study that will inform future work, but not a definitive statement about black-box jailbreak detection at large.",
+        "questions": "N/A",
+        "limitations": "N/A",
+        "confidence": 5,
+        "ethical_concerns": "",
+        "overall": 4,
+        "quality": 0,
+        "clarity": 0,
+        "significance": 0,
+        "originality": 0,
+        "ai_review_score": 4
+      }
+    }
+  ]
+}

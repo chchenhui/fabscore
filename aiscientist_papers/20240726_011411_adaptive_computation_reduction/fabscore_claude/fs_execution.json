@@ -1,0 +1,68 @@
+{
+    "tables": [],
+    "figures": [
+        {
+            "claim_index": 25,
+            "claim": "1. Figure 1: Training and validation loss curves for the enwik8 dataset.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The per-iteration loss curve data (all_results.npy) required by plot.py to generate Figure 1 is absent from all run directories. Summary metrics in final_info_enwik8_0.json confirm training occurred with realistic values (enwik8 best_val_loss range 1.005–1.945 across 6 runs), but these are final aggregates not per-iteration curves. Full reproduction is infeasible in this session (multi-hour GPU training). Pre-existing PNGs are insufficient for Verified per rules. No concrete conflict with the paper was found, but evidence is incomplete.",
+            "evidence": "All 6 run directories contain final_info_enwik8_0.json with realistic training metrics (run_0: final_train_loss=0.930, best_val_loss=1.006, train_time=819s; run_5: 0.976/1.005/797s; etc.). Pre-existing train_loss_enwik8.png and val_loss_enwik8.png exist. all_results.npy absent from all run directories. enwik8 dataset present at /home/chenhui/data/enwik8/. H200 GPUs available but full regeneration requires ~40min × 6 runs. | Code: plot.py:17 — np.load(osp.join(folder, 'all_results.npy'), allow_pickle=True); experiment.py:725 — np.save(f, all_results) [produces the missing artifact]",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "plot.py:17 — np.load(osp.join(folder, 'all_results.npy'), allow_pickle=True)",
+                    "experiment.py:725 — np.save(f, all_results) [produces the missing artifact]"
+                ],
+                "commands_executed": [
+                    "No training commands executed. Inspected existing artifacts: ls run_{0..5}/, cat run_*/final_info_enwik8_0.json, diff experiment.py run_1.py, read plot.py and run_1.py."
+                ]
+            }
+        },
+        {
+            "claim_index": 26,
+            "claim": "2. Figure 2: Training and validation loss curves for the text8 dataset.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The pre-existing PNG artifacts for Figure 2 cannot satisfy the Verified standard because they could be manually uploaded. The underlying raw per-iteration data (all_results.npy) needed by plot.py to regenerate the figures is absent from all run directories. The final_info_text8_0.json files confirm genuine training occurred, but do not contain per-iteration curve data. Full regeneration requires ~40 min × 6 runs of GPU training, which is infeasible in this session. No concrete conflict with the paper was found; evidence is simply incomplete.",
+            "evidence": "train_loss_text8.png and val_loss_text8.png pre-exist in repo root; final_info_text8_0.json present for all 6 run directories (runs 0–5) confirming training ran; all_results.npy absent from all run directories (required by plot.py for per-iteration curve data) | Code: plot.py: loads all_results.npy from each run directory to extract val_info and train_info per-iteration entries",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "plot.py: loads all_results.npy from each run directory to extract val_info and train_info per-iteration entries"
+                ],
+                "commands_executed": [
+                    "ls /home/chenhui/fabscore/aiscientist_papers/20240726_011411_adaptive_computation_reduction/run_*/all_results.npy (no such files found)"
+                ]
+            }
+        },
+        {
+            "claim_index": 27,
+            "claim": "3. Figure 3: Training and validation loss curves for the shakespeare_char dataset.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The plot.py script requires all_results.npy (per-iteration loss data) from each run directory to generate Figure 3. These .npy files are absent from all 6 run directories. The final_info JSON files contain only summary metrics (final_train_loss, best_val_loss, total_train_time), not per-iteration curves. Pre-existing PNG artifacts cannot substitute for raw underlying data. Full regeneration is theoretically feasible (GPU available) but requires ~40 min × 6 runs of training. No concrete conflict with the paper's claims is established.",
+            "evidence": "run_*/final_info_shakespeare_char_*.json files exist for all 6 runs (summary metrics only); all_results.npy absent from all run directories; train_loss_shakespeare_char.png and val_loss_shakespeare_char.png pre-exist but are insufficient for Verified per rules | Code: plot.py:17 — np.load(osp.join(folder, 'all_results.npy'), allow_pickle=True)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "plot.py:17 — np.load(osp.join(folder, 'all_results.npy'), allow_pickle=True)"
+                ],
+                "commands_executed": [
+                    "None (find for .npy files returned no results; prior sessions confirmed absence; situation identical to verified-absent claims 25 and 26)"
+                ]
+            }
+        }
+    ],
+    "results_section": [],
+    "summary": {
+        "total": 3,
+        "verified": 0,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 3,
+        "error": 0
+    }
+}

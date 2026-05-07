@@ -1,0 +1,163 @@
+{
+    "tables": [],
+    "figures": [
+        {
+            "claim_index": 1,
+            "claim": "1. decision_quality.png: Decision Quality over Time",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: The figure results/decision_quality.png exists. The underlying data used to generate it is stored in codex/results.json, which contains three arrays of 100 per-iteration utility values (static, passive, udca). The plotting code in codex/experiment.py (lines 73-82) computes cumulative average utility from these same arrays and saves the plot. The data arrays in results.json correspond directly to the data plotted in decision_quality.png, satisfying the requirement for underlying data files matching the figure.",
+            "evidence": "results/decision_quality.png; codex/results.json (keys: results.static, results.passive, results.udca — 100 utility values each); codex/experiment.py:73-82 (plotting code)",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "results/decision_quality.png",
+                    "codex/results.json (keys: results.static, results.passive, results.udca — 100 utility values each)",
+                    "codex/experiment.py:73-82 (plotting code)"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 2,
+            "claim": "2. pce.png: Final Preference Calibration Error",
+            "verdict": "Verified",
+            "explanation": "Execution stage: The experiment.py script (lines 84-96) correctly computes Final Preference Calibration Error as mean((phi @ theta_true - phi @ model.mu)^2) for each method (static, passive, udca) and generates a bar chart saved as pce.png. The script ran successfully and produced a valid pce.png. The claim that 'pce.png: Final Preference Calibration Error' is confirmed by the code and fresh execution.",
+            "evidence": "Successfully ran `python codex/experiment.py` from repo root, generating `codex/pce.png`. Also ran seeded reproduction (seed=42) capturing PCE values: {'static': 9.74, 'passive': 2.07, 'udca': 3.76}. Fresh `pce.png` saved to `fabscore_claude/workspace/claim_2_pce.png` with bar chart titled 'Final PCE' with ylabel 'Preference Calibration Error'. | Code: codex/experiment.py:84-96",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "codex/experiment.py:84-96"
+                ],
+                "commands_executed": [
+                    "python codex/experiment.py; python3 (inline reproduction with seed=42 to capture PCE values)"
+                ]
+            }
+        }
+    ],
+    "results_section": [
+        {
+            "claim_index": 5,
+            "claim": "3. ≈ 15% increase in Likert trust scores, p<0.01",
+            "verdict": "No Code Files",
+            "explanation": "Analysis stage: This result comes from the paper's user study (N=30 participants, grid-world planning task). The repository contains only codex/experiment.py which implements a simulated recommendation experiment, with no user study code, participant data, statistical analysis scripts, or survey results anywhere in the repository. There is no implementation path or claim-relevant artifact for this result.",
+            "evidence": "codex/experiment.py (recommendation simulation only, no user study)",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "no_code_files"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "codex/experiment.py (recommendation simulation only, no user study)"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 4,
+            "claim": "2. Query Efficiency: static issues 0 queries, passive 100, UDCA fewer than 100 (adaptive).",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: The query counts are directly stored in codex/results.json under the 'queries' key: {\"static\": 0, \"passive\": 100, \"udca\": 50}. This exactly matches the paper claim (static=0, passive=100, UDCA<100). The experiment.py implements the logic that produces these counts: static never queries, passive queries every iteration (100 total), and UDCA queries only when max variance exceeds threshold (resulting in 50 queries in this run).",
+            "evidence": "codex/results.json: queries.static=0, queries.passive=100, queries.udca=50; codex/experiment.py:54-69 (query logic for each method)",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "codex/results.json: queries.static=0, queries.passive=100, queries.udca=50",
+                    "codex/experiment.py:54-69 (query logic for each method)"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 3,
+            "claim": "1. UDCA achieves a PCE of ≈1.5 versus 6.4 (static) and 0.3 (passive).",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The experiment has no fixed random seed, so the exact triple (6.4, 1.5, 0.3) cannot be reproduced deterministically. Across 200 seeded runs, UDCA mean (~1.43) matches the paper's '≈1.5' closely, passive median (~0.38) is close to the claimed 0.3, and static 6.4 is within the observed distribution (p75=7.7). The expected ordering (passive<udca<static) holds 84% of the time, supporting the qualitative finding. However, the specific combination cannot be definitively verified without knowing the original seed, and static=6.4 is substantially above the median. No fabrication is evident — values are plausible outcomes of the stochastic simulation.",
+            "evidence": "200-run distribution: UDCA mean=1.428 (median 0.885, std 1.412), static mean=5.460 (median 4.631, std 3.390), passive mean=0.747 (median 0.381, std 0.842). Ordering passive<udca<static holds in 84% of runs. Paper's claimed UDCA≈1.5 matches empirical mean; passive 0.3 near median (0.381); static 6.4 above median but in upper quartile. | Code: codex/experiment.py:84-96 (PCE computation: mean((phi @ theta_true - phi @ model.mu)^2))",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "codex/experiment.py:84-96 (PCE computation: mean((phi @ theta_true - phi @ model.mu)^2))"
+                ],
+                "commands_executed": [
+                    "python3 -c '[50-run and 200-run seeded inline simulations of experiment.py logic to assess PCE distribution]'"
+                ]
+            }
+        }
+    ],
+    "summary": {
+        "total": 5,
+        "verified": 3,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "no_code_files": 1,
+        "insufficient_evidence": 1
+    },
+    "analysis_summary": {
+        "total_claims": 5,
+        "no_code_files": 1,
+        "obvious_hallucination": 0,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "static_verifiable": 2,
+        "insufficient_evidence": 0,
+        "execution_required": 2,
+        "error": 0
+    },
+    "execution_summary": {
+        "total": 2,
+        "verified": 1,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 1,
+        "error": 0
+    },
+    "final_assessment": {
+        "fab_score": 0.6,
+        "total_claims": 5,
+        "verified": 3,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "no_code_files": 1,
+        "insufficient_evidence": 1,
+        "static_code_analysis_breakdown": {
+            "verified": 2,
+            "no_code_files": 1,
+            "data_fabrication": 0,
+            "experiment_fabrication": 0,
+            "result_fabrication": 0,
+            "insufficient_evidence": 0
+        },
+        "execution_artifact_analysis_breakdown": {
+            "verified": 0,
+            "no_code_files": 0,
+            "data_fabrication": 0,
+            "experiment_fabrication": 0,
+            "result_fabrication": 0,
+            "insufficient_evidence": 0
+        },
+        "code_execution_breakdown": {
+            "verified": 1,
+            "no_code_files": 0,
+            "data_fabrication": 0,
+            "experiment_fabrication": 0,
+            "result_fabrication": 0,
+            "insufficient_evidence": 1
+        }
+    }
+}

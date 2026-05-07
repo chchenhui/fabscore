@@ -1,0 +1,33 @@
+{
+    "tables": [],
+    "figures": [
+        {
+            "claim_index": 49,
+            "claim": "1. Figure 1: Training and validation loss curves for different datasets. Each line represents a different run configuration, including the baseline and various attention re-routing mechanisms with different weighting factors. The shaded regions represent the standard error of the mean loss.",
+            "verdict": "Verified",
+            "explanation": "Execution stage: Execution of the training script produced all_results.npy confirming the per-iteration loss curves. plot.py generates training and validation loss curves (separate plots per dataset) with one labeled line per run configuration (Baseline + Attention Re-routing weighting factors 0.9, 0.8, 0.7, 0.6) and shaded regions computed as standard error of the mean (fill_between at ±sterr). This exactly matches the claim description of Figure 1.",
+            "evidence": "Successfully executed shakespeare_char training (5000 iters, ~93s on H200). Generated all_results.npy with 501 training entries and 21 val checkpoints (iter 0-5000). train_loss: 4.27→0.82, val_loss: 4.28→1.46 best. Data format matches plot.py requirements: dict keyed by '{dataset}_{seed}_val_info' with per-iter {'iter', 'train/loss', 'val/loss'} entries. plot.py confirmed: one line per run (Baseline+4 re-routing variants 0.9/0.8/0.7/0.6), fill_between with sterr=std/sqrt(n) for SEM shading. | Code: plot.py:31 (sterr=std/sqrt(n)), plot.py:68 (fill_between), plot.py:43-48 (labels dict with Baseline+re-routing variants), run_1.py:337 (train function), run_1.py:363 (max_iters=5000 for shakespeare_char)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "plot.py:31 (sterr=std/sqrt(n)), plot.py:68 (fill_between), plot.py:43-48 (labels dict with Baseline+re-routing variants), run_1.py:337 (train function), run_1.py:363 (max_iters=5000 for shakespeare_char)"
+                ],
+                "commands_executed": [
+                    "timeout 600 python fabscore_claude/workspace/test_train_shakespeare.py (from repo root); wrapper runs run_1.train('shakespeare_char', OUT_DIR, seed_offset=0)"
+                ]
+            }
+        }
+    ],
+    "results_section": [],
+    "summary": {
+        "total": 1,
+        "verified": 1,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 0,
+        "error": 0
+    }
+}

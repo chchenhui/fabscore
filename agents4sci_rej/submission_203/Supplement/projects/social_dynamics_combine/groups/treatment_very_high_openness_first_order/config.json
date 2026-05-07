@@ -1,0 +1,102 @@
+{
+  "simulator": {
+    "environment": {
+      "name": "social_dynamics",
+      "mode": "round",
+      "max_steps": 50,
+      "interval": 30.0,
+      "bus_idle_timeout": 10.0,
+      "export_training_data": false,
+      "export_event_data": false,
+      "collection_interval": 30,
+      "additional_config": {
+        "export_event_flow": false,
+        "event_flow_output_file": "event_flow.json",
+        "random_seed": 1005
+      }
+    }
+  },
+  "agent": {
+    "profile": {
+      "CulturalAgent": {
+        "count": 100,
+        "profile_path": "/data/wl/YuLan-OneSim-Dev/projects/social_dynamics/groups/treatment_group_very_high_openness/profile/data/CulturalAgent.json",
+        "schema_path": "/data/wl/YuLan-OneSim-Dev/projects/social_dynamics/groups/treatment_group_very_high_openness/profile/schema/CulturalAgent.json"
+      }
+    },
+    "planning": "COTPlanning",
+    "memory": {
+      "strategy": "ShortLongStrategy",
+      "storages": {
+        "short_term_storage": {
+          "class": "ListMemoryStorage",
+          "capacity": 100
+        },
+        "long_term_storage": {
+          "class": "VectorMemoryStorage",
+          "capacity": 100,
+          "model_config_name": "vllm-embedding-bert"
+        }
+      },
+      "metric_weights": {
+        "recency": 0.7
+      },
+      "transfer_conditions": {},
+      "operations": {
+        "add": {
+          "class": "AddMemoryOperation"
+        },
+        "retrieve": {
+          "class": "RetrieveMemoryOperation"
+        },
+        "remove": {
+          "class": "RemoveMemoryOperation"
+        }
+      },
+      "metrics": {
+        "recency": {
+          "class": "RecencyMetric",
+          "weight": 0.5
+        },
+        "relevance": {
+          "class": "RelevanceMetric",
+          "model_config_name": "vllm-embedding-bert",
+          "weight": 0.5
+        }
+      }
+    }
+  },
+  "database": {
+    "enabled": false,
+    "host": "localhost",
+    "port": 5432,
+    "dbname": "onesim",
+    "user": "postgres",
+    "password": "123456"
+  },
+  "distribution": {
+    "enabled": false,
+    "mode": "single",
+    "node_id": "1",
+    "master_address": "localhost",
+    "master_port": 10051
+  },
+  "monitor": {
+    "enabled": true,
+    "update_interval": 30,
+    "visualization_defaults": {
+      "line": {
+        "max_points": 100
+      },
+      "bar": {
+        "sort": true
+      },
+      "pie": {
+        "sort": true,
+        "merge_threshold": 0.05
+      }
+    }
+  },
+  "openness_level": "Very high openness",
+  "random_seed": 1005
+}

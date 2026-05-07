@@ -1,0 +1,993 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // Check if we're running under Live Server
+      if (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') {
+          let lastModified = '';
+
+          // Check for file changes every second
+          setInterval(async () => {
+              try {
+                  const response = await fetch(window.location.href, { method: 'HEAD' });
+                  // get a timestamp that shows when the file was last changed
+                  const currentModified = response.headers.get('last-modified');
+
+                  if (lastModified && lastModified !== currentModified) {
+                      window.location.reload();
+                  }
+
+                  lastModified = currentModified;
+              } catch (e) {
+                  console.error('Error checking for updates:', e);
+              }
+          }, 1000);
+      }
+  </script>
+    <script
+      id="p5scripttag"
+      src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"
+      integrity="sha512-uaz5GpnQoE6t5echKlX8P52czvsIGgLPcvlzfvRubLZ1Hp8JemUDnbUiAahbVtPb+jUVrNETuXvAhDDF/N3M4w=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+
+    <script>
+      const bgCol = "#FFFFFF";
+const accentCol = "#1a439e";
+
+hljs.initHighlightingOnLoad();
+
+// Function to update background color globally
+function updateBackgroundColor(color) {
+  // Update the JS variable
+  window.bgColCurrent = color;
+
+  // Update body background
+  document.body.style.backgroundColor = color;
+
+  // Update canvas container background
+  const canvasContainer = document.getElementById('canvas-container');
+  if (canvasContainer) {
+    canvasContainer.style.backgroundColor = color;
+  }
+}
+
+// Store tree data for each stage
+const stageData = {
+  Stage_1: null,
+  Stage_2: null,
+  Stage_3: null,
+  Stage_4: null
+};
+
+// Keep track of current selected stage
+let currentStage = null;
+let currentSketch = null;
+let availableStages = [];
+
+// Class definitions for nodes and edges
+class Node {
+  constructor(x, y, id, isRoot = false) {
+    this.x = x;
+    this.y = y;
+    this.id = id;
+    this.visible = isRoot; // Only root nodes are visible initially
+    this.appearProgress = 0;
+    this.popEffect = 0;
+    this.selected = false;
+    this.isRootNode = isRoot;
+  }
+
+  update() {
+    if (this.visible) {
+      // Handle the main appearance animation
+      if (this.appearProgress < 1) {
+        this.appearProgress += 0.06;
+
+        // When we reach full size, trigger the pop effect
+        if (this.appearProgress >= 1) {
+          this.appearProgress = 1; // Cap at 1
+          this.popEffect = 1; // Start the pop effect
+        }
+      }
+
+      // Handle the pop effect animation
+      if (this.popEffect > 0) {
+        this.popEffect -= 0.15; // Control how quickly it shrinks back
+        if (this.popEffect < 0) this.popEffect = 0; // Don't go negative
+      }
+    }
+  }
+
+  startAnimation() {
+    this.visible = true;
+  }
+
+  color() {
+    if (this.selected) {
+      return accentCol; // Use the global accent color variable for selected node
+    }
+    return '#4263eb'; // Default blue color
+  }
+
+  render(p5) {
+    if (this.visible) {
+      const popBonus = this.popEffect * 0.1;
+      const nodeScale = p5.map(this.appearProgress, 0, 1, 0, 1) + popBonus;
+      const alpha = p5.map(this.appearProgress, 0, 1, 0, 255);
+
+      p5.push();
+      p5.translate(this.x, this.y);
+
+      // Shadow effect
+      p5.noStroke();
+      p5.rectMode(p5.CENTER);
+
+      for (let i = 1; i <= 4; i++) {
+        p5.fill(0, 0, 0, alpha * 0.06);
+        p5.rect(i, i, 30 * nodeScale, 30 * nodeScale, 10);
+      }
+
+      // Main square - use node's color with alpha
+      let nodeColor = p5.color(this.color());
+      nodeColor.setAlpha(alpha);
+      p5.fill(nodeColor);
+      p5.rect(0, 0, 30 * nodeScale, 30 * nodeScale, 10);
+
+      // Draw checkmark icon if the node is selected
+      if (this.selected && this.appearProgress >= 1) {
+        p5.stroke(255);
+        p5.strokeWeight(2 * nodeScale);
+        p5.noFill();
+        // Draw checkmark
+        p5.beginShape();
+        p5.vertex(-8, 0);
+        p5.vertex(-3, 5);
+        p5.vertex(8, -6);
+        p5.endShape();
+      }
+
+      p5.pop();
+    }
+  }
+
+  isMouseOver(p5) {
+    return this.visible &&
+           p5.mouseX > this.x - 15 &&
+           p5.mouseX < this.x + 15 &&
+           p5.mouseY > this.y - 15 &&
+           p5.mouseY < this.y + 15;
+  }
+
+  // Connect this node to a child node
+  child(childNode) {
+    // Create an edge from this node to the child
+    let isLeft = childNode.x < this.x;
+    let isRight = childNode.x > this.x;
+    let edge = new Edge(this, childNode, isLeft, isRight);
+    return edge;
+  }
+}
+
+class Edge {
+  constructor(parent, child, isLeft, isRight) {
+    this.parent = parent;
+    this.child = child;
+    this.isLeft = isLeft;
+    this.isRight = isRight;
+    this.progress = 0;
+
+    // Calculate the midpoint where branching occurs
+    this.midY = parent.y + (child.y - parent.y) * 0.6;
+
+    // Use the actual child x-coordinate
+    // This ensures the edge will connect directly to the child node
+    this.branchX = child.x;
+  }
+
+  update() {
+    if (this.parent.visible && this.progress < 1) {
+      this.progress += 0.01; // Adjust animation speed
+    }
+    if (this.progress >= 1) {
+      this.child.visible = true;
+    }
+  }
+
+  color() {
+    return this.child.color();
+  }
+
+  render(p5) {
+    if (!this.parent.visible) return;
+
+    // Calculate path lengths
+    const verticalDist1 = this.midY - this.parent.y;
+    const horizontalDist = Math.abs(this.branchX - this.parent.x);
+    const verticalDist2 = this.child.y - this.midY;
+    const totalLength = verticalDist1 + horizontalDist + verticalDist2;
+
+    // Calculate how much of each segment to draw
+    const currentLength = totalLength * this.progress;
+
+    p5.stroke(180, 190, 205);
+    p5.strokeWeight(1.5);
+    p5.noFill();
+
+    // Always draw the first vertical segment from parent
+    if (currentLength > 0) {
+      const firstSegmentLength = Math.min(currentLength, verticalDist1);
+      const currentMidY = p5.lerp(this.parent.y, this.midY, firstSegmentLength / verticalDist1);
+      p5.line(this.parent.x, this.parent.y, this.parent.x, currentMidY);
+    }
+
+    if (currentLength > verticalDist1) {
+      // Draw second segment (horizontal)
+      const secondSegmentLength = Math.min(currentLength - verticalDist1, horizontalDist);
+      const currentBranchX = p5.lerp(this.parent.x, this.branchX, secondSegmentLength / horizontalDist);
+      p5.line(this.parent.x, this.midY, currentBranchX, this.midY);
+
+      if (currentLength > verticalDist1 + horizontalDist) {
+        // Draw third segment (vertical to child)
+        const thirdSegmentLength = currentLength - verticalDist1 - horizontalDist;
+        const currentChildY = p5.lerp(this.midY, this.child.y, thirdSegmentLength / verticalDist2);
+        p5.line(this.branchX, this.midY, this.branchX, currentChildY);
+      }
+    }
+  }
+}
+
+// Create a modified sketch for each stage
+function createTreeSketch(stageId) {
+  return function(p5) {
+    let nodes = [];
+    let edges = [];
+    let treeData = stageData[stageId];
+
+    p5.setup = function() {
+      const canvas = p5.createCanvas(p5.windowWidth * 0.4, p5.windowHeight);
+      canvas.parent('canvas-container');
+      p5.smooth();
+      p5.frameRate(60);
+
+      if (treeData) {
+        createTreeFromData(treeData);
+      }
+    };
+
+    p5.windowResized = function() {
+      p5.resizeCanvas(p5.windowWidth * 0.4, p5.windowHeight);
+    };
+
+    function createTreeFromData(data) {
+      // Clear existing nodes and edges
+      nodes = [];
+      edges = [];
+
+      // Add defensive checks to prevent errors
+      if (!data || !data.layout || !Array.isArray(data.layout) || !data.edges || !Array.isArray(data.edges)) {
+        console.error("Invalid tree data format:", data);
+        return; // Exit if data structure is invalid
+      }
+
+      // Find all parent nodes in edges
+      const parentNodes = new Set();
+      for (const [parentId, childId] of data.edges) {
+        parentNodes.add(parentId);
+      }
+
+      // Create nodes
+      for (let i = 0; i < data.layout.length; i++) {
+        const [nx, ny] = data.layout[i];
+        // A node is a root if it's a parent and not a child in any edge
+        const isRoot = parentNodes.has(i) && data.edges.every(edge => edge[1] !== i);
+
+        const node = new Node(
+          nx * p5.width * 0.8 + p5.width * 0.1,
+          ny * p5.height * 0.8 + p5.height * 0.1,
+          i,
+          isRoot
+        );
+        nodes.push(node);
+      }
+
+      // If no root was found, make the first parent node visible
+      if (!nodes.some(node => node.visible) && parentNodes.size > 0) {
+        // Get the first parent node
+        const firstParentId = [...parentNodes][0];
+        if (nodes[firstParentId]) {
+          nodes[firstParentId].visible = true;
+        }
+      }
+
+      // Create edges
+      for (const [parentId, childId] of data.edges) {
+        const parent = nodes[parentId];
+        const child = nodes[childId];
+        if (parent && child) { // Verify both nodes exist
+          const isLeft = child.x < parent.x;
+          const isRight = child.x > parent.x;
+          edges.push(new Edge(parent, child, isLeft, isRight));
+        }
+      }
+
+      // Select the first node by default
+      if (nodes.length > 0) {
+        nodes[0].selected = true;
+        updateNodeInfo(0);
+      }
+    }
+
+    p5.draw = function() {
+      // Use the global background color if available, otherwise use the default bgCol
+      const currentBgColor = window.bgColCurrent || bgCol;
+      p5.background(currentBgColor);
+
+      // Update and render edges
+      for (const edge of edges) {
+        edge.update();
+        edge.render(p5);
+      }
+
+      // Update and render nodes
+      for (const node of nodes) {
+        node.update();
+        node.render(p5);
+      }
+
+      // Handle mouse hover
+      p5.cursor(p5.ARROW);
+      for (const node of nodes) {
+        if (node.isMouseOver(p5)) {
+          p5.cursor(p5.HAND);
+        }
+      }
+    };
+
+    p5.mousePressed = function() {
+      // Check if any node was clicked
+      for (let i = 0; i < nodes.length; i++) {
+        if (nodes[i].visible && nodes[i].isMouseOver(p5)) {
+          // Deselect all nodes
+          nodes.forEach(n => n.selected = false);
+          // Select the clicked node
+          nodes[i].selected = true;
+          // Update the right panel with node info
+          updateNodeInfo(i);
+          break;
+        }
+      }
+    };
+
+    function updateNodeInfo(nodeIndex) {
+      if (treeData) {
+        setNodeInfo(
+          treeData.code[nodeIndex],
+          treeData.plan[nodeIndex],
+          treeData.plot_code?.[nodeIndex],
+          treeData.plot_plan?.[nodeIndex],
+          treeData.metrics?.[nodeIndex],
+          treeData.exc_type?.[nodeIndex] || '',
+          treeData.exc_info?.[nodeIndex]?.args?.[0] || '',
+          treeData.exc_stack?.[nodeIndex] || [],
+          treeData.plots?.[nodeIndex] || [],
+          treeData.plot_analyses?.[nodeIndex] || [],
+          treeData.vlm_feedback_summary?.[nodeIndex] || '',
+          treeData.datasets_successfully_tested?.[nodeIndex] || [],
+          treeData.exec_time_feedback?.[nodeIndex] || '',
+          treeData.exec_time?.[nodeIndex] || ''
+        );
+      }
+    }
+  };
+}
+
+// Start a new p5 sketch for the given stage
+function startSketch(stageId) {
+  if (currentSketch) {
+    currentSketch.remove();
+  }
+
+  if (stageData[stageId]) {
+    currentSketch = new p5(createTreeSketch(stageId));
+
+    // Update stage info
+    const stageNumber = stageId.split('_')[1];
+    let stageDesc = '';
+    switch(stageId) {
+      case 'Stage_1': stageDesc = 'Preliminary Investigation'; break;
+      case 'Stage_2': stageDesc = 'Baseline Tuning'; break;
+      case 'Stage_3': stageDesc = 'Research Agenda Execution'; break;
+      case 'Stage_4': stageDesc = 'Ablation Studies'; break;
+    }
+
+    document.getElementById('stage-info').innerHTML =
+      `<strong>Current Stage: ${stageNumber} - ${stageDesc}</strong>`;
+  }
+}
+
+// Handle tab selection
+function selectStage(stageId) {
+  if (!stageData[stageId] || !availableStages.includes(stageId)) {
+    return; // Don't allow selection of unavailable stages
+  }
+
+  // Update active tab styles
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  document.querySelector(`.tab[data-stage="${stageId}"]`).classList.add('active');
+
+  // Start the new sketch
+  currentStage = stageId;
+  startSketch(stageId);
+}
+
+// Function to load the tree data for all stages
+async function loadAllStageData(baseTreeData) {
+  console.log("Loading stage data with base data:", baseTreeData);
+
+  // The base tree data is for the current stage
+  const currentStageId = baseTreeData.current_stage || 'Stage_1';
+
+  // Ensure base tree data is valid and has required properties
+  if (baseTreeData && baseTreeData.layout && baseTreeData.edges) {
+    stageData[currentStageId] = baseTreeData;
+    availableStages.push(currentStageId);
+    console.log(`Added current stage ${currentStageId} to available stages`);
+  } else {
+    console.warn(`Current stage ${currentStageId} data is invalid:`, baseTreeData);
+  }
+
+  // Use relative path to load other stage trees
+  const logDirPath = baseTreeData.log_dir_path || '.';
+  console.log("Log directory path:", logDirPath);
+
+  // Load data for each stage if available
+  const stageNames = ['Stage_1', 'Stage_2', 'Stage_3', 'Stage_4'];
+  const stageNames2actualNames = {
+    'Stage_1': 'stage_1_initial_implementation_1_preliminary',
+    'Stage_2': 'stage_2_baseline_tuning_1_first_attempt',
+    'Stage_3': 'stage_3_creative_research_1_first_attempt',
+    'Stage_4': 'stage_4_ablation_studies_1_first_attempt'
+    }
+
+  for (const stage of stageNames) {
+
+    if (baseTreeData.completed_stages && baseTreeData.completed_stages.includes(stage)) {
+      try {
+        console.log(`Attempting to load data for ${stage} from ${logDirPath}/${stageNames2actualNames[stage]}/tree_data.json`);
+        const response = await fetch(`${logDirPath}/${stageNames2actualNames[stage]}/tree_data.json`);
+
+        if (response.ok) {
+          const data = await response.json();
+
+          // Validate the loaded data
+          if (data && data.layout && data.edges) {
+            stageData[stage] = data;
+            availableStages.push(stage);
+            console.log(`Successfully loaded and validated data for ${stage}`);
+          } else {
+            console.warn(`Loaded data for ${stage} is invalid:`, data);
+          }
+        } else {
+          console.warn(`Failed to load data for ${stage} - HTTP status ${response.status}`);
+        }
+      } catch (error) {
+        console.error(`Error loading data for ${stage}:`, error);
+      }
+    } else {
+      console.log(`Skipping stage ${stage} - not in completed stages list:`, baseTreeData.completed_stages);
+    }
+  }
+
+  // Update tab visibility based on available stages
+  updateTabVisibility();
+
+  // Start with the first available stage
+  if (availableStages.length > 0) {
+    selectStage(availableStages[0]);
+  } else {
+    console.warn("No stages available to display");
+    // Display a message in the canvas area
+    document.getElementById('canvas-container').innerHTML =
+      '<div style="padding: 20px; color: #333; text-align: center;"><h3>No valid tree data available to display</h3></div>';
+  }
+}
+
+// Update tab visibility based on available stages
+function updateTabVisibility() {
+  const tabs = document.querySelectorAll('.tab');
+  tabs.forEach(tab => {
+    const stageId = tab.getAttribute('data-stage');
+    if (availableStages.includes(stageId)) {
+      tab.classList.remove('disabled');
+    } else {
+      tab.classList.add('disabled');
+    }
+  });
+}
+
+// Utility function to set the node info in the right panel
+const setNodeInfo = (code, plan, plot_code, plot_plan, metrics = null, exc_type = '', exc_info = '',
+    exc_stack = [], plots = [], plot_analyses = [], vlm_feedback_summary = '',
+    datasets_successfully_tested = [], exec_time_feedback = '', exec_time = '') => {
+  const codeElm = document.getElementById("code");
+  if (codeElm) {
+    if (code) {
+      codeElm.innerHTML = hljs.highlight(code, { language: "python" }).value;
+    } else {
+      codeElm.innerHTML = '<p>No code available</p>';
+    }
+  }
+
+  const planElm = document.getElementById("plan");
+  if (planElm) {
+    if (plan) {
+      planElm.innerHTML = hljs.highlight(plan, { language: "plaintext" }).value;
+    } else {
+      planElm.innerHTML = '<p>No plan available</p>';
+    }
+  }
+
+  const plot_codeElm = document.getElementById("plot_code");
+  if (plot_codeElm) {
+    if (plot_code) {
+      plot_codeElm.innerHTML = hljs.highlight(plot_code, { language: "python" }).value;
+    } else {
+      plot_codeElm.innerHTML = '<p>No plot code available</p>';
+    }
+  }
+
+  const plot_planElm = document.getElementById("plot_plan");
+  if (plot_planElm) {
+    if (plot_plan) {
+      plot_planElm.innerHTML = hljs.highlight(plot_plan, { language: "plaintext" }).value;
+    } else {
+      plot_planElm.innerHTML = '<p>No plot plan available</p>';
+    }
+  }
+
+  const metricsElm = document.getElementById("metrics");
+  if (metricsElm) {
+      let metricsContent = `<h3>Metrics:</h3>`;
+      if (metrics && metrics.metric_names) {
+          for (const metric of metrics.metric_names) {
+              metricsContent += `<div class="metric-group">`;
+              metricsContent += `<h4>${metric.metric_name}</h4>`;
+              metricsContent += `<p><strong>Description:</strong> ${metric.description || 'N/A'}</p>`;
+              metricsContent += `<p><strong>Optimization:</strong> ${metric.lower_is_better ? 'Minimize' : 'Maximize'}</p>`;
+
+              // Create table for dataset values
+              metricsContent += `<table class="metric-table">
+                  <tr>
+                      <th>Dataset</th>
+                      <th>Final Value</th>
+                      <th>Best Value</th>
+                  </tr>`;
+
+              for (const dataPoint of metric.data) {
+                  metricsContent += `<tr>
+                      <td>${dataPoint.dataset_name}</td>
+                      <td>${dataPoint.final_value?.toFixed(4) || 'N/A'}</td>
+                      <td>${dataPoint.best_value?.toFixed(4) || 'N/A'}</td>
+                  </tr>`;
+              }
+
+              metricsContent += `</table></div>`;
+          }
+      } else if (metrics === null) {
+          metricsContent += `<p>No metrics available</p>`;
+      }
+      metricsElm.innerHTML = metricsContent;
+  }
+
+  // Add plots display
+  const plotsElm = document.getElementById("plots");
+  if (plotsElm) {
+      if (plots && plots.length > 0) {
+          let plotsContent = '';
+          plots.forEach(plotPath => {
+              plotsContent += `
+                  <div class="plot-item">
+                      <img src="${plotPath}" alt="Experiment Plot" onerror="console.error('Failed to load plot:', this.src)"/>
+                  </div>`;
+          });
+          plotsElm.innerHTML = plotsContent;
+      } else {
+          plotsElm.innerHTML = '';
+      }
+  }
+
+  // Add error info display
+  const errorElm = document.getElementById("exc_info");
+  if (errorElm) {
+    if (exc_type) {
+      let errorContent = `<h3 style="color: #ff5555">Exception Information:</h3>
+                          <p><strong>Type:</strong> ${exc_type}</p>`;
+
+      if (exc_info) {
+        errorContent += `<p><strong>Details:</strong> <pre>${JSON.stringify(exc_info, null, 2)}</pre></p>`;
+      }
+
+      if (exc_stack) {
+        errorContent += `<p><strong>Stack Trace:</strong> <pre>${exc_stack.join('\n')}</pre></p>`;
+      }
+
+      errorElm.innerHTML = errorContent;
+    } else {
+      errorElm.innerHTML = "No exception info available";
+    }
+  }
+
+  const exec_timeElm = document.getElementById("exec_time");
+  if (exec_timeElm) {
+    let exec_timeContent = '<div id="exec_time"><h3>Execution Time (in seconds):</h3><p>' + exec_time + '</p></div>';
+    exec_timeElm.innerHTML = exec_timeContent;
+  }
+
+  const exec_time_feedbackElm = document.getElementById("exec_time_feedback");
+  if (exec_time_feedbackElm) {
+    let exec_time_feedbackContent = '<div id="exec_time_feedback_content">'
+    exec_time_feedbackContent += '<h3>Execution Time Feedback:</h3>'
+    exec_time_feedbackContent += '<p>' + exec_time_feedback + '</p>'
+    exec_time_feedbackContent += '</div>';
+    exec_time_feedbackElm.innerHTML = exec_time_feedbackContent;
+  }
+
+  const vlm_feedbackElm = document.getElementById("vlm_feedback");
+  if (vlm_feedbackElm) {
+      let vlm_feedbackContent = '';
+
+      if (plot_analyses && plot_analyses.length > 0) {
+          vlm_feedbackContent += `<h3>Plot Analysis:</h3>`;
+          plot_analyses.forEach(analysis => {
+              if (analysis && analysis.plot_path) {  // Add null check
+                  vlm_feedbackContent += `
+                      <div class="plot-analysis">
+                          <h4>Analysis for ${analysis.plot_path.split('/').pop()}</h4>
+                          <p>${analysis.analysis || 'No analysis available'}</p>
+                          <ul class="key-findings">
+                              ${(analysis.key_findings || []).map(finding => `<li>${finding}</li>`).join('')}
+                          </ul>
+                      </div>`;
+              } else {
+                  console.warn('Received invalid plot analysis:', analysis);
+                  vlm_feedbackContent += `
+                      <div class="plot-analysis">
+                          <p>Invalid plot analysis data received</p>
+                      </div>`;
+              }
+          });
+      }
+
+      // Add actionable insights if available
+      if (vlm_feedback_summary && typeof vlm_feedback_summary === 'string') {
+          vlm_feedbackContent += `
+              <div class="vlm_feedback">
+                  <h3>VLM Feedback Summary:</h3>
+                  <p>${vlm_feedback_summary}</p>
+              </div>`;
+      }
+
+      console.log("Datasets successfully tested:", datasets_successfully_tested);
+      if (datasets_successfully_tested && datasets_successfully_tested.length > 0) {
+          vlm_feedbackContent += `
+              <div id="datasets_successfully_tested">
+                  <h3>Datasets Successfully Tested:</h3>
+                  <p>${datasets_successfully_tested.join(', ')}</p>
+              </div>`;
+      }
+
+      if (!vlm_feedbackContent) {
+          vlm_feedbackContent = '<p>No insights available for this experiment.</p>';
+      }
+
+      vlm_feedbackElm.innerHTML = vlm_feedbackContent;
+  }
+
+  const datasets_successfully_testedElm = document.getElementById("datasets_successfully_tested");
+  if (datasets_successfully_testedElm) {
+      let datasets_successfully_testedContent = '';
+      if (datasets_successfully_tested && datasets_successfully_tested.length > 0) {
+          datasets_successfully_testedContent = `<h3>Datasets Successfully Tested:</h3><ul>`;
+          datasets_successfully_tested.forEach(dataset => {
+              datasets_successfully_testedContent += `<li>${dataset}</li>`;
+          });
+          datasets_successfully_testedContent += `</ul>`;
+      } else {
+          datasets_successfully_testedContent = '<p>No datasets tested yet</p>';
+      }
+      datasets_successfully_testedElm.innerHTML = datasets_successfully_testedContent;
+  }
+};
+
+// Initialize with the provided tree data
+const treeStructData = {"edges": [[3, 7], [6, 11], [6, 10], [6, 8], [6, 9]], "layout": [[0.0, 0.0], [0.13333333333333333, 0.0], [0.26666666666666666, 0.0], [0.4, 0.0], [0.5333333333333333, 0.0], [0.6666666666666666, 0.0], [0.8, 0.0], [0.4, 1.0], [0.6, 1.0], [0.7333333333333333, 1.0], [0.8666666666666667, 1.0], [1.0, 1.0]], "plan": ["To implement the proposed framework, we will start by importing necessary\nlibraries and setting up the environment. We'll generate a synthetic dynamic\nnetwork dataset to simulate the dynamic nature of networks. This dataset will\ncomprise temporal motifs, which are small subgraphs representing micro-dynamic\npatterns. We'll create a simple Graph Neural Network (GNN) architecture to\nprocess these motifs at multiple scales. For contrastive learning, we'll employ\na loss function to maximize agreement between similar motif representations\nwhile minimizing agreement between dissimilar ones. We'll train the model using\nthis contrastive learning framework and evaluate its performance using the\nF1-score. We'll store evaluation metrics and losses for analysis and\nvisualization. Finally, we'll save model predictions and ground truth data for\nfurther examination.", "To implement the baseline of our research idea, we will start by creating a\nsimple synthetic dynamic network dataset to simulate temporal motifs and\nanomalies. We'll then define a basic graph neural network (GNN) model to process\nthese networks. We'll implement a simple contrastive learning mechanism to\nupdate the representations of normal behavior. The model will be trained and\nevaluated using F1-Score as the primary metric. We'll initialize the device to\nhandle GPU/CPU processing, and ensure that all model, input, and tensor\noperations are performed on the appropriate device. The training loop will\ninclude the tracking and printing of validation loss and F1-score, and all\nmetrics will be saved at the end of the experiment for further analysis.", "To implement a simple baseline for our research idea, we will create synthetic\ndynamic network data with temporal motifs. We'll use PyTorch and PyTorch\nGeometric to handle graph data and model training. Our model will use a Graph\nNeural Network (GNN) architecture to process temporal motifs. We'll implement a\ncontrastive learning loss function to enhance anomaly detection. For simplicity,\nwe'll use a synthetic dataset and focus on basic functionality. The evaluation\nwill be based on F1-score, which we'll calculate after each epoch. We'll save\nand print the validation loss and F1-score. The entire pipeline will handle\nGPU/CPU allocations properly. Lastly, we'll store metrics and predictions for\nfurther analysis.", "To implement the proposed framework for anomaly detection in dynamic networks,\nwe will begin with a simple synthetic dataset representing a dynamic network.\nWe'll create a basic Graph Neural Network (GNN) architecture to process the\ntemporal motifs extracted from our dataset. For simplicity, we'll use random\ngraphs as temporal motifs. We'll then implement a basic contrastive learning\nsetup using a simple loss function to update the representations of normal\nbehavior. The implementation will include data preprocessing, model definition,\ntraining, and evaluation using the F1-score as the primary metric. We'll ensure\nthat all operations are compatible with GPU processing. Finally, we'll save the\nmetrics and losses for further analysis.", "To implement the baseline for our research idea, we'll start by creating a\nsynthetic dynamic network dataset that simulates temporal motifs and anomalies.\nThis allows us to test the model's capabilities in a controlled environment.\nWe'll utilize a Graph Neural Network (GNN) architecture to process the network\ndata, as GNNs are well-suited for capturing structural information. Contrastive\nlearning techniques will enhance the model's ability to differentiate between\nnormal and anomalous patterns. We'll evaluate the model using the F1-score,\nwhich balances precision and recall, crucial for anomaly detection tasks with\nimbalanced class distributions. We'll ensure proper data handling, particularly\nin the DataLoader, to prevent issues such as batch size mismatches. The\nsynthetic data will be created with simple temporal motifs and anomalies, and\nthe GNN will be trained to recognize these patterns using contrastive learning.\nThe code will be structured to handle GPU processing, save experimental data,\nand evaluate using the F1-score.", "To implement the proposed framework, we'll start by generating a synthetic\ndynamic network dataset that simulates temporal motifs and anomalies. We'll use\na simple motif extraction method to identify these patterns in the network. For\nthe model, we'll use a basic Graph Neural Network (GNN) architecture to process\nthe network data, focusing on capturing the structural and temporal information.\nWe'll incorporate a contrastive learning approach to enhance the model's ability\nto distinguish between normal and anomalous motifs. The training loop will\ninclude a validation phase where we compute the F1-score to evaluate model\nperformance. We'll save the metrics, losses, and predictions for analysis. The\nimplementation will ensure proper handling of device placement for tensors and\nmodels, and we will print validation loss and F1-score at each epoch to track\nprogress.", "To implement the initial baseline for our anomaly detection framework, we'll\nstart by generating a synthetic dynamic network dataset with temporal motifs and\nanomalies. We'll use PyTorch and PyTorch Geometric to set up a simple Graph\nNeural Network (GNN) architecture. Our model will use a contrastive learning\napproach to distinguish between normal and anomalous patterns. We'll focus on\nbasic correctness, ensuring data handling aligns with GPU requirements, and\nimplement a simple training loop that outputs the F1-Score as our primary\nevaluation metric. The experiment will track and save metrics, losses, and\npredictions, and we'll ensure all computations are device-compatible. We'll\nadhere to the structure guidelines, including saving data for future analysis.\nFinally, we'll visualize the results and print the F1-Score to evaluate the\nmodel's performance.", "To fix the bug in the previous implementation, we need to ensure that the input\nto the loss function matches the expected dimensions. The `CrossEntropyLoss`\nexpects the input to have dimensions `(batch_size, num_classes)` and the target\nto have dimensions `(batch_size)`. In the current implementation, the model's\noutput has dimensions corresponding to all nodes in the batch, while the target\nis a single label per graph. To resolve this, we should aggregate the node-level\noutputs to produce a single graph-level output, which matches the target\ndimensionality. We'll average the node embeddings after the final GCN layer and\nuse this as the graph representation for classification.", "Seed node", "Seed node", "Seed node", "Aggregate results from multiple seeds"], "code": ["import os\nimport torch\nimport torch.nn as nn\nimport torch.optim as optim\nimport numpy as np\nfrom torch_geometric.nn import GCNConv\nfrom sklearn.metrics import f1_score\nfrom torch.utils.data import DataLoader, Dataset\nfrom torch_geometric.data import Data\n\n# Setting up the working directory\nworking_dir = os.path.join(os.getcwd(), \"working\")\nos.makedirs(working_dir, exist_ok=True)\n\n# Device configuration\ndevice = torch.device(\"cuda\" if torch.cuda.is_available() else \"cpu\")\nprint(f\"Using device: {device}\")\n\n\n# Synthetic data generation\nclass SyntheticDynamicNetwork(Dataset):\n    def __init__(self, num_samples=1000, num_nodes=10, num_features=5):\n        self.num_samples = num_samples\n        self.data = []\n        for _ in range(num_samples):\n            x = torch.randn((num_nodes, num_features)).to(device)\n            edge_index = torch.randint(0, num_nodes, (2, num_nodes)).to(device)\n            y = torch.randint(0, 2, (1,)).float().to(device)  # Binary labels\n            self.data.append(Data(x=x, edge_index=edge_index, y=y))\n\n    def __len__(self):\n        return self.num_samples\n\n    def __getitem__(self, idx):\n        return self.data[idx]\n\n\n# Simple GNN architecture\nclass SimpleGNN(nn.Module):\n    def __init__(self, in_channels, hidden_channels, out_channels):\n        super(SimpleGNN, self).__init__()\n        self.conv1 = GCNConv(in_channels, hidden_channels).to(device)\n        self.conv2 = GCNConv(hidden_channels, out_channels).to(device)\n\n    def forward(self, data):\n        x, edge_index = data.x, data.edge_index\n        x = self.conv1(x, edge_index).relu()\n        x = self.conv2(x, edge_index)\n        return x\n\n\n# Contrastive loss\nclass ContrastiveLoss(nn.Module):\n    def __init__(self):\n        super(ContrastiveLoss, self).__init__()\n\n    def forward(self, output1, output2, label):\n        euclidean_distance = nn.functional.pairwise_distance(output1, output2)\n        loss_contrastive = torch.mean(\n            (1 - label) * torch.pow(euclidean_distance, 2)\n            + (label) * torch.pow(torch.clamp(1.0 - euclidean_distance, min=0.0), 2)\n        )\n        return loss_contrastive\n\n\n# Initialize dataset and model\ndataset = SyntheticDynamicNetwork()\ndata_loader = DataLoader(dataset, batch_size=16, shuffle=True)\nmodel = SimpleGNN(in_channels=5, hidden_channels=10, out_channels=2).to(device)\ncriterion = ContrastiveLoss().to(device)\noptimizer = optim.Adam(model.parameters(), lr=0.01)\n\n# Training loop\nnum_epochs = 10\nexperiment_data = {\n    \"synthetic_network\": {\n        \"metrics\": {\"train\": [], \"val\": []},\n        \"losses\": {\"train\": [], \"val\": []},\n        \"predictions\": [],\n        \"ground_truth\": [],\n    }\n}\n\nfor epoch in range(num_epochs):\n    model.train()\n    train_loss = 0\n    for batch in data_loader:\n        batch = batch.to(device)\n        optimizer.zero_grad()\n        output = model(batch)\n        loss = criterion(output, output, batch.y)\n        loss.backward()\n        optimizer.step()\n        train_loss += loss.item()\n\n    # Calculate F1-Score (as a placeholder, using accuracy here due to synthetic nature)\n    predictions = output.argmax(dim=1)\n    f1 = f1_score(batch.y.cpu(), predictions.cpu(), average=\"binary\")\n    experiment_data[\"synthetic_network\"][\"metrics\"][\"train\"].append(f1)\n    experiment_data[\"synthetic_network\"][\"losses\"][\"train\"].append(\n        train_loss / len(data_loader)\n    )\n\n    print(\n        f\"Epoch {epoch}: train_loss = {train_loss / len(data_loader):.4f}, F1-Score = {f1:.4f}\"\n    )\n\n# Save experiment data\nnp.save(os.path.join(working_dir, \"experiment_data.npy\"), experiment_data)\n", "import os\nimport numpy as np\nimport torch\nimport torch.nn as nn\nimport torch.optim as optim\nfrom torch_geometric.data import Data, DataLoader\nfrom sklearn.metrics import f1_score\n\n# Set up working directory\nworking_dir = os.path.join(os.getcwd(), \"working\")\nos.makedirs(working_dir, exist_ok=True)\n\n# Set device for computation\ndevice = torch.device(\"cuda\" if torch.cuda.is_available() else \"cpu\")\nprint(f\"Using device: {device}\")\n\n\n# Create synthetic dynamic network dataset\ndef create_synthetic_data(num_samples=100, num_nodes=50, num_features=10):\n    data_list = []\n    for _ in range(num_samples):\n        x = torch.rand((num_nodes, num_features), device=device)\n        edge_index = torch.randint(0, num_nodes, (2, num_nodes), device=device)\n        y = torch.randint(\n            0, 2, (num_nodes,), device=device\n        )  # Binary labels for anomaly detection\n        data_list.append(Data(x=x, edge_index=edge_index, y=y))\n    return data_list\n\n\n# Define a simple GNN model for processing dynamic networks\nclass SimpleGNN(nn.Module):\n    def __init__(self, input_dim, hidden_dim, output_dim):\n        super(SimpleGNN, self).__init__()\n        self.conv1 = nn.Linear(input_dim, hidden_dim)\n        self.conv2 = nn.Linear(hidden_dim, output_dim)\n\n    def forward(self, data):\n        x, edge_index = data.x, data.edge_index\n        x = self.conv1(x)\n        x = torch.relu(x)\n        x = self.conv2(x)\n        return x\n\n\n# Initialize model, loss, and optimizer\ninput_dim = 10\nhidden_dim = 16\noutput_dim = 2\nmodel = SimpleGNN(input_dim, hidden_dim, output_dim).to(device)\ncriterion = nn.CrossEntropyLoss()\noptimizer = optim.Adam(model.parameters(), lr=0.01)\n\n\n# Train and evaluate the model\ndef train_and_evaluate(data_list, model, criterion, optimizer, epochs=10):\n    loader = DataLoader(data_list, batch_size=16, shuffle=True)\n    experiment_data = {\n        \"synthetic_data\": {\n            \"metrics\": {\"train\": [], \"val\": []},\n            \"losses\": {\"train\": [], \"val\": []},\n            \"predictions\": [],\n            \"ground_truth\": [],\n        }\n    }\n\n    for epoch in range(epochs):\n        model.train()\n        train_loss = 0\n        for batch in loader:\n            batch = batch.to(device)\n            optimizer.zero_grad()\n            out = model(batch)\n            loss = criterion(out, batch.y)\n            loss.backward()\n            optimizer.step()\n            train_loss += loss.item()\n\n        # Simple validation (using train set for demonstration)\n        model.eval()\n        val_loss = 0\n        all_preds = []\n        all_labels = []\n        with torch.no_grad():\n            for batch in loader:\n                batch = batch.to(device)\n                out = model(batch)\n                loss = criterion(out, batch.y)\n                val_loss += loss.item()\n                preds = out.argmax(dim=1)\n                all_preds.extend(preds.cpu().numpy())\n                all_labels.extend(batch.y.cpu().numpy())\n\n        f1 = f1_score(all_labels, all_preds, average=\"binary\")\n        experiment_data[\"synthetic_data\"][\"metrics\"][\"train\"].append(f1)\n        experiment_data[\"synthetic_data\"][\"losses\"][\"train\"].append(\n            train_loss / len(loader)\n        )\n        print(\n            f\"Epoch {epoch}: validation_loss = {val_loss / len(loader):.4f}, F1-Score = {f1:.4f}\"\n        )\n\n    np.save(os.path.join(working_dir, \"experiment_data.npy\"), experiment_data)\n\n\n# Run the experiment\nsynthetic_data = create_synthetic_data()\ntrain_and_evaluate(synthetic_data, model, criterion, optimizer)\n", "import os\nimport numpy as np\nimport torch\nfrom torch import nn, optim\nfrom torch_geometric.data import Data, DataLoader\nfrom sklearn.metrics import f1_score\n\n# Setup working directory\nworking_dir = os.path.join(os.getcwd(), \"working\")\nos.makedirs(working_dir, exist_ok=True)\n\n# Device configuration\ndevice = torch.device(\"cuda\" if torch.cuda.is_available() else \"cpu\")\nprint(f\"Using device: {device}\")\n\n\n# Define synthetic data generation\ndef generate_synthetic_data(num_graphs=100, num_nodes=10):\n    data_list = []\n    for _ in range(num_graphs):\n        x = torch.rand((num_nodes, 3))  # Random node features\n        edge_index = torch.randint(0, num_nodes, (2, 2 * num_nodes))  # Random edges\n        y = torch.randint(\n            0, 2, (num_nodes,)\n        )  # Random labels (0 or 1 for anomaly detection)\n        data = Data(x=x, edge_index=edge_index, y=y.to(torch.float))\n        data_list.append(data)\n    return data_list\n\n\n# Define a simple GNN model\nclass SimpleGNN(nn.Module):\n    def __init__(self, in_channels, out_channels):\n        super(SimpleGNN, self).__init__()\n        self.conv1 = nn.Linear(in_channels, 16)\n        self.conv2 = nn.Linear(16, out_channels)\n\n    def forward(self, data):\n        x, edge_index = data.x, data.edge_index\n        x = self.conv1(x)\n        x = torch.relu(x)\n        x = self.conv2(x)\n        return x\n\n\n# Generate synthetic data and create DataLoader\ndata_list = generate_synthetic_data()\nloader = DataLoader(data_list, batch_size=32, shuffle=True)\n\n# Initialize model, optimizer, and loss function\nmodel = SimpleGNN(in_channels=3, out_channels=1).to(device)\noptimizer = optim.Adam(model.parameters(), lr=0.01)\ncriterion = nn.BCEWithLogitsLoss()\n\n# Experiment data storage\nexperiment_data = {\n    \"synthetic_data\": {\n        \"metrics\": {\"train\": [], \"val\": []},\n        \"losses\": {\"train\": [], \"val\": []},\n        \"predictions\": [],\n        \"ground_truth\": [],\n    }\n}\n\n# Training loop\nnum_epochs = 10\nfor epoch in range(num_epochs):\n    model.train()\n    total_loss = 0\n    all_preds = []\n    all_labels = []\n\n    for batch in loader:\n        batch = batch.to(device)\n        optimizer.zero_grad()\n        outputs = model(batch).squeeze()\n        loss = criterion(outputs, batch.y)\n        loss.backward()\n        optimizer.step()\n\n        total_loss += loss.item()\n        preds = (torch.sigmoid(outputs) > 0.5).float()\n        all_preds.extend(preds.cpu().numpy())\n        all_labels.extend(batch.y.cpu().numpy())\n\n    train_f1 = f1_score(all_labels, all_preds)\n    experiment_data[\"synthetic_data\"][\"metrics\"][\"train\"].append(train_f1)\n    experiment_data[\"synthetic_data\"][\"losses\"][\"train\"].append(\n        total_loss / len(loader)\n    )\n\n    print(\n        f\"Epoch {epoch}: train_loss = {total_loss / len(loader):.4f}, train_f1 = {train_f1:.4f}\"\n    )\n\n# Save experiment data\nnp.save(os.path.join(working_dir, \"experiment_data.npy\"), experiment_data)\n", "import os\nimport torch\nimport torch.nn as nn\nimport torch.optim as optim\nfrom torch_geometric.data import Data, DataLoader\nfrom torch_geometric.nn import GCNConv\nfrom sklearn.metrics import f1_score\nimport numpy as np\n\n# Setup working directory\nworking_dir = os.path.join(os.getcwd(), \"working\")\nos.makedirs(working_dir, exist_ok=True)\n\n# Initialize experiment data\nexperiment_data = {\n    \"synthetic_dataset\": {\n        \"metrics\": {\"train\": [], \"val\": []},\n        \"losses\": {\"train\": [], \"val\": []},\n        \"predictions\": [],\n        \"ground_truth\": [],\n    },\n}\n\n# Define device\ndevice = torch.device(\"cuda\" if torch.cuda.is_available() else \"cpu\")\nprint(f\"Using device: {device}\")\n\n\n# Create synthetic data\ndef create_synthetic_data(num_graphs=100, num_nodes=10):\n    data_list = []\n    for _ in range(num_graphs):\n        edge_index = torch.randint(0, num_nodes, (2, num_nodes * 2))\n        x = torch.rand((num_nodes, 3))  # Random node features\n        y = torch.randint(0, 2, (1,)).item()  # Random label (0 or 1)\n        data_list.append(Data(x=x, edge_index=edge_index, y=y))\n    return data_list\n\n\n# Define a simple GNN model\nclass SimpleGNN(nn.Module):\n    def __init__(self, in_channels, out_channels):\n        super(SimpleGNN, self).__init__()\n        self.conv1 = GCNConv(in_channels, 16)\n        self.conv2 = GCNConv(16, out_channels)\n\n    def forward(self, data):\n        x, edge_index = data.x, data.edge_index\n        x = self.conv1(x, edge_index).relu()\n        x = self.conv2(x, edge_index)\n        return x\n\n\n# Prepare data\ndata_list = create_synthetic_data()\ntrain_loader = DataLoader(data_list[:80], batch_size=16, shuffle=True)\nval_loader = DataLoader(data_list[80:], batch_size=20, shuffle=False)\n\n# Initialize model, loss, and optimizer\nmodel = SimpleGNN(in_channels=3, out_channels=2).to(device)\noptimizer = optim.Adam(model.parameters(), lr=0.01)\ncriterion = nn.CrossEntropyLoss()\n\n# Training and evaluation\nfor epoch in range(10):  # Simple loop for demonstration\n    model.train()\n    total_loss = 0\n    for data in train_loader:\n        data = data.to(device)\n        optimizer.zero_grad()\n        out = model(data)\n        loss = criterion(out, data.y)\n        loss.backward()\n        optimizer.step()\n        total_loss += loss.item()\n\n    experiment_data[\"synthetic_dataset\"][\"losses\"][\"train\"].append(\n        total_loss / len(train_loader)\n    )\n\n    # Validation\n    model.eval()\n    y_true, y_pred = [], []\n    with torch.no_grad():\n        for data in val_loader:\n            data = data.to(device)\n            out = model(data)\n            pred = out.argmax(dim=1)\n            y_true.extend(data.y.cpu().numpy())\n            y_pred.extend(pred.cpu().numpy())\n\n    val_f1 = f1_score(y_true, y_pred, average=\"weighted\")\n    experiment_data[\"synthetic_dataset\"][\"metrics\"][\"val\"].append(val_f1)\n\n    print(\n        f\"Epoch {epoch}: validation_loss = {total_loss / len(train_loader):.4f}, F1-Score = {val_f1:.4f}\"\n    )\n\n# Save experiment data\nnp.save(os.path.join(working_dir, \"experiment_data.npy\"), experiment_data)\n", "import os\n\nworking_dir = os.path.join(os.getcwd(), \"working\")\nos.makedirs(working_dir, exist_ok=True)\n\nimport torch\nimport torch.nn.functional as F\nimport numpy as np\nfrom torch_geometric.data import Data, DataLoader\nfrom torch_geometric.nn import GCNConv\nfrom sklearn.metrics import f1_score\nimport random\n\n# Device configuration\ndevice = torch.device(\"cuda\" if torch.cuda.is_available() else \"cpu\")\nprint(f\"Using device: {device}\")\n\n\n# Synthetic dataset creation with temporal motifs and anomalies\ndef create_synthetic_data(num_nodes=100, num_edges=200, num_anomalies=10):\n    edges = [\n        (random.randint(0, num_nodes - 1), random.randint(0, num_nodes - 1))\n        for _ in range(num_edges)\n    ]\n    anomalies = random.sample(edges, num_anomalies)\n    y = [1 if edge in anomalies else 0 for edge in edges]\n    edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous()\n    return Data(edge_index=edge_index, y=torch.tensor(y, dtype=torch.float))\n\n\n# Create synthetic data\nnum_samples = 50\ndata_list = [create_synthetic_data() for _ in range(num_samples)]\nloader = DataLoader(data_list, batch_size=10, shuffle=True)\n\n\n# Simple GNN architecture\nclass GNNModel(torch.nn.Module):\n    def __init__(self, in_channels, hidden_channels):\n        super(GNNModel, self).__init__()\n        self.conv1 = GCNConv(in_channels, hidden_channels)\n        self.conv2 = GCNConv(hidden_channels, 1)\n\n    def forward(self, data):\n        x, edge_index = data.x, data.edge_index\n        x = F.relu(self.conv1(x, edge_index))\n        x = self.conv2(x, edge_index)\n        return x\n\n\n# Initialize model, optimizer, and loss function\nmodel = GNNModel(in_channels=2, hidden_channels=16).to(device)\noptimizer = torch.optim.Adam(model.parameters(), lr=0.01)\ncriterion = torch.nn.BCEWithLogitsLoss()\n\n# Experiment data structure\nexperiment_data = {\n    \"synthetic_data\": {\n        \"metrics\": {\"train\": [], \"val\": []},\n        \"losses\": {\"train\": [], \"val\": []},\n        \"predictions\": [],\n        \"ground_truth\": [],\n    }\n}\n\n# Training loop\nepochs = 20\nfor epoch in range(epochs):\n    model.train()\n    total_loss = 0\n    for batch in loader:\n        batch = batch.to(device)\n        optimizer.zero_grad()\n        out = model(batch)\n        loss = criterion(out.view(-1), batch.y)\n        loss.backward()\n        optimizer.step()\n        total_loss += loss.item()\n\n    # Validation (on the same synthetic data for simplicity)\n    model.eval()\n    val_loss = 0\n    preds, targets = [], []\n    with torch.no_grad():\n        for batch in loader:\n            batch = batch.to(device)\n            out = model(batch)\n            val_loss += criterion(out.view(-1), batch.y).item()\n            preds.extend(out.view(-1).cpu().numpy())\n            targets.extend(batch.y.cpu().numpy())\n\n    val_loss /= len(loader)\n    preds = np.round(torch.sigmoid(torch.tensor(preds)).numpy())\n    f1 = f1_score(targets, preds, average=\"macro\")\n\n    # Log metrics and losses\n    experiment_data[\"synthetic_data\"][\"metrics\"][\"train\"].append(f1)\n    experiment_data[\"synthetic_data\"][\"losses\"][\"train\"].append(\n        total_loss / len(loader)\n    )\n    print(f\"Epoch {epoch+1}: validation_loss = {val_loss:.4f}, F1-Score = {f1:.4f}\")\n\n# Save experiment data\nnp.save(os.path.join(working_dir, \"experiment_data.npy\"), experiment_data)\n", "import os\nimport numpy as np\nimport torch\nimport torch.nn as nn\nimport torch.optim as optim\nfrom torch_geometric.data import Data, DataLoader\nfrom torch_geometric.nn import GCNConv\nfrom sklearn.metrics import f1_score\n\nworking_dir = os.path.join(os.getcwd(), \"working\")\nos.makedirs(working_dir, exist_ok=True)\n\ndevice = torch.device(\"cuda\" if torch.cuda.is_available() else \"cpu\")\nprint(f\"Using device: {device}\")\n\n\n# Synthetic dataset generation\ndef generate_synthetic_data(num_graphs=100):\n    data_list = []\n    for _ in range(num_graphs):\n        # Create a simple graph with random edges and features\n        num_nodes = np.random.randint(10, 20)\n        edge_index = np.random.randint(0, num_nodes, (2, num_nodes * 2))\n        x = torch.rand((num_nodes, 3))  # Node features\n        y = torch.randint(0, 2, (num_nodes,))  # Binary labels for anomaly\n        data = Data(x=x, edge_index=torch.tensor(edge_index, dtype=torch.long), y=y)\n        data_list.append(data)\n    return data_list\n\n\nsynthetic_data = generate_synthetic_data()\ndataloader = DataLoader(synthetic_data, batch_size=16, shuffle=True)\n\n\n# Simple GNN model\nclass SimpleGNN(nn.Module):\n    def __init__(self, input_dim, hidden_dim, output_dim):\n        super(SimpleGNN, self).__init__()\n        self.conv1 = GCNConv(input_dim, hidden_dim)\n        self.conv2 = GCNConv(hidden_dim, output_dim)\n\n    def forward(self, data):\n        x, edge_index = data.x, data.edge_index\n        x = self.conv1(x, edge_index).relu()\n        x = self.conv2(x, edge_index)\n        return x\n\n\n# Initialize model, optimizer, and loss function\nmodel = SimpleGNN(input_dim=3, hidden_dim=16, output_dim=2).to(device)\noptimizer = optim.Adam(model.parameters(), lr=0.01)\ncriterion = nn.CrossEntropyLoss()\n\n# Training and evaluation\nexperiment_data = {\n    \"synthetic\": {\n        \"metrics\": {\"train\": [], \"val\": []},\n        \"losses\": {\"train\": [], \"val\": []},\n        \"predictions\": [],\n        \"ground_truth\": [],\n    },\n}\n\n\ndef train_and_evaluate(num_epochs=10):\n    for epoch in range(num_epochs):\n        model.train()\n        total_loss = 0\n        for batch in dataloader:\n            batch = batch.to(device)\n            optimizer.zero_grad()\n            out = model(batch)\n            loss = criterion(out, batch.y)\n            loss.backward()\n            optimizer.step()\n            total_loss += loss.item()\n\n        # Validation\n        model.eval()\n        all_preds, all_labels = [], []\n        with torch.no_grad():\n            for batch in dataloader:\n                batch = batch.to(device)\n                out = model(batch)\n                preds = out.argmax(dim=1)\n                all_preds.append(preds.cpu().numpy())\n                all_labels.append(batch.y.cpu().numpy())\n\n        # Calculate F1-score\n        f1 = f1_score(\n            np.concatenate(all_labels), np.concatenate(all_preds), average=\"macro\"\n        )\n        val_loss = total_loss / len(dataloader)\n        print(f\"Epoch {epoch}: validation_loss = {val_loss:.4f}, F1-score = {f1:.4f}\")\n\n        # Save metrics and losses\n        experiment_data[\"synthetic\"][\"metrics\"][\"val\"].append(f1)\n        experiment_data[\"synthetic\"][\"losses\"][\"val\"].append(val_loss)\n\n    # Save experiment data\n    np.save(os.path.join(working_dir, \"experiment_data.npy\"), experiment_data)\n\n\ntrain_and_evaluate()\n", "import os\nimport numpy as np\nimport torch\nimport torch.nn.functional as F\nfrom torch_geometric.data import Data\nfrom torch_geometric.nn import GCNConv\nfrom sklearn.metrics import f1_score\n\n# Set up working directory\nworking_dir = os.path.join(os.getcwd(), \"working\")\nos.makedirs(working_dir, exist_ok=True)\n\n# Device configuration\ndevice = torch.device(\"cuda\" if torch.cuda.is_available() else \"cpu\")\nprint(f\"Using device: {device}\")\n\n# Experiment data storage\nexperiment_data = {\n    \"synthetic_dynamic_network\": {\n        \"metrics\": {\"train\": [], \"val\": []},\n        \"losses\": {\"train\": [], \"val\": []},\n        \"predictions\": [],\n        \"ground_truth\": [],\n    }\n}\n\n\n# Simple synthetic data generation\ndef generate_synthetic_data(num_nodes=100, num_features=16, num_classes=2):\n    x = torch.randn((num_nodes, num_features), dtype=torch.float)\n    edge_index = (\n        torch.tensor(\n            [[i, (i + 1) % num_nodes] for i in range(num_nodes)], dtype=torch.long\n        )\n        .t()\n        .contiguous()\n    )\n    y = torch.randint(0, num_classes, (num_nodes,), dtype=torch.long)\n    return Data(x=x, edge_index=edge_index, y=y)\n\n\n# Basic GNN model\nclass SimpleGNN(torch.nn.Module):\n    def __init__(self, num_features, num_classes):\n        super(SimpleGNN, self).__init__()\n        self.conv1 = GCNConv(num_features, 32)\n        self.conv2 = GCNConv(32, num_classes)\n\n    def forward(self, data):\n        x, edge_index = data.x, data.edge_index\n        x = F.relu(self.conv1(x, edge_index))\n        x = self.conv2(x, edge_index)\n        return F.log_softmax(x, dim=1)\n\n\n# Training function\ndef train(model, data, optimizer):\n    model.train()\n    optimizer.zero_grad()\n    out = model(data)\n    loss = F.nll_loss(out, data.y)\n    loss.backward()\n    optimizer.step()\n    return loss.item()\n\n\n# Evaluation function\ndef evaluate(model, data):\n    model.eval()\n    with torch.no_grad():\n        out = model(data)\n        pred = out.argmax(dim=1)\n        f1 = f1_score(data.y.cpu(), pred.cpu(), average=\"weighted\")\n    return f1, pred.cpu()\n\n\n# Generate data and model\ndata = generate_synthetic_data().to(device)\nmodel = SimpleGNN(num_features=16, num_classes=2).to(device)\noptimizer = torch.optim.Adam(model.parameters(), lr=0.01)\n\n# Training loop\nepochs = 10\nfor epoch in range(1, epochs + 1):\n    train_loss = train(model, data, optimizer)\n    val_f1, predictions = evaluate(model, data)\n\n    # Track and save metrics and losses\n    experiment_data[\"synthetic_dynamic_network\"][\"losses\"][\"train\"].append(train_loss)\n    experiment_data[\"synthetic_dynamic_network\"][\"metrics\"][\"val\"].append(val_f1)\n    experiment_data[\"synthetic_dynamic_network\"][\"predictions\"] = (\n        predictions.cpu().numpy().tolist()\n    )\n    experiment_data[\"synthetic_dynamic_network\"][\"ground_truth\"] = (\n        data.y.cpu().numpy().tolist()\n    )\n\n    print(f\"Epoch {epoch}: train_loss = {train_loss:.4f}, val_f1 = {val_f1:.4f}\")\n\n# Save experiment data\nnp.save(os.path.join(working_dir, \"experiment_data.npy\"), experiment_data)\n", "import os\nimport torch\nimport torch.nn as nn\nimport torch.optim as optim\nfrom torch_geometric.data import Data, DataLoader\nfrom torch_geometric.nn import GCNConv\nfrom sklearn.metrics import f1_score\nimport numpy as np\n\n# Setup working directory\nworking_dir = os.path.join(os.getcwd(), \"working\")\nos.makedirs(working_dir, exist_ok=True)\n\n# Initialize experiment data\nexperiment_data = {\n    \"synthetic_dataset\": {\n        \"metrics\": {\"train\": [], \"val\": []},\n        \"losses\": {\"train\": [], \"val\": []},\n        \"predictions\": [],\n        \"ground_truth\": [],\n    },\n}\n\n# Define device\ndevice = torch.device(\"cuda\" if torch.cuda.is_available() else \"cpu\")\nprint(f\"Using device: {device}\")\n\n\n# Create synthetic data\ndef create_synthetic_data(num_graphs=100, num_nodes=10):\n    data_list = []\n    for _ in range(num_graphs):\n        edge_index = torch.randint(0, num_nodes, (2, num_nodes * 2))\n        x = torch.rand((num_nodes, 3))  # Random node features\n        y = torch.randint(0, 2, (1,)).item()  # Random label (0 or 1)\n        data_list.append(Data(x=x, edge_index=edge_index, y=y))\n    return data_list\n\n\n# Define a simple GNN model\nclass SimpleGNN(nn.Module):\n    def __init__(self, in_channels, out_channels):\n        super(SimpleGNN, self).__init__()\n        self.conv1 = GCNConv(in_channels, 16)\n        self.conv2 = GCNConv(16, out_channels)\n\n    def forward(self, data):\n        x, edge_index = data.x, data.edge_index\n        x = self.conv1(x, edge_index).relu()\n        x = self.conv2(x, edge_index)\n        x = x.mean(dim=0)  # Aggregate node-level outputs to graph-level\n        return x\n\n\n# Prepare data\ndata_list = create_synthetic_data()\ntrain_loader = DataLoader(data_list[:80], batch_size=16, shuffle=True)\nval_loader = DataLoader(data_list[80:], batch_size=20, shuffle=False)\n\n# Initialize model, loss, and optimizer\nmodel = SimpleGNN(in_channels=3, out_channels=2).to(device)\noptimizer = optim.Adam(model.parameters(), lr=0.01)\ncriterion = nn.CrossEntropyLoss()\n\n# Training and evaluation\nfor epoch in range(10):  # Simple loop for demonstration\n    model.train()\n    total_loss = 0\n    for data in train_loader:\n        data = data.to(device)\n        optimizer.zero_grad()\n        out = model(data)\n        loss = criterion(out.unsqueeze(0), data.y.unsqueeze(0))  # Match dimensions\n        loss.backward()\n        optimizer.step()\n        total_loss += loss.item()\n\n    experiment_data[\"synthetic_dataset\"][\"losses\"][\"train\"].append(\n        total_loss / len(train_loader)\n    )\n\n    # Validation\n    model.eval()\n    y_true, y_pred = [], []\n    with torch.no_grad():\n        for data in val_loader:\n            data = data.to(device)\n            out = model(data)\n            pred = out.argmax(dim=0)  # Graph-level prediction\n            y_true.append(data.y.cpu().item())\n            y_pred.append(pred.cpu().item())\n\n    val_f1 = f1_score(y_true, y_pred, average=\"weighted\")\n    experiment_data[\"synthetic_dataset\"][\"metrics\"][\"val\"].append(val_f1)\n\n    print(\n        f\"Epoch {epoch}: validation_loss = {total_loss / len(train_loader):.4f}, F1-Score = {val_f1:.4f}\"\n    )\n\n# Save experiment data\nnp.save(os.path.join(working_dir, \"experiment_data.npy\"), experiment_data)\n", "# Set random seed\nimport random\nimport numpy as np\nimport torch\n\nseed = 2\nrandom.seed(seed)\nnp.random.seed(seed)\ntorch.manual_seed(seed)\nif torch.cuda.is_available():\n    torch.cuda.manual_seed(seed)\n\nimport os\nimport numpy as np\nimport torch\nimport torch.nn.functional as F\nfrom torch_geometric.data import Data\nfrom torch_geometric.nn import GCNConv\nfrom sklearn.metrics import f1_score\n\n# Set up working directory\nworking_dir = os.path.join(os.getcwd(), \"working\")\nos.makedirs(working_dir, exist_ok=True)\n\n# Device configuration\ndevice = torch.device(\"cuda\" if torch.cuda.is_available() else \"cpu\")\nprint(f\"Using device: {device}\")\n\n# Experiment data storage\nexperiment_data = {\n    \"synthetic_dynamic_network\": {\n        \"metrics\": {\"train\": [], \"val\": []},\n        \"losses\": {\"train\": [], \"val\": []},\n        \"predictions\": [],\n        \"ground_truth\": [],\n    }\n}\n\n\n# Simple synthetic data generation\ndef generate_synthetic_data(num_nodes=100, num_features=16, num_classes=2):\n    x = torch.randn((num_nodes, num_features), dtype=torch.float)\n    edge_index = (\n        torch.tensor(\n            [[i, (i + 1) % num_nodes] for i in range(num_nodes)], dtype=torch.long\n        )\n        .t()\n        .contiguous()\n    )\n    y = torch.randint(0, num_classes, (num_nodes,), dtype=torch.long)\n    return Data(x=x, edge_index=edge_index, y=y)\n\n\n# Basic GNN model\nclass SimpleGNN(torch.nn.Module):\n    def __init__(self, num_features, num_classes):\n        super(SimpleGNN, self).__init__()\n        self.conv1 = GCNConv(num_features, 32)\n        self.conv2 = GCNConv(32, num_classes)\n\n    def forward(self, data):\n        x, edge_index = data.x, data.edge_index\n        x = F.relu(self.conv1(x, edge_index))\n        x = self.conv2(x, edge_index)\n        return F.log_softmax(x, dim=1)\n\n\n# Training function\ndef train(model, data, optimizer):\n    model.train()\n    optimizer.zero_grad()\n    out = model(data)\n    loss = F.nll_loss(out, data.y)\n    loss.backward()\n    optimizer.step()\n    return loss.item()\n\n\n# Evaluation function\ndef evaluate(model, data):\n    model.eval()\n    with torch.no_grad():\n        out = model(data)\n        pred = out.argmax(dim=1)\n        f1 = f1_score(data.y.cpu(), pred.cpu(), average=\"weighted\")\n    return f1, pred.cpu()\n\n\n# Generate data and model\ndata = generate_synthetic_data().to(device)\nmodel = SimpleGNN(num_features=16, num_classes=2).to(device)\noptimizer = torch.optim.Adam(model.parameters(), lr=0.01)\n\n# Training loop\nepochs = 10\nfor epoch in range(1, epochs + 1):\n    train_loss = train(model, data, optimizer)\n    val_f1, predictions = evaluate(model, data)\n\n    # Track and save metrics and losses\n    experiment_data[\"synthetic_dynamic_network\"][\"losses\"][\"train\"].append(train_loss)\n    experiment_data[\"synthetic_dynamic_network\"][\"metrics\"][\"val\"].append(val_f1)\n    experiment_data[\"synthetic_dynamic_network\"][\"predictions\"] = (\n        predictions.cpu().numpy().tolist()\n    )\n    experiment_data[\"synthetic_dynamic_network\"][\"ground_truth\"] = (\n        data.y.cpu().numpy().tolist()\n    )\n\n    print(f\"Epoch {epoch}: train_loss = {train_loss:.4f}, val_f1 = {val_f1:.4f}\")\n\n# Save experiment data\nnp.save(os.path.join(working_dir, \"experiment_data.npy\"), experiment_data)\n", "# Set random seed\nimport random\nimport numpy as np\nimport torch\n\nseed = 2\nrandom.seed(seed)\nnp.random.seed(seed)\ntorch.manual_seed(seed)\nif torch.cuda.is_available():\n    torch.cuda.manual_seed(seed)\n\nimport os\nimport numpy as np\nimport torch\nimport torch.nn.functional as F\nfrom torch_geometric.data import Data\nfrom torch_geometric.nn import GCNConv\nfrom sklearn.metrics import f1_score\n\n# Set up working directory\nworking_dir = os.path.join(os.getcwd(), \"working\")\nos.makedirs(working_dir, exist_ok=True)\n\n# Device configuration\ndevice = torch.device(\"cuda\" if torch.cuda.is_available() else \"cpu\")\nprint(f\"Using device: {device}\")\n\n# Experiment data storage\nexperiment_data = {\n    \"synthetic_dynamic_network\": {\n        \"metrics\": {\"train\": [], \"val\": []},\n        \"losses\": {\"train\": [], \"val\": []},\n        \"predictions\": [],\n        \"ground_truth\": [],\n    }\n}\n\n\n# Simple synthetic data generation\ndef generate_synthetic_data(num_nodes=100, num_features=16, num_classes=2):\n    x = torch.randn((num_nodes, num_features), dtype=torch.float)\n    edge_index = (\n        torch.tensor(\n            [[i, (i + 1) % num_nodes] for i in range(num_nodes)], dtype=torch.long\n        )\n        .t()\n        .contiguous()\n    )\n    y = torch.randint(0, num_classes, (num_nodes,), dtype=torch.long)\n    return Data(x=x, edge_index=edge_index, y=y)\n\n\n# Basic GNN model\nclass SimpleGNN(torch.nn.Module):\n    def __init__(self, num_features, num_classes):\n        super(SimpleGNN, self).__init__()\n        self.conv1 = GCNConv(num_features, 32)\n        self.conv2 = GCNConv(32, num_classes)\n\n    def forward(self, data):\n        x, edge_index = data.x, data.edge_index\n        x = F.relu(self.conv1(x, edge_index))\n        x = self.conv2(x, edge_index)\n        return F.log_softmax(x, dim=1)\n\n\n# Training function\ndef train(model, data, optimizer):\n    model.train()\n    optimizer.zero_grad()\n    out = model(data)\n    loss = F.nll_loss(out, data.y)\n    loss.backward()\n    optimizer.step()\n    return loss.item()\n\n\n# Evaluation function\ndef evaluate(model, data):\n    model.eval()\n    with torch.no_grad():\n        out = model(data)\n        pred = out.argmax(dim=1)\n        f1 = f1_score(data.y.cpu(), pred.cpu(), average=\"weighted\")\n    return f1, pred.cpu()\n\n\n# Generate data and model\ndata = generate_synthetic_data().to(device)\nmodel = SimpleGNN(num_features=16, num_classes=2).to(device)\noptimizer = torch.optim.Adam(model.parameters(), lr=0.01)\n\n# Training loop\nepochs = 10\nfor epoch in range(1, epochs + 1):\n    train_loss = train(model, data, optimizer)\n    val_f1, predictions = evaluate(model, data)\n\n    # Track and save metrics and losses\n    experiment_data[\"synthetic_dynamic_network\"][\"losses\"][\"train\"].append(train_loss)\n    experiment_data[\"synthetic_dynamic_network\"][\"metrics\"][\"val\"].append(val_f1)\n    experiment_data[\"synthetic_dynamic_network\"][\"predictions\"] = (\n        predictions.cpu().numpy().tolist()\n    )\n    experiment_data[\"synthetic_dynamic_network\"][\"ground_truth\"] = (\n        data.y.cpu().numpy().tolist()\n    )\n\n    print(f\"Epoch {epoch}: train_loss = {train_loss:.4f}, val_f1 = {val_f1:.4f}\")\n\n# Save experiment data\nnp.save(os.path.join(working_dir, \"experiment_data.npy\"), experiment_data)\n", "# Set random seed\nimport random\nimport numpy as np\nimport torch\n\nseed = 2\nrandom.seed(seed)\nnp.random.seed(seed)\ntorch.manual_seed(seed)\nif torch.cuda.is_available():\n    torch.cuda.manual_seed(seed)\n\nimport os\nimport numpy as np\nimport torch\nimport torch.nn.functional as F\nfrom torch_geometric.data import Data\nfrom torch_geometric.nn import GCNConv\nfrom sklearn.metrics import f1_score\n\n# Set up working directory\nworking_dir = os.path.join(os.getcwd(), \"working\")\nos.makedirs(working_dir, exist_ok=True)\n\n# Device configuration\ndevice = torch.device(\"cuda\" if torch.cuda.is_available() else \"cpu\")\nprint(f\"Using device: {device}\")\n\n# Experiment data storage\nexperiment_data = {\n    \"synthetic_dynamic_network\": {\n        \"metrics\": {\"train\": [], \"val\": []},\n        \"losses\": {\"train\": [], \"val\": []},\n        \"predictions\": [],\n        \"ground_truth\": [],\n    }\n}\n\n\n# Simple synthetic data generation\ndef generate_synthetic_data(num_nodes=100, num_features=16, num_classes=2):\n    x = torch.randn((num_nodes, num_features), dtype=torch.float)\n    edge_index = (\n        torch.tensor(\n            [[i, (i + 1) % num_nodes] for i in range(num_nodes)], dtype=torch.long\n        )\n        .t()\n        .contiguous()\n    )\n    y = torch.randint(0, num_classes, (num_nodes,), dtype=torch.long)\n    return Data(x=x, edge_index=edge_index, y=y)\n\n\n# Basic GNN model\nclass SimpleGNN(torch.nn.Module):\n    def __init__(self, num_features, num_classes):\n        super(SimpleGNN, self).__init__()\n        self.conv1 = GCNConv(num_features, 32)\n        self.conv2 = GCNConv(32, num_classes)\n\n    def forward(self, data):\n        x, edge_index = data.x, data.edge_index\n        x = F.relu(self.conv1(x, edge_index))\n        x = self.conv2(x, edge_index)\n        return F.log_softmax(x, dim=1)\n\n\n# Training function\ndef train(model, data, optimizer):\n    model.train()\n    optimizer.zero_grad()\n    out = model(data)\n    loss = F.nll_loss(out, data.y)\n    loss.backward()\n    optimizer.step()\n    return loss.item()\n\n\n# Evaluation function\ndef evaluate(model, data):\n    model.eval()\n    with torch.no_grad():\n        out = model(data)\n        pred = out.argmax(dim=1)\n        f1 = f1_score(data.y.cpu(), pred.cpu(), average=\"weighted\")\n    return f1, pred.cpu()\n\n\n# Generate data and model\ndata = generate_synthetic_data().to(device)\nmodel = SimpleGNN(num_features=16, num_classes=2).to(device)\noptimizer = torch.optim.Adam(model.parameters(), lr=0.01)\n\n# Training loop\nepochs = 10\nfor epoch in range(1, epochs + 1):\n    train_loss = train(model, data, optimizer)\n    val_f1, predictions = evaluate(model, data)\n\n    # Track and save metrics and losses\n    experiment_data[\"synthetic_dynamic_network\"][\"losses\"][\"train\"].append(train_loss)\n    experiment_data[\"synthetic_dynamic_network\"][\"metrics\"][\"val\"].append(val_f1)\n    experiment_data[\"synthetic_dynamic_network\"][\"predictions\"] = (\n        predictions.cpu().numpy().tolist()\n    )\n    experiment_data[\"synthetic_dynamic_network\"][\"ground_truth\"] = (\n        data.y.cpu().numpy().tolist()\n    )\n\n    print(f\"Epoch {epoch}: train_loss = {train_loss:.4f}, val_f1 = {val_f1:.4f}\")\n\n# Save experiment data\nnp.save(os.path.join(working_dir, \"experiment_data.npy\"), experiment_data)\n", "# plotting aggregation code"], "term_out": ["['Using device: cpu', '\\n', 'Traceback (most recent call last):\\n  File\n\"runfile.py\", line 87, in <module>\\n    for batch in data_loader:\\n  File\n\"/opt/homebrew/lib/python3.11/site-packages/torch/utils/data/dataloader.py\",\nline 701, in __next__\\n    data = self._next_data()\\n\n^^^^^^^^^^^^^^^^^\\n  File \"/opt/homebrew/lib/python3.11/site-\npackages/torch/utils/data/dataloader.py\", line 757, in _next_data\\n    data =\nself._dataset_fetcher.fetch(index)  # may raise StopIteration\\n\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File \"/opt/homebrew/lib/python3.11/site-\npackages/torch/utils/data/_utils/fetch.py\", line 55, in fetch\\n    return\nself.collate_fn(data)\\n           ^^^^^^^^^^^^^^^^^^^^^\\n  File\n\"/opt/homebrew/lib/python3.11/site-packages/torch/utils/data/_utils/collate.py\",\nline 398, in default_collate\\n    return collate(batch,\ncollate_fn_map=default_collate_fn_map)\\n\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File\n\"/opt/homebrew/lib/python3.11/site-packages/torch/utils/data/_utils/collate.py\",\nline 240, in collate\\n    raise\nTypeError(default_collate_err_msg_format.format(elem_type))\\nTypeError:\ndefault_collate: batch must contain tensors, numpy arrays, numbers, dicts or\nlists; found <class \\'torch_geometric.data.data.Data\\'>\\n', 'Execution time: a\nsecond seconds (time limit is an hour).']", "['Using device: cpu', '\\n', 'Epoch 0: validation_loss = 0.6926, F1-Score =\n0.5455', '\\n', 'Epoch 1: validation_loss = 0.6923, F1-Score = 0.5298', '\\n',\n'Epoch 2: validation_loss = 0.6923, F1-Score = 0.5343', '\\n', 'Epoch 3:\nvalidation_loss = 0.6917, F1-Score = 0.5198', '\\n', 'Epoch 4: validation_loss =\n0.6913, F1-Score = 0.5122', '\\n', 'Epoch 5: validation_loss = 0.6910, F1-Score =\n0.6118', '\\n', 'Epoch 6: validation_loss = 0.6909, F1-Score = 0.4372', '\\n',\n'Epoch 7: validation_loss = 0.6914, F1-Score = 0.5499', '\\n', 'Epoch 8:\nvalidation_loss = 0.6903, F1-Score = 0.5455', '\\n', 'Epoch 9: validation_loss =\n0.6907, F1-Score = 0.3986', '\\n', 'Execution time: a second seconds (time limit\nis an hour).']", "['Using device: cpu', '\\n', 'Epoch 0: train_loss = 0.6945, train_f1 = 0.6108',\n'\\n', 'Epoch 1: train_loss = 0.6952, train_f1 = 0.6368', '\\n', 'Epoch 2:\ntrain_loss = 0.6931, train_f1 = 0.6724', '\\n', 'Epoch 3: train_loss = 0.6924,\ntrain_f1 = 0.6781', '\\n', 'Epoch 4: train_loss = 0.6914, train_f1 = 0.6781',\n'\\n', 'Epoch 5: train_loss = 0.6924, train_f1 = 0.6781', '\\n', 'Epoch 6:\ntrain_loss = 0.6921, train_f1 = 0.6781', '\\n', 'Epoch 7: train_loss = 0.6934,\ntrain_f1 = 0.6781', '\\n', 'Epoch 8: train_loss = 0.6927, train_f1 = 0.6462',\n'\\n', 'Epoch 9: train_loss = 0.6919, train_f1 = 0.5813', '\\n', 'Execution time:\na second seconds (time limit is an hour).']", "['Using device: cpu', '\\n', 'Traceback (most recent call last):\\n  File\n\"runfile.py\", line 72, in <module>\\n    loss = criterion(out, data.y)\\n\n^^^^^^^^^^^^^^^^^^^^^^\\n  File \"/opt/homebrew/lib/python3.11/site-\npackages/torch/nn/modules/module.py\", line 1736, in _wrapped_call_impl\\n\nreturn self._call_impl(*args, **kwargs)\\n\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File \"/opt/homebrew/lib/python3.11/site-\npackages/torch/nn/modules/module.py\", line 1747, in _call_impl\\n    return\nforward_call(*args, **kwargs)\\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File\n\"/opt/homebrew/lib/python3.11/site-packages/torch/nn/modules/loss.py\", line\n1293, in forward\\n    return F.cross_entropy(\\n           ^^^^^^^^^^^^^^^^\\n\nFile \"/opt/homebrew/lib/python3.11/site-packages/torch/nn/functional.py\", line\n3479, in cross_entropy\\n    return torch._C._nn.cross_entropy_loss(\\n\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\nValueError: Expected input batch_size (160) to\nmatch target batch_size (16).\\n', 'Execution time: a second seconds (time limit\nis an hour).']", "['Using device: cpu', '\\n', 'Traceback (most recent call last):\\n  File\n\"runfile.py\", line 74, in <module>\\n    out = model(batch)\\n\n^^^^^^^^^^^^\\n  File \"/opt/homebrew/lib/python3.11/site-\npackages/torch/nn/modules/module.py\", line 1736, in _wrapped_call_impl\\n\nreturn self._call_impl(*args, **kwargs)\\n\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File \"/opt/homebrew/lib/python3.11/site-\npackages/torch/nn/modules/module.py\", line 1747, in _call_impl\\n    return\nforward_call(*args, **kwargs)\\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File\n\"runfile.py\", line 46, in forward\\n    x = F.relu(self.conv1(x, edge_index))\\n\n^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File \"/opt/homebrew/lib/python3.11/site-\npackages/torch/nn/modules/module.py\", line 1736, in _wrapped_call_impl\\n\nreturn self._call_impl(*args, **kwargs)\\n\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File \"/opt/homebrew/lib/python3.11/site-\npackages/torch/nn/modules/module.py\", line 1747, in _call_impl\\n    return\nforward_call(*args, **kwargs)\\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File\n\"/opt/homebrew/lib/python3.11/site-\npackages/torch_geometric/nn/conv/gcn_conv.py\", line 242, in forward\\n\nedge_index, edge_weight, x.size(self.node_dim),\\n\n^^^^^^\\nAttributeError: \\'NoneType\\' object has no attribute \\'size\\'\\n',\n'Execution time: a second seconds (time limit is an hour).']", "['Using device: cpu', '\\n', 'Epoch 0: validation_loss = 0.6984, F1-score =\n0.4949', '\\n', 'Epoch 1: validation_loss = 0.6968, F1-score = 0.5136', '\\n',\n'Epoch 2: validation_loss = 0.6927, F1-score = 0.3568', '\\n', 'Epoch 3:\nvalidation_loss = 0.6970, F1-score = 0.3731', '\\n', 'Epoch 4: validation_loss =\n0.6973, F1-score = 0.3760', '\\n', 'Epoch 5: validation_loss = 0.6904, F1-score =\n0.3369', '\\n', 'Epoch 6: validation_loss = 0.6978, F1-score = 0.3369', '\\n',\n'Epoch 7: validation_loss = 0.6938, F1-score = 0.3677', '\\n', 'Epoch 8:\nvalidation_loss = 0.6928, F1-score = 0.3369', '\\n', 'Epoch 9: validation_loss =\n0.6937, F1-score = 0.3369', '\\n', 'Execution time: a second seconds (time limit\nis an hour).']", "['Using device: cpu', '\\n', 'Epoch 1: train_loss = 0.7140, val_f1 = 0.5573',\n'\\n', 'Epoch 2: train_loss = 0.6868, val_f1 = 0.5759', '\\n', 'Epoch 3:\ntrain_loss = 0.6655, val_f1 = 0.5943', '\\n', 'Epoch 4: train_loss = 0.6478,\nval_f1 = 0.6146', '\\n', 'Epoch 5: train_loss = 0.6328, val_f1 = 0.6070', '\\n',\n'Epoch 6: train_loss = 0.6197, val_f1 = 0.6567', '\\n', 'Epoch 7: train_loss =\n0.6076, val_f1 = 0.6781', '\\n', 'Epoch 8: train_loss = 0.5966, val_f1 = 0.6781',\n'\\n', 'Epoch 9: train_loss = 0.5860, val_f1 = 0.6886', '\\n', 'Epoch 10:\ntrain_loss = 0.5756, val_f1 = 0.6990', '\\n', 'Execution time: a second seconds\n(time limit is an hour).']", "['Using device: cpu', '\\n', 'Traceback (most recent call last):\\n  File\n\"runfile.py\", line 73, in <module>\\n    loss = criterion(out.unsqueeze(0),\ndata.y.unsqueeze(0))  # Match dimensions\\n\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File\n\"/opt/homebrew/lib/python3.11/site-packages/torch/nn/modules/module.py\", line\n1736, in _wrapped_call_impl\\n    return self._call_impl(*args, **kwargs)\\n\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File \"/opt/homebrew/lib/python3.11/site-\npackages/torch/nn/modules/module.py\", line 1747, in _call_impl\\n    return\nforward_call(*args, **kwargs)\\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File\n\"/opt/homebrew/lib/python3.11/site-packages/torch/nn/modules/loss.py\", line\n1293, in forward\\n    return F.cross_entropy(\\n           ^^^^^^^^^^^^^^^^\\n\nFile \"/opt/homebrew/lib/python3.11/site-packages/torch/nn/functional.py\", line\n3479, in cross_entropy\\n    return torch._C._nn.cross_entropy_loss(\\n\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\nRuntimeError: 0D or 1D target tensor expected,\nmulti-target not supported\\n', 'Execution time: a second seconds (time limit is\nan hour).']", "['Using device: cpu', '\\n', 'Epoch 1: train_loss = 0.6792, val_f1 = 0.5403',\n'\\n', 'Epoch 2: train_loss = 0.6566, val_f1 = 0.5697', '\\n', 'Epoch 3:\ntrain_loss = 0.6435, val_f1 = 0.5440', '\\n', 'Epoch 4: train_loss = 0.6328,\nval_f1 = 0.5825', '\\n', 'Epoch 5: train_loss = 0.6216, val_f1 = 0.6162', '\\n',\n'Epoch 6: train_loss = 0.6102, val_f1 = 0.6663', '\\n', 'Epoch 7: train_loss =\n0.5992, val_f1 = 0.6847', '\\n', 'Epoch 8: train_loss = 0.5891, val_f1 = 0.6801',\n'\\n', 'Epoch 9: train_loss = 0.5795, val_f1 = 0.7170', '\\n', 'Epoch 10:\ntrain_loss = 0.5695, val_f1 = 0.7049', '\\n', 'Execution time: a second seconds\n(time limit is an hour).']", "['Using device: cpu', '\\n', 'Epoch 1: train_loss = 0.6792, val_f1 = 0.5403',\n'\\n', 'Epoch 2: train_loss = 0.6566, val_f1 = 0.5697', '\\n', 'Epoch 3:\ntrain_loss = 0.6435, val_f1 = 0.5440', '\\n', 'Epoch 4: train_loss = 0.6328,\nval_f1 = 0.5825', '\\n', 'Epoch 5: train_loss = 0.6216, val_f1 = 0.6162', '\\n',\n'Epoch 6: train_loss = 0.6102, val_f1 = 0.6663', '\\n', 'Epoch 7: train_loss =\n0.5992, val_f1 = 0.6847', '\\n', 'Epoch 8: train_loss = 0.5891, val_f1 = 0.6801',\n'\\n', 'Epoch 9: train_loss = 0.5795, val_f1 = 0.7170', '\\n', 'Epoch 10:\ntrain_loss = 0.5695, val_f1 = 0.7049', '\\n', 'Execution time: a second seconds\n(time limit is an hour).']", "['Using device: cpu', '\\n', 'Epoch 1: train_loss = 0.6792, val_f1 = 0.5403',\n'\\n', 'Epoch 2: train_loss = 0.6566, val_f1 = 0.5697', '\\n', 'Epoch 3:\ntrain_loss = 0.6435, val_f1 = 0.5440', '\\n', 'Epoch 4: train_loss = 0.6328,\nval_f1 = 0.5825', '\\n', 'Epoch 5: train_loss = 0.6216, val_f1 = 0.6162', '\\n',\n'Epoch 6: train_loss = 0.6102, val_f1 = 0.6663', '\\n', 'Epoch 7: train_loss =\n0.5992, val_f1 = 0.6847', '\\n', 'Epoch 8: train_loss = 0.5891, val_f1 = 0.6801',\n'\\n', 'Epoch 9: train_loss = 0.5795, val_f1 = 0.7170', '\\n', 'Epoch 10:\ntrain_loss = 0.5695, val_f1 = 0.7049', '\\n', 'Execution time: a second seconds\n(time limit is an hour).']", ""], "analysis": ["The execution failed due to a TypeError in the DataLoader. The error message\nindicates that the batch must contain tensors, numpy arrays, numbers, dicts, or\nlists, but it found an instance of 'torch_geometric.data.data.Data'. This\nsuggests that the DataLoader is not properly collating the data items. To fix\nthis, the dataset should return a single Data object that encapsulates all the\nfeatures and labels, rather than a list of Data objects. This can be resolved by\nmodifying the __getitem__ method to return a batched Data object.", "The model is not converging as indicated by the validation loss and F1-Score\nmetrics. The F1-Score fluctuates without showing improvement, suggesting issues\nwith the model architecture, learning rate, or data representation. The model's\nperformance does not improve over epochs, indicating potential bugs in the\ntraining process or model definition.", "The training loop shows an increasing train loss and fluctuating F1 scores,\nindicating that the model is not learning effectively. This could be due to the\nmodel architecture being too simple or the learning rate being inappropriate.\nConsider using a more complex GNN architecture and adjusting the learning rate.", "The execution failed due to a mismatch between the output batch size (160) and\nthe target batch size (16) during the loss calculation. This issue arises\nbecause the model output is not properly aggregated for the batch size used in\nthe loss function. To fix this, ensure that the model's output is reshaped or\naggregated correctly to match the target size, which can be done by adjusting\nthe way predictions are collected or processed.", "The execution failed due to an AttributeError: 'NoneType' object has no\nattribute 'size'. This indicates that the input feature matrix 'x' for the GNN\nmodel is not being initialized or passed correctly. In the create_synthetic_data\nfunction, the Data object is created without specifying node features 'x'. To\nfix this, we need to add an initialization for 'x' in the create_synthetic_data\nfunction, such as random features for each node.", "The model's performance is not improving over the epochs; the F1-score\nfluctuates without a clear upward trend, suggesting potential issues with the\nmodel architecture or the training process. The validation loss does not\nconsistently decrease, indicating possible problems with overfitting,\nunderfitting, or ineffective learning. A possible fix could involve adjusting\nthe learning rate, increasing the number of epochs, or modifying the model\narchitecture.", "", "The execution output indicates a bug related to the dimension mismatch between\nthe model output and the target tensor. The error message '0D or 1D target\ntensor expected, multi-target not supported' suggests that the target tensor\n'data.y' is not in the expected shape for the CrossEntropyLoss function. To fix\nthis, 'data.y' should be reshaped to ensure it is a 1D tensor with the correct\nnumber of classes, matching the output of the model.", "", "", "", ""], "exc_type": ["TypeError", null, null, "ValueError", "AttributeError", null, null, "RuntimeError", null, null, null, null], "exc_info": [{"args": ["default_collate: batch must contain tensors, numpy arrays, numbers, dicts or lists; found <class 'torch_geometric.data.data.Data'>"]}, null, null, {"args": ["Expected input batch_size (160) to match target batch_size (16)."]}, {"args": ["'NoneType' object has no attribute 'size'"], "name": "size", "obj": "None"}, null, null, {"args": ["0D or 1D target tensor expected, multi-target not supported"]}, null, null, null, null], "exc_stack": [[["/Users/fourzeroo/repos/ai_scientist/ai_scientists/AI-Scientist-V2/ai_scientist/treesearch/interpreter.py", 144, "_run_session", "exec(compile(code, self.agent_file_name, \"exec\"), global_scope)"], ["runfile.py", 87, "<module>", "for batch in data_loader:"], ["/opt/homebrew/lib/python3.11/site-packages/torch/utils/data/dataloader.py", 701, "__next__", "data = self._next_data()"], ["/opt/homebrew/lib/python3.11/site-packages/torch/utils/data/dataloader.py", 757, "_next_data", "data = self._dataset_fetcher.fetch(index)  # may raise StopIteration"], ["/opt/homebrew/lib/python3.11/site-packages/torch/utils/data/_utils/fetch.py", 55, "fetch", "return self.collate_fn(data)"], ["/opt/homebrew/lib/python3.11/site-packages/torch/utils/data/_utils/collate.py", 398, "default_collate", "return collate(batch, collate_fn_map=default_collate_fn_map)"], ["/opt/homebrew/lib/python3.11/site-packages/torch/utils/data/_utils/collate.py", 240, "collate", "raise TypeError(default_collate_err_msg_format.format(elem_type))"]], null, null, [["/Users/fourzeroo/repos/ai_scientist/ai_scientists/AI-Scientist-V2/ai_scientist/treesearch/interpreter.py", 144, "_run_session", "exec(compile(code, self.agent_file_name, \"exec\"), global_scope)"], ["runfile.py", 72, "<module>", "loss = criterion(out, data.y)"], ["/opt/homebrew/lib/python3.11/site-packages/torch/nn/modules/module.py", 1736, "_wrapped_call_impl", "return self._call_impl(*args, **kwargs)"], ["/opt/homebrew/lib/python3.11/site-packages/torch/nn/modules/module.py", 1747, "_call_impl", "return forward_call(*args, **kwargs)"], ["/opt/homebrew/lib/python3.11/site-packages/torch/nn/modules/loss.py", 1293, "forward", "return F.cross_entropy("], ["/opt/homebrew/lib/python3.11/site-packages/torch/nn/functional.py", 3479, "cross_entropy", "return torch._C._nn.cross_entropy_loss("]], [["/Users/fourzeroo/repos/ai_scientist/ai_scientists/AI-Scientist-V2/ai_scientist/treesearch/interpreter.py", 144, "_run_session", "exec(compile(code, self.agent_file_name, \"exec\"), global_scope)"], ["runfile.py", 74, "<module>", "out = model(batch)"], ["/opt/homebrew/lib/python3.11/site-packages/torch/nn/modules/module.py", 1736, "_wrapped_call_impl", "return self._call_impl(*args, **kwargs)"], ["/opt/homebrew/lib/python3.11/site-packages/torch/nn/modules/module.py", 1747, "_call_impl", "return forward_call(*args, **kwargs)"], ["runfile.py", 46, "forward", "x = F.relu(self.conv1(x, edge_index))"], ["/opt/homebrew/lib/python3.11/site-packages/torch/nn/modules/module.py", 1736, "_wrapped_call_impl", "return self._call_impl(*args, **kwargs)"], ["/opt/homebrew/lib/python3.11/site-packages/torch/nn/modules/module.py", 1747, "_call_impl", "return forward_call(*args, **kwargs)"], ["/opt/homebrew/lib/python3.11/site-packages/torch_geometric/nn/conv/gcn_conv.py", 242, "forward", "edge_index, edge_weight, x.size(self.node_dim),"]], null, null, [["/Users/fourzeroo/repos/ai_scientist/ai_scientists/AI-Scientist-V2/ai_scientist/treesearch/interpreter.py", 144, "_run_session", "exec(compile(code, self.agent_file_name, \"exec\"), global_scope)"], ["runfile.py", 73, "<module>", "loss = criterion(out.unsqueeze(0), data.y.unsqueeze(0))  # Match dimensions"], ["/opt/homebrew/lib/python3.11/site-packages/torch/nn/modules/module.py", 1736, "_wrapped_call_impl", "return self._call_impl(*args, **kwargs)"], ["/opt/homebrew/lib/python3.11/site-packages/torch/nn/modules/module.py", 1747, "_call_impl", "return forward_call(*args, **kwargs)"], ["/opt/homebrew/lib/python3.11/site-packages/torch/nn/modules/loss.py", 1293, "forward", "return F.cross_entropy("], ["/opt/homebrew/lib/python3.11/site-packages/torch/nn/functional.py", 3479, "cross_entropy", "return torch._C._nn.cross_entropy_loss("]], null, null, null, null], "exp_name": "0-run", "metrics": [{"metric_names": [{"metric_name": "value", "lower_is_better": true, "description": "", "data": [{"dataset_name": "default", "final_value": null, "best_value": null}]}]}, {"metric_names": [{"metric_name": "train F1 score", "lower_is_better": false, "description": "F1 score calculated on the training dataset", "data": [{"dataset_name": "synthetic_data", "final_value": 0.3986, "best_value": 0.3986}]}]}, {"metric_names": [{"metric_name": "train F1 score", "lower_is_better": false, "description": "F1 score on the training dataset", "data": [{"dataset_name": "synthetic_data", "final_value": 0.5813, "best_value": 0.5813}]}]}, {"metric_names": [{"metric_name": "train loss", "lower_is_better": true, "description": "The loss value calculated during training.", "data": [{"dataset_name": "synthetic_data", "final_value": 0.6898, "best_value": 0.6898}]}]}, {"metric_names": [{"metric_name": "train F1 score", "lower_is_better": false, "description": "The F1 score calculated on the training dataset.", "data": [{"dataset_name": "synthetic_data", "final_value": 0.5813, "best_value": 0.5813}]}, {"metric_name": "validation loss", "lower_is_better": true, "description": "The loss calculated on the validation dataset.", "data": [{"dataset_name": "synthetic_data", "final_value": 0.6919, "best_value": 0.6919}]}]}, {"metric_names": [{"metric_name": "validation F1 score", "lower_is_better": false, "description": "The F1 score is a measure of a model's accuracy that considers both the precision and the recall to compute the score.", "data": [{"dataset_name": "synthetic", "final_value": 0.3369, "best_value": 0.3369}]}, {"metric_name": "validation loss", "lower_is_better": true, "description": "The loss measures how well the model's predictions align with the actual labels; lower values indicate better performance.", "data": [{"dataset_name": "synthetic", "final_value": 0.6937, "best_value": 0.6937}]}]}, {"metric_names": [{"metric_name": "train loss", "lower_is_better": true, "description": "The loss value during training, indicating how well the model is learning.", "data": [{"dataset_name": "synthetic_dynamic_network", "final_value": 0.5756, "best_value": 0.5756}]}, {"metric_name": "validation F1 score", "lower_is_better": false, "description": "The F1 score on the validation set, a measure of the model's accuracy considering both precision and recall.", "data": [{"dataset_name": "synthetic_dynamic_network", "final_value": 0.699, "best_value": 0.699}]}]}, {"metric_names": [{"metric_name": "value", "lower_is_better": true, "description": "", "data": [{"dataset_name": "default", "final_value": null, "best_value": null}]}]}, {"metric_names": [{"metric_name": "train loss", "lower_is_better": true, "description": "The loss value during training, lower is better.", "data": [{"dataset_name": "synthetic_dynamic_network", "final_value": 0.5695, "best_value": 0.5695}]}, {"metric_name": "validation F1 score", "lower_is_better": false, "description": "The F1 score on the validation dataset, higher is better.", "data": [{"dataset_name": "synthetic_dynamic_network", "final_value": 0.7049, "best_value": 0.7049}]}]}, {"metric_names": [{"metric_name": "train loss", "lower_is_better": true, "description": "The loss value during training, lower values indicate better performance.", "data": [{"dataset_name": "synthetic_dynamic_network", "final_value": 0.5695, "best_value": 0.5695}]}, {"metric_name": "validation F1 score", "lower_is_better": false, "description": "The F1 score on the validation dataset, higher values indicate better performance.", "data": [{"dataset_name": "synthetic_dynamic_network", "final_value": 0.7049, "best_value": 0.7049}]}]}, {"metric_names": [{"metric_name": "train loss", "lower_is_better": true, "description": "The loss value during training, where lower values indicate better performance.", "data": [{"dataset_name": "synthetic_dynamic_network", "final_value": 0.5695, "best_value": 0.5695}]}, {"metric_name": "validation F1 score", "lower_is_better": false, "description": "The F1 score on the validation set, where higher values indicate better performance.", "data": [{"dataset_name": "synthetic_dynamic_network", "final_value": 0.7049, "best_value": 0.7049}]}]}, {"metric_names": [{"metric_name": "value", "lower_is_better": true, "description": "", "data": [{"dataset_name": "default", "final_value": null, "best_value": null}]}]}], "is_best_node": [false, false, false, false, false, false, true, false, false, false, false, false], "plots": [[], [], [], [], [], [], ["../../logs/0-run/experiment_results/experiment_618c5b15e66f48e29138c50d51aa08c7_proc_1273/synthetic_dynamic_network_training_loss.png", "../../logs/0-run/experiment_results/experiment_618c5b15e66f48e29138c50d51aa08c7_proc_1273/synthetic_dynamic_network_validation_f1.png"], [], ["../../logs/0-run/experiment_results/experiment_464c7def0b414a1ebf0e6ef5517a4053_proc_1274/synthetic_dynamic_network_training_loss.png", "../../logs/0-run/experiment_results/experiment_464c7def0b414a1ebf0e6ef5517a4053_proc_1274/synthetic_dynamic_network_validation_f1.png"], ["../../logs/0-run/experiment_results/experiment_31d8f13ecac7464ab88e0d13c6ac7361_proc_1273/synthetic_dynamic_network_training_loss.png", "../../logs/0-run/experiment_results/experiment_31d8f13ecac7464ab88e0d13c6ac7361_proc_1273/synthetic_dynamic_network_validation_f1.png"], ["../../logs/0-run/experiment_results/experiment_adf352379a1545b38b25de40e7151321_proc_1273/synthetic_dynamic_network_training_loss.png", "../../logs/0-run/experiment_results/experiment_adf352379a1545b38b25de40e7151321_proc_1273/synthetic_dynamic_network_validation_f1.png"], ["../../logs/0-run/experiment_results/seed_aggregation_1d3f694797914c2788aeccc6184d5970/aggregated_training_loss.png", "../../logs/0-run/experiment_results/seed_aggregation_1d3f694797914c2788aeccc6184d5970/aggregated_validation_f1.png"]], "plot_paths": [[], [], [], [], [], [], ["experiments/2025-09-14_13-56-51_temporal_motif_contrastive_anomaly_detection_attempt_0/logs/0-run/experiment_results/experiment_618c5b15e66f48e29138c50d51aa08c7_proc_1273/synthetic_dynamic_network_training_loss.png", "experiments/2025-09-14_13-56-51_temporal_motif_contrastive_anomaly_detection_attempt_0/logs/0-run/experiment_results/experiment_618c5b15e66f48e29138c50d51aa08c7_proc_1273/synthetic_dynamic_network_validation_f1.png"], [], ["experiments/2025-09-14_13-56-51_temporal_motif_contrastive_anomaly_detection_attempt_0/logs/0-run/experiment_results/experiment_464c7def0b414a1ebf0e6ef5517a4053_proc_1274/synthetic_dynamic_network_training_loss.png", "experiments/2025-09-14_13-56-51_temporal_motif_contrastive_anomaly_detection_attempt_0/logs/0-run/experiment_results/experiment_464c7def0b414a1ebf0e6ef5517a4053_proc_1274/synthetic_dynamic_network_validation_f1.png"], ["experiments/2025-09-14_13-56-51_temporal_motif_contrastive_anomaly_detection_attempt_0/logs/0-run/experiment_results/experiment_31d8f13ecac7464ab88e0d13c6ac7361_proc_1273/synthetic_dynamic_network_training_loss.png", "experiments/2025-09-14_13-56-51_temporal_motif_contrastive_anomaly_detection_attempt_0/logs/0-run/experiment_results/experiment_31d8f13ecac7464ab88e0d13c6ac7361_proc_1273/synthetic_dynamic_network_validation_f1.png"], ["experiments/2025-09-14_13-56-51_temporal_motif_contrastive_anomaly_detection_attempt_0/logs/0-run/experiment_results/experiment_adf352379a1545b38b25de40e7151321_proc_1273/synthetic_dynamic_network_training_loss.png", "experiments/2025-09-14_13-56-51_temporal_motif_contrastive_anomaly_detection_attempt_0/logs/0-run/experiment_results/experiment_adf352379a1545b38b25de40e7151321_proc_1273/synthetic_dynamic_network_validation_f1.png"], ["experiments/2025-09-14_13-56-51_temporal_motif_contrastive_anomaly_detection_attempt_0/logs/0-run/experiment_results/seed_aggregation_1d3f694797914c2788aeccc6184d5970/aggregated_training_loss.png", "experiments/2025-09-14_13-56-51_temporal_motif_contrastive_anomaly_detection_attempt_0/logs/0-run/experiment_results/seed_aggregation_1d3f694797914c2788aeccc6184d5970/aggregated_validation_f1.png"]], "plot_analyses": [[], [], [], [], [], [], [{"analysis": "The plot shows a clear downward trend in training loss over the epochs, indicating that the model is learning effectively. The decrease from approximately 0.72 to 0.58 suggests that the model is optimizing well, reducing error as training progresses. This is a positive sign that the basic implementation is functioning correctly, as the model is able to learn from the training data and improve its predictions over time.", "plot_path": "experiments/2025-09-14_13-56-51_temporal_motif_contrastive_anomaly_detection_attempt_0/logs/0-run/experiment_results/experiment_618c5b15e66f48e29138c50d51aa08c7_proc_1273/synthetic_dynamic_network_training_loss.png"}, {"analysis": "The plot demonstrates an upward trend in the validation F1 score over the epochs, suggesting that the model's performance on unseen data is improving. The increase from about 0.56 to 0.70 indicates that the model is not only learning the training data but also generalizing well to the validation set. This improvement in F1 score aligns with the goals of achieving functional correctness and suggests that the model can effectively detect anomalies in dynamic networks.", "plot_path": "experiments/2025-09-14_13-56-51_temporal_motif_contrastive_anomaly_detection_attempt_0/logs/0-run/experiment_results/experiment_618c5b15e66f48e29138c50d51aa08c7_proc_1273/synthetic_dynamic_network_validation_f1.png"}], [], [{"analysis": "The plot shows the training loss decreasing steadily over 10 epochs, indicating that the model is learning effectively from the data. A consistent decline in loss suggests that the model's parameters are being optimized correctly, and the learning process is stable. However, it is important to ensure that the loss continues to decrease in further epochs and does not plateau too early, which could indicate underfitting.", "plot_path": "experiments/2025-09-14_13-56-51_temporal_motif_contrastive_anomaly_detection_attempt_0/logs/0-run/experiment_results/experiment_464c7def0b414a1ebf0e6ef5517a4053_proc_1274/synthetic_dynamic_network_training_loss.png"}, {"analysis": "The plot displays the validation F1 score improving over 10 epochs, with some fluctuations. The overall upward trend is a positive sign, as it indicates that the model's ability to correctly identify anomalies is improving. The fluctuations might be due to the model adjusting to the validation data, which can be typical in early training stages. The increase in F1 score suggests that the model is generalizing better to unseen data, which aligns with the goal of enhancing anomaly detection capabilities.", "plot_path": "experiments/2025-09-14_13-56-51_temporal_motif_contrastive_anomaly_detection_attempt_0/logs/0-run/experiment_results/experiment_464c7def0b414a1ebf0e6ef5517a4053_proc_1274/synthetic_dynamic_network_validation_f1.png"}], [{"analysis": "The plot shows a steady decrease in training loss over the epochs, indicating that the model is learning effectively from the data. This downward trend suggests that the model is fitting the training data well, with no immediate signs of overfitting. The continuous decline in loss is a positive sign for achieving basic functional correctness in the preliminary stage of the experiment.", "plot_path": "experiments/2025-09-14_13-56-51_temporal_motif_contrastive_anomaly_detection_attempt_0/logs/0-run/experiment_results/experiment_31d8f13ecac7464ab88e0d13c6ac7361_proc_1273/synthetic_dynamic_network_training_loss.png"}, {"analysis": "The plot illustrates an overall increase in the validation F1 score across epochs, demonstrating that the model's performance on the validation set is improving. The F1 score, which balances precision and recall, is a critical metric for anomaly detection tasks. The increase suggests that the model is becoming more effective at identifying anomalies without overfitting to the training data. The fluctuations in the middle epochs could indicate areas for further tuning, but the upward trend is promising for achieving the research goals.", "plot_path": "experiments/2025-09-14_13-56-51_temporal_motif_contrastive_anomaly_detection_attempt_0/logs/0-run/experiment_results/experiment_31d8f13ecac7464ab88e0d13c6ac7361_proc_1273/synthetic_dynamic_network_validation_f1.png"}], [{"analysis": "The plot shows a consistent decrease in training loss over the epochs, indicating that the model is learning effectively from the training data. This downward trend suggests that the model is minimizing the error between the predicted and actual values, which is a positive sign of convergence towards an optimal solution. The smooth decline also implies that the learning rate is likely well-tuned, avoiding issues like overfitting or underfitting at this stage.", "plot_path": "experiments/2025-09-14_13-56-51_temporal_motif_contrastive_anomaly_detection_attempt_0/logs/0-run/experiment_results/experiment_adf352379a1545b38b25de40e7151321_proc_1273/synthetic_dynamic_network_training_loss.png"}, {"analysis": "The plot illustrates an overall increasing trend in the validation F1 score over the epochs, with some fluctuations. This indicates that the model's ability to correctly classify anomalies and normal instances is improving as training progresses. The increase in F1 score reflects a balance between precision and recall, suggesting that the model is becoming more effective in distinguishing anomalies from normal patterns. The fluctuations could be due to the complexity of the dataset, but the general upward trend is promising for the model's generalization capability.", "plot_path": "experiments/2025-09-14_13-56-51_temporal_motif_contrastive_anomaly_detection_attempt_0/logs/0-run/experiment_results/experiment_adf352379a1545b38b25de40e7151321_proc_1273/synthetic_dynamic_network_validation_f1.png"}], []], "vlm_feedback_summary": ["[]", "[]", "[]", "[]", "[]", "[]", "The plots indicate successful initial implementation with effective learning and\ngeneralization. Training loss decreases steadily, while validation F1 score\nimproves, showing that the model can potentially outperform existing methods in\nanomaly detection.", "[]", "The initial implementation shows promising results with a decreasing training\nloss and an increasing validation F1 score. These trends indicate that the model\nis learning effectively and improving its performance on validation data.\nContinued monitoring and adjustments may be necessary to maintain progress and\naddress any potential overfitting or underfitting issues.", "The initial implementation shows promising results with a decreasing training\nloss and an increasing validation F1 score, indicating effective learning and\nimproving anomaly detection performance. Further tuning may enhance stability\nand performance.", "The plots indicate that the model is learning effectively, with decreasing\ntraining loss and increasing validation F1 score, suggesting improvements in\nanomaly detection performance.", "[]"], "exec_time": [1.2201290130615234, 1.9204649925231934, 1.2427361011505127, 1.1934311389923096, 1.1949870586395264, 1.25838303565979, 1.2070598602294922, 1.1553308963775635, 1.7919011116027832, 1.7924878597259521, 1.1800918579101562, null], "exec_time_feedback": ["", "", "", "", "", "", "", "", "", "", "", ""], "datasets_successfully_tested": [[], [], [], [], [], [], ["[synthetic_dynamic_network]"], [], ["synthetic_dynamic_network"], ["synthetic_dynamic_network"], ["synthetic_dynamic_network"], []], "plot_code": [null, null, null, null, null, null, "import matplotlib.pyplot as plt\nimport numpy as np\nimport os\n\nworking_dir = os.path.join(os.getcwd(), \"working\")\n\n# Load experiment data\ntry:\n    experiment_data = np.load(\n        os.path.join(working_dir, \"experiment_data.npy\"), allow_pickle=True\n    ).item()\nexcept Exception as e:\n    print(f\"Error loading experiment data: {e}\")\n\n# Plot training loss\ntry:\n    train_losses = experiment_data[\"synthetic_dynamic_network\"][\"losses\"][\"train\"]\n    plt.figure()\n    plt.plot(range(1, len(train_losses) + 1), train_losses, marker=\"o\")\n    plt.title(\"Training Loss over Epochs\")\n    plt.xlabel(\"Epoch\")\n    plt.ylabel(\"Loss\")\n    plt.savefig(\n        os.path.join(working_dir, \"synthetic_dynamic_network_training_loss.png\")\n    )\n    plt.close()\nexcept Exception as e:\n    print(f\"Error creating training loss plot: {e}\")\n    plt.close()\n\n# Plot validation F1 score\ntry:\n    val_f1_scores = experiment_data[\"synthetic_dynamic_network\"][\"metrics\"][\"val\"]\n    plt.figure()\n    plt.plot(range(1, len(val_f1_scores) + 1), val_f1_scores, marker=\"o\")\n    plt.title(\"Validation F1 Score over Epochs\")\n    plt.xlabel(\"Epoch\")\n    plt.ylabel(\"F1 Score\")\n    plt.savefig(\n        os.path.join(working_dir, \"synthetic_dynamic_network_validation_f1.png\")\n    )\n    plt.close()\nexcept Exception as e:\n    print(f\"Error creating validation F1 score plot: {e}\")\n    plt.close()\n", null, "import matplotlib.pyplot as plt\nimport numpy as np\nimport os\n\nworking_dir = os.path.join(os.getcwd(), \"working\")\n\n# Load experiment data\ntry:\n    experiment_data = np.load(\n        os.path.join(working_dir, \"experiment_data.npy\"), allow_pickle=True\n    ).item()\nexcept Exception as e:\n    print(f\"Error loading experiment data: {e}\")\n\n# Plot training loss\ntry:\n    train_losses = experiment_data[\"synthetic_dynamic_network\"][\"losses\"][\"train\"]\n    plt.figure()\n    plt.plot(range(1, len(train_losses) + 1), train_losses, marker=\"o\")\n    plt.title(\"Training Loss over Epochs\")\n    plt.xlabel(\"Epoch\")\n    plt.ylabel(\"Loss\")\n    plt.savefig(\n        os.path.join(working_dir, \"synthetic_dynamic_network_training_loss.png\")\n    )\n    plt.close()\nexcept Exception as e:\n    print(f\"Error creating training loss plot: {e}\")\n    plt.close()\n\n# Plot validation F1 score\ntry:\n    val_f1_scores = experiment_data[\"synthetic_dynamic_network\"][\"metrics\"][\"val\"]\n    plt.figure()\n    plt.plot(range(1, len(val_f1_scores) + 1), val_f1_scores, marker=\"o\")\n    plt.title(\"Validation F1 Score over Epochs\")\n    plt.xlabel(\"Epoch\")\n    plt.ylabel(\"F1 Score\")\n    plt.savefig(\n        os.path.join(working_dir, \"synthetic_dynamic_network_validation_f1.png\")\n    )\n    plt.close()\nexcept Exception as e:\n    print(f\"Error creating validation F1 score plot: {e}\")\n    plt.close()\n", "import matplotlib.pyplot as plt\nimport numpy as np\nimport os\n\nworking_dir = os.path.join(os.getcwd(), \"working\")\n\n# Load experiment data\ntry:\n    experiment_data = np.load(\n        os.path.join(working_dir, \"experiment_data.npy\"), allow_pickle=True\n    ).item()\nexcept Exception as e:\n    print(f\"Error loading experiment data: {e}\")\n\n# Plot training loss\ntry:\n    train_losses = experiment_data[\"synthetic_dynamic_network\"][\"losses\"][\"train\"]\n    plt.figure()\n    plt.plot(range(1, len(train_losses) + 1), train_losses, marker=\"o\")\n    plt.title(\"Training Loss over Epochs\")\n    plt.xlabel(\"Epoch\")\n    plt.ylabel(\"Loss\")\n    plt.savefig(\n        os.path.join(working_dir, \"synthetic_dynamic_network_training_loss.png\")\n    )\n    plt.close()\nexcept Exception as e:\n    print(f\"Error creating training loss plot: {e}\")\n    plt.close()\n\n# Plot validation F1 score\ntry:\n    val_f1_scores = experiment_data[\"synthetic_dynamic_network\"][\"metrics\"][\"val\"]\n    plt.figure()\n    plt.plot(range(1, len(val_f1_scores) + 1), val_f1_scores, marker=\"o\")\n    plt.title(\"Validation F1 Score over Epochs\")\n    plt.xlabel(\"Epoch\")\n    plt.ylabel(\"F1 Score\")\n    plt.savefig(\n        os.path.join(working_dir, \"synthetic_dynamic_network_validation_f1.png\")\n    )\n    plt.close()\nexcept Exception as e:\n    print(f\"Error creating validation F1 score plot: {e}\")\n    plt.close()\n", "import matplotlib.pyplot as plt\nimport numpy as np\nimport os\n\nworking_dir = os.path.join(os.getcwd(), \"working\")\n\n# Load experiment data\ntry:\n    experiment_data = np.load(\n        os.path.join(working_dir, \"experiment_data.npy\"), allow_pickle=True\n    ).item()\nexcept Exception as e:\n    print(f\"Error loading experiment data: {e}\")\n\n# Plot training loss\ntry:\n    train_losses = experiment_data[\"synthetic_dynamic_network\"][\"losses\"][\"train\"]\n    plt.figure()\n    plt.plot(range(1, len(train_losses) + 1), train_losses, marker=\"o\")\n    plt.title(\"Training Loss over Epochs\")\n    plt.xlabel(\"Epoch\")\n    plt.ylabel(\"Loss\")\n    plt.savefig(\n        os.path.join(working_dir, \"synthetic_dynamic_network_training_loss.png\")\n    )\n    plt.close()\nexcept Exception as e:\n    print(f\"Error creating training loss plot: {e}\")\n    plt.close()\n\n# Plot validation F1 score\ntry:\n    val_f1_scores = experiment_data[\"synthetic_dynamic_network\"][\"metrics\"][\"val\"]\n    plt.figure()\n    plt.plot(range(1, len(val_f1_scores) + 1), val_f1_scores, marker=\"o\")\n    plt.title(\"Validation F1 Score over Epochs\")\n    plt.xlabel(\"Epoch\")\n    plt.ylabel(\"F1 Score\")\n    plt.savefig(\n        os.path.join(working_dir, \"synthetic_dynamic_network_validation_f1.png\")\n    )\n    plt.close()\nexcept Exception as e:\n    print(f\"Error creating validation F1 score plot: {e}\")\n    plt.close()\n", "import matplotlib.pyplot as plt\nimport numpy as np\nimport os\n\nworking_dir = os.path.join(os.getcwd(), \"working\")\n\n# Load experiment data\nexperiment_data_path_list = [\n    \"experiments/2025-09-14_13-56-51_temporal_motif_contrastive_anomaly_detection_attempt_0/logs/0-run/experiment_results/experiment_464c7def0b414a1ebf0e6ef5517a4053_proc_1274/experiment_data.npy\",\n    \"experiments/2025-09-14_13-56-51_temporal_motif_contrastive_anomaly_detection_attempt_0/logs/0-run/experiment_results/experiment_31d8f13ecac7464ab88e0d13c6ac7361_proc_1273/experiment_data.npy\",\n    \"experiments/2025-09-14_13-56-51_temporal_motif_contrastive_anomaly_detection_attempt_0/logs/0-run/experiment_results/experiment_adf352379a1545b38b25de40e7151321_proc_1273/experiment_data.npy\",\n]\n\nall_train_losses = []\nall_val_f1_scores = []\n\nfor experiment_data_path in experiment_data_path_list:\n    try:\n        experiment_data = np.load(\n            os.path.join(os.getenv(\"AI_SCIENTIST_ROOT\"), experiment_data_path),\n            allow_pickle=True,\n        ).item()\n        train_losses = experiment_data[\"synthetic_dynamic_network\"][\"losses\"][\"train\"]\n        val_f1_scores = experiment_data[\"synthetic_dynamic_network\"][\"metrics\"][\"val\"]\n        all_train_losses.append(train_losses)\n        all_val_f1_scores.append(val_f1_scores)\n    except Exception as e:\n        print(f\"Error loading experiment data from {experiment_data_path}: {e}\")\n\n# Calculate mean and standard error\nmean_train_losses = np.mean(all_train_losses, axis=0)\nstderr_train_losses = np.std(all_train_losses, axis=0) / np.sqrt(len(all_train_losses))\n\nmean_val_f1_scores = np.mean(all_val_f1_scores, axis=0)\nstderr_val_f1_scores = np.std(all_val_f1_scores, axis=0) / np.sqrt(\n    len(all_val_f1_scores)\n)\n\n# Plot aggregated training loss\ntry:\n    plt.figure()\n    epochs = range(1, len(mean_train_losses) + 1)\n    plt.errorbar(\n        epochs,\n        mean_train_losses,\n        yerr=stderr_train_losses,\n        fmt=\"-o\",\n        label=\"Mean \u00b1 StdErr\",\n    )\n    plt.title(\"Aggregated Training Loss over Epochs\")\n    plt.xlabel(\"Epoch\")\n    plt.ylabel(\"Loss\")\n    plt.legend()\n    plt.savefig(os.path.join(working_dir, \"aggregated_training_loss.png\"))\n    plt.close()\nexcept Exception as e:\n    print(f\"Error creating aggregated training loss plot: {e}\")\n    plt.close()\n\n# Plot aggregated validation F1 score\ntry:\n    plt.figure()\n    epochs = range(1, len(mean_val_f1_scores) + 1)\n    plt.errorbar(\n        epochs,\n        mean_val_f1_scores,\n        yerr=stderr_val_f1_scores,\n        fmt=\"-o\",\n        label=\"Mean \u00b1 StdErr\",\n    )\n    plt.title(\"Aggregated Validation F1 Score over Epochs\")\n    plt.xlabel(\"Epoch\")\n    plt.ylabel(\"F1 Score\")\n    plt.legend()\n    plt.savefig(os.path.join(working_dir, \"aggregated_validation_f1.png\"))\n    plt.close()\nexcept Exception as e:\n    print(f\"Error creating aggregated validation F1 score plot: {e}\")\n    plt.close()\n"], "plot_plan": [null, null, null, null, null, null, "To create standard visualizations of experiment results from the data stored in `experiment_data.npy`, follow these steps:\n\n1. Load the experiment data using `numpy.load` and ensure the data is extracted properly.\n2. For each plot, use a try-except block to handle potential errors.\n3. Create a plot for the training losses over epochs. Extract the training losses from the data and plot them against epoch numbers. Use a title like \"Training Loss over Epochs\".\n4. Create a plot for the validation F1 metrics over epochs. Extract the validation F1 scores and plot them against epoch numbers. Title it \"Validation F1 Score over Epochs\".\n5. Only plot these figures if the data exists in the `experiment_data`.\n6. Make sure to save each plot in the specified `working_dir` with a descriptive filename.\n7. After plotting, close each figure to free up resources.", null, null, null, null, null], "ablation_name": [null, null, null, null, null, null, null, null, null, null, null, null], "hyperparam_name": [null, null, null, null, null, null, null, null, null, null, null, null], "is_seed_node": [false, false, false, false, false, false, false, false, true, true, true, true], "is_seed_agg_node": [false, false, false, false, false, false, false, false, false, false, false, true], "parse_metrics_plan": ["", "To analyze the experiment data, we will first load the numpy file containing the\nmetrics from the specified working directory. We will then extract the metrics\nfor each dataset and print them in a clear and structured manner. Specifically,\nwe will print the dataset name followed by the final values of the metrics, such\nas the final train F1 score and the final train loss. We will ensure that the\nmetrics are labeled clearly and avoid abbreviations or vague terms. The code\nwill execute immediately upon running, loading the data and printing the results\nwithout requiring any additional entry points or conditions.", "To analyze the experimental results, first load the numpy file containing the\nexperiment data from the specified working directory. The data structure\ncontains metrics and losses under 'synthetic_data'. For each dataset, extract\nand print the best or final values of the metrics. Ensure clear labeling of the\nmetric names when printing, such as 'train F1 score'. This will provide an\noverview of the model's performance on the synthetic data.", "To analyze the experimental results stored in the numpy file, we will first load\nthe `experiment_data.npy` file using numpy's load function. We'll ensure to\nspecify the correct path using `os.path.join(os.getcwd(), 'working')`. After\nloading, we will iterate through each dataset present in the data, extract the\nmetrics, and print them. We will specifically look for and print the final\nvalues for each metric such as 'train loss' and 'validation F1 score' for the\n'synthetic_dataset'. This will involve accessing the last element in the lists\ncorresponding to these metrics in the data structure.", "To analyze the metrics from the experiment data, the solution involves loading\nthe numpy file containing the experiment data, which includes metrics for\nsynthetic datasets. First, we set up the working directory path and load the\ndata from the file. Once loaded, we iterate over the datasets and print the name\nof each dataset before extracting and printing the metrics, specifically\nfocusing on the final values for training F1 score and validation loss. This\napproach ensures clarity in understanding which dataset and metric are being\nreferenced.", "To analyze the experimental results, we'll first load the numpy file\n`experiment_data.npy` from the working directory. We'll then extract the metrics\nfor each dataset stored in the file. For each dataset, we'll print the dataset\nname followed by the metrics. We'll specifically print the final or best value\nfor each metric, ensuring we clearly specify what the metric represents, such as\n\"validation F1 score\" or \"validation loss\". This allows us to effectively\nunderstand the performance of the model across different datasets and metrics.", "To analyze the experiment results, we'll first load the experiment_data.npy file\nusing numpy, specifying the working directory path. The loaded data will be a\ndictionary, so we'll extract the metrics and losses for the\n'synthetic_dynamic_network'. We will print the name of the dataset, followed by\nthe final value of each recorded metric. We will clearly label each metric, like\n\"final train loss\" and \"final validation F1 score\", to ensure clarity. Finally,\nwe'll print these values for an easy-to-understand overview of the experimental\nresults.", "To analyze the experimental results, the code will first load the\n`experiment_data.npy` file from the specified working directory using numpy.\nThen, it will extract the metric data for each dataset, specifically focusing on\nthe metrics stored under `experiment_data[\"synthetic_dataset\"][\"metrics\"]`. The\ncode will print the dataset name (\"synthetic_dataset\") and then print the final\nvalidation F1-score, making sure to use descriptive labels for clarity. The\nscript will be structured to execute immediately, without any need for a special\nentry point or additional execution blocks.", "To analyze the experiment results, we'll first load the experiment_data.npy file\nusing numpy, specifying the working directory path. The loaded data will be a\ndictionary, so we'll extract the metrics and losses for the\n'synthetic_dynamic_network'. We will print the name of the dataset, followed by\nthe final value of each recorded metric. We will clearly label each metric, like\n\"final train loss\" and \"final validation F1 score\", to ensure clarity. Finally,\nwe'll print these values for an easy-to-understand overview of the experimental\nresults.", "To analyze the experiment results, we'll first load the experiment_data.npy file\nusing numpy, specifying the working directory path. The loaded data will be a\ndictionary, so we'll extract the metrics and losses for the\n'synthetic_dynamic_network'. We will print the name of the dataset, followed by\nthe final value of each recorded metric. We will clearly label each metric, like\n\"final train loss\" and \"final validation F1 score\", to ensure clarity. Finally,\nwe'll print these values for an easy-to-understand overview of the experimental\nresults.", "To analyze the experiment results, we'll first load the experiment_data.npy file\nusing numpy, specifying the working directory path. The loaded data will be a\ndictionary, so we'll extract the metrics and losses for the\n'synthetic_dynamic_network'. We will print the name of the dataset, followed by\nthe final value of each recorded metric. We will clearly label each metric, like\n\"final train loss\" and \"final validation F1 score\", to ensure clarity. Finally,\nwe'll print these values for an easy-to-understand overview of the experimental\nresults.", ""], "parse_metrics_code": ["", "import os\nimport numpy as np\n\n# Load experiment data\nworking_dir = os.path.join(os.getcwd(), \"working\")\nexperiment_data_path = os.path.join(working_dir, \"experiment_data.npy\")\nexperiment_data = np.load(experiment_data_path, allow_pickle=True).item()\n\n# Extract and print metrics\nfor dataset_name, dataset_metrics in experiment_data.items():\n    print(f\"Dataset: {dataset_name}\")\n\n    # Extract metrics\n    train_metrics = dataset_metrics[\"metrics\"][\"train\"]\n    train_losses = dataset_metrics[\"losses\"][\"train\"]\n\n    # Print the final/last metric values\n    if train_metrics:\n        print(f\"Final Train F1 Score: {train_metrics[-1]:.4f}\")\n    if train_losses:\n        print(f\"Final Train Loss: {train_losses[-1]:.4f}\")\n", "import os\nimport numpy as np\n\n# Load the experiment data from the numpy file\nworking_dir = os.path.join(os.getcwd(), \"working\")\nexperiment_data_path = os.path.join(working_dir, \"experiment_data.npy\")\nexperiment_data = np.load(experiment_data_path, allow_pickle=True).item()\n\n# Extract and print metrics for each dataset\nfor dataset_name, data in experiment_data.items():\n    print(f\"Dataset: {dataset_name}\")\n\n    # Extract the training F1 scores and losses\n    train_f1_scores = data[\"metrics\"][\"train\"]\n    train_losses = data[\"losses\"][\"train\"]\n\n    # Print the final F1 score and loss\n    if train_f1_scores:\n        print(f\"Final train F1 score: {train_f1_scores[-1]:.4f}\")\n    if train_losses:\n        print(f\"Final train loss: {train_losses[-1]:.4f}\")\n", "import os\nimport numpy as np\n\n# Load experiment data\nworking_dir = os.path.join(os.getcwd(), \"working\")\nexperiment_data = np.load(\n    os.path.join(working_dir, \"experiment_data.npy\"), allow_pickle=True\n).item()\n\n\n# Function to extract and print metrics\ndef print_metrics(experiment_data):\n    for dataset_name, dataset_info in experiment_data.items():\n        print(f\"Dataset: {dataset_name}\")\n\n        # Extract the final or best metrics and losses\n        train_losses = dataset_info[\"losses\"][\"train\"]\n        val_f1_scores = dataset_info[\"metrics\"][\"val\"]\n\n        if train_losses:\n            print(f\"Final train loss: {train_losses[-1]:.4f}\")\n\n        if val_f1_scores:\n            print(f\"Final validation F1 score: {val_f1_scores[-1]:.4f}\")\n\n\n# Call the function to print metrics\nprint_metrics(experiment_data)\n", "import os\nimport numpy as np\n\n\ndef load_and_print_experiment_data():\n    # Define the working directory and load the experiment data\n    working_dir = os.path.join(os.getcwd(), \"working\")\n    experiment_data = np.load(\n        os.path.join(working_dir, \"experiment_data.npy\"), allow_pickle=True\n    ).item()\n\n    # Iterate over datasets in the experiment data\n    for dataset_name, dataset_info in experiment_data.items():\n        print(f\"Dataset: {dataset_name}\")\n\n        # Extract and print relevant metrics\n        train_f1_scores = dataset_info[\"metrics\"][\"train\"]\n        validation_losses = dataset_info[\"losses\"][\"train\"]\n\n        if train_f1_scores:\n            print(f\"Final train F1 score: {train_f1_scores[-1]:.4f}\")\n\n        if validation_losses:\n            print(f\"Final validation loss: {validation_losses[-1]:.4f}\")\n\n\n# Execute the function to load and print data\nload_and_print_experiment_data()\n", "import os\nimport numpy as np\n\n# Load the experiment data\nworking_dir = os.path.join(os.getcwd(), \"working\")\nexperiment_data = np.load(\n    os.path.join(working_dir, \"experiment_data.npy\"), allow_pickle=True\n).item()\n\n# Extract and print metrics for each dataset\nfor dataset_name, data in experiment_data.items():\n    print(f\"Dataset: {dataset_name}\")\n\n    # Extract validation metrics\n    if \"metrics\" in data and \"val\" in data[\"metrics\"]:\n        val_f1_scores = data[\"metrics\"][\"val\"]\n        if val_f1_scores:\n            # Print the final validation F1 score\n            final_val_f1_score = val_f1_scores[-1]\n            print(f\"Validation F1 score: {final_val_f1_score:.4f}\")\n\n    # Extract validation losses\n    if \"losses\" in data and \"val\" in data[\"losses\"]:\n        val_losses = data[\"losses\"][\"val\"]\n        if val_losses:\n            # Print the final validation loss\n            final_val_loss = val_losses[-1]\n            print(f\"Validation loss: {final_val_loss:.4f}\")\n", "import os\nimport numpy as np\n\n# Load the experiment data\nworking_dir = os.path.join(os.getcwd(), \"working\")\nexperiment_data_path = os.path.join(working_dir, \"experiment_data.npy\")\nexperiment_data = np.load(experiment_data_path, allow_pickle=True).item()\n\n# Extract and print metrics for each dataset\nfor dataset_name, data in experiment_data.items():\n    print(f\"Dataset: {dataset_name}\")\n\n    # Extract the final train loss\n    train_losses = data[\"losses\"][\"train\"]\n    if train_losses:\n        final_train_loss = train_losses[-1]\n        print(f\"Final train loss: {final_train_loss:.4f}\")\n\n    # Extract the final validation F1 score\n    val_metrics = data[\"metrics\"][\"val\"]\n    if val_metrics:\n        final_val_f1_score = val_metrics[-1]\n        print(f\"Final validation F1 score: {final_val_f1_score:.4f}\")\n", "import os\nimport numpy as np\n\n# Define the working directory and load the experiment data\nworking_dir = os.path.join(os.getcwd(), \"working\")\nexperiment_data = np.load(\n    os.path.join(working_dir, \"experiment_data.npy\"), allow_pickle=True\n).item()\n\n# Extract and print the metrics for each dataset\nfor dataset_name, dataset_info in experiment_data.items():\n    print(f\"Dataset: {dataset_name}\")\n\n    # Print the final validation F1-score\n    val_metrics = dataset_info[\"metrics\"][\"val\"]\n    final_val_f1_score = val_metrics[-1] if val_metrics else None\n    print(f\"Final validation F1-score: {final_val_f1_score}\")\n", "import os\nimport numpy as np\n\n# Load the experiment data\nworking_dir = os.path.join(os.getcwd(), \"working\")\nexperiment_data_path = os.path.join(working_dir, \"experiment_data.npy\")\nexperiment_data = np.load(experiment_data_path, allow_pickle=True).item()\n\n# Extract and print metrics for each dataset\nfor dataset_name, data in experiment_data.items():\n    print(f\"Dataset: {dataset_name}\")\n\n    # Extract the final train loss\n    train_losses = data[\"losses\"][\"train\"]\n    if train_losses:\n        final_train_loss = train_losses[-1]\n        print(f\"Final train loss: {final_train_loss:.4f}\")\n\n    # Extract the final validation F1 score\n    val_metrics = data[\"metrics\"][\"val\"]\n    if val_metrics:\n        final_val_f1_score = val_metrics[-1]\n        print(f\"Final validation F1 score: {final_val_f1_score:.4f}\")\n", "import os\nimport numpy as np\n\n# Load the experiment data\nworking_dir = os.path.join(os.getcwd(), \"working\")\nexperiment_data_path = os.path.join(working_dir, \"experiment_data.npy\")\nexperiment_data = np.load(experiment_data_path, allow_pickle=True).item()\n\n# Extract and print metrics for each dataset\nfor dataset_name, data in experiment_data.items():\n    print(f\"Dataset: {dataset_name}\")\n\n    # Extract the final train loss\n    train_losses = data[\"losses\"][\"train\"]\n    if train_losses:\n        final_train_loss = train_losses[-1]\n        print(f\"Final train loss: {final_train_loss:.4f}\")\n\n    # Extract the final validation F1 score\n    val_metrics = data[\"metrics\"][\"val\"]\n    if val_metrics:\n        final_val_f1_score = val_metrics[-1]\n        print(f\"Final validation F1 score: {final_val_f1_score:.4f}\")\n", "import os\nimport numpy as np\n\n# Load the experiment data\nworking_dir = os.path.join(os.getcwd(), \"working\")\nexperiment_data_path = os.path.join(working_dir, \"experiment_data.npy\")\nexperiment_data = np.load(experiment_data_path, allow_pickle=True).item()\n\n# Extract and print metrics for each dataset\nfor dataset_name, data in experiment_data.items():\n    print(f\"Dataset: {dataset_name}\")\n\n    # Extract the final train loss\n    train_losses = data[\"losses\"][\"train\"]\n    if train_losses:\n        final_train_loss = train_losses[-1]\n        print(f\"Final train loss: {final_train_loss:.4f}\")\n\n    # Extract the final validation F1 score\n    val_metrics = data[\"metrics\"][\"val\"]\n    if val_metrics:\n        final_val_f1_score = val_metrics[-1]\n        print(f\"Final validation F1 score: {final_val_f1_score:.4f}\")\n", ""], "parse_term_out": ["", "['Dataset: synthetic_data', '\\n', 'Final Train F1 Score: 0.3986', '\\n', 'Final\nTrain Loss: 0.6898', '\\n', 'Execution time: a moment seconds (time limit is an\nhour).']", "['Dataset: synthetic_data', '\\n', 'Final train F1 score: 0.5813', '\\n', 'Final\ntrain loss: 0.6919', '\\n', 'Execution time: a moment seconds (time limit is an\nhour).']", "['Dataset: synthetic_data', '\\n', 'Final train loss: 0.6898', '\\n', 'Execution\ntime: a moment seconds (time limit is an hour).']", "['Dataset: synthetic_data', '\\n', 'Final train F1 score: 0.5813', '\\n', 'Final\nvalidation loss: 0.6919', '\\n', 'Execution time: a moment seconds (time limit is\nan hour).']", "['Dataset: synthetic', '\\n', 'Validation F1 score: 0.3369', '\\n', 'Validation\nloss: 0.6937', '\\n', 'Execution time: a moment seconds (time limit is an\nhour).']", "['Dataset: synthetic_dynamic_network', '\\n', 'Final train loss: 0.5756', '\\n',\n'Final validation F1 score: 0.6990', '\\n', 'Execution time: a moment seconds\n(time limit is an hour).']", "['Dataset: synthetic_data', '\\n', 'Final validation F1-score: None', '\\n',\n'Execution time: a moment seconds (time limit is an hour).']", "['Dataset: synthetic_dynamic_network', '\\n', 'Final train loss: 0.5695', '\\n',\n'Final validation F1 score: 0.7049', '\\n', 'Execution time: a moment seconds\n(time limit is an hour).']", "['Dataset: synthetic_dynamic_network', '\\n', 'Final train loss: 0.5695', '\\n',\n'Final validation F1 score: 0.7049', '\\n', 'Execution time: a moment seconds\n(time limit is an hour).']", "['Dataset: synthetic_dynamic_network', '\\n', 'Final train loss: 0.5695', '\\n',\n'Final validation F1 score: 0.7049', '\\n', 'Execution time: a moment seconds\n(time limit is an hour).']", ""], "parse_exc_type": [null, null, null, null, null, null, null, null, null, null, null, null], "parse_exc_info": [null, null, null, null, null, null, null, null, null, null, null, null], "parse_exc_stack": [null, null, null, null, null, null, null, null, null, null, null, null], "completed_stages": ["Stage_1"]};
+
+// Add log directory path and stage info to the tree data
+treeStructData.log_dir_path = window.location.pathname.split('/').slice(0, -1).join('/');
+treeStructData.current_stage = window.location.pathname.includes('stage_')
+  ? window.location.pathname.split('stage_')[1].split('/')[0]
+  : 'Stage_1';
+
+// Initialize background color
+window.bgColCurrent = bgCol;
+
+// Function to set background color that can be called from the console
+function setBackgroundColor(color) {
+  // Update the global color
+  updateBackgroundColor(color);
+
+  // Refresh the current sketch to apply the new background color
+  if (currentStage) {
+    startSketch(currentStage);
+  }
+}
+
+// Load all stage data and initialize the visualization
+loadAllStageData(treeStructData);
+
+    </script>
+    <title>AI Scientist-v2 Visualization</title>
+    <style>
+      body,
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background-color: #ffffff;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+      #canvas-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 40vw;
+        height: 100vh;
+        background-color: inherit;
+        padding-top: 40px;
+      }
+      canvas {
+        float: left;
+        height: 100vh;
+        width: 100vw;
+      }
+      #text-container {
+        float: right;
+        height: 100vh;
+        width: 50vw;
+        background-color: #282c34;
+        overflow: auto;
+      }
+      #plan {
+        /* border-left: 2px solid #282c34; */
+        background-color: #282c34;
+        color: #f2f0e7;
+        min-height: 5rem;
+        padding: 1em 0 1em 1em;
+      }
+      #plot_plan {
+        background-color: #282c34;
+        color: #f2f0e7;
+        min-height: 5rem;
+        padding: 1em 0 1em 1em;
+        white-space: pre-wrap;
+      }
+      #exec_time_feedback {
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #282c34;
+        border-left: 3px solid #ff5555;
+        color: #f2f0e7;
+      }
+      #exec_time {
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #282c34;
+        border-left: 3px solid #ff5555;
+        color: #f2f0e7;
+      }
+      #exc_info {
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #2c1f1f;
+        border-left: 3px solid #ff5555;
+        color: #f2f0e7;
+      }
+      #metrics {
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #282c34;
+        color: #f2f0e7;
+      }
+      #vlm_feedback {
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #1f2c2f;
+        color: #f2f0e7;
+        border-left: 3px solid #55ff55;
+      }
+      #vlm_feedback p {
+        margin: 0.5em 0;
+        white-space: pre-wrap;
+      }
+      .datasets_successfully_tested {
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #282c34;
+        color: #f2f0e7;
+        border-left: 3px solid #55ff55;
+      }
+      .plots-container {
+        float: right;
+        width: 50vw;
+        padding: 1rem;
+        background-color: #282c34;
+        margin-top: 1rem;
+      }
+
+      .plot-item {
+        flex: 1 1 300px;
+        max-width: 100%;
+        margin-bottom: 1rem;
+        white-space: pre-wrap;
+      }
+
+      .plot-item img {
+        width: 100%;
+        height: auto;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        display: block;
+      }
+
+      .metric-group {
+        margin-bottom: 20px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+
+      .metric-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+
+      .metric-table th,
+      .metric-table td {
+        padding: 8px;
+        text-align: left;
+        border: 1px solid #ddd;
+      }
+
+      .metric-table th {
+        background-color: #363b44;
+      }
+
+      /* Styles for tabs */
+      .tabs-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 49vw;
+        background-color: #000000;
+        z-index: 10;
+        display: flex;
+        padding: 0;
+      }
+
+      .tab {
+        cursor: pointer;
+        padding: 10px 15px;
+        background-color: #333;
+        color: #f2f0e7;
+        border: none;
+        outline: none;
+        transition: background-color 0.3s;
+        flex: 1;
+        text-align: center;
+      }
+
+      .tab:hover {
+        background-color: #444;
+      }
+
+      .tab.active {
+        background-color: #4c76af;
+        font-weight: bold;
+      }
+
+      .tab.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background-color: #282c34;
+      }
+
+      .tab-content {
+        display: none;
+        padding-top: 40px; /* Space for tabs */
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      .stage-info {
+        padding: 10px;
+        background-color: #282c34;
+        color: #f2f0e7;
+        margin-bottom: 10px;
+        font-size: 0.9em;
+      }
+
+      .stage-status {
+        display: inline-block;
+        padding: 3px 6px;
+        border-radius: 3px;
+        margin-left: 8px;
+        font-size: 0.8em;
+      }
+
+      .stage-status.completed {
+        background-color: #4caf50;
+      }
+
+      .stage-status.in-progress {
+        background-color: #2196f3;
+      }
+
+      .stage-status.not-started {
+        background-color: #9e9e9e;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="tabs-container" id="stage-tabs">
+      <button class="tab" data-stage="Stage_1" onclick="selectStage('Stage_1')">Stage 1</button>
+      <button class="tab" data-stage="Stage_2" onclick="selectStage('Stage_2')">Stage 2</button>
+      <button class="tab" data-stage="Stage_3" onclick="selectStage('Stage_3')">Stage 3</button>
+      <button class="tab" data-stage="Stage_4" onclick="selectStage('Stage_4')">Stage 4</button>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <pre id="text-container">
+        <div id="stage-info" class="stage-info"></div>
+        <div id="plan"></div>
+        <hr>
+        <div id="exc_info"></div>
+        <hr>
+        <div id="exec_time"></div>
+        <hr>
+        <div id="exec_time_feedback"></div>
+        <hr>
+        <div id="metrics"></div>
+        <hr>
+        <div id="plot_plan"></div>
+        <hr>
+        <div class="plots-container" id="plots"></div>
+        <hr>
+        <div id="vlm_feedback"></div>
+        <hr>
+        <div id="datasets_successfully_tested"></div>
+        <hr>
+        <code id="code" class="language-python"></code>
+        <hr>
+        <code id="plot_code" class="language-python"></code>
+    </pre>
+  </body>
+</html>

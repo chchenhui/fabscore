@@ -1,0 +1,52 @@
+## Command: AdversarialNet lambda=0.01 Accuracy Verification
+cd /home/chenhui/fabscore/agents4sci_rej/submission_268/supplimental_submission/code && timeout 120 python3 -c "
+import torch
+import numpy as np
+from dataset import SyntheticFairnessDataset
+from model import AdversarialFairnessClassifier
+from sklearn.metrics import accuracy_score
+
+# Set seeds for reproducibility
+torch.manual_seed(42)
+np.random.seed(42)
+
+dataset = SyntheticFairnessDataset(n_samples=1000, bias_strength=0.3, random_state=42)
+X_train, X_test, y_train, y_test, s_train, s_test, scaler = dataset.get_train_test_split(test_size=0.2)
+
+input_dim = X_train.shape[1]
+adv_net = AdversarialFairnessClassifier(
+    input_dim=input_dim,
+    fairness_penalty=0.01,
+    epochs=50,
+    learning_rate=0.01
+)
+adv_net.fit(X_train, y_train, s_train)
+y_pred = adv_net.predict(X_test)
+acc = accuracy_score(y_test, y_pred)
+print(f'AdversarialNet lambda=0.01 Accuracy: {acc:.10f}')
+"
+
+## Output (stderr):
+Traceback (most recent call last):
+  File "<string>", line 22, in <module>
+    adv_net.fit(X_train, y_train, s_train)
+  File "/home/chenhui/fabscore/agents4sci_rej/submission_268/supplimental_submission/code/model.py", line 117, in fit
+    total_loss.backward()
+RuntimeError: one of the variables needed for gradient computation has been modified by an inplace operation:
+[torch.FloatTensor [16, 1]], which is output 0 of AsStridedBackward0, is at version 2; expected version 1 instead.
+Hint: enable anomaly detection to find the operation that failed to compute its gradient,
+with torch.autograd.set_detect_anomaly(True)
+
+## Explanation:
+The AdversarialFairnessClassifier.fit() method in model.py has a fundamental implementation bug:
+- Line 111: adversarial_loss.backward(retain_graph=True) -- adversary backward
+- Line 112: adversary_optimizer.step() -- UPDATES adversary weights in-place
+- Line 116: total_loss = classification_loss - self.fairness_penalty * adversarial_loss
+- Line 117: total_loss.backward() -- FAILS because adversary weights were modified in-place after being used in forward pass
+
+The adversary_optimizer.step() modifies adversary parameters (including the [16,1] weight tensor)
+in-place after the forward pass. When total_loss.backward() tries to backpropagate through
+the adversarial_loss (which depends on those same parameters), PyTorch detects the version
+mismatch and raises RuntimeError.
+
+PyTorch version: 2.10.0+cu128

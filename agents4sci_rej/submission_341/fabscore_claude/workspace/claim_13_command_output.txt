@@ -1,0 +1,128 @@
+============================================================
+COMMAND 1: Load and analyze confusion matrix .npy files
+============================================================
+python3 -c "
+import numpy as np
+
+base = 'agents4science_submission/2025-09-13_11-32-42_resource_centric_ppm_agents_attempt_0/logs/0-run/experiment_results/experiment_726b2721d45c4800b9381c5d265fefcb_proc_332087'
+
+for ds in ['BPI2012', 'BPI2017', 'ROAD']:
+    cm = np.load(f'{base}/cm_{ds}.npy')
+    print(f'=== {ds} ===')
+    print(f'  shape: {cm.shape}')
+    ...
+"
+
+OUTPUT:
+=== BPI2012 ===
+  shape: (15, 15)
+  dtype: int64
+  total samples: 4196
+  diagonal (correct): 3176 (75.7%)
+  off-diagonal (errors): 1020 (24.3%)
+  top-5 frequent classes (row sums): [(13, 970), (4, 750), (2, 454), (11, 366), (5, 353)]
+  checking off-diagonal patterns for top-3 classes:
+    class 13 (actual=970): top misclassified as [(8, 10), (1, 5)]
+    class 4 (actual=750): top misclassified as []
+    class 2 (actual=454): top misclassified as [(5, 365), (13, 56), (11, 6), (12, 5), (8, 2)]
+
+=== BPI2017 ===
+  shape: (22, 22)
+  dtype: int64
+  total samples: 7374
+  diagonal (correct): 6144 (83.3%)
+  off-diagonal (errors): 1230 (16.7%)
+  top-5 frequent classes (row sums): [(11, 928), (12, 914), (15, 836), (0, 750), (3, 750)]
+  checking off-diagonal patterns for top-3 classes:
+    class 11 (actual=928): top misclassified as [(8, 85), (15, 85), (1, 1), (9, 1), (18, 1)]
+    class 12 (actual=914): top misclassified as []
+    class 15 (actual=836): top misclassified as [(8, 2)]
+
+=== ROAD ===
+  shape: (10, 10)
+  dtype: int64
+  total samples: 1869
+  diagonal (correct): 1499 (80.2%)
+  off-diagonal (errors): 370 (19.8%)
+  top-5 frequent classes (row sums): [(8, 512), (0, 351), (3, 351), (5, 339), (9, 260)]
+  checking off-diagonal patterns for top-3 classes:
+    class 8 (actual=512): top misclassified as []
+    class 0 (actual=351): top misclassified as [(7, 2)]
+    class 3 (actual=351): top misclassified as []
+
+============================================================
+COMMAND 2: Band-structure analysis
+============================================================
+python3 -c "...band analysis..."
+
+OUTPUT:
+=== BPI2012 (shape=(15, 15)) ===
+  Off-diagonal by distance (top 5):
+    distance=3: total=376 (8.96%)
+    distance=13: total=226 (5.39%)
+    distance=5: total=100 (2.38%)
+    distance=2: total=75 (1.79%)
+    distance=6: total=62 (1.48%)
+  Top 10 off-diagonal (actual, predicted, count):
+    (2,5) count=365
+    (0,13) count=225
+    (3,8) count=90
+    (11,13) count=75
+    (2,13) count=56
+    (11,5) count=46
+    (10,14) count=41
+    (1,13) count=28
+    (11,2) count=16
+    (6,14) count=13
+
+=== BPI2017 (shape=(22, 22)) ===
+  Off-diagonal by distance (top 5):
+    distance=4: total=408 (5.53%)
+    distance=17: total=367 (4.98%)
+    distance=7: total=221 (3.00%)
+    distance=3: total=86 (1.17%)
+    distance=16: total=39 (0.53%)
+  Top 10 off-diagonal (actual, predicted, count):
+    (3,7) count=240
+    (19,2) count=226
+    (1,8) count=179
+    (20,3) count=91
+    (11,15) count=85
+    (11,8) count=85
+    (2,19) count=49
+    (21,5) count=39
+    (21,14) count=35
+    (9,5) count=30
+
+=== ROAD (shape=(10, 10)) ===
+  Off-diagonal by distance (top 5):
+    distance=3: total=243 (13.00%)
+    distance=4: total=85 (4.55%)
+    distance=2: total=22 (1.18%)
+    distance=7: total=10 (0.54%)
+    distance=1: total=8 (0.43%)
+  Top 10 off-diagonal (actual, predicted, count):
+    (5,8) count=238
+    (5,9) count=78
+    (2,0) count=16
+    (9,5) count=6
+    (4,7) count=5
+    (6,7) count=5
+    (7,0) count=5
+    (2,9) count=3
+    (1,0) count=3
+    (5,3) count=2
+
+============================================================
+VISUAL INSPECTION (PNG images viewed):
+============================================================
+- BPI2012_confusion_matrix.png: 15x15 matrix, clear diagonal, off-diagonal spots at
+  (2,5) (strong), (0,13) (strong), (3,8) (moderate), (11,13) (moderate)
+  Structured (non-random) off-diagonal pattern visible; multiple scattered but patterned spots
+
+- BPI2017_confusion_matrix.png: 22x22 matrix, clear diagonal, off-diagonal clusters at
+  (3,7), (19,2), (1,8), (20,3) etc. Multiple clusters distributed across matrix
+
+- ROAD_confusion_matrix.png: 10x10 matrix, clear diagonal, STRONG off-diagonal band at
+  row 5 → cols 8 and 9 (count=238 and 78 respectively) - visible as clear band/strip
+  Also (0,0) dominates diagonal

@@ -1,0 +1,23 @@
+# Table 2: FNR@5%FPR on JailbreakBench vs. HarmBench
+
+| Model | Dataset | Method | FNR | Actual FPR | Threshold |
+|-------|---------|--------|-----|------------|-----------|
+| Llama-4-Scout | HarmBench | avg_pairwise_bertscore | 0.741 | 0.049 | 0.952 |
+| Llama-4-Scout | HarmBench | embedding_variance | 0.605 | 0.049 | 0.042 |
+| Llama-4-Scout | HarmBench | levenshtein_variance | 0.926 | 0.049 | 344198.490 |
+| Llama-4-Scout | HarmBench | semantic_entropy (best τ=0.1) | 0.654 | 0.037 | 0.971 |
+| Llama-4-Scout | HarmBench | semantic_entropy (τ=0.2) | 0.765 | 0.000 | 0.722 |
+| Llama-4-Scout | JailbreakBench | avg_pairwise_bertscore | 0.600 | 0.050 | 0.945 |
+| Llama-4-Scout | JailbreakBench | embedding_variance | 0.667 | 0.050 | 0.069 |
+| Llama-4-Scout | JailbreakBench | levenshtein_variance | 0.883 | 0.050 | 151161.210 |
+| Llama-4-Scout | JailbreakBench | semantic_entropy (best τ=0.3) | 0.733 | 0.017 | 0.722 |
+| Llama-4-Scout | JailbreakBench | semantic_entropy (τ=0.2) | 0.850 | 0.000 | 0.971 |
+| Qwen-2.5-7B | HarmBench | avg_pairwise_bertscore | 0.852 | 0.049 | 0.940 |
+| Qwen-2.5-7B | HarmBench | embedding_variance | 0.654 | 0.049 | 0.050 |
+| Qwen-2.5-7B | HarmBench | levenshtein_variance | 0.815 | 0.049 | 142706.090 |
+| Qwen-2.5-7B | HarmBench | semantic_entropy (best τ=0.1) | 0.630 | 0.037 | 1.371 |
+| Qwen-2.5-7B | HarmBench | semantic_entropy (τ=0.2) | 0.889 | 0.000 | 0.722 |
+| Qwen-2.5-7B | JailbreakBench | avg_pairwise_bertscore | 0.867 | 0.050 | 0.914 |
+| Qwen-2.5-7B | JailbreakBench | embedding_variance | 0.967 | 0.050 | 0.103 |
+| Qwen-2.5-7B | JailbreakBench | levenshtein_variance | 0.767 | 0.050 | 191554.810 |
+| Qwen-2.5-7B | JailbreakBench | semantic_entropy (τ=0.2) | 0.983 | 0.050 | 1.371 |

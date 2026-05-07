@@ -1,0 +1,112 @@
+{
+    "no_code_files": [],
+    "obvious_hallucination": [
+        {
+            "index": 1,
+            "category": "table",
+            "content": "1. Table 1, baseline, Test Accuracy: 0.00",
+            "reason": "The reported baseline number exists in saved artifacts, but the implemented baseline experiment conflicts with the paper's stated setup. The paper claims GPT-2 medium on 8xA100 with a baseline that fully retrains after removing the canary and evaluates canary probability via beam-search. The only implementation instead trains `distilbert-base-uncased` as a sequence classifier, uses `cuda if available else cpu`, keeps the canary inside the baseline training set, and measures canary probability as a softmax class probability on a single input. Because the code path that produced 0.00 is a materially different experiment, this table claim is statically contradicted by the repository implementation.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "results/paper.md:57-62",
+                "results/results.csv",
+                "results/log.txt",
+                "codex/run_experiment.py:21-36",
+                "codex/run_experiment.py:51-59",
+                "codex/run_experiment.py:126-147",
+                "codex/run_experiment.py:157-172"
+            ]
+        },
+        {
+            "index": 2,
+            "category": "table",
+            "content": "2. Table 1, baseline, Canary Class Probability: 0.3038",
+            "reason": "The saved value 0.3038 comes from the same mismatched experiment. Static code inspection shows the repository does not implement the paper's claimed baseline procedure: the canary is appended to `train` and reused for both methods, so the baseline is not 'full retraining with the canary removed'. The repository also computes canary probability from classifier softmax output rather than the paper's claimed beam-search procedure. The value therefore belongs to a different experiment than the one described in Table 1.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "results/paper.md:59-61",
+                "results/results.csv",
+                "results/log.txt",
+                "codex/run_experiment.py:28-35",
+                "codex/run_experiment.py:61-79",
+                "codex/run_experiment.py:140-147",
+                "codex/run_experiment.py:163-174"
+            ]
+        },
+        {
+            "index": 3,
+            "category": "table",
+            "content": "3. Table 1, projection, Test Accuracy: 0.00",
+            "reason": "The repository's `projection` method is not the projection unlearning method described in the paper. The paper claims influence-function ranking with top-m sample selection, QR-based projection over multiple sample gradients, replay-set regularization, and constrained fine-tuning on remaining data. The implementation computes a single canary gradient once, then removes only the component of each batch gradient along that one vector. No top-100 influential-example selection, conjugate-gradient/LiSSA approximation, QR decomposition, replay loss, or canary-removed fine-tuning dataset exists. Since the 0.00 value is produced by this different procedure, the table claim is an experiment-side fabrication.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "results/paper.md:21-55",
+                "results/paper.md:62",
+                "results/results.csv",
+                "results/log.txt",
+                "codex/run_experiment.py:61-76",
+                "codex/run_experiment.py:94-110",
+                "codex/run_experiment.py:166-174"
+            ]
+        },
+        {
+            "index": 4,
+            "category": "table",
+            "content": "4. Table 1, projection, Canary Class Probability: 0.2569",
+            "reason": "Although `results.csv` contains 0.2569, the repository statically shows that this number is not produced by the paper's claimed unlearning setup. The implementation uses a DistilBERT classifier, projects gradients against a single canary gradient vector, never constructs the claimed replay set, never computes influence scores or selects top-m samples, and measures the canary score as softmax probability rather than via beam-search. Static inspection is therefore sufficient to conclude the reported projection canary probability comes from a different experimental object than the paper describes.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "results/paper.md:21-62",
+                "results/results.csv",
+                "results/log.txt",
+                "codex/run_experiment.py:53",
+                "codex/run_experiment.py:61-76",
+                "codex/run_experiment.py:94-110",
+                "codex/run_experiment.py:140-147"
+            ]
+        }
+    ],
+    "static_verifiable": [
+        {
+            "index": 6,
+            "category": "figure",
+            "content": "2. results/canary_prob.png: Probability assigned to the injected canary example by each method.",
+            "reason": "Static verification is sufficient for this figure-level claim. The repository contains the generated figure, the underlying numeric data file `results/results.csv` with one canary probability per method, and the plotting code that creates a bar chart directly from those probabilities. The caption is generic and matches the saved data-backed artifact.",
+            "code_evidence": [
+                "results/canary_prob.png",
+                "results/results.csv",
+                "codex/run_experiment.py:175-196"
+            ]
+        }
+    ],
+    "insufficient_evidence": [],
+    "execution_required": [
+        {
+            "index": 5,
+            "category": "figure",
+            "content": "1. results/loss_curves.png: Training and validation loss curves for baseline (blue/orange) and projection unlearning (green/red).",
+            "reason": "The final PNG exists, and `codex/run_experiment.py` clearly contains the plotting path, but static verification is not enough because the repository does not save the underlying loss arrays to a claim-relevant data file. The plot is built from the in-memory `losses` dictionary and only the rendered image is persisted. Per the figure rule, the image alone is insufficient; execution must regenerate or persist the loss values before the figure can be verified claim-level.",
+            "candidate_files": [
+                "codex/run_experiment.py",
+                "results/loss_curves.png",
+                "codex/README.md"
+            ],
+            "suggested_entrypoints": [
+                "cd codex && python run_experiment.py"
+            ]
+        }
+    ],
+    "error": [],
+    "summary": {
+        "total_claims": 6,
+        "no_code_files": 0,
+        "obvious_hallucination": 4,
+        "data_fabrication": 0,
+        "experiment_fabrication": 4,
+        "result_fabrication": 0,
+        "static_verifiable": 1,
+        "insufficient_evidence": 0,
+        "execution_required": 1,
+        "error": 0
+    }
+}

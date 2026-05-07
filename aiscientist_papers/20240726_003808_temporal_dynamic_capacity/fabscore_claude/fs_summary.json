@@ -1,0 +1,450 @@
+{
+    "tables": [],
+    "figures": [
+        {
+            "claim_index": 1,
+            "claim": "1. Figure 1(a): Training Loss Across Runs for shakespeare_char Dataset",
+            "verdict": "Verified",
+            "explanation": "Execution stage: The training code for shakespeare_char runs successfully and produces per-iteration training loss trajectories consistent with Figure 1(a). The reproduced plot (5 of 6 runs; run_0/Baseline script is absent but run_0/final_info.json confirms similar training behavior) visually matches the pre-existing PNG. The underlying data can be regenerated from the repository's run scripts.",
+            "evidence": "Successfully ran run_1.py through run_5.py train() functions for shakespeare_char (3 seeds each) on NVIDIA H200 GPU. Generated all_results.npy files in workspace with per-iteration training trajectories (iters 0, 250, 500, ..., 5000). Reproduced Figure 1(a) at workspace/figure1a_reproduced.png closely matches original train_loss_shakespeare_char.png: same axis ranges (0-5000 iters, 0-4.5 loss), same convergence patterns (~4.3 → ~0.6-0.75 for gating runs), same distinctive Dynamic Neuron Adjustment curve diverging to ~0.3. Final train losses: run_1=0.9047, run_2=0.8131, run_3=0.8140, run_4=0.8115, run_5=0.4913. | Code: run_1.py:327 (train function), run_1.py:709-730 (main loop saving all_results.npy), plot.py:17 (loads all_results.npy)",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "run_1.py:327 (train function), run_1.py:709-730 (main loop saving all_results.npy), plot.py:17 (loads all_results.npy)"
+                ],
+                "commands_executed": [
+                    "python fabscore_claude/workspace/run_shakespeare_only.py (wrapper calling train() from run_1.py–run_5.py for shakespeare_char only, saving workspace/run_*/all_results.npy); python fabscore_claude/workspace/generate_figure1a.py (generates workspace/figure1a_reproduced.png)"
+                ]
+            }
+        },
+        {
+            "claim_index": 2,
+            "claim": "2. Figure 1(b): Validation Loss Across Runs for shakespeare_char Dataset",
+            "verdict": "Verified",
+            "explanation": "Execution stage: The all_results.npy files produced by running the training scripts (Session 3) contain per-iteration validation loss data for shakespeare_char. A reproduced Figure 1(b) generated from these files closely matches the original val_loss_shakespeare_char.png in axis ranges, curve shapes, convergence behavior, and the Dynamic Neuron Adjustment divergence pattern. The figure claim is verified by the underlying raw data.",
+            "evidence": "workspace/run_1 through workspace/run_5 all_results.npy files contain shakespeare_char val_info keys with per-iteration val/loss values; final means: run_1=1.5993, run_2=1.6942, run_3=1.6989, run_4=1.7026, run_5=2.2420; workspace/figure1b_reproduced.png closely matches original val_loss_shakespeare_char.png (same axis ranges ~4.3→1.5, same Dynamic Neuron Adjustment divergence to ~2.2 at iter 5000) | Code: plot.py:24-27 (reads val/loss from all_results.npy per shakespeare_char key)",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "plot.py:24-27 (reads val/loss from all_results.npy per shakespeare_char key)"
+                ],
+                "commands_executed": [
+                    "python3 -c \"... check val_info keys in all_results.npy ...\"; python3 -c \"... generate figure1b_reproduced.png from workspace/run_*/all_results.npy ...\""
+                ]
+            }
+        },
+        {
+            "claim_index": 3,
+            "claim": "3. Figure 2(a): Training Loss Across Runs for enwik8 Dataset",
+            "verdict": "Verified",
+            "explanation": "Execution stage: All 5 available run scripts (run_1–run_5) were executed for enwik8 with 100k iterations (1 seed each). Each produced an all_results.npy with 101 training/validation eval checkpoints. The reproduced Figure 2(a) matches the original train_loss_enwik8.png in title ('Training Loss Across Runs for enwik8 Dataset'), axis ranges (x=0-100000, y≈1-5.5), convergence shape, and relative ordering of runs. The Baseline (run_0) is absent since run_0.py does not exist, but 5 of 6 runs are verified. The claim is substantiated by successful code execution and matching trajectory data.",
+            "evidence": "workspace/run_1_enwik8/all_results.npy through workspace/run_5_enwik8/all_results.npy — each containing 101 eval points (iter 0, 1000, ..., 100000) for enwik8; workspace/figure2a_reproduced.png — reproduced Figure 2(a) showing training loss curves from ~5.3 to ~1.0 across 100k iterations for all 5 gating mechanism variants; final train losses: run_1=0.9627, run_2=0.9308, run_3=0.9366, run_4=0.9325, run_5=0.8717 (matching originals within ~3%) | Code: plot.py:17-39 (reads all_results.npy per run for enwik8 training trajectories); run_1.py:327-353 (train() function; enwik8=100k iters, eval_interval=1000)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "plot.py:17-39 (reads all_results.npy per run for enwik8 training trajectories)",
+                    "run_1.py:327-353 (train() function",
+                    "enwik8=100k iters, eval_interval=1000)"
+                ],
+                "commands_executed": [
+                    "CUDA_VISIBLE_DEVICES=1 python fabscore_claude/workspace/run_enwik8_single.py; CUDA_VISIBLE_DEVICES=2 python fabscore_claude/workspace/run_enwik8_runN.py --run run_2; CUDA_VISIBLE_DEVICES=3 python fabscore_claude/workspace/run_enwik8_runN.py --run run_3; CUDA_VISIBLE_DEVICES=1 python fabscore_claude/workspace/run_enwik8_runN.py --run run_4; CUDA_VISIBLE_DEVICES=0 python fabscore_claude/workspace/run_enwik8_runN.py --run run_5; python fabscore_claude/workspace/generate_figure2a.py"
+                ]
+            }
+        },
+        {
+            "claim_index": 4,
+            "claim": "4. Figure 2(b): Validation Loss Across Runs for enwik8 Dataset",
+            "verdict": "Verified",
+            "explanation": "Execution stage: The enwik8 all_results.npy files from Session 5 contain per-iteration validation loss data (101 eval points from iter 0 to 100000) for all 5 run implementations. The reproduced Figure 2(b) shows validation loss trajectories converging from ~5.3 to ~1.0, with Dynamic Neuron Adjustment (run_5) achieving the lowest validation loss (~0.973), consistent with the original val_loss_enwik8.png.",
+            "evidence": "Reused workspace/run_1_enwik8/all_results.npy through workspace/run_5_enwik8/all_results.npy (generated in Session 5). Extracted 101-point validation loss trajectories per run: run_1 best=1.0237, run_2 best=1.0046, run_3 best=1.0051, run_4 best=1.0057, run_5 best=0.9730. Values match final_info_enwik8_0.json best_val_loss exactly. Generated figure2b_reproduced.png. | Code: plot.py:24-27 (reads val/loss from all_results.npy); run_1.py–run_5.py train() function for enwik8",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "plot.py:24-27 (reads val/loss from all_results.npy)",
+                    "run_1.py–run_5.py train() function for enwik8"
+                ],
+                "commands_executed": [
+                    "python3 <extract_val_loss_and_plot_script> (reusing existing workspace/run_*_enwik8/all_results.npy from Session 5)"
+                ]
+            }
+        },
+        {
+            "claim_index": 5,
+            "claim": "5. Figure 3(a): Training Loss Across Runs for text8 Dataset",
+            "verdict": "Verified",
+            "explanation": "Execution stage: All 5 training runs (run_1 through run_5) completed successfully and generated trajectory data consistent with Figure 3(a). The reproduced training loss curves match the original figure in shape, scale, and relative ordering of runs. The Dynamic Neuron Adjustment method (run_5) achieves the lowest final training loss (~0.95), consistent with the paper's claims. The convergence pattern with rapid decrease in early iterations followed by slow convergence matches the original figure.",
+            "evidence": "Successfully ran run_1.py through run_5.py for text8 dataset (100k iterations each). Generated all_results.npy files in workspace/run_{1-5}_text8/. Final train losses: run_1=1.0229, run_2=0.9973, run_3=1.0049, run_4=0.9947, run_5=0.9544. Reproduced figure3a_reproduced.png visually matches the original train_loss_text8.png with identical title, axis labels, convergence shape (loss starting ~3.45, converging to ~1.0 by iter 100k), and Dynamic Neuron Adjustment (run_5) achieving lowest final training loss. | Code: run_1.py through run_5.py (training scripts); plot.py:17 (all_results.npy loading); workspace/run_{1-5}_text8/all_results.npy (generated trajectory data)",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "run_1.py through run_5.py (training scripts)",
+                    "plot.py:17 (all_results.npy loading)",
+                    "workspace/run_{1-5}_text8/all_results.npy (generated trajectory data)"
+                ],
+                "commands_executed": [
+                    "python run_1.py (text8, 100k iters), python run_2.py (text8, 100k iters), python run_3.py (text8, 100k iters), python run_4.py (text8, 100k iters), python run_5.py (text8, 100k iters), python generate_figure3a.py"
+                ]
+            }
+        },
+        {
+            "claim_index": 6,
+            "claim": "6. Figure 3(b): Validation Loss Across Runs for text8 Dataset",
+            "verdict": "Verified",
+            "explanation": "Execution stage: The per-iteration validation loss trajectories for text8 are confirmed by existing all_results.npy files produced by training runs 1-5. The reproduced Figure 3(b) matches the original val_loss_text8.png in convergence pattern and relative ordering (Dynamic Neuron Adjustment/run_5 achieves lowest validation loss ~0.948). Best val loss values match original final_info_text8_0.json files within stochastic variation (~1-2%).",
+            "evidence": "Reused workspace/run_1_text8/all_results.npy through workspace/run_5_text8/all_results.npy (generated in Session 7). All contain text8_0_val_info with 101 eval points (iters 0..100000). Best val losses: run_1=0.9926, run_2=0.9799, run_3=0.9798, run_4=0.9801, run_5=0.9481. Generated workspace/figure3b_reproduced.png. | Code: plot.py:17 (reads all_results.npy), plot.py:24-27 (extracts val/loss); workspace/run_*_text8/all_results.npy",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "plot.py:17 (reads all_results.npy), plot.py:24-27 (extracts val/loss)",
+                    "workspace/run_*_text8/all_results.npy"
+                ],
+                "commands_executed": [
+                    "python3 script to extract text8_0_val_info from workspace/run_*_text8/all_results.npy and plot Figure 3(b); reused all_results.npy from Session 7 (run_text8_runN.py training runs)"
+                ]
+            }
+        }
+    ],
+    "results_section": [
+        {
+            "claim_index": 7,
+            "claim": "1. shakespeare_char (Baseline): Final training loss: 0.8186, Best validation loss: 1.4655, Total training time: 77.27s, Average inference tokens per second: 666.51.",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: All four values match the means in run_0/final_info.json exactly: final_train_loss_mean=0.8186181902885437 (rounds to 0.8186), best_val_loss_mean=1.4654763221740723 (rounds to 1.4655), total_train_time_mean=77.26942734718322 (rounds to 77.27), avg_inference_tokens_per_second_mean=666.5076153519527 (rounds to 666.51).",
+            "evidence": "run_0/final_info.json",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_0/final_info.json"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 8,
+            "claim": "2. enwik8 (Baseline): Final training loss: 0.9302, Best validation loss: 1.0055, Total training time: 819.46s, Average inference tokens per second: 671.99.",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: All four values match the means in run_0/final_info.json exactly: final_train_loss_mean=0.930223822593689 (0.9302), best_val_loss_mean=1.0055421590805054 (1.0055), total_train_time_mean=819.4551751613617 (819.46), avg_inference_tokens_per_second_mean=671.9918599180683 (671.99).",
+            "evidence": "run_0/final_info.json",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_0/final_info.json"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 9,
+            "claim": "3. text8 (Baseline): Final training loss: 1.0013, Best validation loss: 0.9800, Total training time: 801.22s, Average inference tokens per second: 671.57.",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: All four values match the means in run_0/final_info.json exactly: final_train_loss_mean=1.0013301372528076 (1.0013), best_val_loss_mean=0.979989230632782 (0.9800), total_train_time_mean=801.224205493927 (801.22), avg_inference_tokens_per_second_mean=671.5678332249411 (671.57).",
+            "evidence": "run_0/final_info.json",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_0/final_info.json"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 10,
+            "claim": "4. shakespeare_char (Basic Gating Mechanism): Final training loss: 0.8120, Best validation loss: 1.4640, Total training time: 77.42s, Average inference tokens per second: 701.80.",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: All four values match the means in run_1/final_info.json exactly: final_train_loss_mean=0.8119831283887228 (0.8120), best_val_loss_mean=1.4640289942423503 (1.4640), total_train_time_mean=77.41904759407043 (77.42), avg_inference_tokens_per_second_mean=701.8024974320151 (701.80).",
+            "evidence": "run_1/final_info.json",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_1/final_info.json"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 11,
+            "claim": "5. enwik8 (Basic Gating Mechanism): Final training loss: 0.9339, Best validation loss: 1.0059, Total training time: 824.77s, Average inference tokens per second: 603.46.",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: All four values match the means in run_1/final_info.json exactly: final_train_loss_mean=0.9339336156845093 (0.9339), best_val_loss_mean=1.0059483051300049 (1.0059), total_train_time_mean=824.7706127166748 (824.77), avg_inference_tokens_per_second_mean=603.4551494374266 (603.46).",
+            "evidence": "run_1/final_info.json",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_1/final_info.json"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 12,
+            "claim": "6. text8 (Basic Gating Mechanism): Final training loss: 0.9983, Best validation loss: 0.9797, Total training time: 817.84s, Average inference tokens per second: 607.67.",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: All four values match the means in run_1/final_info.json exactly: final_train_loss_mean=0.9982973337173462 (0.9983), best_val_loss_mean=0.9796570539474487 (0.9797), total_train_time_mean=817.8391287326813 (817.84), avg_inference_tokens_per_second_mean=607.6690023926454 (607.67).",
+            "evidence": "run_1/final_info.json",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_1/final_info.json"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 13,
+            "claim": "7. shakespeare_char (Enhanced Gating Mechanism): Final training loss: 0.8086, Best validation loss: 1.4673, Total training time: 76.07s, Average inference tokens per second: 673.51.",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: All four values match the means in run_2/final_info.json exactly: final_train_loss_mean=0.8086496392885844 (0.8086), best_val_loss_mean=1.4672833681106567 (1.4673), total_train_time_mean=76.07034460703532 (76.07), avg_inference_tokens_per_second_mean=673.5104098544257 (673.51).",
+            "evidence": "run_2/final_info.json",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_2/final_info.json"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 14,
+            "claim": "8. enwik8 (Enhanced Gating Mechanism): Final training loss: 0.9322, Best validation loss: 1.0049, Total training time: 801.97s, Average inference tokens per second: 677.72.",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: All four values match the means in run_2/final_info.json exactly: final_train_loss_mean=0.9322125911712646 (0.9322), best_val_loss_mean=1.0048843622207642 (1.0049), total_train_time_mean=801.9738383293152 (801.97), avg_inference_tokens_per_second_mean=677.7211279574936 (677.72).",
+            "evidence": "run_2/final_info.json",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_2/final_info.json"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 15,
+            "claim": "9. text8 (Enhanced Gating Mechanism): Final training loss: 1.0035, Best validation loss: 0.9802, Total training time: 798.38s, Average inference tokens per second: 688.21.",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: All four values match the means in run_2/final_info.json exactly: final_train_loss_mean=1.0034825801849365 (1.0035), best_val_loss_mean=0.9801802635192871 (0.9802), total_train_time_mean=798.3763568401337 (798.38), avg_inference_tokens_per_second_mean=688.2143124961051 (688.21).",
+            "evidence": "run_2/final_info.json",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_2/final_info.json"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 16,
+            "claim": "10. shakespeare_char (Advanced Gating Mechanism with Derivatives): Final training loss: 0.8092, Best validation loss: 1.4700, Total training time: 76.68s, Average inference tokens per second: 665.92.",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: All four values match the means in run_3/final_info.json exactly: final_train_loss_mean=0.809180736541748 (0.8092), best_val_loss_mean=1.4700274467468262 (1.4700), total_train_time_mean=76.67759871482849 (76.68), avg_inference_tokens_per_second_mean=665.9178610923367 (665.92).",
+            "evidence": "run_3/final_info.json",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_3/final_info.json"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 17,
+            "claim": "11. enwik8 (Advanced Gating Mechanism with Derivatives): Final training loss: 0.9297, Best validation loss: 1.0054, Total training time: 814.19s, Average inference tokens per second: 661.91.",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: All four values match the means in run_3/final_info.json exactly: final_train_loss_mean=0.9297277927398682 (0.9297), best_val_loss_mean=1.005444884300232 (1.0054), total_train_time_mean=814.1891191005707 (814.19), avg_inference_tokens_per_second_mean=661.9102531352021 (661.91).",
+            "evidence": "run_3/final_info.json",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_3/final_info.json"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 18,
+            "claim": "12. text8 (Advanced Gating Mechanism with Derivatives): Final training loss: 1.0013, Best validation loss: 0.9802, Total training time: 812.91s, Average inference tokens per second: 664.93.",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: All four values match the means in run_3/final_info.json exactly: final_train_loss_mean=1.0013269186019897 (1.0013), best_val_loss_mean=0.9801638722419739 (0.9802), total_train_time_mean=812.9088158607483 (812.91), avg_inference_tokens_per_second_mean=664.9313837310455 (664.93).",
+            "evidence": "run_3/final_info.json",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_3/final_info.json"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 19,
+            "claim": "13. shakespeare_char (Complex Gating Mechanism with Second Derivatives): Final training loss: 0.8082, Best validation loss: 1.4707, Total training time: 75.40s, Average inference tokens per second: 652.88.",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: All four values match the means in run_4/final_info.json exactly: final_train_loss_mean=0.8081550796826681 (0.8082), best_val_loss_mean=1.4706904490788777 (1.4707), total_train_time_mean=75.40028405189514 (75.40), avg_inference_tokens_per_second_mean=652.8837347186695 (652.88).",
+            "evidence": "run_4/final_info.json",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_4/final_info.json"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 20,
+            "claim": "14. enwik8 (Complex Gating Mechanism with Second Derivatives): Final training loss: 0.9331, Best validation loss: 1.0052, Total training time: 800.50s, Average inference tokens per second: 681.84.",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: All four values match the means in run_4/final_info.json exactly: final_train_loss_mean=0.9330987930297852 (0.9331), best_val_loss_mean=1.0052284002304077 (1.0052), total_train_time_mean=800.5000200271606 (800.50), avg_inference_tokens_per_second_mean=681.8396801065608 (681.84).",
+            "evidence": "run_4/final_info.json",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_4/final_info.json"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 21,
+            "claim": "15. text8 (Complex Gating Mechanism with Second Derivatives): Final training loss: 0.9944, Best validation loss: 0.9803, Total training time: 799.06s, Average inference tokens per second: 681.44.",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: All four values match the means in run_4/final_info.json exactly: final_train_loss_mean=0.9943627119064331 (0.9944), best_val_loss_mean=0.9803491830825806 (0.9803), total_train_time_mean=799.0571277141571 (799.06), avg_inference_tokens_per_second_mean=681.4362352113534 (681.44).",
+            "evidence": "run_4/final_info.json",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_4/final_info.json"
+                ],
+                "commands_executed": []
+            }
+        }
+    ],
+    "summary": {
+        "total": 21,
+        "verified": 21,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 0
+    },
+    "analysis_summary": {
+        "total_claims": 21,
+        "no_code_files": 0,
+        "obvious_hallucination": 0,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "static_verifiable": 15,
+        "insufficient_evidence": 0,
+        "execution_required": 6,
+        "error": 0
+    },
+    "execution_summary": {
+        "total": 6,
+        "verified": 6,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 0,
+        "error": 0
+    },
+    "final_assessment": {
+        "fab_score": 1.0,
+        "total_claims": 21,
+        "verified": 21,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 0,
+        "static_code_analysis_breakdown": {
+            "verified": 15,
+            "no_code_files": 0,
+            "data_fabrication": 0,
+            "experiment_fabrication": 0,
+            "result_fabrication": 0,
+            "insufficient_evidence": 0
+        },
+        "execution_artifact_analysis_breakdown": {
+            "verified": 1,
+            "no_code_files": 0,
+            "data_fabrication": 0,
+            "experiment_fabrication": 0,
+            "result_fabrication": 0,
+            "insufficient_evidence": 0
+        },
+        "code_execution_breakdown": {
+            "verified": 5,
+            "no_code_files": 0,
+            "data_fabrication": 0,
+            "experiment_fabrication": 0,
+            "result_fabrication": 0,
+            "insufficient_evidence": 0
+        }
+    }
+}

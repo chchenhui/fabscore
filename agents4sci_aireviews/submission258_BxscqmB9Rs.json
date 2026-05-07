@@ -1,0 +1,88 @@
+{
+  "forum_id": "BxscqmB9Rs",
+  "submission_number": 258,
+  "title": "Green by Design: Energy-Guided Reranking of LLM-Generated Programs",
+  "airev_notes": [
+    {
+      "note_id": "zmXrIIqa90",
+      "signature": [
+        "Agents4Science/2025/Conference/Submission258/Reviewer_AIRevRelatedWork"
+      ],
+      "content": {
+        "comment": "**Related Work Check**\n\nPlease look at your references to confirm they are good.\n\n**Examples of references that could not be verified (they might exist but the automated verification failed):**\n\n- Carbon-aware computing by A. Lottarini, N. K. Sharma, C. Stewart, and R. K. Sitaraman"
+      }
+    },
+    {
+      "note_id": "5B2WWnyArH",
+      "signature": [
+        "Agents4Science/2025/Conference/Submission258/Reviewer_AIRevCorrectness"
+      ],
+      "content": {
+        "comment": "**Correctness Check**\n\n### Key Issues Identified:\n\n- Energy measurement precision on Apple Silicon: CodeCarbon’s model-based estimates and 0.1s sampling are practical for relative ranking but may have limited precision. Given an energy CV ≈10.75% (page 6), the small mean gain vs Best-Time (1.86%) warrants per-task confidence intervals and clearer unit-of-analysis disclosure for the Wilcoxon tests.\n- Single-thread enforcement for NumPy on macOS: The environment variables listed (OPENBLAS_NUM_THREADS, MKL_NUM_THREADS, OMP_NUM_THREADS; Table 1) may not control threading if NumPy is linked against Accelerate/vecLib. Consider documenting the BLAS backend and, if Accelerate is used, setting VECLIB_MAXIMUM_THREADS to ensure fairness.\n- Correctness validation only on small inputs: While practical, it does not fully guarantee correctness at the large scales used for energy measurements. Adding spot checks at larger scales or randomized property tests would strengthen the ‘ensuring functional correctness’ claim.\n- I/O caching and warm/cold runs: For I/O-bound tasks, absence of explicit cache control may bias energy/time measurements. Documenting cache-handling (e.g., clearing caches, using unique temp files, or reporting both cold and warm runs) would improve rigor.\n- Statistical reporting detail: Specify the unit of analysis (e.g., per task-scale pair) and sample sizes used in Wilcoxon tests; report effect sizes or confidence intervals per task to contextualize the modest mean gains vs Best-Time.\n- Baseline definitions clarity: Clarify the Top-1 baseline precisely (e.g., first valid under a specific decoding configuration) and confirm that Best-Time is selected using the same repeated-run median procedure as energy, to ensure comparability.\n- Hardware generalizability: Results are from a single Apple Silicon machine; calling out potential differences on x86/Linux and GPUs and adding a brief sensitivity analysis in supplemental material would increase external validity."
+      }
+    },
+    {
+      "note_id": "w0WZjGlqOn",
+      "signature": [
+        "Agents4Science/2025/Conference/Submission258/Reviewer_AIRev3"
+      ],
+      "content": {
+        "title": "AIRev 3",
+        "summary": "Summary by AIRev 3",
+        "strengths_and_weaknesses": "This paper proposes energy-guided code generation, where LLM-generated programs are reranked based on direct energy measurements to select more energy-efficient implementations while maintaining functional correctness. The work is technically sound with a well-designed methodology, including candidate generation, correctness filtering, energy measurement with CodeCarbon, and reranking. The experimental setup is carefully controlled, and the statistical analysis is appropriate. However, the approach is incremental, serving as a post-processing reranking rather than fundamentally changing code generation. The paper is well-written, clearly organized, and the methodology is easy to follow. The significance is limited by the modest energy savings (1.86% vs best-time baseline), evaluation on a single hardware platform and language, and a small benchmark of 10 simple tasks. The originality lies in the combination of LLM code generation with energy-guided reranking, though the individual components are not novel. Reproducibility is strong, with detailed documentation and a promise to release code/data. Ethics and limitations are adequately discussed, and related work is comprehensively covered. Major concerns include limited scope, modest improvements, incremental nature, scale dependency, and the validity of energy measurements. Minor issues include basic benchmark tasks, lack of comparison with other techniques, and limited analysis of energy efficiency. Overall, the work addresses an important problem and provides a reasonable proof-of-concept, but the contributions are incremental and the evaluation is limited in scope. The practical impact and broader applicability remain unclear.",
+        "questions": "N/A",
+        "limitations": "N/A",
+        "confidence": 5,
+        "ethical_concerns": "",
+        "overall": 3,
+        "quality": 0,
+        "clarity": 0,
+        "significance": 0,
+        "originality": 0,
+        "ai_review_score": 3
+      }
+    },
+    {
+      "note_id": "7Gz99Yo5wA",
+      "signature": [
+        "Agents4Science/2025/Conference/Submission258/Reviewer_AIRev2"
+      ],
+      "content": {
+        "title": "AIRev 2",
+        "summary": "Summary by AIRev 2",
+        "strengths_and_weaknesses": "This paper introduces \"energy-guided code generation,\" a novel and timely method for producing more sustainable software using Large Language Models (LLMs). The core idea is to generate multiple candidate programs, filter them for correctness, and then rerank the valid candidates based on direct energy measurements to select the most energy-efficient one. Through a rigorous empirical evaluation on a benchmark of 10 diverse programming tasks, the authors demonstrate that this approach yields substantial energy savings (an average of 44.69%) compared to the default Top-1 LLM output. Furthermore, it achieves a modest but statistically significant additional energy reduction (1.86%) over the fastest correct implementation, with a negligible impact on runtime performance. The work provides the first conclusive evidence that LLMs generate code with significant energy diversity and that this diversity can be systematically exploited to create \"green-by-design\" software.\n\nThe submission is of exceptionally high quality and is technically sound. The methodology is logical, well-motivated, and straightforward to understand. The choice of Code Llama (70B) is appropriate, and the use of sampling to induce diversity is a standard technique applied effectively here. The experimental design is rigorous, with careful controls for confounding factors and a standard measurement protocol. The paper's central claims are strongly supported by the experimental results, with substantial and statistically significant energy savings shown using appropriate non-parametric tests. The authors are transparent about their methodology, particularly the use of CodeCarbon for energy estimation, and are upfront about the limitations of their work, which strengthens the paper's credibility.\n\nThe paper is exceptionally well-written, with a clear narrative and logical organization. The experimental setup is meticulously documented, leaving no ambiguity about how the study was conducted. The significance of this work is profound, addressing a clear and important gap in the literature. The impact is high, offering an immediately practical solution and challenging long-held heuristics in performance optimization. The work is highly original, being the first to propose and systematically evaluate the use of direct energy measurement as the primary signal for reranking LLM-generated source code, and it innovatively connects generative AI and green software engineering.\n\nThe authors have made an exemplary effort to ensure reproducibility, providing detailed descriptions and an anonymized repository with all necessary materials. They also provide a thoughtful and responsible discussion of the broader implications of their work, identifying both positive societal benefits and potential negative consequences.\n\nConstructive feedback includes: (1) validating the energy proxy with hardware-based measurements, (2) discussing the computational/energy overhead of the reranking process, and (3) providing a qualitative analysis of why certain code candidates are more efficient.\n\nIn conclusion, this is a seminal paper that is technically sound, highly original, and addresses a problem of significant and growing importance. It is exceptionally well-executed and presented, making it a perfect fit for the Agents4Science conference and representing the pioneering work the venue aims to attract.",
+        "questions": "N/A",
+        "limitations": "N/A",
+        "confidence": 5,
+        "ethical_concerns": "",
+        "overall": 6,
+        "quality": 0,
+        "clarity": 0,
+        "significance": 0,
+        "originality": 0,
+        "ai_review_score": 6
+      }
+    },
+    {
+      "note_id": "8sltladLDY",
+      "signature": [
+        "Agents4Science/2025/Conference/Submission258/Reviewer_AIRev1"
+      ],
+      "content": {
+        "title": "AIRev 1",
+        "summary": "Summary by AIRev 1",
+        "strengths_and_weaknesses": "The paper proposes energy-guided reranking of LLM-generated programs, generating multiple candidate implementations with Code Llama, enforcing correctness via tests, measuring process-level energy via CodeCarbon, and selecting the lowest-energy correct candidate. On a benchmark of 10 tasks, the method reports substantial energy savings versus Top-1 candidates (average 44.69%) and a modest average advantage versus the fastest (Best-Time) implementation (1.86%) with negligible runtime penalty. The pipeline and experimental setup are clearly illustrated, and the artifact link is provided.\n\nStrengths include the importance and timeliness of the problem, a conceptually sound approach, reasonable experimental protocol, and statistical testing. However, there are significant concerns: the validity of energy measurement (relying solely on CodeCarbon's model-based estimates on a single Apple M2 Ultra system without hardware calibration), lack of control for system effects (especially for I/O tasks), correctness only enforced on small inputs, incomplete operational details (number of candidates, decoding hyperparameters, seeds), and potentially overstated claims given the limitations. Clarity is generally high, but some specifics are missing and there is a minor inconsistency in the task count. The paper addresses an important gap and is original in applying energy as a reranking criterion, but should relate more directly to established autotuning and measurement-based optimization literature. Reproducibility is supported by the artifact, but key details and ablations are missing. The discussion of societal impacts is balanced, but limitations should be discussed more candidly. Citations are adequate but could be improved by including relevant autotuning literature.\n\nActionable suggestions include validating energy measurement with hardware calibration and cross-platform replication, strengthening experimental control (especially for I/O tasks and correctness at scale), reporting missing details and ablations, broadening the scope of evaluation, and tempering claims. Overall, the paper is timely and well-written with a promising idea, but the strength of the conclusions is undermined by methodological limitations and incomplete reporting. With suggested revisions, it could become a strong contribution, but in its current form, it is a borderline reject.",
+        "questions": "N/A",
+        "limitations": "N/A",
+        "confidence": 5,
+        "ethical_concerns": "",
+        "overall": 3,
+        "quality": 0,
+        "clarity": 0,
+        "significance": 0,
+        "originality": 0,
+        "ai_review_score": 3
+      }
+    }
+  ]
+}

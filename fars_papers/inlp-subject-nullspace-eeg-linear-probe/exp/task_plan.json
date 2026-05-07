@@ -1,0 +1,74 @@
+[
+  {
+    "index": 0,
+    "category": "Environment Configuration",
+    "title": "Dependencies Installation and Project Structure Initialization",
+    "description": "Set up the development environment for INLP-projected linear probing experiments on EEG foundation model embeddings. The project requires PyTorch for model inference, MOABB for loading the BNCI2014001 motor imagery dataset, MNE-Python for EEG preprocessing, scikit-learn for linear classifiers and PCA, and NumPy/SciPy for matrix operations (nullspace projections, Euclidean Alignment). The CBraMod pretrained encoder will be loaded from Hugging Face (weighting666/CBraMod). INLP implementation will be adapted from the official repository (shauli-ravfogel/nullspace_projection). The codebase will be organized to support the LOSO evaluation pipeline with shared data loading, embedding extraction, projection modules, and evaluation utilities.",
+    "status": "completed",
+    "summary": "Environment set up with Python 3.12 venv. Installed: torch 2.9.1+cu129, moabb 1.4.3, mne 1.11.0, scikit-learn 1.8.0, numpy, scipy, matplotlib, seaborn, pandas, huggingface_hub. Cloned CBraMod (third_party/CBraMod) and nullspace_projection (third_party/nullspace_projection). Downloaded pretrained weights (19.8MB). Verified model loads on GPU (A100-80GB) with correct output shape (B,C,S,200). Verified MOABB BNCI2014001 access (9 subjects). Created project directory structure with placeholder modules."
+  },
+  {
+    "index": 1,
+    "category": "Baseline Experiment",
+    "title": "EA + Frozen CBraMod + Linear Head Baseline on BNCI2014001",
+    "description": "Establish the primary frozen-encoder baseline: apply Euclidean Alignment (EA) to raw EEG, extract frozen CBraMod embeddings, and train a linear classification head under the LOSO protocol on BNCI2014001 (9 subjects, 4-class motor imagery). This baseline quantifies the performance of frozen CBraMod embeddings with standard transfer preprocessing (EA) and serves as the direct comparison target for INLP. The benchmark paper reports 41.45\u00b10.50% for vanilla linear probing (without EA); this experiment adds EA to determine whether it strengthens the frozen baseline. CBraMod uses embedding dimension d=200 with a criss-cross transformer architecture. Data is resampled to 200Hz and segmented into 1-second patches (200 samples per patch).\n\n**Reference**: \"CBraMod: A Criss-Cross Brain Foundation Model for EEG Decoding\" | https://github.com/wjq-learning/CBraMod\n**Reference**: \"Revisiting Euclidean Alignment for Transfer Learning in EEG-Based Brain-Computer Interfaces\" | https://ieeexplore.ieee.org/document/9094063",
+    "status": "completed",
+    "summary": "Ran experiment. Downloaded BNCI2014001 from TU Graz mirror, applied EA + bandpass (0.3-50Hz), resampled to 200Hz, extracted frozen CBraMod embeddings with two pooling strategies. Results: flatten (17600-dim) = 56.27% +/- 8.09% mean LOSO balanced accuracy; avgpool (200-dim) = 33.54% +/- 6.47%. Best pooling (flatten) exceeds reported vanilla linear probing (41.45%) by +14.82 pp and even surpasses reported full fine-tuning (53.03%) by +3.24 pp. EA + flatten is selected as the primary baseline."
+  },
+  {
+    "index": 2,
+    "category": "Baseline Experiment",
+    "title": "EA + PCA-k Removal + Linear Head Control on BNCI2014001",
+    "description": "Evaluate a rank-matched PCA control baseline: after extracting frozen CBraMod embeddings with EA, remove the top k principal components (where k equals the number of INLP iterations/rank removed by INLP) and train a linear head. This control tests whether any improvement from INLP is merely due to generic dimensionality reduction (removing high-variance directions) rather than targeted subject-identity removal. PCA is fit on training-subject embeddings only and applied to both train and test embeddings, mirroring the INLP protocol. The value of k will be determined after running the INLP experiment (typically k equals the number of INLP iterations before convergence, expected range 3-10).\n\n**Reference**: Standard PCA-based dimensionality reduction control (no specific paper; standard practice in representation analysis)",
+    "status": "completed",
+    "summary": "Ran experiment. Implemented pca_k_removal (PCA(n_components=k) fit per fold on train subjects, efficient projection Z-Z@Vk.T@Vk). Sweep over k=[1,2,3,5,7,10] with seeds=[42,123,456], 9-fold LOSO. All PCA-k values degrade performance vs EA baseline (56.27%): k=1: 55.47%, k=2: 55.13%, k=3: 55.26%, k=5: 54.38%, k=7: 52.05%, k=10: 51.47%. Best PCA-k is k=1 at 55.47% (-0.80 pp). Performance degrades monotonically with k. Generic dimensionality reduction is harmful, establishing a lower bound for INLP comparison."
+  },
+  {
+    "index": 3,
+    "category": "Main Experiment",
+    "title": "EA + INLP Subject-Identity Removal + Linear Head on BNCI2014001",
+    "description": "Implement and evaluate the proposed method: apply Iterative Nullspace Projection (INLP) to remove linearly decodable subject-identity information from frozen CBraMod embeddings, then train a linear classification head under the LOSO protocol. For each LOSO fold, INLP iteratively trains a linear classifier to predict subject ID from training-subject embeddings, then projects embeddings onto the classifier's nullspace. This process repeats until subject-ID accuracy approaches chance (<=1.25 \u00d7 1/S where S=8 training subjects), or until a maximum of 10 iterations. The final composite projection matrix P = product of per-iteration nullspace projections is applied to both training and test embeddings. The key hypothesis is that removing subject-identity directions improves cross-subject generalization of the linear head. The implementation is adapted from the official INLP codebase (https://github.com/shauli-ravfogel/nullspace_projection) and extended for the multinomial subject-ID prediction case with 8 training subjects per fold.",
+    "status": "completed",
+    "summary": "Implemented INLP for multinomial subject-ID removal in project/methods/inlp.py (adapted from official nullspace_projection repo, memory-efficient basis-vector approach for 17600-dim embeddings, SGDClassifier for computational feasibility). Verified correctness via synthetic test (d=100, matches naive d x d reference implementation within 1e-9 relative error, idempotency holds). Ran full LOSO evaluation: 9 folds x 3 seeds. Results: Mean LOSO balanced accuracy = 55.18% +/- 0.28% (across seeds), 7.19% (across folds). Delta vs EA baseline: -1.09 pp. INLP ran all 10 iterations per fold (no early stopping), removing rank 80. Subject-ID accuracy reduced from 99.86% to 23.88% (chance=12.5%). INLP does not improve cross-subject generalization; performs comparably to PCA-1 control (55.47%), suggesting accuracy loss is from generic information removal. Still exceeds reported vanilla probing (41.45%) by +13.73 pp and fine-tuning (53.03%) by +2.15 pp due to strong EA preprocessing."
+  },
+  {
+    "index": 4,
+    "category": "Optimization",
+    "title": "Optimize: EA + INLP Subject-Identity Removal + Linear Head on BNCI2014001",
+    "description": "Optimize the main experiment 'EA + INLP Subject-Identity Removal + Linear Head on BNCI2014001' to improve results.",
+    "status": "completed",
+    "summary": "Optimization succeeded after 1/2 iterations.\n  - Step 0: success, issues: [Over-removal of task-relevant subspaces (INLP ran all 10 iterations), Task-head regularization not tuned (default C=1.0)]\nDetails: EXPERIMENT_RESULTS/optimize_trace/"
+  },
+  {
+    "index": 5,
+    "category": "Effectiveness Evaluation",
+    "title": "Effectiveness Evaluation of INLP Subject-Identity Removal for Frozen EEG-FM Transfer",
+    "description": "Evaluate whether the proposed INLP-based subject-identity removal from frozen CBraMod embeddings is effective according to the pre-defined success criteria. The evaluation compares the proposed method (EA + INLP + linear head) against the frozen baseline (EA + linear head), the rank-matched PCA control (EA + PCA-k + linear head), and contextual reference points (reported vanilla linear probing at 41.45% and full fine-tuning at 53.03%). Success is defined as: (1) INLP improves over EA baseline by >= +2 percentage points (pp) outside EA's std, and (2) INLP exceeds PCA-k by >= +1 pp. If INLP \u2248 PCA-k > EA, gains are attributed to generic dimension reduction (pivot). If INLP <= max(EA, PCA-k), the hypothesis is refuted.",
+    "status": "completed",
+    "summary": "Verdict: bad. INLP-based subject-identity removal is not effective. The optimized INLP (56.29%) achieves only +0.02 pp over the EA baseline (56.27%), far below the +2 pp success threshold. INLP - PCA-1 = +0.82 pp, below the +1 pp threshold. The refute decision rule is triggered: subject-identity removal provides no benefit because identity directions are entangled with task-relevant signal. Inner CV selects minimal INLP intervention (1-3 iter, C=0.01) in most folds, confirming the best INLP is a near-identity operation. The EA baseline already exceeds the reported fine-tuning upper bound (53.03%) by +3.24 pp, leaving no gap to close."
+  },
+  {
+    "index": 6,
+    "category": "Analysis Experiment",
+    "title": "INLP Early Stopping Ablation",
+    "description": "Investigate the effect of varying the INLP stopping point on LOSO task accuracy. If subject identity is partially entangled with label-relevant signal, removing all linearly decodable identity (full INLP convergence) may over-remove useful information, and an intermediate stopping point may yield higher task accuracy. This ablation sweeps the number of INLP iterations from 1 to 10 and plots both subject-ID leakage and task accuracy as a function of iterations.",
+    "status": "pending",
+    "summary": ""
+  },
+  {
+    "index": 7,
+    "category": "Analysis Experiment",
+    "title": "Mean-Subspace Removal Baseline Comparison",
+    "description": "Compare INLP with a simpler linear baseline: between-subject mean-subspace removal. This method, inspired by BrainAlign's mean-subspace removal control, computes the between-subject scatter matrix S_b from per-subject embedding means and projects out its top eigenvectors. It removes mean/batch-like effects but leaves within-subject covariance differences intact. If INLP outperforms mean-subspace removal, the iterative removal of discriminative (not just mean-based) subject directions is beneficial.",
+    "status": "pending",
+    "summary": ""
+  },
+  {
+    "index": 8,
+    "category": "Analysis Experiment",
+    "title": "Sanity Checks and Diagnostic Analysis",
+    "description": "Run three diagnostic checks to validate the mechanism of INLP and ensure experimental rigor: (1) Randomized-label sanity check: run INLP with shuffled subject labels to confirm that improvements require true identity information, (2) Over-removal check: evaluate within-subject accuracy before and after INLP projection to assess whether task-relevant signal is preserved, (3) Leakage diagnostic visualization: visualize how subject-ID leakage decreases across INLP iterations.",
+    "status": "pending",
+    "summary": ""
+  }
+]

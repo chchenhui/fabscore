@@ -1,0 +1,275 @@
+{
+    "tables": [],
+    "figures": [
+        {
+            "claim_index": 2,
+            "claim": "2. Figure 2: Comparison of grokking points (steps to reach 99% validation accuracy) across datasets and encoding schemes. Lower bars indicate faster grokking.",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: The PNG file grokking_points_comparison.png exists. The underlying data (step_val_acc_99_mean) is stored in run_0/final_info.json, run_1/final_info.json, and run_2/final_info.json and has been verified. plot.py reads these values via final_results[run][dataset]['means']['step_val_acc_99_mean'] to generate the bar chart. The data files contain all values needed to reproduce this figure and are consistent with the paper's numerical claims (verified in claims 4-7).",
+            "evidence": "grokking_points_comparison.png; run_0/final_info.json: step_val_acc_99_mean values for all datasets; run_1/final_info.json: step_val_acc_99_mean values for all datasets; run_2/final_info.json: step_val_acc_99_mean values for all datasets; plot.py:114-133 (Plot 2 generation from final_info.json)",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "grokking_points_comparison.png",
+                    "run_0/final_info.json: step_val_acc_99_mean values for all datasets",
+                    "run_1/final_info.json: step_val_acc_99_mean values for all datasets",
+                    "run_2/final_info.json: step_val_acc_99_mean values for all datasets",
+                    "plot.py:114-133 (Plot 2 generation from final_info.json)"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 3,
+            "claim": "3. Figure 3: Comparison of final validation accuracies achieved by different encoding schemes across all datasets. Higher bars indicate better final performance.",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: The PNG file final_val_acc_comparison.png exists. The underlying data (final_val_acc_mean) is stored in run_0/final_info.json, run_1/final_info.json, and run_2/final_info.json and has been verified. plot.py reads these values via final_results[run][dataset]['means']['final_val_acc_mean'] to generate the bar chart. The data files contain all values needed to reproduce this figure and are consistent with the paper's numerical claims (verified in claims 9 and 10).",
+            "evidence": "final_val_acc_comparison.png; run_0/final_info.json: final_val_acc_mean values for all datasets; run_1/final_info.json: final_val_acc_mean values for all datasets; run_2/final_info.json: final_val_acc_mean values for all datasets; plot.py:136-154 (Plot 3 generation from final_info.json)",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "final_val_acc_comparison.png",
+                    "run_0/final_info.json: final_val_acc_mean values for all datasets",
+                    "run_1/final_info.json: final_val_acc_mean values for all datasets",
+                    "run_2/final_info.json: final_val_acc_mean values for all datasets",
+                    "plot.py:136-154 (Plot 3 generation from final_info.json)"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 1,
+            "claim": "1. Figure 1: Validation accuracy over time for all datasets and encoding schemes. Each subplot represents a different mathematical operation, with lines corresponding to different encoding schemes.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The per-step time-series data (all_results.npy) required to reproduce Figure 1 is absent from all run directories. The GPU is available and the code runs without errors, but full regeneration of all_results.npy across all 4 run configurations requires approximately 4+ hours of training, which exceeds practical session limits. The existing combined_val_acc.png image alone is insufficient for Verified. The code structure in plot.py matches the claim (2x2 subplot, validation accuracy vs update steps, lines per encoding scheme), but no raw data files exist to confirm the figure's content. Classification is Insufficient Evidence because the claim-relevant implementation path is plausible but the supporting artifact (all_results.npy) is missing and could not be fully reproduced.",
+            "evidence": "all_results.npy absent from all run directories (run_0–run_5). GPU available. experiment.py ran for 10 min (timeout), completing only 2 of 12 training seeds. combined_val_acc.png exists in repo root. plot.py lines 92-112 code structure exactly matches Figure 1 claim (2x2 subplots, val_accuracy over update steps, 4 encoding scheme lines). No concrete conflict with paper found. | Code: plot.py:17-18 (loads all_results.npy); plot.py:92-112 (creates 2x2 val_accuracy subplot); experiment.py:462-463 (saves all_results.npy after all 12 runs complete)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "plot.py:17-18 (loads all_results.npy)",
+                    "plot.py:92-112 (creates 2x2 val_accuracy subplot)",
+                    "experiment.py:462-463 (saves all_results.npy after all 12 runs complete)"
+                ],
+                "commands_executed": [
+                    "timeout 600 python experiment.py --out_dir fabscore_claude/workspace/run_0_fresh"
+                ]
+            }
+        }
+    ],
+    "results_section": [
+        {
+            "claim_index": 8,
+            "claim": "5. Modular addition and subtraction: All encoding schemes achieve high final accuracy (>99%).",
+            "verdict": "Result Fabrication",
+            "explanation": "Analysis stage: The paper claims all encoding schemes achieve >99% final accuracy for both modular addition and subtraction. However, run_1/final_info.json (one-hot encoding) shows x_minus_y final_val_acc_mean = 0.8519 (85.19%), and run_2/final_info.json (binary encoding) shows x_minus_y final_val_acc_mean = 0.8879 (88.79%). Both are far below 99%, directly contradicting the stated claim. The underlying data files clearly and explicitly conflict with the reported result.",
+            "evidence": "run_1/final_info.json: x_minus_y.means.final_val_acc_mean = 0.8518880208333334; run_2/final_info.json: x_minus_y.means.final_val_acc_mean = 0.887939453125",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "obvious_hallucination",
+                "fabrication_type": "result_fabrication"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_1/final_info.json: x_minus_y.means.final_val_acc_mean = 0.8518880208333334",
+                    "run_2/final_info.json: x_minus_y.means.final_val_acc_mean = 0.887939453125"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 4,
+            "claim": "1. Modular addition (x + y mod 97): One-hot encoding accelerates grokking (1173 steps) compared to the baseline (2363 steps). Binary encoding further improves this to 877 steps.",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: All three values match the run JSON files exactly: run_0/final_info.json x_plus_y step_val_acc_99_mean = 2363.33 ≈ 2363 (baseline); run_1/final_info.json x_plus_y step_val_acc_99_mean = 1173.33 ≈ 1173 (one-hot); run_2/final_info.json x_plus_y step_val_acc_99_mean = 876.67 ≈ 877 (binary). All values confirmed via direct file reading.",
+            "evidence": "run_0/final_info.json: x_plus_y.means.step_val_acc_99_mean = 2363.3333333333335; run_1/final_info.json: x_plus_y.means.step_val_acc_99_mean = 1173.3333333333333; run_2/final_info.json: x_plus_y.means.step_val_acc_99_mean = 876.6666666666666",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_0/final_info.json: x_plus_y.means.step_val_acc_99_mean = 2363.3333333333335",
+                    "run_1/final_info.json: x_plus_y.means.step_val_acc_99_mean = 1173.3333333333333",
+                    "run_2/final_info.json: x_plus_y.means.step_val_acc_99_mean = 876.6666666666666"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 5,
+            "claim": "2. Modular subtraction (x − y mod 97): Binary encoding achieves the fastest grokking (917 steps), followed by one-hot (1270 steps), both significantly faster than the baseline (4720 steps).",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: All three values match the run JSON files exactly: run_2/final_info.json x_minus_y step_val_acc_99_mean = 916.67 ≈ 917 (binary); run_1/final_info.json x_minus_y step_val_acc_99_mean = 1270.0 (one-hot); run_0/final_info.json x_minus_y step_val_acc_99_mean = 4720.0 (baseline). All values confirmed via direct file reading.",
+            "evidence": "run_0/final_info.json: x_minus_y.means.step_val_acc_99_mean = 4720.0; run_1/final_info.json: x_minus_y.means.step_val_acc_99_mean = 1270.0; run_2/final_info.json: x_minus_y.means.step_val_acc_99_mean = 916.6666666666666",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_0/final_info.json: x_minus_y.means.step_val_acc_99_mean = 4720.0",
+                    "run_1/final_info.json: x_minus_y.means.step_val_acc_99_mean = 1270.0",
+                    "run_2/final_info.json: x_minus_y.means.step_val_acc_99_mean = 916.6666666666666"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 6,
+            "claim": "3. Modular division (x ÷ y mod 97): Baseline encoding performs best (4200 steps), followed by one-hot (2250 steps). Binary encoding fails to reach the 99% threshold.",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: All values match: run_0/final_info.json x_div_y step_val_acc_99_mean = 4200.0 (baseline); run_1/final_info.json x_div_y step_val_acc_99_mean = 2250.0 (one-hot); run_2/final_info.json x_div_y step_val_acc_99_mean = 7500.0 (binary, the sentinel value indicating failure to reach 99%). All values confirmed via direct file reading.",
+            "evidence": "run_0/final_info.json: x_div_y.means.step_val_acc_99_mean = 4200.0; run_1/final_info.json: x_div_y.means.step_val_acc_99_mean = 2250.0; run_2/final_info.json: x_div_y.means.step_val_acc_99_mean = 7500.0 (never reached)",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_0/final_info.json: x_div_y.means.step_val_acc_99_mean = 4200.0",
+                    "run_1/final_info.json: x_div_y.means.step_val_acc_99_mean = 2250.0",
+                    "run_2/final_info.json: x_div_y.means.step_val_acc_99_mean = 7500.0 (never reached)"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 7,
+            "claim": "4. Permutation composition: One-hot encoding reaches the threshold in 6457 steps, slightly faster than the baseline (7500 steps). Binary encoding fails to reach this threshold.",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: All values match: run_1/final_info.json permutation step_val_acc_99_mean = 6456.67 ≈ 6457 (one-hot); run_0/final_info.json permutation step_val_acc_99_mean = 7500.0 (baseline, sentinel for never grokked); run_2/final_info.json permutation step_val_acc_99_mean = 7500.0 (binary, also never grokked). The paper correctly represents that baseline and binary never fully grokked (7500 is the max steps), with one-hot as the only scheme to partially grok at 6457 steps. All values confirmed via direct file reading.",
+            "evidence": "run_0/final_info.json: permutation.means.step_val_acc_99_mean = 7500.0; run_1/final_info.json: permutation.means.step_val_acc_99_mean = 6456.666666666667; run_2/final_info.json: permutation.means.step_val_acc_99_mean = 7500.0 (never reached)",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_0/final_info.json: permutation.means.step_val_acc_99_mean = 7500.0",
+                    "run_1/final_info.json: permutation.means.step_val_acc_99_mean = 6456.666666666667",
+                    "run_2/final_info.json: permutation.means.step_val_acc_99_mean = 7500.0 (never reached)"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 9,
+            "claim": "6. Modular division: Baseline encoding achieves 100% accuracy, one-hot reaches 99.87%, while binary encoding struggles (2.44% accuracy).",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: All three values match: run_0/final_info.json x_div_y final_val_acc_mean = 1.0 (100%); run_1/final_info.json x_div_y final_val_acc_mean = 0.9986979166666666 (99.87%); run_2/final_info.json x_div_y final_val_acc_mean = 0.0244140625 (2.44%). All values confirmed via direct file reading.",
+            "evidence": "run_0/final_info.json: x_div_y.means.final_val_acc_mean = 1.0; run_1/final_info.json: x_div_y.means.final_val_acc_mean = 0.9986979166666666; run_2/final_info.json: x_div_y.means.final_val_acc_mean = 0.0244140625",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_0/final_info.json: x_div_y.means.final_val_acc_mean = 1.0",
+                    "run_1/final_info.json: x_div_y.means.final_val_acc_mean = 0.9986979166666666",
+                    "run_2/final_info.json: x_div_y.means.final_val_acc_mean = 0.0244140625"
+                ],
+                "commands_executed": []
+            }
+        },
+        {
+            "claim_index": 10,
+            "claim": "7. Permutation composition: One-hot performs best (89.93%), followed by baseline (3.59%), while binary encoding fails to generalize (0.17%).",
+            "verdict": "Verified",
+            "explanation": "Analysis stage: All three values match: run_1/final_info.json permutation final_val_acc_mean = 0.8992513020833334 (89.93%); run_0/final_info.json permutation final_val_acc_mean = 0.035888671875 (3.59%); run_2/final_info.json permutation final_val_acc_mean = 0.001708984375 (0.17%). All values confirmed via direct file reading.",
+            "evidence": "run_0/final_info.json: permutation.means.final_val_acc_mean = 0.035888671875; run_1/final_info.json: permutation.means.final_val_acc_mean = 0.8992513020833334; run_2/final_info.json: permutation.means.final_val_acc_mean = 0.001708984375",
+            "detection_mode": "static_code_analysis",
+            "decision_stage": "analysis",
+            "analysis_classification": {
+                "bucket": "static_verifiable"
+            },
+            "verification_process": {
+                "files_analyzed": [
+                    "run_0/final_info.json: permutation.means.final_val_acc_mean = 0.035888671875",
+                    "run_1/final_info.json: permutation.means.final_val_acc_mean = 0.8992513020833334",
+                    "run_2/final_info.json: permutation.means.final_val_acc_mean = 0.001708984375"
+                ],
+                "commands_executed": []
+            }
+        }
+    ],
+    "summary": {
+        "total": 10,
+        "verified": 8,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 1,
+        "no_code_files": 0,
+        "insufficient_evidence": 1
+    },
+    "analysis_summary": {
+        "total_claims": 10,
+        "no_code_files": 0,
+        "obvious_hallucination": 1,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 1,
+        "static_verifiable": 8,
+        "insufficient_evidence": 0,
+        "execution_required": 1,
+        "error": 0
+    },
+    "execution_summary": {
+        "total": 1,
+        "verified": 0,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 1,
+        "error": 0
+    },
+    "final_assessment": {
+        "fab_score": 0.8,
+        "total_claims": 10,
+        "verified": 8,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 1,
+        "no_code_files": 0,
+        "insufficient_evidence": 1,
+        "static_code_analysis_breakdown": {
+            "verified": 8,
+            "no_code_files": 0,
+            "data_fabrication": 0,
+            "experiment_fabrication": 0,
+            "result_fabrication": 1,
+            "insufficient_evidence": 0
+        },
+        "execution_artifact_analysis_breakdown": {
+            "verified": 0,
+            "no_code_files": 0,
+            "data_fabrication": 0,
+            "experiment_fabrication": 0,
+            "result_fabrication": 0,
+            "insufficient_evidence": 1
+        },
+        "code_execution_breakdown": {
+            "verified": 0,
+            "no_code_files": 0,
+            "data_fabrication": 0,
+            "experiment_fabrication": 0,
+            "result_fabrication": 0,
+            "insufficient_evidence": 0
+        }
+    }
+}

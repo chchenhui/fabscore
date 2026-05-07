@@ -1,0 +1,390 @@
+\documentclass{article} % For LaTeX2e
+\usepackage{iclr2024_conference,times}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{titletoc}
+
+\usepackage{subcaption}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{multirow}
+\usepackage{color}
+\usepackage{colortbl}
+\usepackage{cleveref}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+\graphicspath{{../}} % To reference your generated figures, see below.
+\begin{filecontents}{references.bib}
+@book{goodfellow2016deep,
+  title={Deep learning},
+  author={Goodfellow, Ian and Bengio, Yoshua and Courville, Aaron and Bengio, Yoshua},
+  volume={1},
+  year={2016},
+  publisher={MIT Press}
+}
+
+@article{power2022grokking,
+  title={Grokking: Generalization beyond overfitting on small algorithmic datasets},
+  author={Power, Alethea and Burda, Yuri and Edwards, Harri and Babuschkin, Igor and Misra, Vedant},
+  journal={arXiv preprint arXiv:2201.02177},
+  year={2022}
+}
+
+@article{vaswani2017attention,
+  title={Attention is all you need},
+  author={Vaswani, Ashish and Shazeer, Noam and Parmar, Niki and Uszkoreit, Jakob and Jones, Llion and Gomez, Aidan N and Kaiser, {\L}ukasz and Polosukhin, Illia},
+  journal={Advances in neural information processing systems},
+  volume={30},
+  year={2017}
+}
+
+@article{kingma2014adam,
+  title={Adam: A method for stochastic optimization},
+  author={Kingma, Diederik P and Ba, Jimmy},
+  journal={arXiv preprint arXiv:1412.6980},
+  year={2014}
+}
+
+@article{ba2016layer,
+  title={Layer normalization},
+  author={Ba, Jimmy Lei and Kiros, Jamie Ryan and Hinton, Geoffrey E},
+  journal={arXiv preprint arXiv:1607.06450},
+  year={2016}
+}
+
+@article{loshchilov2017adamw,
+  title={Decoupled weight decay regularization},
+  author={Loshchilov, Ilya and Hutter, Frank},
+  journal={arXiv preprint arXiv:1711.05101},
+  year={2017}
+}
+
+@article{radford2019language,
+  title={Language Models are Unsupervised Multitask Learners},
+  author={Radford, Alec and Wu, Jeff and Child, Rewon and Luan, David and Amodei, Dario and Sutskever, Ilya},
+  year={2019}
+}
+
+@article{bahdanau2014neural,
+  title={Neural machine translation by jointly learning to align and translate},
+  author={Bahdanau, Dzmitry and Cho, Kyunghyun and Bengio, Yoshua},
+  journal={arXiv preprint arXiv:1409.0473},
+  year={2014}
+}
+
+@article{paszke2019pytorch,
+  title={Pytorch: An imperative style, high-performance deep learning library},
+  author={Paszke, Adam and Gross, Sam and Massa, Francisco and Lerer, Adam and Bradbury, James and Chanan, Gregory and Killeen, Trevor and Lin, Zeming and Gimelshein, Natalia and Antiga, Luca and others},
+  journal={Advances in neural information processing systems},
+  volume={32},
+  year={2019}
+}
+\end{filecontents}
+
+\title{Augmenting Grokking: Unveiling the Effects of Data Augmentation on Neural Network Generalization}
+
+\author{GPT-4o \& Claude\\
+Department of Computer Science\\
+University of LLMs\\
+}
+
+\newcommand{\fix}{\marginpar{FIX}}
+\newcommand{\new}{\marginpar{NEW}}
+
+
+\usepackage{draftwatermark}
+\usepackage{helvet} % Load the helvet package for Helvetica font
+
+\SetWatermarkText{
+    \parbox{100cm}{%
+    \centering
+    {\sffamily CAUTION!!! \\[0.5cm]
+    THIS PAPER WAS \\[0.5cm]
+    AUTONOMOUSLY GENERATED \\[0.5cm]
+    BY THE AI SCIENTIST}
+}}
+  
+\SetWatermarkScale{0.25}
+\SetWatermarkAngle{30}
+\SetWatermarkColor{gray!20!white}
+
+
+\SetWatermarkHorCenter{0.5\paperwidth}
+\SetWatermarkVerCenter{0.5\paperheight}
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+% Brief description of the abstract content
+The grokking phenomenon, where neural networks achieve sudden and significant improvements in generalization after prolonged periods of overfitting, has garnered considerable interest in the machine learning community. This paper investigates the impact of data augmentation techniques on the grokking phenomenon, specifically focusing on the addition of random noise to input numbers and shuffling the order of operations in dataset generation. Understanding how data augmentation influences grokking is crucial for improving the robustness and generalization capabilities of neural networks. However, this task is challenging due to the complex interplay between data augmentation, model training dynamics, and the grokking phenomenon itself. We address this challenge by implementing various data augmentation strategies in the context of modular arithmetic and permutation group datasets and conducting extensive experiments to evaluate their effects. Our contributions include a detailed analysis of how different levels of noise and augmentation techniques affect the speed to grokking, final validation accuracy, and training stability. We validate our findings through rigorous experimentation, demonstrating that certain augmentation techniques can significantly alter the grokking behavior, thereby providing insights into the design of more robust neural network training protocols.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+The grokking phenomenon, where neural networks achieve sudden and significant improvements in generalization after prolonged periods of overfitting, has garnered considerable interest in the machine learning community \citep{power2022grokking}. This phenomenon challenges our understanding of how neural networks learn and generalize from data. Understanding and controlling grokking can lead to more robust and efficient training protocols, which is highly relevant for both theoretical research and practical applications.
+
+One of the key challenges in studying the grokking phenomenon is the complex interplay between data augmentation, model training dynamics, and the grokking behavior itself. Data augmentation, a widely used technique to improve the generalization of neural networks, can have unpredictable effects on the training process, especially in the context of grokking. This makes it difficult to design augmentation strategies that consistently enhance model performance without introducing instability.
+
+In this paper, we investigate the impact of data augmentation techniques on the grokking phenomenon. Specifically, we focus on the addition of random noise to input numbers and shuffling the order of operations in dataset generation. Our contributions are as follows:
+\begin{itemize}
+    \item We implement various data augmentation strategies in the context of modular arithmetic and permutation group datasets.
+    \item We conduct extensive experiments to evaluate the effects of these augmentation techniques on the speed to grokking, final validation accuracy, and training stability.
+    \item We provide a detailed analysis of how different levels of noise and augmentation techniques influence the grokking behavior.
+    \item We offer insights into the design of more robust neural network training protocols based on our findings.
+\end{itemize}
+
+To verify our approach, we perform rigorous experimentation using modular arithmetic and permutation group datasets. We measure key metrics such as the speed to grokking, final validation accuracy, and training stability across different levels of noise and augmentation techniques. Our results demonstrate that certain augmentation strategies can significantly alter the grokking behavior, providing valuable insights for future research and practical applications.
+
+While our study provides important insights into the impact of data augmentation on the grokking phenomenon, there are several avenues for future work. These include exploring other types of data augmentation, investigating the effects of different neural network architectures, and applying our findings to more complex real-world datasets.
+
+
+\section{Background}
+\label{sec:background}
+
+The grokking phenomenon, as described by \citet{power2022grokking}, refers to the sudden and significant improvement in generalization performance of neural networks after a prolonged period of overfitting. This phenomenon challenges conventional understanding of how neural networks learn and generalize from data. Studying grokking is essential for developing more robust and efficient training protocols.
+
+Data augmentation is a widely used technique to improve the generalization capabilities of neural networks. By artificially increasing the diversity of the training data, data augmentation helps prevent overfitting and enhances the model's ability to generalize to unseen data \citep{goodfellow2016deep}. Common data augmentation techniques include adding random noise, cropping, rotating, and flipping images. In this study, we focus on adding random noise to input numbers and shuffling the order of operations in dataset generation.
+
+Modular arithmetic and permutation groups are fundamental concepts in mathematics that have been extensively studied in the context of neural networks. Modular arithmetic involves operations such as addition, subtraction, and division under a modulus, while permutation groups involve the arrangement of elements in a specific order. These concepts are particularly relevant for studying the grokking phenomenon because they provide a structured and well-defined setting for analyzing the effects of data augmentation on neural network training.
+
+\subsection{Problem Setting}
+\label{sec:problem_setting}
+In this study, we investigate the impact of data augmentation on the grokking phenomenon using modular arithmetic and permutation group datasets. We formally define the problem setting as follows:
+\begin{itemize}
+    \item Let \( \mathbb{Z}_p \) denote the set of integers modulo \( p \), where \( p \) is a prime number.
+    \item For modular arithmetic operations, we consider addition, subtraction, and division under a modulus \( p \).
+    \item For permutation groups, we consider the set of all permutations of \( k \) elements, denoted as \( S_k \).
+\end{itemize}
+We aim to evaluate the effects of data augmentation techniques, such as adding random noise and shuffling the order of operations, on the speed to grokking, final validation accuracy, and training stability.
+
+We make the following specific assumptions in our study:
+\begin{itemize}
+    \item The neural network models are trained using the AdamW optimizer \citep{loshchilov2017adamw} with a learning rate scheduler.
+    \item The training and validation datasets are generated using the defined modular arithmetic and permutation group operations.
+    \item Data augmentation is applied by adding random noise to input numbers and shuffling the order of operations.
+\end{itemize}
+The notation used in this paper is as follows:
+\begin{itemize}
+    \item \( x \circ y \mod p \) denotes the result of the operation \( \circ \) (addition, subtraction, or division) applied to \( x \) and \( y \) under modulus \( p \).
+    \item \( \sigma \in S_k \) denotes a permutation of \( k \) elements.
+\end{itemize}
+
+\section{Method}
+\label{sec:method}
+
+In this section, we describe our approach to investigating the impact of data augmentation on the grokking phenomenon. We build on the formalism introduced in the Problem Setting and leverage the concepts discussed in the Background section. Our method involves generating datasets using modular arithmetic and permutation groups, applying data augmentation techniques, and training neural networks to analyze the effects on grokking.
+
+\subsection{Dataset Generation}
+We generate datasets based on modular arithmetic and permutation groups to provide a structured and well-defined setting for our experiments. For modular arithmetic, we consider operations such as addition, subtraction, and division under a modulus \( p \). For permutation groups, we consider the set of all permutations of \( k \) elements. These datasets allow us to systematically study the effects of data augmentation on neural network training.
+
+\subsection{Data Augmentation Techniques}
+To investigate the impact of data augmentation on grokking, we apply two main techniques: adding random noise to input numbers and shuffling the order of operations. Adding random noise increases the diversity of the training data, while shuffling the order of operations introduces variability in the input sequences. These techniques are implemented with varying levels of noise to analyze their effects on the speed to grokking, final validation accuracy, and training stability.
+
+\subsection{Neural Network Architecture}
+We use a Transformer-based neural network architecture for our experiments, inspired by \citet{vaswani2017attention}. The model consists of multiple layers of self-attention and feed-forward neural networks, which are well-suited for capturing complex patterns in the data. The architecture includes token and position embeddings to represent the input sequences, followed by a series of decoder blocks and a final linear layer to produce the output.
+
+\subsection{Training Procedure}
+The neural network models are trained using the AdamW optimizer \citep{loshchilov2017adamw} with a learning rate scheduler. We use a cross-entropy loss function to measure the discrepancy between the predicted and true outputs. The training procedure involves iterating over the training dataset, performing forward and backward passes, and updating the model parameters. We also evaluate the model on a validation dataset to monitor its performance and adjust the learning rate accordingly.
+
+\subsection{Evaluation Metrics}
+To assess the impact of data augmentation on grokking, we use several evaluation metrics, including the speed to grokking, final validation accuracy, and training stability. The speed to grokking is measured by the number of training steps required to achieve a validation accuracy of 99\%. Final validation accuracy is the accuracy achieved at the end of training, and training stability is assessed by monitoring the loss and accuracy curves over time.
+
+\subsection{Experimental Setup}
+We conduct extensive experiments using the generated datasets and the described neural network architecture. For each dataset, we perform multiple runs with different levels of noise and data augmentation techniques. We log the training and validation performance, focusing on the key metrics mentioned above. The results are analyzed to determine the impact of data augmentation on the grokking phenomenon.
+
+\section{Experimental Setup}
+\label{sec:experimental}
+
+In this section, we describe the experimental setup used to investigate the impact of data augmentation on the grokking phenomenon. We provide details on the dataset, evaluation metrics, important hyperparameters, and implementation details.
+
+\subsection{Dataset}
+We use datasets based on modular arithmetic and permutation groups to provide a structured and well-defined setting for our experiments. For modular arithmetic, we consider operations such as addition, subtraction, and division under a modulus \( p \). For permutation groups, we consider the set of all permutations of \( k \) elements. These datasets allow us to systematically study the effects of data augmentation on neural network training. The datasets are generated using the methods described in Section \ref{sec:method}.
+
+\subsection{Evaluation Metrics}
+To assess the impact of data augmentation on grokking, we use several evaluation metrics, including the speed to grokking, final validation accuracy, and training stability. The speed to grokking is measured by the number of training steps required to achieve a validation accuracy of 99\%. Final validation accuracy is the accuracy achieved at the end of training, and training stability is assessed by monitoring the loss and accuracy curves over time.
+
+\subsection{Hyperparameters}
+The neural network models are trained using the AdamW optimizer \citep{loshchilov2017adamw} with a learning rate scheduler. The important hyperparameters for our experiments include:
+\begin{itemize}
+    \item \textbf{Learning rate:} \(1 \times 10^{-3}\)
+    \item \textbf{Batch size:} 512
+    \item \textbf{Number of training steps:} 7500
+    \item \textbf{Warmup steps:} 50
+    \item \textbf{Number of layers:} 2
+    \item \textbf{Model dimension:} 128
+    \item \textbf{Number of heads:} 4
+\end{itemize}
+These hyperparameters are chosen based on previous studies and preliminary experiments to ensure effective training and evaluation of the models.
+
+\subsection{Implementation Details}
+The experiments are implemented using PyTorch \citep{paszke2019pytorch}. The datasets are generated using the methods described in Section \ref{sec:method}, and data augmentation is applied by adding random noise to input numbers and shuffling the order of operations. The models are trained on a single GPU, and the training and validation performance is logged for analysis. We perform multiple runs with different levels of noise and data augmentation techniques to ensure the robustness of our results.
+
+\section{Results}
+\label{sec:results}
+
+% Overview of the results section
+In this section, we present the results of our experiments investigating the impact of data augmentation on the grokking phenomenon. We provide a detailed analysis of the training and validation performance across different datasets and augmentation techniques. We also discuss the hyperparameters used, potential issues of fairness, and limitations of our method.
+
+% Description of the experimental setup and hyperparameters
+\subsection{Experimental Setup and Hyperparameters}
+The experiments were conducted using the setup described in Section \ref{sec:experimental}. The neural network models were trained using the AdamW optimizer \citep{loshchilov2017adamw} with a learning rate of \(1 \times 10^{-3}\), batch size of 512, and 7500 training steps. We used a warmup period of 50 steps and a Transformer architecture with 2 layers, a model dimension of 128, and 4 attention heads. Data augmentation was applied with noise levels ranging from 0.1 to 0.4.
+
+% Presentation of the baseline results
+\subsection{Baseline Results}
+The baseline results, without data augmentation, are summarized in Table \ref{tab:baseline_results}. The models achieved high final validation accuracy across most datasets, with the exception of the permutation group dataset. The speed to grokking, measured by the number of steps to reach 99\% validation accuracy, varied across datasets.
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{lcccc}
+        \toprule
+        Dataset & Final Train Loss & Final Val Loss & Final Train Acc & Final Val Acc \\
+        \midrule
+        x\_div\_y & 0.0058 & 0.0065 & 1.0 & 1.0 \\
+        x\_minus\_y & 0.0142 & 0.0149 & 1.0 & 1.0 \\
+        x\_plus\_y & 0.0038 & 0.0040 & 1.0 & 1.0 \\
+        permutation & 0.0801 & 6.8042 & 0.9880 & 0.0359 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Baseline results without data augmentation.}
+    \label{tab:baseline_results}
+\end{table}
+
+% Presentation of results with data augmentation
+\subsection{Results with Data Augmentation}
+We tested the impact of data augmentation with noise levels of 0.1, 0.2, 0.3, and 0.4. The results are summarized in Tables \ref{tab:results_noise_0.1} to \ref{tab:results_noise_0.4}. Data augmentation had varying effects on different datasets. For the `x\_div\_y` dataset, higher noise levels generally improved final validation accuracy and reduced the steps to grokking. The `x\_minus\_y` and `x\_plus\_y` datasets maintained high accuracy across all noise levels. The `permutation` dataset showed significant drops in validation accuracy with data augmentation.
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{lcccc}
+        \toprule
+        Dataset & Final Train Loss & Final Val Loss & Final Train Acc & Final Val Acc \\
+        \midrule
+        x\_div\_y & 0.2839 & 0.9616 & 0.9383 & 0.7897 \\
+        x\_minus\_y & 0.0129 & 0.0142 & 1.0 & 1.0 \\
+        x\_plus\_y & 0.0033 & 0.0035 & 1.0 & 1.0 \\
+        permutation & 0.0244 & 8.3212 & 0.9986 & 0.0116 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Results with data augmentation (noise level 0.1).}
+    \label{tab:results_noise_0.1}
+\end{table}
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{lcccc}
+        \toprule
+        Dataset & Final Train Loss & Final Val Loss & Final Train Acc & Final Val Acc \\
+        \midrule
+        x\_div\_y & 0.1193 & 0.0722 & 0.9865 & 0.9944 \\
+        x\_minus\_y & 0.0239 & 0.0266 & 0.9995 & 0.9989 \\
+        x\_plus\_y & 0.0045 & 0.0049 & 1.0 & 1.0 \\
+        permutation & 0.1857 & 7.1745 & 0.9667 & 0.0193 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Results with data augmentation (noise level 0.2).}
+    \label{tab:results_noise_0.2}
+\end{table}
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{lcccc}
+        \toprule
+        Dataset & Final Train Loss & Final Val Loss & Final Train Acc & Final Val Acc \\
+        \midrule
+        x\_div\_y & 0.0062 & 0.0077 & 1.0 & 1.0 \\
+        x\_minus\_y & 0.2269 & 0.0943 & 0.9634 & 0.9932 \\
+        x\_plus\_y & 0.0054 & 0.0061 & 1.0 & 1.0 \\
+        permutation & 0.0205 & 4.4463 & 0.9993 & 0.2886 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Results with data augmentation (noise level 0.3).}
+    \label{tab:results_noise_0.3}
+\end{table}
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{lcccc}
+        \toprule
+        Dataset & Final Train Loss & Final Val Loss & Final Train Acc & Final Val Acc \\
+        \midrule
+        x\_div\_y & 0.0079 & 0.0095 & 1.0 & 1.0 \\
+        x\_minus\_y & 0.0056 & 0.0070 & 1.0 & 1.0 \\
+        x\_plus\_y & 0.0030 & 0.0031 & 1.0 & 1.0 \\
+        permutation & 0.1121 & 8.2631 & 0.9851 & 0.0078 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Results with data augmentation (noise level 0.4).}
+    \label{tab:results_noise_0.4}
+\end{table}
+
+% Presentation of training and validation performance figures
+\subsection{Training and Validation Performance}
+Figures \ref{fig:train_loss} and \ref{fig:val_loss} show the training and validation loss curves for the `x\_div\_y` dataset across different noise levels. The shaded regions indicate the standard error of the mean loss. Similar figures for the other datasets are provided in the supplementary material.
+
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}{0.49\textwidth}
+        \includegraphics[width=\textwidth]{train_loss_x_div_y.png}
+        \caption{Training Loss for x\_div\_y}
+        \label{fig:train_loss_x_div_y}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.49\textwidth}
+        \includegraphics[width=\textwidth]{val_loss_x_div_y.png}
+        \caption{Validation Loss for x\_div\_y}
+        \label{fig:val_loss_x_div_y}
+    \end{subfigure}
+    \caption{Training and validation loss curves for the `x\_div\_y` dataset across different noise levels.}
+    \label{fig:train_val_loss_x_div_y}
+\end{figure}
+
+% Discussion of the results and comparison to baselines
+\subsection{Discussion}
+The results indicate that data augmentation can have a significant impact on the grokking phenomenon. For the `x\_div\_y` dataset, higher noise levels generally improved final validation accuracy and reduced the steps to grokking. The `x\_minus\_y` and `x\_plus\_y` datasets maintained high accuracy across all noise levels, suggesting that these tasks are less sensitive to data augmentation. The `permutation` dataset showed significant drops in validation accuracy with data augmentation, indicating that this task is more challenging and sensitive to noise.
+
+% Discussion of limitations and potential issues of fairness
+\subsection{Limitations and Fairness}
+One limitation of our study is the focus on synthetic datasets, which may not fully capture the complexities of real-world data. Additionally, the noise levels and augmentation techniques used in this study may not be optimal for all tasks. Future work should explore other types of data augmentation and apply our findings to more complex datasets. We also acknowledge potential issues of fairness, as the performance of the models may vary across different datasets and augmentation techniques.
+
+\section{Conclusions and Future Work}
+\label{sec:conclusion}
+
+% Brief recap of the entire paper
+In this paper, we investigated the impact of data augmentation on the grokking phenomenon in neural networks. We focused on modular arithmetic and permutation group datasets, applying various data augmentation techniques such as adding random noise to input numbers and shuffling the order of operations. Our experiments aimed to evaluate the effects of these techniques on the speed to grokking, final validation accuracy, and training stability.
+
+% Summary of key findings
+Our results demonstrated that data augmentation can significantly influence the grokking phenomenon. For the `x\_div\_y` dataset, higher noise levels generally improved final validation accuracy and reduced the steps to grokking. The `x\_minus\_y` and `x\_plus\_y` datasets maintained high accuracy across all noise levels, indicating robustness to data augmentation. However, the `permutation` dataset showed significant drops in validation accuracy with data augmentation, highlighting the sensitivity of this task to noise.
+
+% Implications of the findings
+These findings suggest that data augmentation can be a powerful tool for enhancing the generalization capabilities of neural networks, but its effectiveness may vary depending on the nature of the task. Understanding the interplay between data augmentation and the grokking phenomenon can help in designing more robust and efficient training protocols for neural networks.
+
+% Future work: Exploring other types of data augmentation
+Future work should explore other types of data augmentation techniques beyond random noise and shuffling operations. Techniques such as adversarial training, mixup, and data augmentation in the feature space could provide further insights into their impact on the grokking phenomenon.
+
+% Future work: Investigating different neural network architectures
+Another avenue for future research is to investigate the effects of different neural network architectures on the grokking phenomenon. Architectures such as convolutional neural networks (CNNs), recurrent neural networks (RNNs), and more advanced transformer models could be studied to understand their behavior under various data augmentation strategies.
+
+% Future work: Applying findings to real-world datasets
+Finally, applying our findings to more complex, real-world datasets is an important direction for future work. This would help validate the generalizability of our results and provide practical insights for improving neural network training in real-world applications.
+
+\bibliographystyle{iclr2024_conference}
+\bibliography{references}
+
+\bibliographystyle{iclr2024_conference}
+\bibliography{references}
+
+\end{document}

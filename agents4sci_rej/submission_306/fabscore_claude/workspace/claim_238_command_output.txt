@@ -1,0 +1,30 @@
+## Command 1: Run BCR pipeline for P33225 (auto k, n_perm=1024)
+Working dir: /home/chenhui/fabscore/agents4sci_rej/submission_306/fabscore_claude/workspace/p33225_run
+Command: PYTHONPATH=/home/chenhui/fabscore/agents4sci_rej/submission_306/for_submission python -m bcrparts all --ids-file ids.csv --n-perm 1024 --null-mode rotation --k auto --min-block-len 30 --topN 100 --alpha 0.05 --sym-mode mean
+
+Output:
+Saved 1 entries and top 100 to results/bcrparts
+[Error (irrelevant): FileNotFoundError: agents4science_2025.tex - not part of BCR analysis]
+
+topN.csv result:
+uniprot_id,length,k,bcr_diff,z_bcr_diff,bcr_q_ratio,z_bcr_q,p_perm,Q25_intra,Q75_inter,...
+P33225,848,3,17.486435651779175,3.1730999176903967,2.014903013464213,13.562026299688265,0.06048780487804878,...
+
+## Command 2: Run BCR pipeline for P33225 with k=2 explicitly
+Working dir: /home/chenhui/fabscore/agents4sci_rej/submission_306/fabscore_claude/workspace/p33225_run/run_k2
+Command: PYTHONPATH=/home/chenhui/fabscore/agents4sci_rej/submission_306/for_submission python -m bcrparts all --ids-file ids.csv --n-perm 1024 --null-mode rotation --k 2 --min-block-len 30 --topN 100 --alpha 0.05 --sym-mode mean
+
+Output:
+Saved 1 entries and top 100 to results/bcrparts
+
+topN.csv result:
+P33225,848,2,-0.0493...,0.4855078157817008,-5.36e-09,1.0,...  (p_perm=1.0, bcr_q_effect=0.4855)
+
+## Command 3: Repeated runs with auto k (3 replications)
+All give: P33225,3,0.06048780487804878 (deterministic due to fixed seed=0 in np.random.default_rng(0))
+
+## Summary
+Paper claims: P33225, pperm=0.0293
+Code (auto k=3, seed=0): p_perm=0.06048780487804878 (consistently ~2x the claimed value)
+Code (k=2, seed=0): p_perm=1.0 (no signal with k=2)
+BCR formula discrepancy: code uses log-ratio, paper uses simple ratio

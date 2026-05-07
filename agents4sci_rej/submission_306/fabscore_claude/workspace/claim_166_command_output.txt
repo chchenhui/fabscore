@@ -1,0 +1,42 @@
+=== CLAIM 166 VERIFICATION: Table 1, P76042, k: 3 ===
+
+--- COMMAND 1: Check AlphaFold API for P76042 ---
+python3 -c "... requests.get v4 and v6 PAE endpoints ..."
+OUTPUT:
+API failed: 404 for v4
+v6 status: 200
+P76042 length=430, source=AF-P76042-F1-predicted_aligned_error_v6.json
+
+--- COMMAND 2: Run BCR with n_perm=1024, null_mode=rotation (actual run settings) ---
+python3 -c "... partition_k_spectral + bcr_q_ratio for k=2,3, n_perm=1024, seed=0 ..."
+OUTPUT:
+P76042 length=430
+--- k=2 ---
+  k=2 blocks: [(0, 61), (61, 430)], len=2
+  k=2: bcr_q_ratio=2.014903, z=13.919614, p_perm=0.010732
+  hinge_len=0 (blocks count=2)
+--- k=3 ---
+  k=3 blocks: [(0, 61), (61, 147), (147, 430)], len=3
+  k=3: bcr_q_ratio=2.268684, z=6.398878, p_perm=0.020488
+  hinge_len=86 (blocks count=3)
+
+--- COMMAND 3: Compare code formula vs paper formula for k=2,3 ---
+python3 -c "... _intra_inter_values + Q75_inter/Q25_intra formulas ..."
+OUTPUT:
+k=2: Q75_inter=28.5000, Q25_intra=2.5000, eps=1.5000
+  Code (log-ratio): stat=2.0149
+  Paper (simple ratio): stat=7.1250
+k=3: Q75_inter=28.0000, Q25_intra=2.0000, eps=1.0000
+  Code (log-ratio): stat=2.2687
+  Paper (simple ratio): stat=9.3333
+
+Code selects k=2 (p_perm=0.010732) vs k=3 (p_perm=0.020488)
+Paper claims P76042 with k=3
+
+KEY FINDINGS:
+1. Code selects k=2 (p_perm=0.010732) not k=3 (p_perm=0.020488) by minimum p_perm criterion.
+2. Paper claims k=3 for P76042.
+3. Formula discrepancy: code uses log((Q75_inter+eps)/(Q25_intra+eps)), paper uses Q75_inter/(Q25_intra+eps).
+4. With paper formula, k=3 (9.33) > k=2 (7.13), so if paper selected by maximizing BCR, k=3 could be correct.
+5. But code's implementation (sort by min p_perm) selects k=2, contradicting paper's k=3 claim.
+6. BCR formula discrepancy and k-selection criterion both differ from paper description (Experiment Fabrication).

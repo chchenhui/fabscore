@@ -1,0 +1,72 @@
+Got it ✅ — if you don’t want to fine-tune the LLM, that changes the technical plan but keeps the **overall workflow intact**. Instead of building a domain-specialized model from scratch, you’ll rely on:
+
+* **Prompt engineering** (careful query design).
+* **Retrieval-Augmented Generation (RAG)** (grounding in databases + literature).
+* **Post-processing & ranking** of model outputs with computational screening.
+
+This makes the project **lighter, faster, and more practical** while still innovative.
+
+---
+
+# 🔬 Updated Step-by-Step Guidance (No Fine-Tuning)
+
+## **Phase 1: Knowledge Base & RAG Setup**
+
+* **Data aggregation**: same as before (literature + Materials Project + NOMAD + OC20).
+* **Embedding + indexing**:
+
+  * Use an open embedding model (e.g., OpenAI text-embedding-3-large, or instructor-xl).
+  * Build a vector DB (FAISS, Weaviate, Pinecone).
+* **LLM choice**: Use an API-based or open model (GPT-4.1, Claude, or LLaMA-3). No fine-tuning, just careful prompting + RAG.
+
+---
+
+## **Phase 2: Generative Hypothesis Engineering**
+
+* **Prompt framework**:
+
+  * Constraint-based generation: force earth-abundant metals, solid-solution stability, etc.
+  * Analogy-based reasoning: suggest substitutions based on d-band theory, Sabatier principle.
+  * Structured prompts with retrieval context inserted.
+* **RAG in action**:
+
+  * Query relevant materials data (e.g., stability, known adsorption energies).
+  * Insert into the LLM prompt so generation is always grounded.
+
+---
+
+## **Phase 3: Computational Validation**
+
+* Same as before:
+
+  1. **Novelty/stability filtering** with Materials Project + pymatgen.
+  2. **High-throughput DFT** screening for adsorption energies + free energy diagrams.
+  3. **Feedback loop**: store results in your DB → improves RAG retrieval context.
+
+---
+
+# Analysis steps
+
+Figure 1 Data to Figure 3 Data
+
+Here’s a step-by-step explanation of the data transformation that happens between these two stages:
+
+#### 1. Start with the Initial Data (Figure 1)
+We begin with the dataset you have (`fig1_catalyst_data.csv`), which contains high-level descriptors that the LLM can reason about:
+* `mixing_enthalpy_ev_atom` (a proxy for stability)
+* `d_band_center_ev` (a proxy for reactivity)
+
+#### 2. The Stability Filter (Figure 2)
+The first step is to perform a computational screen for thermodynamic stability. In a real project, you would run DFT calculations to get the **Energy Above the Convex Hull ($E_{above\_hull}$)** for each candidate.
+
+* **Action:** You would filter your list, keeping only the candidates with a very low $E_{above\_hull}$ (e.g., < 60 meV/atom). We can use the `mixing_enthalpy` as a rough stand-in and select the most stable candidates (e.g., all the "LLM_Generated_HEA" types, since we designed them to be stable).
+
+#### 3. The Activity Calculation (Figure 3)
+This is the most crucial step. For the small set of candidates that passed the stability filter, you would perform a new, more detailed set of DFT calculations to get the specific data needed for the volcano plot.
+
+* **Action:** For each stable candidate, you would calculate:
+    1.  **The Adsorption Energy of a Key Intermediate (X-axis):** You'd had the binding of a molecule like $*NOH$ to the catalyst's surface to get its adsorption energy, `ΔE_*NOH`.
+    2.  **The Limiting Potential (Y-axis):** You'd calculate the full reaction pathway to find the Gibbs Free Energy of the rate-limiting step, which gives you the theoretical activity or `U_L`.
+
+**The key takeaway is that the X and Y coordinates for the Figure 3 volcano plot do not exist in the initial dataset.** They are the *results* of the subsequent, computationally intensive validation phases.
+

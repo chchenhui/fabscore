@@ -1,0 +1,20 @@
+{
+  "optimize_index": 0,
+  "issues": [
+    {
+      "title": "Critical answer extraction bug in run_condition_e.py",
+      "description": "HF model.generate() produces verbose ~258 char text that re-states context before answering. The original parse_id_output() extracted the FIRST ENT_\\d+ match, which came from echoed context text, not the actual answer. Fixed by creating extract_answer_id() that searches after the last 'A:' marker, falling back to the last ENT mention. This single fix accounted for ~40pp of the Pc deficit (Pc: 33 -> 74)."
+    },
+    {
+      "title": "Steering mode misconfiguration - neither mode steered all positions",
+      "description": "SteeringHook(prefill_only=False) only steered generation tokens (seq_len==1), corrupting output format. prefill_only=True only steered prefill (seq_len>1) with negligible effect. Neither mode steered ALL positions. Fixed by adding BothHook class and --steer_mode flag with 'prefill', 'generation', 'both' options. 'Both' mode with EACP vector achieves the best MR."
+    },
+    {
+      "title": "Steering vector distribution mismatch (NQ-SWAP vs EACP prompts)",
+      "description": "NQ-SWAP steering vector trained on free-form O&I-style prompts applied to EACP structured prompts with entity inventory and ID output format. Fixed by computing EACP-native steering vector from ConFiQA data using positive (full EACP prompt) vs negative (question+inventory only) pairs. EACP vector achieves best MR (12.91 vs NQ-SWAP's 14.72 at same Pc levels)."
+    }
+  ],
+  "experiment_result_path": "EXPERIMENT_RESULTS/optimize_trace/iteration_0/",
+  "success": true,
+  "summary": "Fixed three critical bugs in Condition E (EACP + ContextFocus composition): (1) answer extraction from verbose HF output, (2) steering mode misconfiguration, (3) steering vector distribution mismatch. After fixes, E achieves Pc=76.47, MR=12.91, EM=83.93 -- a massive improvement over the original E (Pc=32.73, MR=18.57, EM=34.93) and a meaningful improvement over C+SC (Pc=72.87, MR=13.25, EM=80.00). This confirms EACP and ContextFocus are complementary when properly composed."
+}

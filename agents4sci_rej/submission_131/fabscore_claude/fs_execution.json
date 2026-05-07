@@ -1,0 +1,68 @@
+{
+    "tables": [
+        {
+            "claim_index": 1,
+            "claim": "1. Table 1, Correlation coefficient (r), Value: -0.81",
+            "verdict": "Result Fabrication",
+            "explanation": "Execution stage: Running the repository's script.py with fixed seed 42 produces r = -0.98, not -0.81 as reported in Table 1 of the paper. The code implementation and data generation logic are consistent with the paper's described method, but the reported value does not match the actual output.",
+            "evidence": "Script output: 'Correlation coefficient r = -0.98' (paper claims r = -0.81). Script uses np.random.seed(42) for deterministic output. | Code: Supplementary Material/script.py:17 — r, _ = pearsonr(x, y)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "Supplementary Material/script.py:17 — r, _ = pearsonr(x, y)"
+                ],
+                "commands_executed": [
+                    "cd 'Supplementary Material' && python script.py"
+                ]
+            }
+        },
+        {
+            "claim_index": 2,
+            "claim": "2. Table 1, Mean Squared Error (MSE), Value: 0.12",
+            "verdict": "Result Fabrication",
+            "explanation": "Execution stage: The script `Supplementary Material/script.py` uses a fixed seed (np.random.seed(42)) and produces deterministic output. Executing `cd 'Supplementary Material' && python script.py` gives `Mean Squared Error MSE = 0.14`, not the claimed 0.12. The code logic (np.mean((y - y_fit)**2)) is consistent with standard MSE, but the reported value conflicts with the actual output.",
+            "evidence": "Reused `fabscore_claude/workspace/claim_1_command_output.txt` — script output: `Mean Squared Error MSE = 0.14` (paper claims 0.12) | Code: Supplementary Material/script.py — np.mean((y - y_fit)**2) computation",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "Supplementary Material/script.py — np.mean((y - y_fit)**2) computation"
+                ],
+                "commands_executed": [
+                    "Reused artifact from prior session; original command: cd 'Supplementary Material' && python script.py"
+                ]
+            }
+        }
+    ],
+    "figures": [
+        {
+            "claim_index": 4,
+            "claim": "2. Figure 2: Observed hospitalization rates vs. fitted regression line as a function of vaccination coverage. Higher vaccine uptake is associated with lower influenza hospitalization rates.",
+            "verdict": "Verified",
+            "explanation": "Execution stage: The script (lines 22-32 of script.py) generates exactly the described figure: scatter plot of observed hospitalization rates vs vaccination coverage with fitted regression line. The data has a designed negative slope, consistent with 'higher vaccine uptake associated with lower hospitalization rates'. The prior execution session confirmed the script runs without error and the generated PDF exists in the repository.",
+            "evidence": "Prior execution artifact `fabscore_claude/workspace/claim_1_command_output.txt` confirms `cd 'Supplementary Material' && python script.py` ran successfully and produced `public_health_case.pdf` (present as untracked file). Script generates steelblue scatter plot of vaccination coverage (x, 40-90%) vs. hospitalization rate (y), with darkred dashed regression line; negative relationship by construction (y_true = 15 - 0.12 * x), matching the claim description. | Code: Supplementary Material/script.py:22-32",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "Supplementary Material/script.py:22-32"
+                ],
+                "commands_executed": [
+                    "Reused artifact from prior session: cd 'Supplementary Material' && python script.py (no new command executed)"
+                ]
+            }
+        }
+    ],
+    "results_section": [],
+    "summary": {
+        "total": 3,
+        "verified": 1,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 2,
+        "no_code_files": 0,
+        "insufficient_evidence": 0,
+        "error": 0
+    }
+}

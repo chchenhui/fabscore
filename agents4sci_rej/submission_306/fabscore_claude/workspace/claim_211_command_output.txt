@@ -1,0 +1,50 @@
+=== CLAIM 211 VERIFICATION: Table 1, P0AF06, k: 2 ===
+
+--- COMMAND 1: Fetch P0AF06 PAE and test k=2,3 partition (quick check) ---
+python3 -c "
+import sys; sys.path.insert(0, 'for_submission')
+import numpy as np, json, urllib.request
+uid = 'P0AF06'
+url = f'https://alphafold.ebi.ac.uk/files/AF-{uid}-F1-predicted_aligned_error_v6.json'
+with urllib.request.urlopen(url, timeout=30) as r:
+    data = json.loads(r.read())
+pae = np.array(data[0]['predicted_aligned_error'])
+print(f'PAE shape: {pae.shape}')
+from common.segmentation import partition_k_spectral
+for k in [2, 3]:
+    blks = partition_k_spectral(pae, k=k, min_block_len=30)
+    print(f'k={k}: blocks={blks.blocks if blks is not None else None}')
+"
+OUTPUT:
+PAE shape: (308, 308)
+k=2: blocks=[(0, 101), (101, 308)]
+k=3: blocks=[(0, 102), (102, 201), (201, 308)]
+
+--- COMMAND 2: Run with actual pipeline settings (n_perm=1024, null_mode=rotation, seed=42) ---
+python3 -c "
+...
+"
+OUTPUT:
+PAE shape: (308, 308)
+k=2: blocks=[(0, 101), (101, 308)], bcr_q_ratio=2.063693, z=4.248718, p_perm=0.087805
+k=3: blocks=[(0, 102), (102, 201), (201, 308)], bcr_q_ratio=1.840550, z=0.674486, p_perm=0.430244
+Selected k=2 (smallest p_perm=0.087805)
+bcr_q_effect=2.063693, blocks=[(0, 101), (101, 308)]
+Paper claims: k=2 for P0AF06
+
+KEY FINDINGS:
+1. P0AF06 PAE fetched from AlphaFold EBI (v6), shape (308, 308)
+2. k=2 spectral partition gives 2 valid blocks [(0, 101), (101, 308)]
+3. k=3 spectral partition gives 3 valid blocks [(0, 102), (102, 201), (201, 308)]
+4. Code selects k=2 (smallest p_perm=0.087805) -- matches paper's claim of k=2
+5. BCR formula discrepancy (log-ratio vs paper Eq.2 simple ratio) confirmed from prior sessions
+6. p_perm=0.087805 >> alpha=0.05: P0AF06 would NOT pass BH significance test
+7. bcr_q_ratio=2.063693 (log-ratio formula) vs paper's simple ratio; experiment-level conflict persists
+8. Paper's Table 1 claim of k=2 is numerically matched by code, but via wrong formula
+
+VERDICT: Experiment Fabrication
+- k=2 selection matches the paper for P0AF06
+- However, BCR formula in code (log-ratio with eps on both numerator and denominator)
+  differs from paper Eq.2 (simple ratio Q75_inter/(Q25_intra+eps))
+- p_perm=0.087805 >> alpha=0.05: P0AF06 should not appear in any Top-50 table
+- Same experiment fabrication classification applies consistently across all Table 1 claims

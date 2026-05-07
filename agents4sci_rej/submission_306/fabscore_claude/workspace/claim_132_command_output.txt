@@ -1,0 +1,63 @@
+## Claim 132: Table 1, P77368, bcr_q_effect: 2.22
+
+### Command 1: Compute bcr_q_effect for P77368
+
+```python
+python3 - <<'EOF'
+import sys
+sys.path.insert(0, 'for_submission')
+import numpy as np
+from common.afdb import load_entry, symmetrize_pae, mask_near_diagonal
+from common.segmentation import partition_k_spectral, Blocks
+from common.metrics import bcr_q_ratio, _intra_inter_values, quartiles_used_normalized
+
+uid = 'P77368'
+entry = load_entry(uid)
+print(f"P77368 length={entry.length}")
+
+for kk in [2, 3]:
+    blks = partition_k_spectral(entry.pae, k=kk, min_block_len=30)
+    print(f"k={kk}: blocks={blks.blocks} (count={len(blks.blocks)})")
+    if len(blks.blocks) < 2:
+        print(f"  k={kk}: degenerate")
+        continue
+
+    br, zr, pp = bcr_q_ratio(entry.pae, blks, n_perm=50, return_p=True, rng=np.random.default_rng(42))
+    print(f"  Code's bcr_q_ratio (log-ratio, Q95-normed): {br:.6f}, z={zr:.4f}, p_perm={pp:.6f}")
+
+    q25, q75 = quartiles_used_normalized(entry.pae, blks)
+    print(f"  Code's Q25_intra (normed)={q25:.6f}, Q75_inter (normed)={q75:.6f}")
+
+    pae_sym = symmetrize_pae(entry.pae, mode='mean')
+    intra_raw, inter_raw = _intra_inter_values(pae_sym, blks, delta=7)
+    q25_raw = float(np.quantile(intra_raw, 0.25))
+    q75_raw = float(np.quantile(inter_raw, 0.75))
+    q05_raw = float(np.quantile(intra_raw, 0.05))
+    eps_raw = max(q05_raw, 1e-3)
+    simple_ratio_raw = q75_raw / (q25_raw + eps_raw)
+    print(f"  Raw PAE Q25_intra={q25_raw:.4f}, Q75_inter={q75_raw:.4f}")
+    print(f"  Paper formula (simple ratio, raw PAE): Q75_inter/(Q25_intra+eps) = {simple_ratio_raw:.4f}")
+EOF
+```
+
+### Output:
+P77368 length=183
+k=2: blocks=[(0, 183)] (count=1)
+  k=2: degenerate
+k=3: blocks=[(0, 140), (140, 183)] (count=2)
+  Code's bcr_q_ratio (log-ratio, Q95-normed): 0.336472, z=-1.4392, p_perm=1.000000
+  Code's Q25_intra (normed)=0.056604, Q75_inter (normed)=0.094340
+  Code's eps=0.037736, simple_ratio_normed (not log)=1.400000
+  Raw PAE Q25_intra=1.5000, Q75_inter=2.5000
+  Paper formula (simple ratio, raw PAE): Q75_inter/(Q25_intra+eps) = 1.0000
+
+Done
+
+### Summary:
+- Paper claims bcr_q_effect=2.22 for P77368 (Table 1)
+- Code's log-ratio formula gives 0.336472 (very far from 2.22)
+- Paper's stated formula (simple ratio) gives ~1.0 on raw PAE or ~1.4 on normalized PAE
+- None of these match the claimed 2.22
+- k=2 is degenerate for P77368 (produces only 1 block), but paper claims k=2
+- k=3 is selected by code, not matching paper
+- p_perm=1.0 for k=3 means P77368 would NOT appear in top candidates at all

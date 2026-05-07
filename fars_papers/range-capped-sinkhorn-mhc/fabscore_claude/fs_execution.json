@@ -1,0 +1,69 @@
+{
+    "tables": [],
+    "figures": [
+        {
+            "claim_index": 32,
+            "claim": "2. Figure 2: Hres gradient norm time series over 5000 training iterations. RRCS (green) maintains gradients at ∼ 10−6 throughout training, while mHC default (red) and cap-init (orange) show zero or negligible gradients.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The aggregate summary values and mechanism test strongly support the claim: mHC default produces exactly zero H_res gradients (directly confirmed by 5000-step diagnostics.csv), cap-init produces negligible gradients (~1.59e-15), and RRCS (r_cap=2.0) produces non-zero gradients consistent with ~10^-6. However, the per-step time series diagnostics.csv for capinit and RRCS conditions are missing from the repo (only mhc_default has CSVs), and the fineweb10B training dataset is not available to reproduce full training. The 'throughout training' temporal claim for RRCS cannot be directly verified without per-step data, making Verified classification inappropriate despite strong circumstantial support.",
+            "evidence": "mhc_default diagnostics.csv: 501 rows (iter 0-5000), h_res_grad_median=0.0 throughout (mean=std=min=max=0.0). rrcs_opt_rcap2p0_summary.json: h_res_grad_median_post_warmup aggregate mean=4.098e-6 across 3 seeds. capinit_summary.json: aggregate mean=1.592e-15 (~zero). Mechanism test: mHC default grad_norm=0.0, RRCS (r_cap=2.0) grad_norm=2.74e-4 (non-zero), cap-init grad_norm=4.33e-11 (negligible). diagnostics.csv missing for capinit_seed* and rrcs_opt_rcap2p0_seed* directories. fineweb10B dataset not available for full training reproduction. | Code: exp/mhc_repo/hyper_connections/hyper_connections.py:67 (sinkhorn_log_rrcs), exp/mhc_repo/hyper_connections/hyper_connections.py:425-428 (RRCS branch selection), exp/mhc_repo/examples/nanogpt/results/logs/mhc_default_seed42/diagnostics.csv",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "exp/mhc_repo/hyper_connections/hyper_connections.py:67 (sinkhorn_log_rrcs), exp/mhc_repo/hyper_connections/hyper_connections.py:425-428 (RRCS branch selection), exp/mhc_repo/examples/nanogpt/results/logs/mhc_default_seed42/diagnostics.csv"
+                ],
+                "commands_executed": [
+                    "python3 minimal gradient test using HyperConnections with actual training initialization (H_res_logits: diagonal=0, off-diagonal=-8); checked mhc_default diagnostics.csv with pandas"
+                ]
+            }
+        },
+        {
+            "claim_index": 33,
+            "claim": "3. Figure 3: Learned Hres routing matrices at step 5000. (a) mHC default and (b) cap-init produce identity matrices (entropy=0), while (c) RRCS produces soft doubly-stochastic routing with entropy=0.93, enabling meaningful stream mixing.",
+            "verdict": "Verified",
+            "explanation": "Execution stage: mHC default and cap-init produce identity matrices with entropy≈0 at initialization; since zero/negligible gradients flow into H_res_logits for these conditions (confirmed in Session 3), the routing matrix stays at init throughout training — independently verified by computation. RRCS entropy=0.93 is confirmed by the analysis RESULTS.json artifact (entropy_mean=0.9327), which is the underlying data file for Figure 3.",
+            "evidence": "1) mHC default: independently computed sinkhorn(init_logits, tau=0.05)=identity matrix, row_entropy=0.0 (claim: entropy=0). 2) Cap-init: sinkhorn(init_logits, tau=0.2667)≈identity (off-diag~9.4e-14), entropy=6.49e-12≈0 (claim: entropy=0). 3) RRCS entropy_mean=0.9326850200692812 from exp/EXPERIMENT_RESULTS/ds_routing_analysis/RESULTS.json (claim: entropy=0.93). All three match the paper. | Code: exp/mhc_repo/scripts/analyze_ds_and_routing.py:94-96 (row_entropy), exp/EXPERIMENT_RESULTS/ds_routing_analysis/RESULTS.json (entropy values), exp/mhc_repo/hyper_connections/hyper_connections_mhc.py:175-177 (H_res_logits init)",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "exp/mhc_repo/scripts/analyze_ds_and_routing.py:94-96 (row_entropy), exp/EXPERIMENT_RESULTS/ds_routing_analysis/RESULTS.json (entropy values), exp/mhc_repo/hyper_connections/hyper_connections_mhc.py:175-177 (H_res_logits init)"
+                ],
+                "commands_executed": [
+                    "python3 inline script: computed sinkhorn(H_res_logits_init, tau=0.05) for mHC default and sinkhorn(H_res_logits_init, tau=0.2667) for cap-init; computed row_entropy for both"
+                ]
+            }
+        }
+    ],
+    "results_section": [
+        {
+            "claim_index": 34,
+            "claim": "1. The learned routing shows approximately 0.71 on the diagonal and 0.10 on off-diagonal entries, indicating that streams primarily preserve their identity while also mixing information with other streams.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The specific 0.71/0.10 diagonal/off-diagonal values cannot be directly verified without ckpt.pt checkpoint files, which are absent from all log directories. The pre-existing hres_routing_heatmaps.png visually shows values consistent with the claim, but per verification rules, pre-existing images are not sufficient for Verified without underlying raw data or fresh execution. Mathematical analysis confirms entropy=0.9327 (from RESULTS.json) is consistent with d≈0.704, o≈0.099 (within 1% of the claimed ~0.71/~0.10), but this is indirect consistency, not direct verification. The FineWeb10B training dataset is unavailable to regenerate checkpoints from scratch.",
+            "evidence": "RESULTS.json: entropy_mean=0.9327 for RRCS (r_cap=2.0) across 96 HC modules; pre-existing hres_routing_heatmaps.png visually shows ~0.71 diagonal and ~0.10 off-diagonal in RRCS rows; mathematical analysis: entropy=0.9327 is consistent with d≈0.704, o≈0.099 (close to claimed ~0.71/~0.10); no ckpt.pt checkpoints found in any log directory; no raw data files (npy/csv/json) with actual routing matrix values | Code: exp/mhc_repo/scripts/analyze_ds_and_routing.py:75-84 (load_h_res_logits requires ckpt.pt); exp/EXPERIMENT_RESULTS/ds_routing_analysis/RESULTS.json (entropy_mean=0.9327 only, no routing values)",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "exp/mhc_repo/scripts/analyze_ds_and_routing.py:75-84 (load_h_res_logits requires ckpt.pt)",
+                    "exp/EXPERIMENT_RESULTS/ds_routing_analysis/RESULTS.json (entropy_mean=0.9327 only, no routing values)"
+                ],
+                "commands_executed": [
+                    "python3 inline script: mathematical consistency check computing entropy for various (d,o) combinations and solving d+3o=1 constraint for entropy=0.9327 → d≈0.704, o≈0.099"
+                ]
+            }
+        }
+    ],
+    "summary": {
+        "total": 3,
+        "verified": 1,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 2,
+        "error": 0
+    }
+}

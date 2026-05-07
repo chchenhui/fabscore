@@ -1,0 +1,114 @@
+{
+  "experiment": "Online Shallow-Layer Prior Pruning on InternVL2.5-8B (Optimized)",
+  "model": "InternVL2.5-8B",
+  "task": "Visual Grounding (RefCOCO/RefCOCO+/RefCOCOg)",
+  "metric": "Grounding Accuracy (IoU >= 0.5)",
+  "keep_ratio": 0.1,
+  "results": {
+    "no_pruning": {
+      "refcoco_val": 0.7434,
+      "refcoco_testA": 0.7713,
+      "refcoco_testB": 0.7121,
+      "refcoco+_val": 0.7035,
+      "refcoco+_testA": 0.7513,
+      "refcoco+_testB": 0.6508,
+      "refcocog_val": 0.7055,
+      "refcocog_test": 0.7271,
+      "average": 0.7206
+    },
+    "fastv_10pct": {
+      "refcoco_val": 0.3563,
+      "refcoco_testA": 0.4009,
+      "refcoco_testB": 0.3205,
+      "refcoco+_val": 0.3080,
+      "refcoco+_testA": 0.3419,
+      "refcoco+_testB": 0.2774,
+      "refcocog_val": 0.3444,
+      "refcocog_test": 0.3583,
+      "average": 0.3385
+    },
+    "d2pruner_10pct": {
+      "pruning_layer": 2,
+      "bias_prior": "offline (layer 1, 1000 COCO images)",
+      "refcoco_val": 0.5704,
+      "refcoco_testA": 0.6176,
+      "refcoco_testB": 0.5413,
+      "refcoco+_val": 0.5057,
+      "refcoco+_testA": 0.5672,
+      "refcoco+_testB": 0.4786,
+      "refcocog_val": 0.5570,
+      "refcocog_test": 0.5649,
+      "average": 0.5503
+    },
+    "online_ratio_ks3_km4": {
+      "pruning_layer": 4,
+      "shallow_layer": 3,
+      "debiasing_mode": "ratio",
+      "formula": "A_mid / (A_shallow + 1e-7)",
+      "refcoco_val": 0.1417,
+      "refcoco_testA": 0.1412,
+      "refcoco_testB": 0.1572,
+      "refcoco+_val": 0.1156,
+      "refcoco+_testA": 0.1165,
+      "refcoco+_testB": 0.1268,
+      "refcocog_val": 0.1293,
+      "refcocog_test": 0.1306,
+      "average": 0.1324
+    },
+    "online_rawmis_km4": {
+      "pruning_layer": 4,
+      "debiasing_mode": "none (raw A_mid + MIS pipeline)",
+      "refcoco_val": 0.4078,
+      "refcoco_testA": 0.4552,
+      "refcoco_testB": 0.3700,
+      "refcoco+_val": 0.3521,
+      "refcoco+_testA": 0.4032,
+      "refcoco+_testB": 0.3207,
+      "refcocog_val": 0.3844,
+      "refcocog_test": 0.4025,
+      "average": 0.3870
+    },
+    "online_rawmis_km12_optimized": {
+      "pruning_layer": 12,
+      "debiasing_mode": "none (raw A_mid + MIS pipeline at deeper layer)",
+      "refcoco_val": 0.6924,
+      "refcoco_testA": 0.7269,
+      "refcoco_testB": 0.6418,
+      "refcoco+_val": 0.6421,
+      "refcoco+_testA": 0.6982,
+      "refcoco+_testB": 0.5741,
+      "refcocog_val": 0.6536,
+      "refcocog_test": 0.6763,
+      "average": 0.6632
+    },
+    "online_wc_a05_ks2_km12_optimized": {
+      "pruning_layer": 12,
+      "shallow_layer": 2,
+      "debiasing_mode": "weighted_combo (alpha=0.5)",
+      "formula": "0.5 * norm(A_mid) + 0.5 * norm(A_shallow)",
+      "refcoco_val": 0.6700,
+      "refcoco_testA": 0.7094,
+      "refcoco_testB": 0.6139,
+      "refcoco+_val": 0.6198,
+      "refcoco+_testA": 0.6849,
+      "refcoco+_testB": 0.5545,
+      "refcocog_val": 0.6324,
+      "refcocog_test": 0.6541,
+      "average": 0.6424
+    }
+  },
+  "analysis": {
+    "main_finding": "The optimized raw MIS at L12 achieves 66.32% avg, surpassing D2Pruner (55.03%) by +11.3 points without offline calibration. It retains 92% of no-pruning accuracy.",
+    "key_insight": "Deeper pruning layers (L12 vs L4) are the dominant factor. At deeper layers, attention is semantically rich enough that debiasing is unnecessary and raw attention + MIS diversity selection outperforms all tested alternatives.",
+    "original_failure_cause": "Two compounding issues: (1) ratio formula destroys saliency signal because shallow attention is not position-correlated, (2) pruning at L4 is far too early for InternVL2.5-8B.",
+    "layer_sweep": "L4=58.5%, L6=66%, L8=69%, L10=84.5%, L12=90%, L16=88.5% (200-sample debug on refcoco_val)"
+  },
+  "job_ids": {
+    "online_ratio_full": "dlcpqdb0p3q3x0tr",
+    "online_rawmis_full": "dlcpqdb0pi2rzhwe",
+    "debug_sweep_v2": "dlcl6zzex72qpoxb",
+    "debug_sweep_v3": "dlc1ewgf0p58p8uw",
+    "full_eval_rawmis_km12": "dlc1ijegw9iizfsf",
+    "full_eval_wc_a05_ks2_km12": "dlc1ijegw98vkiik"
+  }
+}

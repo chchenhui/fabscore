@@ -1,0 +1,16 @@
+{
+  "optimize_index": 0,
+  "issues": [
+    {
+      "title": "Over-removal of task-relevant subspaces (INLP ran all 10 iterations)",
+      "description": "The original INLP used max_iter=10 with early_stop_threshold=1.25 (15.6%), which never triggered because post-INLP subject-ID accuracy stayed at ~24%. This removed rank 80 from the 17600-dim embeddings, destroying task-discriminative directions that overlap with subject-identity. Fixed by sweeping INLP iterations {1,2,3,4,5,7,10} via inner LOSO CV. Inner CV overwhelmingly selected 1-3 iterations (74% of folds), confirming over-removal was the primary issue."
+    },
+    {
+      "title": "Task-head regularization not tuned (default C=1.0)",
+      "description": "After INLP projection reduces effective dimensionality, the optimal regularization strength changes. The default C=1.0 in LogisticRegression was suboptimal. Fixed by sweeping C in {0.01, 0.1, 1.0, 10.0}. Inner CV selected C=0.01 in 93% of cases (25/27 folds), indicating the projected embeddings benefit from much stronger regularization."
+    }
+  ],
+  "experiment_result_path": "EXPERIMENT_RESULTS/optimize_trace/iteration_0/",
+  "success": true,
+  "summary": "Optimized INLP via inner-CV hyperparameter selection (iteration count + regularization C). The optimized method achieves 56.29% mean LOSO accuracy, improving +1.11 pp over the original INLP (55.18%) and +0.02 pp over the EA baseline (56.27%). The optimization recovers nearly all accuracy lost to over-removal in the original INLP. Key finding: 1-3 INLP iterations with C=0.01 is optimal, vs the original 10 iterations with C=1.0."
+}

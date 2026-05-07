@@ -1,0 +1,49 @@
+=== CLAIM 247 VERIFICATION: Table 1, P16528, bcr_q_effect: 2.02 ===
+
+--- COMMAND: Run BCR analysis for P16528 ---
+python3 -c "
+import sys, numpy as np
+sys.path.insert(0, 'for_submission')
+from common.afdb import load_entry
+from common.segmentation import partition_k_spectral
+from common.metrics import bcr_q_ratio, quartiles_used_normalized
+
+uid = 'P16528'
+entry = load_entry(uid)
+print(f'Loaded P16528, length={entry.length}')
+
+for kk in [2, 3]:
+    blks = partition_k_spectral(entry.pae, k=kk, min_block_len=30)
+    print(f'k={kk}: blocks={blks.blocks}')
+    bratio, zratio, p_perm = bcr_q_ratio(entry.pae, blks, n_perm=1024, null_mode='rotation', sym_mode='mean', return_p=True)
+    q25_intra, q75_inter = quartiles_used_normalized(entry.pae, blks)
+    print(f'  bcr_q_ratio={bratio:.6f}, z={zratio:.6f}, p_perm={p_perm:.6f}')
+    print(f'  Q25_intra={q25_intra:.6f}, Q75_inter={q75_inter:.6f}')
+    eps = 1e-3
+    simple_ratio = q75_inter / (q25_intra + eps)
+    print(f'  Simple ratio Q75_inter/(Q25_intra+eps) = {simple_ratio:.6f}')
+"
+
+OUTPUT:
+Loaded P16528, length=274
+k=2: blocks=[(0, 99), (99, 274)]
+  bcr_q_ratio=2.061423, z=5.056106, p_perm=0.077073
+  Q25_intra=0.067797, Q75_inter=0.881356
+  Simple ratio Q75_inter/(Q25_intra+eps) = 12.811037
+k=3: blocks=[(0, 100), (100, 151), (151, 274)]
+  bcr_q_ratio=2.197225, z=0.821146, p_perm=0.053659
+  Q25_intra=0.067797, Q75_inter=0.881356
+  Simple ratio Q75_inter/(Q25_intra+eps) = 12.811037
+
+KEY FINDINGS:
+1. Paper claims bcr_q_effect=2.02 for P16528.
+2. Code uses log-ratio: log((Q75_inter+eps)/(Q25_intra+eps)) [NOT simple ratio as in paper Eq.2]
+3. Code-computed bcr_q_ratio:
+   - k=2: 2.061423 (p_perm=0.077073)
+   - k=3: 2.197225 (p_perm=0.053659)
+4. Code selects k=3 (lower p_perm), giving bcr_q_effect=2.197, NOT 2.02.
+5. Simple ratio (paper Eq.2 formula): 12.811 - completely different scale.
+6. BCR formula discrepancy: code uses log-ratio vs paper's stated simple ratio.
+   - Claimed value 2.02 matches neither code's log-ratio (2.061/2.197) nor simple ratio (12.81).
+7. Code sorts by p_perm ascending; paper claims sorting by bcr_q_effect descending.
+8. This is consistent with Experiment Fabrication pattern seen in all prior Table 1 claims (1-236).

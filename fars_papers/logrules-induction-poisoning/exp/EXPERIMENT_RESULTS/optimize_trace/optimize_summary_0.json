@@ -1,0 +1,20 @@
+{
+  "optimize_index": 0,
+  "issues": [
+    {
+      "title": "Insufficient attack budget in C1 evaluation (k={1,3} instead of k={1,3,5,7})",
+      "description": "The original C1 evaluation only tested k=1 and k=3 (10-30% poisoning saturation), but Phase-0v2 data already showed that gpt-4o-mini requires k=5-7 (50-70% saturation) for the anti-wildcard payloads to reliably degrade parsing rules. Extended K_VALUES from [1,3] to [1,3,5,7] in setup_c1_from_phase0v2.py. All k=5,7 artifacts (rules, predictions) already existed from Phase-0v2, so no new GPU computation was needed."
+    },
+    {
+      "title": "C0 baseline mismatch bug in evaluate_c1.py",
+      "description": "The evaluate_c1.py script compared C1 poisoned predictions (from Phase-0v2 pipeline session) against c0_clean predictions (from a separate, earlier pipeline run). Due to gpt-4o-mini API stochasticity across sessions, the c0_clean rules differed significantly from phase0v2_clean rules, creating an unfair baseline comparison. Fixed by changing evaluate_c1.py and analyze_c1_rules.py to use phase0v2_clean as the C0 baseline."
+    },
+    {
+      "title": "Insufficient attack budget in C2 defense evaluation (k={1,3} instead of k={1,3,5,7})",
+      "description": "The original C2 evaluation only tested k={1,3}, missing the most effective attack configurations (k=5,7). Extended K_VALUES from [1,3] to [1,3,5,7] in evaluate_c2.py. No new GPU computation was needed since R_safe predictions are k-independent and all C1 k=5,7 predictions already existed from Phase-0v2. This expanded the evaluation from 54 to 108 configs, revealing that the canary defense detects poisoning more effectively at higher k values (D_k7 on Linux: 100% detection, 55.8% PA recovery)."
+    }
+  ],
+  "experiment_result_path": "EXPERIMENT_RESULTS/optimize_trace/iteration_0/",
+  "success": true,
+  "summary": "Fixed three issues across C1 and C2 evaluations: (1) extended C1 attack budgets from k={1,3} to k={1,3,5,7}, (2) corrected C0 baseline mismatch bug in C1, (3) extended C2 defense evaluation to k={1,3,5,7}. C1 improvement: 6/12 payload-k configs now achieve mean PA drop >= 5pp on 2/3+ datasets (best: D_k7 at 9.9%/12.4%/15.1% on BGL/Linux/HDFS). C2 improvement: 46/108 configs trigger R_safe fallback (42.6%); D_k7 on Linux achieves 100% detection rate with 55.8% PA recovery. The defense is most effective where attacks are strongest."
+}

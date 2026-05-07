@@ -1,0 +1,64 @@
+{
+  "experiment": "overlap_lbfgs_ice_shelf_optimized_iter1",
+  "method": "Adam warmstart (3-phase) + overlap-resampled L-BFGS (o=0.5, gamma=0.5)",
+  "changes_from_original": [
+    "Fixed gamma from 0.0909 to 0.5 (matching reference implementation)",
+    "Added 3-phase training: Adam+resampling -> Adam+fixed -> overlap-LBFGS",
+    "Removed gamma_lbfgs; single gamma=0.5 throughout all phases",
+    "Adjusted budget: adam_resample=20000, adam_fixed=7500, overlap_lbfgs=remainder"
+  ],
+  "config": {
+    "budget": 50000,
+    "adam_budget": 20000,
+    "adam_fixed_budget": 7500,
+    "gamma": 0.5,
+    "overlap_frac": 0.5,
+    "network": "[1, 20, 20, 20, 20, 20, 20, 3]"
+  },
+  "per_seed_results": [
+    {
+      "seed": 0,
+      "B_err": 0.0014059772088485867,
+      "u_err": 0.008877938222088622,
+      "h_err": 0.023092226301250407,
+      "best_step": 18000,
+      "best_phase": "adam",
+      "termination_reason": "budget_exhausted"
+    },
+    {
+      "seed": 1,
+      "B_err": 0.0002542604933773663,
+      "u_err": 0.0012358723881907415,
+      "h_err": 0.008599594583046162,
+      "best_step": 27000,
+      "best_phase": "adam_fixed",
+      "termination_reason": "budget_exhausted"
+    },
+    {
+      "seed": 2,
+      "B_err": 0.0007570824979528183,
+      "u_err": 0.01007972670987601,
+      "h_err": 0.06068616176750604,
+      "best_step": 1000,
+      "best_phase": "adam",
+      "termination_reason": "nan"
+    }
+  ],
+  "summary": {
+    "B_err_mean": 0.0008057734000595905,
+    "B_err_std": 0.00047144526096881597,
+    "u_err_mean": 0.006731179106718457,
+    "u_err_std": 0.00391662021308904,
+    "h_err_mean": 0.030792660883934203,
+    "h_err_std": 0.02195032482427777
+  },
+  "improvement_over_original": {
+    "B_err_improved": true,
+    "original_B_err_mean": 0.0012133308544872263,
+    "new_B_err_mean": 0.0008057734000595905,
+    "relative_improvement": "33.6%",
+    "beats_adam_baseline": true,
+    "adam_baseline_B_err_mean": 0.0008629862119537629,
+    "relative_vs_adam": "6.6% better"
+  }
+}

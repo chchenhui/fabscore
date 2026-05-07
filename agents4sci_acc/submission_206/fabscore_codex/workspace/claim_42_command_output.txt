@@ -1,0 +1,401 @@
+===== COMMAND: python - <<"PY"
+from PyPDF2 import PdfReader
+reader = PdfReader("206_Self_Spec_Model_Authored_S.pdf")
+for i, page in enumerate(reader.pages, start=1):
+    text = page.extract_text() or ""
+    if "Table 1" in text or "GPT-4o improves from 87% to 92%" in text or "Claude 3.7 improves from 92% to 94%" in text:
+        print(f"--- PAGE {i} ---")
+        for line in text.splitlines():
+            if any(k in line for k in ["Results on HumanEval are summarized in Table 1", "GPT-4o improves from 87% to 92%", "Claude 3.7 improves from 92% to 94%", "Model Native Self-Spec", "GPT-4o 87% 92% +5", "Claude 3.7 92% 94% +2"]):
+                print(line)
+PY =====
+--- PAGE 3 ---
+--- PAGE 5 ---
+Results on HumanEval are summarized in Table 1. We observe that for two of the models (GPT-4o
+generation. GPT-4o improves from 87% to 92% (a +5 point gain), and Claude 3.7 rises from 92% to
+--- PAGE 6 ---
+Model Native Self-Spec∆
+GPT-4o 87% 92% +5
+Claude 3.7 92% 94% +2
+--- PAGE 8 ---
+
+===== COMMAND: for f in A4S_update/results_summary_baseline_gpt-4o.txt A4S_update/results_summary_spec_gpt_4o.txt A4S_update/results_summary_baseline_claude_3_7_sonnet_20250219.txt A4S_update/results_summary_spec_claude_3_7_sonnet_20250219.txt; do echo "---  ---"; sed -n "1,20p" ""; done =====
+---  ---
+sed: can't read : No such file or directory
+---  ---
+sed: can't read : No such file or directory
+---  ---
+sed: can't read : No such file or directory
+---  ---
+sed: can't read : No such file or directory
+
+===== COMMAND: python - <<"PY"
+import json
+from pathlib import Path
+for path in [
+    Path("A4S_update/all_baseline_gpt-4o.jsonl"),
+    Path("A4S_update/all_spec_gpt_4o.jsonl"),
+    Path("A4S_update/all_baseline_claude_3_7_sonnet_20250219.jsonl"),
+]:
+    total=passed=errors=error401=0
+    with path.open() as f:
+        for line in f:
+            if not line.strip():
+                continue
+            total += 1
+            obj = json.loads(line)
+            if obj.get("passed"):
+                passed += 1
+            if obj.get("error"):
+                errors += 1
+            gs = obj.get("generated_solution", "")
+            if isinstance(gs, str) and gs.startswith("ERROR: Error code: 401"):
+                error401 += 1
+    print(path.name, {"total": total, "passed": passed, "errors": errors, "error401_generated_solution": error401})
+PY =====
+all_baseline_gpt-4o.jsonl {'total': 164, 'passed': 0, 'errors': 164, 'error401_generated_solution': 164}
+all_spec_gpt_4o.jsonl {'total': 164, 'passed': 0, 'errors': 0, 'error401_generated_solution': 0}
+all_baseline_claude_3_7_sonnet_20250219.jsonl {'total': 164, 'passed': 151, 'errors': 4, 'error401_generated_solution': 0}
+
+===== COMMAND: nl -ba A4S_update/evaluation_baseline_pipeline.py | sed -n "6,18p;67,114p" =====
+     6	from openai import AsyncOpenAI
+     7	
+     8	API_KEY = ""
+     9	client = AsyncOpenAI(api_key=API_KEY)
+    10	# client = AsyncOpenAI(api_key=API_KEY, base_url="https://api.anthropic.com/v1/")
+    11	
+    12	# claude-3-5-sonnet-20241022
+    13	# MODEL = "claude-3-7-sonnet-20250219"
+    14	MODEL = "gpt-4o"
+    15	TEMPERATURE = 0
+    16	
+    17	MAX_CONCURRENCY = 10
+    18	sem = asyncio.Semaphore(MAX_CONCURRENCY)
+    67	async def main() -> None:
+    68	    with open("HumanEval.jsonl", "r", encoding="utf-8") as f:
+    69	        data: List[Dict[str, Any]] = [json.loads(line) for line in f]
+    70	
+    71	    coros = [fetch_code(item["prompt"], item["task_id"]) for item in data]
+    72	    codes = await asyncio.gather(*coros, return_exceptions=False)
+    73	
+    74	    results: Dict[str, Dict[str, Any]] = {}
+    75	    index = {d["task_id"]: d for d in data}
+    76	
+    77	    for task_id, code in codes:
+    78	        task = index[task_id]
+    79	        passed, err = run_test(task, code)
+    80	        results[task_id] = {"passed": passed, "error": err}
+    81	
+    82	    total = len(results)
+    83	    passed_cnt = sum(1 for v in results.values() if v["passed"])
+    84	    print(f"Total: {total}, Passed: {passed_cnt}, Failed: {total - passed_cnt}")
+    85	    for tid, res in results.items():
+    86	        if res["passed"]:
+    87	            print(f"{tid} ✅")
+    88	        else:
+    89	            print(f"{tid} ❌ {res['error']}")
+    90	    with open(SUMMARY_TXT, "w", encoding="utf-8") as f:
+    91	        f.write(f"Total: {total}, Passed: {passed_cnt}, Failed: {total - passed_cnt}\n")
+    92	
+    93	
+    94	    with open(f"all_baseline_{MODEL}.jsonl", "w", encoding="utf-8") as f:
+    95	        for tid, res in results.items():
+    96	            item = index[tid]
+    97	            item["generated_solution"] = code
+    98	            item["error"] = res["error"]
+    99	            item["passed"] = res["passed"]
+   100	            f.write(json.dumps(item, ensure_ascii=False) + "\n")
+   101	
+   102	    with open(f"failed_baseline_{MODEL}.jsonl", "w", encoding="utf-8") as f:
+   103	        for tid, res in results.items():
+   104	            if not res["passed"]:
+   105	                item = index[tid]
+   106	                item["generated_solution"] = code
+   107	                item["error"] = res["error"]
+   108	                f.write(json.dumps(item, ensure_ascii=False) + "\n")
+   109	
+   110	
+   111	if __name__ == "__main__":
+   112	    if API_KEY == "YOUR_API_KEY_HERE":
+   113	        print("⚠️ NEED OPENAI_API_KEY 。")
+   114	    asyncio.run(main())
+
+===== COMMAND: nl -ba A4S_update/readme.md | sed -n "26,46p;69,77p;123,127p" =====
+    26	**Results (examples already in repo)**
+    27	- `all_baseline_claude_3_5_sonnet_20241022.jsonl` — baseline generations (Claude 3.5 Sonnet 2024-10-22).
+    28	- `all_baseline_claude_3_7_sonnet_20250219.jsonl` — baseline generations (Claude 3.7 Sonnet 2025-02-19).
+    29	- `all_spec_claude_3_7_sonnet_20250219.jsonl` — spec-driven generations (Claude 3.7 Sonnet 2025-02-19).
+    30	- `all_spec_gpt_4o.jsonl` — spec-driven generations (GPT-4o).
+    31	- `results_summary_*.txt` — one-line summary: `Total / Passed / Failed`.
+    32	- `failed_*.jsonl` — failing cases for quick inspection.
+    33	
+    34	---
+    35	> **Heads-up (easy to re-run):** Two artifacts are not committed — **GPT-4o baseline** and **Claude 3.5 spec**.  
+    36	> These files were originally saved but later misplaced. If you wish to verify, you can easily regenerate them:
+    37	>
+    38	> **GPT-4o baseline**:
+    39	> ```bash
+    40	> python evaluation_baseline_pipeline.py
+    41	> ```
+    42	> **Claude 3.5 spec**
+    43	> ```bash
+    44	> python spec_result_generation.py
+    45	> python spec_result_evaluation.py
+    46	> ```
+    69	### A) Baseline Pipeline (e.g., GPT‑4o)
+    70	
+    71	**Option 1 (one-shot, recommended):**
+    72	```bash
+    73	python evaluation_baseline_pipeline.py
+    74	```
+    75	- Uses GPT‑4o by default.
+    76	- Produces `all_baseline_<model>.jsonl`, `results_summary_baseline_<model>.txt`, and `failed_baseline_<model>.jsonl`.
+    77	
+   123	## Reproducibility Statement
+   124	
+   125	- **Determinism:** All generations use `temperature = 0`. We avoid sampling to reduce variance.
+   126	- **Model & Endpoint Pinning:** We record the exact **model IDs** (e.g., `claude-3-5-sonnet-20241022`, `claude-3-7-sonnet-20250219`, `gpt-4o`) and, when applicable, the **`base_url`** used for OpenAI‑compatible providers.
+   127	- **Artifacts:** We publish raw generations as `all_*.jsonl`, summaries as `results_summary_*.txt`, and failure cases as `failed_*.jsonl`. Anyone can re‑evaluate the same generations with `*_result_evaluation.py` scripts to reproduce Pass@1 outcomes.
+
+===== COMMAND: sed -n "1,220p" fabscore_codex/workspace/claim_1_command_output.txt =====
+===== COMMAND: python - <<'PY'
+from pathlib import Path
+import fitz
+pdf = fitz.open('206_Self_Spec_Model_Authored_S.pdf')
+for i, page in enumerate(pdf):
+    text = page.get_text()
+    if 'Table 1' in text or 'GPT-4o' in text or 'Native' in text:
+        print(f'--- PAGE {i+1} ---')
+        print(text[:5000])
+PY =====
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+ModuleNotFoundError: No module named 'fitz'
+
+===== COMMAND: sed -n '1,220p' A4S_update/readme.md =====
+# Vibe Programming · HumanEval Pipeline (Baseline & Spec-Driven)
+
+A reproducible pipeline for evaluating LLM code generation on **HumanEval** with two modes:
+
+- **Baseline:** generate code directly from original HumanEval prompts.
+- **Spec-Driven (Vibe Programming):** first convert prompts to natural language requests, then run a specification-guided generation pipeline.
+
+It supports parallel runs and logs all generations for re-evaluation.
+
+---
+
+## What’s Included
+
+**Data**
+- `HumanEval.jsonl` — Original HumanEval tasks (prompts / solutions / tests).
+- `HumanEval_with_nl.jsonl` — HumanEval with added natural-language requests (`nl_request`) produced by `humaneval_convert.py`.
+
+**Pipelines & Utils**
+- `humaneval.py` — Utilities for HumanEval format.
+- `humaneval_convert.py` — Convert code prompts → natural language (`nl_request`) for spec pipeline.
+- `spec_result_generation.py` — Generate **spec-driven** solutions (defaults configured for Claude Sonnet; see below).
+- `spec_result_evaluation.py` — Evaluate spec-driven generations.
+- `evaluation_baseline_pipeline.py` — Run **baseline** generation + evaluation for (e.g.) GPT‑4o.
+- `baseline_result_evaluation.py` — Evaluate existing baseline generations in `all_baseline_*.jsonl`.
+
+**Results (examples already in repo)**
+- `all_baseline_claude_3_5_sonnet_20241022.jsonl` — baseline generations (Claude 3.5 Sonnet 2024-10-22).
+- `all_baseline_claude_3_7_sonnet_20250219.jsonl` — baseline generations (Claude 3.7 Sonnet 2025-02-19).
+- `all_spec_claude_3_7_sonnet_20250219.jsonl` — spec-driven generations (Claude 3.7 Sonnet 2025-02-19).
+- `all_spec_gpt_4o.jsonl` — spec-driven generations (GPT-4o).
+- `results_summary_*.txt` — one-line summary: `Total / Passed / Failed`.
+- `failed_*.jsonl` — failing cases for quick inspection.
+
+---
+> **Heads-up (easy to re-run):** Two artifacts are not committed — **GPT-4o baseline** and **Claude 3.5 spec**.  
+> These files were originally saved but later misplaced. If you wish to verify, you can easily regenerate them:
+>
+> **GPT-4o baseline**:
+> ```bash
+> python evaluation_baseline_pipeline.py
+> ```
+> **Claude 3.5 spec**
+> ```bash
+> python spec_result_generation.py
+> python spec_result_evaluation.py
+> ```
+
+---
+
+## Requirements
+
+- Python **3.8+**
+- Python packages: `openai`  *(native Anthropic SDK not required if you’re using an OpenAI‑compatible endpoint via `base_url`)*
+
+```bash
+pip install -U openai
+# optional, if you prefer .env management
+pip install -U python-dotenv
+```
+
+**Environment variables**
+- `OPENAI_API_KEY` — used for both OpenAI and OpenAI‑compatible endpoints (e.g., Claude via `base_url`).
+- (Optional) `OPENAI_BASE_URL` — if you prefer to set the endpoint globally; otherwise the scripts have it inline.
+
+---
+
+## Quickstart
+
+### A) Baseline Pipeline (e.g., GPT‑4o)
+
+**Option 1 (one-shot, recommended):**
+```bash
+python evaluation_baseline_pipeline.py
+```
+- Uses GPT‑4o by default.
+- Produces `all_baseline_<model>.jsonl`, `results_summary_baseline_<model>.txt`, and `failed_baseline_<model>.jsonl`.
+
+**Option 2 (evaluate an existing result file):**
+```bash
+python baseline_result_evaluation.py
+```
+- Reads `all_baseline_*.jsonl` files and writes summaries + failures.
+
+---
+
+### B) Spec-Driven (Vibe Programming) Pipeline
+
+1) **Convert prompts → natural language (`nl_request`)**  
+   (Skip if `HumanEval_with_nl.jsonl` already exists.)
+```bash
+python humaneval_convert.py
+```
+
+2) **Generate spec-driven solutions**  
+   `spec_result_generation.py` already sets **Claude 3.5 Sonnet** model name and **base_url**.  
+   **Just set your API key** (e.g., `OPENAI_API_KEY`) and run:
+```bash
+python spec_result_generation.py
+```
+This writes `all_spec_<model>.jsonl` (e.g., `all_spec_claude_3_5_sonnet_20241022.jsonl`).
+
+3) **Evaluate**
+```bash
+python spec_result_evaluation.py
+```
+This writes `results_summary_spec_<model>.txt` and `failed_spec_<model>.jsonl`.
+
+---
+
+## File Naming Conventions
+
+- **Generations:**  
+  `all_baseline_<model>.jsonl` · `all_spec_<model>.jsonl`
+- **Summaries:**  
+  `results_summary_baseline_<model>.txt` · `results_summary_spec_<model>.txt`
+- **Failures (per-case debug):**  
+  `failed_baseline_<model>.jsonl` · `failed_spec_<model>.jsonl`
+
+Each `all_*.jsonl` line contains the full prompt, model settings, the model output, and bookkeeping fields used by the evaluators.
+
+---
+
+## Reproducibility Statement
+
+- **Determinism:** All generations use `temperature = 0`. We avoid sampling to reduce variance.
+- **Model & Endpoint Pinning:** We record the exact **model IDs** (e.g., `claude-3-5-sonnet-20241022`, `claude-3-7-sonnet-20250219`, `gpt-4o`) and, when applicable, the **`base_url`** used for OpenAI‑compatible providers.
+- **Artifacts:** We publish raw generations as `all_*.jsonl`, summaries as `results_summary_*.txt`, and failure cases as `failed_*.jsonl`. Anyone can re‑evaluate the same generations with `*_result_evaluation.py` scripts to reproduce Pass@1 outcomes.
+- **Environment:** Python 3.8+; `openai` Python package. 
+
+---
+
+
+
+
+## License
+
+For research and educational use. See individual files for details.
+
+===== COMMAND: sed -n '1,220p' A4S_update/evaluation_baseline_pipeline.py =====
+import os
+import json
+import asyncio
+from typing import Tuple, Dict, Any, List
+
+from openai import AsyncOpenAI
+
+API_KEY = ""
+client = AsyncOpenAI(api_key=API_KEY)
+# client = AsyncOpenAI(api_key=API_KEY, base_url="https://api.anthropic.com/v1/")
+
+# claude-3-5-sonnet-20241022
+# MODEL = "claude-3-7-sonnet-20250219"
+MODEL = "gpt-4o"
+TEMPERATURE = 0
+
+MAX_CONCURRENCY = 10
+sem = asyncio.Semaphore(MAX_CONCURRENCY)
+
+SUMMARY_TXT = f"results_summary_baseline_{MODEL}.txt" 
+PRELUDE = (
+    "from typing import *\n"
+    "import math, functools, itertools, collections\n"
+)
+
+
+async def fetch_code(prompt: str, task_id: str) -> Tuple[str, str]:
+    try:
+        async with sem:
+            resp = await client.chat.completions.create(
+                model=MODEL,
+                temperature=TEMPERATURE,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a careful coding assistant. "
+                            "Return ONLY valid Python code that defines the requested function "
+                            "with the EXACT SAME name/signature. "
+                            "You may add standard-library imports if needed. "
+                            "No explanations, no markdown fences, no comments, no tests."
+                        ),
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+            )
+        code = resp.choices[0].message.content or ""
+        return task_id, code
+    except Exception as e:
+        return task_id, f"ERROR: {e}"
+
+
+def run_test(task: Dict[str, Any], code: str) -> Tuple[bool, str]:
+    if code.startswith("ERROR:"):
+        return False, code
+
+    ns: Dict[str, Any] = {}
+    try:
+    
+        code_wrapped = f"{PRELUDE}\n{code}\n\n{task['test']}\n\ncheck({task['entry_point']})"
+        exec(code_wrapped, ns)
+        return True, ""
+    except Exception as e:
+        return False, str(e)
+
+
+
+===== COMMAND: for f in A4S_update/results_summary_baseline_gpt-4o.txt A4S_update/results_summary_spec_gpt_4o.txt A4S_update/results_summary_baseline_claude_3_7_sonnet_20250219.txt A4S_update/results_summary_spec_claude_3_7_sonnet_20250219.txt; do echo "--- $f ---"; sed -n "1,20p" "$f"; done =====
+--- A4S_update/results_summary_baseline_gpt-4o.txt ---
+Total: 164, Passed: 0, Failed: 164
+--- A4S_update/results_summary_spec_gpt_4o.txt ---
+Total: 164, Passed: 150, Failed: 14
+--- A4S_update/results_summary_baseline_claude_3_7_sonnet_20250219.txt ---
+Total: 164, Passed: 151, Failed: 13
+--- A4S_update/results_summary_spec_claude_3_7_sonnet_20250219.txt ---
+Total: 164, Passed: 154, Failed: 10
+
+===== COMMAND: sed -n '1,20p' A4S_update/results_summary_baseline_gpt-4o.txt A4S_update/results_summary_spec_gpt_4o.txt A4S_update/results_summary_baseline_claude_3_7_sonnet_20250219.txt A4S_update/results_summary_spec_claude_3_7_sonnet_20250219.txt =====
+--- A4S_update/results_summary_baseline_gpt-4o.txt ---
+Total: 164, Passed: 0, Failed: 164
+--- A4S_update/results_summary_spec_gpt_4o.txt ---
+Total: 164, Passed: 150, Failed: 14
+--- A4S_update/results_summary_baseline_claude_3_7_sonnet_20250219.txt ---
+Total: 164, Passed: 151, Failed: 13
+--- A4S_update/results_summary_spec_claude_3_7_sonnet_20250219.txt ---
+Total: 164, Passed: 154, Failed: 10
+

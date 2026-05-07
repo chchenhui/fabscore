@@ -1,0 +1,595 @@
+===== COMMAND: python - <<"PY"
+from PyPDF2 import PdfReader
+reader = PdfReader("206_Self_Spec_Model_Authored_S.pdf")
+for i, page in enumerate(reader.pages):
+    text = page.extract_text() or ""
+    if "Table 1" in text or "GPT-4o" in text:
+        print(f"--- PAGE {i+1} ---")
+        for line in text.splitlines():
+            if "Table 1" in line or "GPT-4o" in line or "Claude" in line or "Pass@1" in line or "Self-Spec" in line:
+                print(line)
+PY
+
+===== COMMAND: sed -n '1,220p' A4S_update/spec_result_evaluation.py
+
+===== COMMAND: sed -n '1,120p' A4S_update/results_summary_spec_gpt_4o.txt
+
+===== COMMAND: python - <<'PY'
+import json
+from pathlib import Path
+all_path = Path("A4S_update/all_spec_gpt_4o.jsonl")
+failed_path = Path("A4S_update/failed_spec_gpt_4o.jsonl")
+records = [json.loads(line) for line in all_path.open()]
+failed = [json.loads(line) for line in failed_path.open()]
+passed = sum(1 for r in records if r.get("status") == "passed")
+failed_count = sum(1 for r in records if r.get("status") == "failed")
+rounds_neg1 = sum(1 for r in records if r.get("rounds") == -1)
+print({"total": len(records), "passed": passed, "failed": failed_count, "failed_file_len": len(failed), "rounds_neg1": rounds_neg1, "pass_pct": passed/len(records)*100})
+print("failed task ids sample:", [r.get("task_id") for r in failed[:10]])
+PY
+Total: 164, Passed: 150, Failed: 14
+import json, re, traceback
+from typing import Any, Dict, List, Tuple
+
+# claude-3-5-sonnet-20241022
+# MODEL = "claude-3-7-sonnet-20250219"
+#"gpt-4o"
+MODEL = "claude-3-5-sonnet-20241022"
+
+
+INPUT_PATH = f"all_spec_{MODEL}.jsonl"
+SUMMARY_TXT = f"results_summary_spec_{MODEL}.txt"
+ERROR_PATH = f"failed_spec_{MODEL}.jsonl"
+
+PRELUDE = (
+    "from typing import *\n"
+    "import math, functools, itertools, collections\n"
+)
+
+def extract_python(code: str) -> str:
+    s = code.strip()
+    m = re.match(r"(?s)^\s*```(?:python)?\s*(.*?)\s*```\s*$", s, flags=re.IGNORECASE)
+    return m.group(1) if m else s
+
+def alias_entry_point_if_needed(code: str, entry_point: str) -> str:
+
+    if re.search(rf"^\s*def\s+{re.escape(entry_point)}\s*\(", code, flags=re.M) is not None:
+        return code
+
+    m = re.search(r"^\s*def\s+([A-Za-z_]\w*)\s*\(", code, flags=re.M)
+    if m:
+        first_func = m.group(1)
+        if first_func != entry_point:
+            code += f"\n\n# auto alias for evaluation\n{entry_point} = {first_func}\n"
+    return code
+
+def run_test(task: Dict[str, Any], raw_code: str) -> Tuple[bool, str, str]:
+    ns: Dict[str, Any] = {}
+    try:
+        code = extract_python(raw_code)
+        code = alias_entry_point_if_needed(code, task["entry_point"])
+        code_wrapped = f"{PRELUDE}\n{code}\n\n{task['test']}\n\ncheck({task['entry_point']})"
+        exec(compile(code_wrapped, "<eval>", "exec"), ns)
+        return True, "", ""
+    except AssertionError as e:
+        return False, f"AssertionError: {e}", traceback.format_exc()
+    except Exception as e:
+        return False, f"{e.__class__.__name__}: {e}", traceback.format_exc()
+
+def main() -> None:
+    data: List[Dict[str, Any]] = []
+    with open(INPUT_PATH, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                data.append(json.loads(line))
+
+    results: Dict[str, Dict[str, Any]] = {}
+    passed_cnt = 0
+    failed_records: List[Dict[str, Any]] = []
+
+    for item in data:
+        tid = item.get("task_id")
+        entry_point = item.get("entry_point")
+        test = item.get("test")
+        gen = item.get("generated_solution")
+
+        if not gen:
+            results[tid] = {"passed": False, "error": "No generated_solution in record"}
+            failed_records.append({
+                "task_id": tid,
+                "entry_point": entry_point,
+                "error": "No generated_solution in record",
+                "traceback": "",
+                "test": test,
+                "generated_solution": None,
+                "prompt": item.get("prompt"),
+            })
+            continue
+
+        passed, err, tb = run_test(
+            {"entry_point": entry_point, "test": test},
+            gen
+        )
+        results[tid] = {"passed": passed, "error": err}
+        if passed:
+            passed_cnt += 1
+        else:
+            failed_records.append({
+                "task_id": tid,
+                "entry_point": entry_point,
+                "error": err,                
+                "traceback": tb,              
+                "test": test,
+                "generated_solution": gen,
+                "prompt": item.get("prompt"), 
+            })
+
+    total = len(results)
+    print(f"Total: {total}, Passed: {passed_cnt}, Failed: {total - passed_cnt}")
+    for tid, res in results.items():
+        mark = "✅" if res["passed"] else "❌"
+        detail = "" if res["passed"] else f" {res['error']}"
+        print(f"{tid} {mark}{detail}")
+
+    with open(SUMMARY_TXT, "w", encoding="utf-8") as f:
+        f.write(f"Total: {total}, Passed: {passed_cnt}, Failed: {total - passed_cnt}\n")
+
+    with open(ERROR_PATH, "w", encoding="utf-8") as f:
+        for rec in failed_records:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+
+    print(f"\nerror saved to: {ERROR_PATH}（Total: {len(failed_records)} ）")
+
+if __name__ == "__main__":
+    main()
+
+===== COMMAND: sed -n '1,220p' A4S_update/spec_result_generation.py
+
+
+from __future__ import annotations
+
+import json
+import os
+from dataclasses import dataclass, field
+from typing import Any, Dict, Optional, Protocol, runtime_checkable
+
+import asyncio
+from openai import AsyncOpenAI
+
+
+MODEL = "claude-3-5-sonnet-20241022"
+TEMPERATURE = 0
+BASEURL = "https://api.anthropic.com/v1/" #"https://api.anthropic.com/v1/" or "" for openai
+
+class SafeDict(dict):
+    def __missing__(self, key):
+        return "{" + key + "}"
+
+
+def render_template(template: str, variables: Dict[str, Any]) -> str:
+
+    template = template.replace("{{", "{").replace("}}", "}")
+
+    return template.format_map(SafeDict({k: str(v) for k, v in variables.items()}))
+
+@runtime_checkable
+class LLM(Protocol):
+    async def generate_text(self, *, prompt: str, model: Optional[str] = None) -> str:
+        ...
+
+
+@dataclass
+class GPT5LLM:
+    api_key: Optional[str] = None
+    default_model: str = MODEL
+    base_url: Optional[str] = None
+    concurrency: int = 8
+
+    def __post_init__(self):
+        API_KEY = ""
+
+        if not API_KEY:
+            raise RuntimeError("NO API Key：")
+        if self.base_url:
+            self.client = AsyncOpenAI(api_key=API_KEY, base_url=self.base_url)
+        else:
+            self.client = AsyncOpenAI(api_key=API_KEY)
+        self._sem = asyncio.Semaphore(self.concurrency)
+
+    async def generate_text(self, *, prompt: str, model: Optional[str] = None) -> str:
+
+        model_name = model or self.default_model
+
+
+        async def _call():
+            return await self.client.chat.completions.create(
+                model=model_name,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=TEMPERATURE,
+            )
+        if self._sem:
+            async with self._sem:
+                resp = await _call()
+        else:
+            resp = await _call()
+
+        return (resp.choices[0].message.content or "").strip()
+
+@dataclass
+class AgentTemplates:
+    tpl_spec_designer: str = """
+
+    [SYSTEM]
+
+    Create and define an intermediate specification language that you, as the model, consider maximally readable and reliable for your own use in an NL → Spec ↔ NL confirmation → Code pipeline. Use any notation you prefer.
+
+    [INSTRUCTIONS] 
+    Make the definition clear enough that another copy of you can (a) write specs in it from arbitrary NL requests and (b) accurately translate the specs back into NL (c) implement code from such specs after user confirmation.
+
+    [OUTPUT]
+
+    Return ONLY the specification.
+    
+    """
+    
+    tpl_fm_interviewer: str = """
+
+    [SYSTEM]  
+    You are “FMInterviewer”. From the CURRENT_SPEC (in your invented language), the ORIGINAL_NL_REQUIREMENTS, and the FUNCTION_SIGNATURE, ask the *fewest and most critical* questions needed to resolve ambiguities before implementation.  
+
+    [GOAL]  
+    Elicit only decisions that materially affect correctness, safety, or user expectations. Default to safe/common assumptions when possible. Avoid asking cosmetic or trivial questions.  
+
+    [OUTPUT STYLE]  
+    - Ask at most 5 numbered questions that correspond ONLY to fields still set to `TBD` in CURRENT_SPEC.
+    - Each question ends with [default=VALUE]
+    - Tag each with [<spec.path>], e.g., [Semantics.relation_rule]
+
+    [INPUTS]  
+    - CURRENT_SPEC:  
+    {{CURRENT_SPEC}}  
+
+    - ORIGINAL_NL_REQUIREMENTS:  
+    {{USER_REQUIREMENTS}}  
+
+    - USER_EXPLANATION (optional, if provided):  
+    {{USER_EXPLANATION}}  
+
+    - FUNCTION_SIGNATURE:  
+    {{FUNCTION_SIGNATURE}}  
+
+
+
+    """
+
+    tpl_spec_instantiator = """
+    [SYSTEM] You are “SpecInstantiator”.
+    Fill the SCHEMA with concrete values from the ORIGINAL_NL_REQUIREMENTS and FUNCTION_SIGNATURE.
+    If a field is unknown, set it to `TBD`.
+
+    [INPUTS]
+    SCHEMA:
+    {SCHEMA}
+
+    ORIGINAL_NL_REQUIREMENTS:
+    {USER_REQUIREMENTS}
+
+    FUNCTION_SIGNATURE:
+    {FUNCTION_SIGNATURE}
+
+    [OUTPUT]
+    Return ONLY the instantiated spec (same format as SCHEMA).
+    """
+
+    
+    tpl_spec_applier: str = """
+
+    [SYSTEM]
+    You are “SpecApplier”. Update the CURRENT_SPEC to reflect the user’s answers to the FM questions.
+
+    [INSTRUCTIONS]
+    - Align each user answer with the internal tags you previously emitted (e.g., [roles.scope], [concurrency.mode]).
+    - Rewrite the spec fully in the SAME invented language and style — coherent, correct, and ready for implementation.
+    - Preserve all valid prior content; modify only where answers indicate changes.
+    - Resolve ambiguities by applying the user’s decisions; if an answer is missing or unclear, fall back to the suggested safe default for that tag.
+    - Do NOT output code.
+
+
+    [INPUTS]
+    - CURRENT_SPEC:
+    {{CURRENT_SPEC}}
+    - Your FM questions (for reference):
+    {{LLM_questions}}
+    - USER_ANSWERS (free-text, referencing your tags where possible):
+    {{USER_ANSWERS}}
+    - FUNCTION_SIGNATURE:
+    {{FUNCTION_SIGNATURE}}
+
+    [OUTPUT]
+    Return ONLY the updated spec (in your invented language).
+
+
+    """
+    
+    tpl_fm_confirmer: str = """
+
+    [SYSTEM]
+    You are “FMConfirmer”. Summarize the key decisions just made, in clear natural language, suitable for user confirmation.
+
+    [INSTRUCTIONS]
+    - 5–7 sentences max.
+    - If relevant in the spec, briefly cover: who is allowed to do it; when it is allowed (states/timing); how concurrent edits are resolved; whether repeated requests are idempotent; what is recorded/audited/notified; how errors are communicated; whether policy recalculation or similar rules apply.
+    - End with: “Please confirm or tell me what to change. If confirm, simply return CONFIRM, if you want to change, do not write any code, just tell what to change to meet with your requirement.”
+
+    [INPUTS]
+    - UPDATED_SPEC (your invented language):
+    {{UPDATED_SPEC}}
+    - FUNCTION_SIGNATURE:
+    {{FUNCTION_SIGNATURE}}
+
+    [OUTPUT]
+    A single natural-language paragraph.
+
+
+    """
+    
+    tpl_spec_executor: str = """
+
+        [SYSTEM]
+        You are “SpecExecutor”. Implement the agreed functionality described by the AGREED_SPEC.
+        - Deliverables in ONE response:
+        1) The complete implementation using exactly the provided FUNCTION_SIGNATURE (no modifications)
+        2) Ensure the implementation fully satisfies AGREED_SPEC; verify before outputting.
+        3) No explanations, no markdown fences.
+
+        [INSTRUCTIONS]
+        - Target language/runtime: {{TARGET_LANG}} {{RUNTIME_VERSION}}.
+        
+        [INPUTS]
+        - AGREED_SPEC (your invented language):
+        {{AGREED_SPEC}}
+
+        - FUNCTION_SIGNATURE:
+        {{FUNCTION_SIGNATURE}}
+
+        [OUTPUT]
+        Only Code.
+
+    """
+
+
+    tpl_agent_answerer: str = """
+
+    You requested the following task:
+    "{{USER_REQUIREMENTS}}"
+
+    - FUNCTION_SIGNATURE:
+{'total': 164, 'passed': 0, 'failed': 0, 'failed_file_len': 14, 'rounds_neg1': 6, 'pass_pct': 0.0}
+failed task ids sample: ['HumanEval/50', 'HumanEval/65', 'HumanEval/74', 'HumanEval/75', 'HumanEval/83', 'HumanEval/91', 'HumanEval/102', 'HumanEval/115', 'HumanEval/132', 'HumanEval/134']
+--- PAGE 1 ---
+Self-Spec: Model-Authored Specifications for Reliable
+for stronger models: GPT-4o 87%→92% (+5) and Claude 3.7 92%→94%
+(+2); Claude 3.5 dips 90%→89% (−1), which returns to baseline once we
+--- PAGE 2 ---
+three production models: GPT-4o [ 4], Claude 3.7 [ 5], and Claude 3.5 [ 6]. We compare aNative
+baseline (direct NL →code) againstSelf-Spec.Results:GPT-4o improves from 87% to92% (+5);
+Claude 3.7 improves from 92% to94% (+2); Claude 3.5 dips slightly from 90% to89% (−1). We
+preconditions; replacing such guards with no-ops when unspecified restores ∼baseline for Claude 3.5.
+4o:+5; Claude 3.7: +2) and recovers to baseline for Claude 3.5 after removing unnecessary
+--- PAGE 3 ---
+configuration to reproduce Table 1.2
+Roadmap.We situate Self-Spec relative to formal IRs and intermediate-reasoning prompts (§2);
+results in Table 1 (§5); analyze model-specific behaviors (§6); and discuss implications and limitations
+--- PAGE 4 ---
+breaking will use Python’ s default lexicographical order ....Not satisfyFigure 1:Self-Spec Orchestration Overview.The process: NL request →SpecDesigner(one-time
+models (GPT-4o, Claude 3.7) and a near-baseline result for Claude 3.5 once over-defensive guards
+3 Method: Self-Spec Orchestrator
+Figure 1 illustrates the Self-Spec orchestration process. The pipeline consists of a sequence of
+(Self-Spec) that it will use for the task. The model effectively designs a template or outline for the
+--- PAGE 5 ---
+We evaluateSelf-Specon the HumanEval benchmark for Python code generation. HumanEval
+Models.We experiment with three state-of-the-art closed-source LLMs:GPT-4o,Claude 3.7, and
+Claude 3.5. These represent two providers and varying capability levels (GPT-4o and Claude 3.7 are
+stronger models, while Claude 3.5 is a slightly older/less capable version). All models are used via
+code directly, with no intermediate spec); and (2)Self-Spec, our proposed pipeline described in
+Results on HumanEval are summarized in Table 1. We observe that for two of the models (GPT-4o
+and Claude 3.7), the Self-Spec approach yields a higher pass@1 compared to the native direct
+generation. GPT-4o improves from 87% to 92% (a +5 point gain), and Claude 3.7 rises from 92% to
+--- PAGE 6 ---
+Model Native Self-Spec∆
+GPT-4o 87% 92% +5
+Claude 3.7 92% 94% +2
+Claude 3.5 90% 89%−1
+Table 1:HumanEval pass@1 (single sample, T= 0 ).Each model is evaluated on 164 HumanEval
+problems under two conditions: direct code generation (Native) vs. the Self-Spec pipeline. ∆denotes
+the percentage point difference. GPT-4o and Claude 3.7 clearly benefit from Self-Spec, while Claude
+guiding their solution. In contrast, Claude 3.5 shows a slight decrease in performance with Self-Spec
+Overall, two out of three models saw an accuracy gain by using Self-Spec, highlighting the potential
+of the approach for state-of-the-art LLMs. The slight regression for Claude 3.5 points to differences
+Shared (Claude 3.7 & GPT-4o) 65, 134, 163
+Shared (Claude 3.7 & Claude 3.5) 92, 146
+Shared (GPT-4o & Claude 3.5) 50, 83
+Claude 3.7 10, 116
+GPT-4o 74, 91, 102, 115, 132, 141
+Claude 3.5 9, 14, 17, 19, 32, 112, 113, 125, 126, 129, 135, 138, 153
+bleed, helper-bridging failures, or environment drift—but these largely vanish under Self-Spec,
+Model-specific errors suggest characteristic tendencies: Claude 3.5 often inserts over-strict “defensive”
+GPT-4o shows localized logic slips (per-row vs. global accounting in HE/115, filename rules in
+HE/141); Claude 3.7 contributes few uniques (HE/10/116) but consistently shares the core trio. In
+exceptions, making them prime candidates for templated Self-Spec guidance. Without baseline error
+--- PAGE 7 ---
+Model-specific tendencies.What remains differs by model.Claude 3.5still adds unasked vali-
+that assume minimal guarding.Claude 3.7is improved but can still normalize early or relax type
+strictness unless precedence and typing are made explicit.GPT-4ousually follows the literal reading
+spelled out. These patterns explain small residual gaps even after Self-Spec.
+Why Self-Spec helps some models more than others.The slight dip for Claude 3.5 under Self-
+that strips unrequested guards or imports eliminates this regression; with that adjustment, Claude
+3.5’s Self-Spec performance returns to its direct baseline. By contrast, GPT-4o and Claude 3.7 have
+extra steps unless guided. In our setting, Self-Spec supplies the structure that stronger models exploit
+7 Discussion: Why Self-Spec is Useful
+The Self-Spec approach offers several practical benefits for code generation with LLMs:
+Self-Spec can adapt to the strengths of whichever model is used.
+leading to wrong code that has to be regenerated. Self-Spec mitigates this by making the model
+stepping stone toward formal specifications in the future. One could imagine that after a Self-Spec is
+done, the existence of the spec itself already improves quality, as we have shown. Thus, Self-Spec
+--- PAGE 8 ---
+Model variability and versioning.We used specific model versions (GPT-4o version and claude-3-
+5-sonnet-20241022,Claude-3-7-sonnet-20250219). LLM providers frequently update their models,
+To facilitate verification of our claims, we are releasing all materials needed to reproduce Table 1.
+This includes the prompt scripts for each stage of Self-Spec, the list of HumanEval problem IDs
+transparency. We hope that this will enable others to validate our results and build upon the Self-Spec
+Future work: spec-level remedies.The residual errors under Self-Spec suggest targeted upgrades
+defaulting to “no extra validation unless stated” (to curb Claude 3.5’s defensive checks), anallowed
+normalizationswhitelist (to limit Claude 3.7’s early cleanup), and asecondary-clauses checklistthat
+must be ticked before code emission (to remind GPT-4o to include tie-breaks, token boundaries, and
+yields consistent gains for stronger models such as GPT-4o and Claude 3.7, while diagnosing the
+minor drop for Claude 3.5 as an artifact of over-defensive guard generation.
+Self-Spec to multi-turn interactive programming, adapting to domain-specific APIs, and integrating
+--- PAGE 9 ---
+under evaluation—GPT-4o, Claude 3.7, or Claude 3.5—without any fine-tuning, retrieval, or external
+[4]OpenAI. Hello GPT-4o. https://openai.com/index/hello-gpt-4o/ , 2024. Accessed
+[5]Anthropic. Claude 3.7 sonnet and claude code. https://www.anthropic.com/news/
+
+===== COMMAND: python - <<'PY'
+import json
+from pathlib import Path
+all_path = Path("A4S_update/all_spec_gpt_4o.jsonl")
+failed_path = Path("A4S_update/failed_spec_gpt_4o.jsonl")
+records = [json.loads(line) for line in all_path.open()]
+failed = [json.loads(line) for line in failed_path.open()]
+print("all_len", len(records))
+print("failed_len", len(failed))
+print("all_keys", sorted(records[0].keys()))
+print("failed_keys", sorted(failed[0].keys()))
+print("first_task", records[0]["task_id"])
+print("failed_tasks", [r["task_id"] for r in failed])
+print("inferred_pass_pct", (len(records)-len(failed))/len(records)*100)
+PY
+all_len 164
+failed_len 14
+all_keys ['canonical_solution', 'entry_point', 'generated_solution', 'generated_solution_Spec', 'nl_request', 'prompt', 'rounds', 'task_id', 'test']
+failed_keys ['entry_point', 'error', 'generated_solution', 'prompt', 'task_id', 'test', 'traceback']
+first_task HumanEval/0
+failed_tasks ['HumanEval/50', 'HumanEval/65', 'HumanEval/74', 'HumanEval/75', 'HumanEval/83', 'HumanEval/91', 'HumanEval/102', 'HumanEval/115', 'HumanEval/132', 'HumanEval/134', 'HumanEval/141', 'HumanEval/145', 'HumanEval/160', 'HumanEval/163']
+inferred_pass_pct 91.46341463414635
+
+===== COMMAND: nl -ba A4S_update/spec_result_evaluation.py | sed -n '1,140p'
+     1	import json, re, traceback
+     2	from typing import Any, Dict, List, Tuple
+     3	
+     4	# claude-3-5-sonnet-20241022
+     5	# MODEL = "claude-3-7-sonnet-20250219"
+     6	#"gpt-4o"
+     7	MODEL = "claude-3-5-sonnet-20241022"
+     8	
+     9	
+    10	INPUT_PATH = f"all_spec_{MODEL}.jsonl"
+    11	SUMMARY_TXT = f"results_summary_spec_{MODEL}.txt"
+    12	ERROR_PATH = f"failed_spec_{MODEL}.jsonl"
+    13	
+    14	PRELUDE = (
+    15	    "from typing import *\n"
+    16	    "import math, functools, itertools, collections\n"
+    17	)
+    18	
+    19	def extract_python(code: str) -> str:
+    20	    s = code.strip()
+    21	    m = re.match(r"(?s)^\s*```(?:python)?\s*(.*?)\s*```\s*$", s, flags=re.IGNORECASE)
+    22	    return m.group(1) if m else s
+    23	
+    24	def alias_entry_point_if_needed(code: str, entry_point: str) -> str:
+    25	
+    26	    if re.search(rf"^\s*def\s+{re.escape(entry_point)}\s*\(", code, flags=re.M) is not None:
+    27	        return code
+    28	
+    29	    m = re.search(r"^\s*def\s+([A-Za-z_]\w*)\s*\(", code, flags=re.M)
+    30	    if m:
+    31	        first_func = m.group(1)
+    32	        if first_func != entry_point:
+    33	            code += f"\n\n# auto alias for evaluation\n{entry_point} = {first_func}\n"
+    34	    return code
+    35	
+    36	def run_test(task: Dict[str, Any], raw_code: str) -> Tuple[bool, str, str]:
+    37	    ns: Dict[str, Any] = {}
+    38	    try:
+    39	        code = extract_python(raw_code)
+    40	        code = alias_entry_point_if_needed(code, task["entry_point"])
+    41	        code_wrapped = f"{PRELUDE}\n{code}\n\n{task['test']}\n\ncheck({task['entry_point']})"
+    42	        exec(compile(code_wrapped, "<eval>", "exec"), ns)
+    43	        return True, "", ""
+    44	    except AssertionError as e:
+    45	        return False, f"AssertionError: {e}", traceback.format_exc()
+    46	    except Exception as e:
+    47	        return False, f"{e.__class__.__name__}: {e}", traceback.format_exc()
+    48	
+    49	def main() -> None:
+    50	    data: List[Dict[str, Any]] = []
+    51	    with open(INPUT_PATH, "r", encoding="utf-8") as f:
+    52	        for line in f:
+    53	            line = line.strip()
+    54	            if line:
+    55	                data.append(json.loads(line))
+    56	
+    57	    results: Dict[str, Dict[str, Any]] = {}
+    58	    passed_cnt = 0
+    59	    failed_records: List[Dict[str, Any]] = []
+    60	
+    61	    for item in data:
+    62	        tid = item.get("task_id")
+    63	        entry_point = item.get("entry_point")
+    64	        test = item.get("test")
+    65	        gen = item.get("generated_solution")
+    66	
+    67	        if not gen:
+    68	            results[tid] = {"passed": False, "error": "No generated_solution in record"}
+    69	            failed_records.append({
+    70	                "task_id": tid,
+    71	                "entry_point": entry_point,
+    72	                "error": "No generated_solution in record",
+    73	                "traceback": "",
+    74	                "test": test,
+    75	                "generated_solution": None,
+    76	                "prompt": item.get("prompt"),
+    77	            })
+    78	            continue
+    79	
+    80	        passed, err, tb = run_test(
+    81	            {"entry_point": entry_point, "test": test},
+    82	            gen
+    83	        )
+    84	        results[tid] = {"passed": passed, "error": err}
+    85	        if passed:
+    86	            passed_cnt += 1
+    87	        else:
+    88	            failed_records.append({
+    89	                "task_id": tid,
+    90	                "entry_point": entry_point,
+    91	                "error": err,                
+    92	                "traceback": tb,              
+    93	                "test": test,
+    94	                "generated_solution": gen,
+    95	                "prompt": item.get("prompt"), 
+    96	            })
+    97	
+    98	    total = len(results)
+    99	    print(f"Total: {total}, Passed: {passed_cnt}, Failed: {total - passed_cnt}")
+   100	    for tid, res in results.items():
+   101	        mark = "✅" if res["passed"] else "❌"
+   102	        detail = "" if res["passed"] else f" {res['error']}"
+   103	        print(f"{tid} {mark}{detail}")
+   104	
+   105	    with open(SUMMARY_TXT, "w", encoding="utf-8") as f:
+   106	        f.write(f"Total: {total}, Passed: {passed_cnt}, Failed: {total - passed_cnt}\n")
+   107	
+   108	    with open(ERROR_PATH, "w", encoding="utf-8") as f:
+   109	        for rec in failed_records:
+   110	            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+   111	
+   112	    print(f"\nerror saved to: {ERROR_PATH}（Total: {len(failed_records)} ）")
+   113	
+   114	if __name__ == "__main__":
+   115	    main()
+
+===== COMMAND: nl -ba A4S_update/results_summary_spec_gpt_4o.txt
+     1	Total: 164, Passed: 150, Failed: 14

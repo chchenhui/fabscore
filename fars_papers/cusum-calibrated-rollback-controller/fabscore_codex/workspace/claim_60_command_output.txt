@@ -1,0 +1,431 @@
+===== COMMAND =====
+sed -n '1,220p' /Users/dongfujiang/.codex/skills/pdf/SKILL.md
+----- STDOUT -----
+---
+name: "pdf"
+description: "Use when tasks involve reading, creating, or reviewing PDF files where layout and visuals matter; prefer visual checks by rendering pages (Poppler) and use Python tools such as `reportlab`, `pdfplumber`, and `pypdf` for generation and extraction."
+---
+
+
+# PDF Skill
+
+## When to use
+- Read or review PDF content where layout and visuals matter.
+- Create PDFs programmatically with reliable formatting.
+- Validate final rendering before delivery.
+
+## Workflow
+1. Prefer visual review: render PDF pages to PNGs and inspect them.
+   - Use `pdftoppm` if available.
+   - If unavailable, install Poppler or ask the user to review the output locally.
+2. Use `reportlab` to generate PDFs when creating new documents.
+3. Use `pdfplumber` (or `pypdf`) for text extraction and quick checks; do not rely on it for layout fidelity.
+4. After each meaningful update, re-render pages and verify alignment, spacing, and legibility.
+
+## Temp and output conventions
+- Use `tmp/pdfs/` for intermediate files; delete when done.
+- Write final artifacts under `output/pdf/` when working in this repo.
+- Keep filenames stable and descriptive.
+
+## Dependencies (install if missing)
+Prefer `uv` for dependency management.
+
+Python packages:
+```
+uv pip install reportlab pdfplumber pypdf
+```
+If `uv` is unavailable:
+```
+python3 -m pip install reportlab pdfplumber pypdf
+```
+System tools (for rendering):
+```
+# macOS (Homebrew)
+brew install poppler
+
+# Ubuntu/Debian
+sudo apt-get install -y poppler-utils
+```
+
+If installation isn't possible in this environment, tell the user which dependency is missing and how to install it locally.
+
+## Environment
+No required environment variables.
+
+## Rendering command
+```
+pdftoppm -png $INPUT_PDF $OUTPUT_PREFIX
+```
+
+## Quality expectations
+- Maintain polished visual design: consistent typography, spacing, margins, and section hierarchy.
+- Avoid rendering issues: clipped text, overlapping elements, broken tables, black squares, or unreadable glyphs.
+- Charts, tables, and images must be sharp, aligned, and clearly labeled.
+- Use ASCII hyphens only. Avoid U+2011 (non-breaking hyphen) and other Unicode dashes.
+- Citations and references must be human-readable; never leave tool tokens or placeholder strings.
+
+## Final checks
+- Do not deliver until the latest PNG inspection shows zero visual or formatting defects.
+- Confirm headers/footers, page numbering, and section transitions look polished.
+- Keep intermediate files organized or remove them after final approval.
+
+----- STDERR -----
+
+===== COMMAND =====
+rg -n "claim 60|index.?60|approximately 3 steps|re-accumulate evidence|ongoing perturbation|full-reset|reset_fraction 0" fabscore_codex progress.md exp -g '!**/.git/**'
+----- STDOUT -----
+fabscore_codex/fs_progress.json:20:                "evidence": "Paper Table 3 / Section 4.3 states `Original CUSUM (h=14, St=0)` peak step = 5.40±1.72. Fresh execution log at `fabscore_codex/workspace/claim_36_command_output.txt` shows two concrete blockers: `exp/cusum_controller/results/no_controller/nominal_probe_traces/seed0.npy` is missing, so `calibrate.py --mode cusum --reset_fraction 0` raises `FileNotFoundError`; and a minimal original-CUSUM `run_single()` attempt fails because `exp/cusum_controller/data/cifar10.py` calls `torchvision.datasets.CIFAR10(..., download=True)` with no local `data/` directory, producing `urllib.error.URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>`. | Code: exp/cusum_controller/controllers/cusum_controller.py:35-37 (full-reset behavior via `self.S_t = self.h * self.reset_fraction`), exp/cusum_controller/calibration/calibrate.py:79-98 (requires `results/no_controller/nominal_probe_traces/seed*.npy`), exp/cusum_controller/training/train_loop.py:42-45 (loads CIFAR-10 before running), exp/cusum_controller/data/cifar10.py:18-25 (`download=True` for CIFAR-10)",
+fabscore_codex/fs_progress.json:36:                "explanation": "Execution stage: The repository contains claim-matching summary prose for the old-CUSUM ramp value, but not the underlying original full-reset result artifact needed to verify it. Reproducing that exact path is currently prevented by external environment blockers already established on the same code path: missing nominal probe traces and unavailable local/network access for CIFAR-10.",
+fabscore_codex/fs_progress.json:37:                "evidence": "`exp/task_plan.json:32` and `exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:29` both quote the original full-reset CUSUM ramp result as `5.62 +/- 1.03`, but no committed original-CUSUM per-seed/raw metric file exists under `exp/cusum_controller/results/`. Reused prior execution artifact `fabscore_codex/workspace/claim_36_command_output.txt`, which shows the same original-CUSUM reproduction path is blocked by `FileNotFoundError` for `exp/cusum_controller/results/no_controller/nominal_probe_traces/seed0.npy` and by `urllib.error.URLError` when CIFAR-10 download is attempted with no local `./data`. | Code: `exp/cusum_controller/controllers/cusum_controller.py:35-37` (full-reset behavior when `reset_fraction=0`), `exp/cusum_controller/calibration/calibrate.py:79-98` (loads `nominal_probe_traces/seed*.npy` for CUSUM calibration), `exp/cusum_controller/training/train_loop.py:42-44` and `exp/cusum_controller/data/cifar10.py:18-25` (requires CIFAR-10 dataset, attempts download).",
+fabscore_codex/progress.md:72:- Concise verdict summary for claim 38: `Error`. The exact old-CUSUM step AUC value `275.26 +/- 144.39` appears in summary/report artifacts (`exp/task_plan.json` and `exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md`), matching the paper's rounded `275.3±144.4`, but there is still no committed original-CUSUM per-seed/raw metric artifact for the full-reset variant. I reused `fabscore_codex/workspace/claim_36_command_output.txt` because claim 38 depends on the same original full-reset path: recalibration with `reset_fraction=0` fails on missing `exp/cusum_controller/results/no_controller/nominal_probe_traces/seed0.npy`, and direct execution remains blocked because `exp/cusum_controller/data/cifar10.py` requires CIFAR-10 under `./data` and otherwise attempts an unavailable network download.
+exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md:9:**Reset Blind Spot (Critical)**: After each rollback triggered by S_t > h, the original implementation reset S_t to 0. During ongoing perturbation, the CUSUM needed ~3 steps to climb back from 0 to h=14 before re-triggering. This caused an oscillating accept/reject pattern where ~6/10 perturbed steps were accepted (vs Or-epsilon's ~3.9/10). Each accepted perturbed step corrupted the model state further, causing escalating probe loss that persisted long after the perturbation window ended.
+exp/task_plan.json:52:    "summary": "Implemented CUSUMController with standardized innovations, one-sided statistic S_t = max(0, S_{t-1} + r_t - k), k=0.5, and full reset to S_t=0 after rollback. Calibrated h=14.0 to match nominal rollback rate p0=0.2%, producing empirical rate=0.28%. Ran 60 experiments (20 seeds x 3 conditions). CUSUM-epsilon results: step peak_excess_loss=5.40+/-1.72, excess_AUC=275.26+/-144.39, false_rollbacks=25.9; ramp peak_excess_loss=5.62+/-1.03, excess_AUC=271.37+/-109.07, false_rollbacks=40.8. Underperformed Or-epsilon despite fewer false rollbacks, likely due to multi-step detection delay."
+----- STDERR -----
+rg: progress.md: No such file or directory (os error 2)
+
+===== COMMAND =====
+ls -R fabscore_codex | sed -n '1,240p'
+----- STDOUT -----
+analysis_log.json
+execution_log.json
+extraction_log.json
+fs_analysis.json
+fs_extracted.json
+fs_progress.json
+progress.md
+workspace
+
+fabscore_codex/workspace:
+claim_36_command_output.txt
+claim_37_command_output.txt
+claim_38_command_output.txt
+claim_39_command_output.txt
+claim_44_command_output.txt
+claim_45_command_output.txt
+claim_46_command_output.txt
+claim_47_command_output.txt
+claim_59_command_output.txt
+----- STDERR -----
+
+===== COMMAND =====
+python - <<'PY'
+from pathlib import Path
+text = Path('fabscore_codex/progress.md').read_text()
+print('\n'.join(text.splitlines()[-120:]))
+PY
+----- STDOUT -----
+[Output included prior session entries through claim 59; omitted here in this artifact file for brevity in the tool return, full visible excerpts were inspected interactively.]
+----- STDERR -----
+
+===== COMMAND =====
+python - <<'PY'
+from pypdf import PdfReader
+reader = PdfReader('paper.pdf')
+for i,page in enumerate(reader.pages, start=1):
+    txt = page.extract_text() or ''
+    if '3 steps' in txt or 're-accumulate' in txt or 'perturbation' in txt or 'ongoing perturbation' in txt or 'approximately' in txt:
+        print(f'--- PAGE {i} ---')
+        print(txt[:4000])
+        print('\n')
+PY
+----- STDOUT -----
+--- PAGE 4 ---
+Table 1: Calibration parameters for both rollback controllers. Both are calibrated to target nominal
+rollback ratep 0 = 0.2%, with actual rates within 20% of target.
+Controller Thresholdµ 0 σ0 αTargetp 0 Actual Rate
+Or-ϵ ϵ= 1.181−0.041 0.226 0.1 0.2% 0.16%
+CUSUM-ϵ h= 18.0−0.041 0.226 0.1 0.2% 0.20%
+3.4 FIR PARTIALRESET
+Standard CUSUM resetsS t ←0after each rollback. This creates a “reset blind spot”: after rollback,
+the controller needs approximately⌈h/(¯r−k)⌉steps to re-accumulate sufficient evidence, where¯r
+is the mean standardized innovation during perturbation. For large perturbations, this delay allows
+2–3 corrupted updates to be applied before re-triggering.
+
+--- PAGE 6 ---
+Table 3: Impact of FIR partial reset on CUSUM-ϵperformance. FIR reduces peak excess by 35–36%
+by eliminating the reset blind spot, but CUSUM still underperforms Or-ϵdue to inherent multi-step
+detection delay.
+Method Peak (Step)↓Peak (Ramp)↓AUC (Step)↓AUC (Ramp)↓∆% vs Original
+Original CUSUM (h=14,St=0) 5.40±1.725.62±1.03275.3±144.4271.4±109.1—
+FIR-CUSUM (h=18,St=h/2) 3.47±0.813.65±0.75182.6±83.2212.0±68.6-36% / -35% / -34% / -22%
+Or-ϵ1.85±0.922.06±0.70124.1±65.8114.6±51.3—
+evidence (St > h). Each delayed step applies corrupted gradient updates, compounding damage
+before rollback occurs.
+4.3 FIR OPTIMIZATIONANALYSIS
+Table 3 shows the impact of FIR partial reset. The original CUSUM resetSt to 0 after each rollback,
+creating a “blind spot” where approximately 3 steps were needed to re-accumulate evidence during
+ongoing perturbation. FIR partial reset (St ←h/2) allows re-triggering within 1–2 anomalous steps.
+----- STDERR -----
+
+===== COMMAND =====
+python - <<'PY'
+from pathlib import Path
+for path in [
+    'exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md',
+    'exp/task_plan.json',
+    'exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json',
+    'exp/cusum_controller/results/calibration/calibration_params.json'
+]:
+    p = Path(path)
+    print(f'--- {path} ---')
+    if p.suffix == '.json':
+        print(p.read_text()[:4000])
+    else:
+        lines = p.read_text().splitlines()
+        for i,l in enumerate(lines, start=1):
+            if 'step' in l.lower() or 'accumulate' in l.lower() or '3' in l:
+                print(f'{i}: {l}')
+    print()
+PY
+----- STDOUT -----
+--- exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md ---
+5: Optimized the CUSUM-epsilon controller by replacing the full reset (S_t=0) after rollback with a Fast Initial Response (FIR) partial reset (S_t = h * reset_fraction). This addresses the "reset blind spot" where the original CUSUM repeatedly accepted perturbed/corrupted steps because it had to re-accumulate evidence from scratch after each rollback.
+9: **Reset Blind Spot (Critical)**: After each rollback triggered by S_t > h, the original implementation reset S_t to 0. During ongoing perturbation, the CUSUM needed ~3 steps to climb back from 0 to h=14 before re-triggering. This caused an oscillating accept/reject pattern where ~6/10 perturbed steps were accepted (vs Or-epsilon's ~3.9/10). Each accepted perturbed step corrupted the model state further, causing escalating probe loss that persisted long after the perturbation window ended.
+13: 1. **FIR partial reset**: After rollback, set S_t = h * 0.5 instead of 0. This retains evidence of recent instability so the CUSUM re-triggers within 1-2 anomalous steps.
+28: | Peak Excess (step) | 5.40 +/- 1.72 | 3.47 +/- 0.81 | 1.85 +/- 0.92 | -36% |
+
+--- exp/task_plan.json ---
+[Output inspected; key relevant line:]
+"summary": "Implemented CUSUMController with standardized innovations, one-sided statistic S_t = max(0, S_{t-1} + r_t - k), k=0.5, and full reset to S_t=0 after rollback. Calibrated h=14.0 to match nominal rollback rate p0=0.2%, producing empirical rate=0.28%. Ran 60 experiments (20 seeds x 3 conditions). CUSUM-epsilon results: step peak_excess_loss=5.40+/-1.72, excess_AUC=275.26+/-144.39, false_rollbacks=25.9; ramp peak_excess_loss=5.62+/-1.03, excess_AUC=271.37+/-109.07, false_rollbacks=40.8. Underperformed Or-epsilon despite fewer false rollbacks, likely due to multi-step detection delay."
+
+--- exp/EXPERIMENT_RESULTS/cusum_epsilon/RESULTS.json ---
+{
+  "experiment": "FIR-CUSUM-epsilon on ResNet-18/CIFAR-10",
+  "controller": "cusum_epsilon_fir",
+  "calibration": {
+    "h": 18.0,
+    "k": 0.5,
+    "reset_fraction": 0.5,
+    "mu_0": -0.04125521912250121,
+    "sigma_0": 0.2260490837544573,
+    "alpha": 0.1,
+    "p0_target": 0.002,
+    "calibration_alarm_rate": 0.002,
+    "s0_initialization": 0.0,
+    "s_reset_value": 9.0
+  }
+}
+
+--- exp/cusum_controller/results/calibration/calibration_params.json ---
+{
+  "epsilon": 1.1805052340427251,
+  "mu_0": -0.04125521912250121,
+  "sigma_0": 0.2260490837544573,
+  "alpha": 0.1,
+  "p0_target": 0.002,
+  "percentile_used": 99.8,
+  "num_seeds": 20,
+  "total_innovations": 5000,
+  "empirical_rollback_rate": 0.002,
+  "cusum_h": 18.0,
+  "cusum_k": 0.5,
+  "cusum_alarm_rate": 0.002
+}
+----- STDERR -----
+
+===== COMMAND =====
+rg --files exp/EXPERIMENT_RESULTS/optimize_trace exp/cusum_controller/results fabscore_codex/workspace | rg 'trace|metrics|summary|result|json|npy|npz|csv|md$'
+----- STDOUT -----
+exp/EXPERIMENT_RESULTS/optimize_trace/optimize_summary_0.json
+exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/RESULTS.json
+exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md
+exp/cusum_controller/results/or_epsilon/summary_metrics.json
+exp/cusum_controller/results/no_controller/summary_metrics.json
+exp/cusum_controller/results/or_epsilon/per_seed_metrics.json
+exp/cusum_controller/results/no_controller/per_seed_metrics.json
+exp/cusum_controller/results/calibration/calibration_params.json
+exp/cusum_controller/results/cusum_epsilon/per_seed_metrics.json
+exp/cusum_controller/results/cusum_epsilon/metrics_summary.json
+----- STDERR -----
+
+===== COMMAND =====
+python - <<'PY'
+from pathlib import Path
+paths = [
+ 'exp/cusum_controller/controllers/cusum_controller.py',
+ 'exp/cusum_controller/training/train_loop.py',
+ 'exp/cusum_controller/scripts/run_cusum_epsilon.py'
+]
+for path in paths:
+    print(f'--- {path} ---')
+    for i,line in enumerate(Path(path).read_text().splitlines(), start=1):
+        if path.endswith('cusum_controller.py') or ('rollback' in line.lower() or 'trace' in line.lower() or 'accepted' in line.lower() or 'info' in line.lower() or 'perturb' in line.lower() or 'steps' in line.lower()):
+            print(f'{i}: {line}')
+    print()
+PY
+----- STDOUT -----
+--- exp/cusum_controller/controllers/cusum_controller.py ---
+1: # FIR-CUSUM-epsilon sequential test controller (proposed method).
+2: # Accumulates evidence of sustained upward drift via one-sided CUSUM statistic:
+3: #   S_t = max(0, S_{t-1} + r_t - k), rollback when S_t > h.
+4: # r_t = (nu_t - mu_0) / (sigma_0 + 1e-8) is the standardized innovation.
+5: # Uses Fast Initial Response (FIR): on rollback S_t resets to h*reset_fraction
+6: # instead of 0, so the CUSUM re-triggers quickly during sustained perturbation.
+35:         if self.S_t > self.h:
+36:             accepted = False
+37:             self.S_t = self.h * self.reset_fraction
+42:         info = {
+45:             "r_t": r_t,
+46:             "S_t": self.S_t,
+47:             "accepted": accepted,
+
+--- exp/cusum_controller/training/train_loop.py ---
+108:         perturbed = apply_perturbation(
+119:         accepted, info = controller.decide(y_proposed)
+130:         innovations.append(info["innovation"])
+132:         decisions.append(accepted)
+133:         perturbation_active.append(perturbed)
+137:             standardized_innovations.append(info["r_t"])
+138:             cusum_stats.append(info["S_t"])
+179:         "perturbation_active": np.array(perturbation_active, dtype=bool),
+
+--- exp/cusum_controller/scripts/run_cusum_epsilon.py ---
+54:         trace_path = os.path.join(results_base, "traces", f"{perturb_type}_seed{seed}.npz")
+61:             "perturbation_active": result["perturbation_active"],
+66:         np.savez(trace_path, **save_dict)
+----- STDERR -----
+
+===== COMMAND =====
+find exp/EXPERIMENT_RESULTS/optimize_trace -maxdepth 3 -type f | sort | sed -n '1,200p'
+----- STDOUT -----
+exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/REPORT.md
+exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/RESULTS.json
+exp/EXPERIMENT_RESULTS/optimize_trace/optimize_summary_0.json
+----- STDERR -----
+
+===== COMMAND =====
+python - <<'PY'
+from pathlib import Path
+for path in ['exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/RESULTS.json','exp/EXPERIMENT_RESULTS/optimize_trace/optimize_summary_0.json']:
+    print('---', path, '---')
+    print(Path(path).read_text()[:6000])
+    print()
+PY
+----- STDOUT -----
+--- exp/EXPERIMENT_RESULTS/optimize_trace/iteration_0/RESULTS.json ---
+{
+  "experiment": "FIR-CUSUM-epsilon on ResNet-18/CIFAR-10 (Optimization Iteration 0)",
+  "controller": "cusum_epsilon_fir",
+  "calibration": {
+    "h": 18.0,
+    "k": 0.5,
+    "reset_fraction": 0.5,
+    "mu_0": -0.04125521912250121,
+    "sigma_0": 0.2260490837544573,
+    "alpha": 0.1,
+    "p0_target": 0.002,
+    "calibration_alarm_rate": 0.002,
+    "s0_initialization": 0.0,
+    "s_reset_value": 9.0
+  }
+}
+
+--- exp/EXPERIMENT_RESULTS/optimize_trace/optimize_summary_0.json ---
+{
+  "optimize_index": 0,
+  "issues": [
+    {
+      "title": "CUSUM reset blind spot: full reset to S_t=0 after rollback",
+      "description": "After each rollback (S_t > h), the CUSUM statistic was reset to 0, requiring full re-accumulation of evidence before re-triggering. During ongoing perturbation, this caused an oscillating accept/reject pattern where ~6/10 perturbed steps were accepted (vs Or-epsilon's ~3.9/10). Each accepted step corrupted model state further, causing probe loss to escalate well beyond the perturbation window. Fixed by implementing FIR (Fast Initial Response) partial reset: after rollback, S_t is set to h * 0.5 instead of 0, allowing re-triggering within 1-2 anomalous steps."
+    }
+  ],
+  "success": true
+}
+----- STDERR -----
+
+===== COMMAND =====
+python - <<'PY'
+from pathlib import Path
+p = Path('exp/cusum_controller/results/cusum_epsilon/per_seed_metrics.json')
+print(p.read_text()[:5000])
+PY
+----- STDOUT -----
+{
+  "step": [
+    {
+      "y_pre": 1.2457793354988098,
+      "peak_excess_loss": 3.2001330256462097,
+      "excess_auc": 168.09412515163422,
+      "false_rollbacks_outside_window": 11,
+      "detection_delay": 2
+    },
+    {
+      "y_pre": 1.2984681844711303,
+      "peak_excess_loss": 4.385996270179748,
+      "excess_auc": 272.3815316438675,
+      "false_rollbacks_outside_window": 42,
+      "detection_delay": -104
+    }
+  ],
+  "ramp": [
+    {
+      "y_pre": 1.4038808584213256,
+      "peak_excess_loss": 4.085689759254455,
+      "excess_auc": 193.59673254489897,
+      "false_rollbacks_outside_window": 36,
+      "detection_delay": 6
+    }
+  ]
+}
+----- STDERR -----
+
+===== COMMAND =====
+python - <<'PY'
+from pathlib import Path
+p = Path('fabscore_codex/workspace/claim_36_command_output.txt')
+text = p.read_text()
+for needle in ['FileNotFoundError', 'nominal_probe_traces', 'URLError', 'CIFAR10', 'download=True']:
+    idx = text.find(needle)
+    if idx != -1:
+        start = max(0, idx-250)
+        end = min(len(text), idx+500)
+        print(f'--- context for {needle} ---')
+        print(text[start:end])
+        print()
+PY
+----- STDOUT -----
+--- context for FileNotFoundError ---
+(path)
+  File "/Users/dongfujiang/WorkSpace/fabscore/.venv/lib/python3.13/site-packages/numpy/lib/_npyio_impl.py", line 454, in load
+    fid = stack.enter_context(open(os.fspath(file), "rb"))
+                              ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/dongfujiang/WorkSpace/fabscore/fars_papers/cusum-calibrated-rollback-controller/exp/cusum_controller/results/no_controller/nominal_probe_traces/seed0.npy'
+
+--- context for URLError ---
+raise URLError(err)
+urllib.error.URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>
+===== COMMAND: inspect original-CUSUM blockers =====
+cwd= /Users/dongfujiang/WorkSpace/fabscore/fars_papers/cusum-calibrated-rollback-controller
+nominal_probe_traces exists: False
+data exists: False
+----- STDERR -----
+
+===== COMMAND =====
+python - <<'PY'
+from pathlib import Path
+for path in ['exp/cusum_controller/calibration/calibrate.py','exp/cusum_controller/data/cifar10.py']:
+    print('---', path, '---')
+    for i,line in enumerate(Path(path).read_text().splitlines(), start=1):
+        if path.endswith('calibrate.py') or path.endswith('cifar10.py'):
+            print(f'{i}: {line}')
+    print()
+PY
+----- STDOUT -----
+--- exp/cusum_controller/calibration/calibrate.py ---
+72: def calibrate_cusum_h(traces_dir, output_dir, mu_0, sigma_0, alpha=0.1, k=0.5,
+79:     for seed in range(num_seeds):
+80:         path = os.path.join(traces_dir, f"seed{seed}.npy")
+81:         probe_losses = np.load(path)
+93:                 S = max(0.0, S + r_t - k)
+95:                 if S > h:
+97:                     S = h * reset_fraction
+141:         default=os.path.join(BASE_DIR, "cusum_controller", "results", "no_controller", "nominal_probe_traces"),
+152:     parser.add_argument("--reset_fraction", type=float, default=0.5)
+
+--- exp/cusum_controller/data/cifar10.py ---
+18: def get_datasets(data_root="./data"):
+20:     train_dataset = torchvision.datasets.CIFAR10(
+21:         root=data_root, train=True, download=True, transform=transform
+23:     test_dataset = torchvision.datasets.CIFAR10(
+24:         root=data_root, train=False, download=True, transform=transform
+----- STDERR -----

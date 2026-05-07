@@ -1,0 +1,77 @@
+{
+  "ablation": "alternative_embedding_backend_robustness_check",
+  "description": "Verify that the relative ranking of conditions A, B, C is not an artifact of the specific embedding model (BAAI/bge-m3). Re-run all three conditions with Qwen/Qwen3-Embedding-4B (4B params, 2560-dim) and compare.",
+  "date": "2026-03-01",
+  "matching_strategy": "hazard_set_containment",
+  "k": 3,
+  "delta": 6,
+
+  "comparison_table": {
+    "columns": ["condition", "embedding", "prp_at_3", "benign_recall_at_3", "write_block_rate", "benign_false_block"],
+    "rows": [
+      {
+        "condition": "A (ID-delete only)",
+        "embedding": "BAAI/bge-m3",
+        "embedding_dim": 1024,
+        "prp_at_3": 0.9444,
+        "benign_recall_at_3": 1.0,
+        "write_block_rate": 0.0,
+        "benign_false_block": 0.0
+      },
+      {
+        "condition": "A (ID-delete only)",
+        "embedding": "Qwen/Qwen3-Embedding-4B",
+        "embedding_dim": 2560,
+        "prp_at_3": 0.9167,
+        "benign_recall_at_3": 1.0,
+        "write_block_rate": 0.0,
+        "benign_false_block": 0.0
+      },
+      {
+        "condition": "B (retrieval-time denylist, delta=6)",
+        "embedding": "BAAI/bge-m3",
+        "embedding_dim": 1024,
+        "prp_at_3": 0.0,
+        "benign_recall_at_3": 0.97,
+        "write_block_rate": 0.0,
+        "benign_false_block": 0.0
+      },
+      {
+        "condition": "B (retrieval-time denylist, delta=6)",
+        "embedding": "Qwen/Qwen3-Embedding-4B",
+        "embedding_dim": 2560,
+        "prp_at_3": 0.0,
+        "benign_recall_at_3": 0.97,
+        "write_block_rate": 0.0,
+        "benign_false_block": 0.0
+      },
+      {
+        "condition": "C (commit-time tombstone)",
+        "embedding": "BAAI/bge-m3",
+        "embedding_dim": 1024,
+        "prp_at_3": 0.0,
+        "benign_recall_at_3": 1.0,
+        "write_block_rate": 1.0,
+        "benign_false_block": 0.03
+      },
+      {
+        "condition": "C (commit-time tombstone)",
+        "embedding": "Qwen/Qwen3-Embedding-4B",
+        "embedding_dim": 2560,
+        "prp_at_3": 0.0,
+        "benign_recall_at_3": 1.0,
+        "write_block_rate": 1.0,
+        "benign_false_block": 0.03
+      }
+    ]
+  },
+
+  "analysis": {
+    "ordering_holds": true,
+    "ordering_description": "The relative ordering C > B > A holds identically across both embedding backends. On PRP@3 (lower is better): A=0.9167/0.9444 >> B=0.0 = C=0.0. On Benign Recall@3 (higher is better): C=1.0 > B=0.97 = A=1.0. Condition C dominates both metrics.",
+    "prp_comparison": "Condition A PRP@3 is slightly lower with Qwen3 (0.9167 vs 0.9444 with bge-m3), indicating minor retrieval dynamics differences, but the qualitative ranking is unchanged: A is worst, B and C both achieve perfect PRP@3=0.0.",
+    "benign_recall_comparison": "Identical Benign Recall@3 across both backends for all conditions: A=1.0, B=0.97, C=1.0. The 3pp gap between B and C is preserved.",
+    "write_metrics_comparison": "WriteBlockRate (100%) and BenignFalseBlock (3%) are identical for both backends, as expected since these are computed from LLM-derived hazard signatures, not embeddings.",
+    "conclusion": "The HST method's advantage is confirmed to be retrieval-backend-agnostic. The embedding model choice does not affect the relative ranking of conditions."
+  }
+}

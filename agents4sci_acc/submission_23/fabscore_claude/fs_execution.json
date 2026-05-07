@@ -1,0 +1,122 @@
+{
+    "tables": [
+        {
+            "claim_index": 229,
+            "claim": "229. Table 3, FILM, Params (M): 2.07",
+            "verdict": "No Code Files",
+            "explanation": "Execution stage: The FILM model implementation (net/Film.py) is entirely absent from the repository. Without this file, the parameter count of 2.07M for the FILM baseline cannot be computed or verified. The suggested entrypoint mistakenly uses new_film.py (IVTFuse architecture), which would yield IVTFuse's parameter count, not FILM's.",
+            "evidence": "net/Film.py is completely absent from the repository. Only net/restormer.py exists under net/. The suggested entrypoint uses new_film.py which implements IVTFuse, not the FILM baseline. | Code: code/IVTFuse-main/net/ (only restormer.py present; Film.py missing)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/IVTFuse-main/net/ (only restormer.py present",
+                    "Film.py missing)"
+                ],
+                "commands_executed": [
+                    "None — no FILM model code available to run"
+                ]
+            }
+        },
+        {
+            "claim_index": 230,
+            "claim": "230. Table 3, FILM, Inference Time (ms): 72.90",
+            "verdict": "No Code Files",
+            "explanation": "Execution stage: The FILM model implementation (net/Film.py) is completely absent from the repository. There is no code to execute the FILM model and measure its inference time. Without the model implementation, it is impossible to verify or reproduce the claimed 72.90 ms inference time.",
+            "evidence": "net/Film.py is absent from the repository; only net/restormer.py exists in the net/ directory | Code: code/IVTFuse-main/net/ (Film.py missing; only restormer.py present)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/IVTFuse-main/net/ (Film.py missing",
+                    "only restormer.py present)"
+                ],
+                "commands_executed": [
+                    "find /home/chenhui/fabscore/agent4sci_acc/submission_23/code -name 'Film.py'; ls /home/chenhui/fabscore/agent4sci_acc/submission_23/code/IVTFuse-main/net/"
+                ]
+            }
+        },
+        {
+            "claim_index": 231,
+            "claim": "231. Table 3, IVTFuse (Ours), Params (M): 2.08",
+            "verdict": "Verified",
+            "explanation": "Execution stage: Running `from new_film import Net; m=Net(); print(sum(p.numel() for p in m.parameters())/1e6)` yields 2.075419, which rounds to 2.08M matching the paper's Table 3 claim.",
+            "evidence": "Actual parameter count: 2.075419M (rounds to 2.08M as reported) | Code: code/IVTFuse-main/new_film.py",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/IVTFuse-main/new_film.py"
+                ],
+                "commands_executed": [
+                    "cd /home/chenhui/fabscore/agent4sci_acc/submission_23/code/IVTFuse-main && python -c \"from new_film import Net; m=Net(); print(sum(p.numel() for p in m.parameters())/1e6)\""
+                ]
+            }
+        },
+        {
+            "claim_index": 232,
+            "claim": "232. Table 3, IVTFuse (Ours), Inference Time (ms): 130.14",
+            "verdict": "Error",
+            "explanation": "Execution stage: GPU execution of the inference timing benchmark failed due to CUDA out of memory — other processes had consumed nearly all GPU memory (109.36 GiB in use). CPU timing (1484 ms) cannot be compared to the claimed GPU time of 130.14 ms. The code itself is functional (no import or runtime errors), but the GPU environment was unavailable for this measurement.",
+            "evidence": "GPU OOM: only 39.69 MiB free out of 139.80 GiB total (109.36 GiB used by other processes). CPU timing: ~1484.65 ms (not GPU-comparable). Model code runs correctly on CPU. | Code: code/IVTFuse-main/new_film.py:510 (restormer2 layer causing OOM)",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/IVTFuse-main/new_film.py:510 (restormer2 layer causing OOM)"
+                ],
+                "commands_executed": [
+                    "python -c \"import torch; from new_film import Net; m=Net().cuda(); x=torch.randn(1,1,288,384).cuda(); t=torch.randn(1,32,768).cuda(); import time; [m(x,x,t) for _ in range(10)]; t0=time.time(); [m(x,x,t) for _ in range(100)]; print((time.time()-t0)/100*1000)\""
+                ]
+            }
+        }
+    ],
+    "figures": [],
+    "results_section": [
+        {
+            "claim_index": 244,
+            "claim": "10. Our IVTFuse model contains approximately 2.08 million parameters and achieves an inference speed of around 130.14 ms per image on a 288 × 384 input using an NVIDIA RTX 4090 GPU.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The parameter count (2.075419M ≈ 2.08M) is confirmed by executing the model. The inference speed cannot be directly verified because the available hardware is NVIDIA H200 (not RTX 4090 as claimed). H200 measured 67.82 ms, which is roughly half of 130.14 ms — consistent with H200 being ~2x faster than RTX 4090, but no direct RTX 4090 measurement is possible.",
+            "evidence": "Parameter count: 2.075419M (verified, ≈ 2.08M as claimed). GPU inference time on NVIDIA H200: 67.82 ms (paper claims 130.14 ms on RTX 4090). H200 is ~2x faster than RTX 4090, making H200 timing plausibly consistent but not directly confirmatory. | Code: code/IVTFuse-main/new_film.py (Net class)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/IVTFuse-main/new_film.py (Net class)"
+                ],
+                "commands_executed": [
+                    "CUDA_VISIBLE_DEVICES=0 python -c \"import torch; from new_film import Net; import time; m=Net().cuda(); m.eval(); x=torch.randn(1,1,288,384).cuda(); t=torch.randn(1,32,768).cuda(); [m(x,x,t) for _ in range(10)]; torch.cuda.synchronize(); t0=time.time(); [m(x,x,t) for _ in range(100)]; torch.cuda.synchronize(); print((time.time()-t0)/100*1000)\""
+                ]
+            }
+        },
+        {
+            "claim_index": 245,
+            "claim": "11. FILM has a slightly smaller model size of 2.07 million parameters and runs faster at 72.90 ms per image.",
+            "verdict": "No Code Files",
+            "explanation": "Execution stage: Claim 245 states FILM has 2.07M parameters and 72.90 ms inference time. Both values require the FILM model code (net/Film.py), which is completely absent from the repository. Without the model implementation, neither the parameter count nor the inference time can be computed or verified.",
+            "evidence": "net/Film.py is absent from the repository (only net/restormer.py exists). Sessions 3 and 4 already established No Code Files for claims 229 (FILM Params: 2.07M) and 230 (FILM Inference Time: 72.90 ms), which together compose this results-section claim. | Code: code/IVTFuse-main/net/ — only restormer.py present; net/Film.py missing",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/IVTFuse-main/net/ — only restormer.py present",
+                    "net/Film.py missing"
+                ],
+                "commands_executed": [
+                    "None — prior sessions (3 and 4) already confirmed the absence of net/Film.py; no new execution needed."
+                ]
+            }
+        }
+    ],
+    "summary": {
+        "total": 6,
+        "verified": 1,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "no_code_files": 3,
+        "insufficient_evidence": 1,
+        "error": 1
+    }
+}

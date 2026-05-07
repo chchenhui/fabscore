@@ -1,0 +1,44 @@
+=== Command 1: Compute statistics from candidate_selection_data.csv ===
+python3 -c "import pandas as pd; import numpy as np; df=pd.read_csv('code_data/candidate_selection_data.csv'); print('Shape:', df.shape); print('catalyst_type counts:', df['catalyst_type'].value_counts().to_dict()); print('All entries means:'); print('mixing_enthalpy_ev_atom mean:', df['mixing_enthalpy_ev_atom'].mean()); print('d_band_center_ev mean:', df['d_band_center_ev'].mean()); print('delta_e_noh_ev mean:', df['delta_e_noh_ev'].mean()); print('limiting_potential_v mean:', df['limiting_potential_v'].mean()); print('LLM_Generated_HEA means:'); hea=df[df['catalyst_type']=='LLM_Generated_HEA']; print('mixing_enthalpy_ev_atom mean:', hea['mixing_enthalpy_ev_atom'].mean()); print('d_band_center_ev mean:', hea['d_band_center_ev'].mean()); print('delta_e_noh_ev mean:', hea['delta_e_noh_ev'].mean()); print('limiting_potential_v mean:', hea['limiting_potential_v'].mean())"
+
+Output:
+Shape: (80, 5)
+Columns: ['catalyst_type', 'mixing_enthalpy_ev_atom', 'd_band_center_ev', 'delta_e_noh_ev', 'limiting_potential_v']
+catalyst_type counts: {'LLM_Generated_HEA': 50, 'LLM_Generated_DA': 30}
+
+All entries (combined) means:
+mixing_enthalpy_ev_atom mean: -0.5932977606121723    (claim: -0.593 ✓)
+d_band_center_ev mean: -2.4249420049115873           (claim: -2.425 ✓)
+delta_e_noh_ev mean: 0.7739820456526149              (claim: 0.774 ✓)
+limiting_potential_v mean: 0.2925543821669601
+
+LLM_Generated_HEA only means:
+mixing_enthalpy_ev_atom mean: -0.7935637264237699    (claim: differs, not what Figure 10 uses)
+d_band_center_ev mean: -2.8911006758919253
+delta_e_noh_ev mean: 0.5529823065971081
+limiting_potential_v mean: 0.06864647084219906
+
+=== Command 2: Check skewness values ===
+from scipy import stats
+Limiting potential skewness: -2.0266866439677735     (left-skewed ✓)
+Mixing enthalpy skewness: 0.6902358350142542         (right-skewed ✓)
+d_band_center skewness: -0.0924225098727366          (roughly symmetric)
+delta_e_noh skewness: -0.17595932282577928           (roughly symmetric, "broad")
+
+Medians:
+mixing_enthalpy median: -0.6765509917514381
+d_band_center median: -2.3757071721824135
+delta_e_noh median: 0.7892562811376218
+limiting_potential median: 0.5804889877250018
+
+=== Key findings ===
+- Figure 10 uses ALL 80 entries (LLM_Generated_HEA + LLM_Generated_DA combined), NOT just HEA entries
+- create_summary_report() in visualize_candidate_selection.py plots distributions of all 4 properties with mean (red) and median (green) vertical lines
+- All three numeric claims match ALL-entry means within rounding:
+  * mixing_enthalpy mean: -0.593298 ≈ -0.593 ✓
+  * d_band_center mean: -2.4249 ≈ -2.425 ✓
+  * delta_e_noh mean: 0.7740 ≈ 0.774 ✓
+- Distribution shape claims also match:
+  * mixing_enthalpy: right-skewed (skew = +0.69) ✓
+  * limiting_potential: strongly left-skewed (skew = -2.03) ✓
+  * vertical lines for mean (red) and median (green) confirmed in code ✓

@@ -1,0 +1,141 @@
+===== COMMAND =====
+python - <<'PY'
+from PyPDF2 import PdfReader
+reader = PdfReader('206_Self_Spec_Model_Authored_S.pdf')
+for i, page in enumerate(reader.pages):
+    text = page.extract_text() or ''
+    if 'Table 3' in text or 'unique among the three self-spec logs' in text or '74, 91, 102, 115, 132, 141' in text:
+        print(f'===== PAGE {i+1} =====')
+        print(text)
+PY
+===== STDOUT =====
+===== PAGE 6 =====
+Model Native Self-Spec∆
+GPT-4o 87% 92% +5
+Claude 3.7 92% 94% +2
+Claude 3.5 90% 89%−1
+Table 1:HumanEval pass@1 (single sample, T= 0 ).Each model is evaluated on 164 HumanEval
+problems under two conditions: direct code generation (Native) vs. the Self-Spec pipeline. ∆denotes
+the percentage point difference. GPT-4o and Claude 3.7 clearly benefit from Self-Spec, while Claude
+3.5 sees a negligible drop.
+guiding their solution. In contrast, Claude 3.5 shows a slight decrease in performance with Self-Spec
+(90% down to 89%, i.e. −1 point). In absolute terms, this drop is very small (essentially one fewer
+problem solved) and suggests that for this less capable model, the additional spec process did not
+yield an immediate benefit. We analyze these patterns further in the next section.
+Overall, two out of three models saw an accuracy gain by using Self-Spec, highlighting the potential
+of the approach for state-of-the-art LLMs. The slight regression for Claude 3.5 points to differences
+in how smaller/older models handle the spec process.
+6 Analysis
+Category Task IDs
+Persistent across all three 75, 145, 160
+Shared (Claude 3.7 & GPT-4o) 65, 134, 163
+Shared (Claude 3.7 & Claude 3.5) 92, 146
+Shared (GPT-4o & Claude 3.5) 50, 83
+Table 2: Common errors across models (self-spec only)
+Model Task IDs (unique among the three self-spec logs)
+Claude 3.7 10, 116
+GPT-4o 74, 91, 102, 115, 132, 141
+Claude 3.5 9, 14, 17, 19, 32, 112, 113, 125, 126, 129, 135, 138, 153
+Table 3: Model-unique failure candidates (potential regressions; baseline not provided)
+Error analysis.Baseline runs often fail for orchestration reasons—entry-point hijacking, template
+bleed, helper-bridging failures, or environment drift—but these largely vanish under Self-Spec,
+which pins entry points, fixes helper usage, and enforces return types and operation order. The
+remaining errors are genuine specification-following mistakes. We observe three persistent classes:
+(i)constraint misreads, where models over-interpret bounds (e.g., HE/75, treating “ a <100 ” as
+a hard precondition and rejecting larger cases); (ii)tie-break and sign semantics, where sorting or
+aggregation misaligns with hidden conventions (e.g., HE/145, mishandling negatives in digit-sum
+tie-breaking); and (iii)operator precedence, where left-to-right folding replaces standard rules (e.g.,
+HE/160, producing 15instead of the expected 9for “+,∗,− ”). Two-model overlaps further reveal
+systematic pitfalls: HE/65 (rule-priority mistakes in circular shifts and leading zeros), HE/134
+(single-letter tail cases), HE/163 (misreading “even digits” as characters rather than integers), HE/50
+(dependency coupling on helpers), and HE/83 (tokenization/case-sensitivity for sentence starts).
+Model-specific errors suggest characteristic tendencies: Claude 3.5 often inserts over-strict “defensive”
+guards (e.g., raising on empty input in HE/9/14/17/19/112/125), a side-effect of self-specification;
+GPT-4o shows localized logic slips (per-row vs. global accounting in HE/115, filename rules in
+HE/141); Claude 3.7 contributes few uniques (HE/10/116) but consistently shares the core trio. In
+sum, persistent failures cluster on compressed prompts with multiple constraints or counter-intuitive
+exceptions, making them prime candidates for templated Self-Spec guidance. Without baseline error
+IDs, model-unique failures are conservatively treated as regression candidates.
+6
+===== STDERR =====
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+python - <<'PY'
+import json
+paths = [
+    'A4S_update/failed_spec_gpt_4o.jsonl',
+    'A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl',
+]
+for path in paths:
+    found = []
+    with open(path) as f:
+        for lineno, line in enumerate(f, 1):
+            obj = json.loads(line)
+            task = obj.get('task_id') or obj.get('HumanEval_ID')
+            if task == 'HumanEval/132':
+                found.append((lineno, obj))
+    print('===== ', path, ' =====', sep='')
+    if found:
+        for lineno, obj in found:
+            print('line', lineno, 'task_id', obj.get('task_id'), 'error_type', obj.get('error_type'), 'result', obj.get('result'))
+    else:
+        print('NOT FOUND')
+PY
+===== STDOUT =====
+===== A4S_update/failed_spec_gpt_4o.jsonl =====
+line 9 task_id HumanEval/132 error_type None result None
+===== A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl =====
+line 6 task_id HumanEval/132 error_type None result None
+===== STDERR =====
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+python - <<'PY'
+from pathlib import Path
+for p in sorted(Path('A4S_update').glob('*claude_3_5*')):
+    print(p)
+PY
+sed -n '1,120p' fabscore_codex/workspace/claim_8_command_output.txt
+===== STDOUT =====
+A4S_update/all_baseline_claude_3_5_sonnet_20241022.jsonl
+A4S_update/failed_baseline_claude_3_5_sonnet_20241022.jsonl
+A4S_update/results_summary_baseline_claude_3_5_sonnet_20241022.txt
+===== COMMAND =====
+cd A4S_update && python3 spec_result_generation.py
+===== STDOUT =====
+===== STDERR =====
+Traceback (most recent call last):
+  File "/home/chenhui/fabscore/agent4sci_acc/submission_206/A4S_update/spec_result_generation.py", line 545, in <module>
+    asyncio.run(async_main())
+    ~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/home/chenhui/miniconda3/lib/python3.13/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/home/chenhui/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/chenhui/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/chenhui/fabscore/agent4sci_acc/submission_206/A4S_update/spec_result_generation.py", line 533, in async_main
+    orch = config.build()
+  File "/home/chenhui/fabscore/agent4sci_acc/submission_206/A4S_update/spec_result_generation.py", line 471, in build
+    llm = GPT5LLM(api_key=self.api_key, default_model=self.model, base_url=self.base_url,concurrency=self.concurrency)
+  File "<string>", line 7, in __init__
+  File "/home/chenhui/fabscore/agent4sci_acc/submission_206/A4S_update/spec_result_generation.py", line 46, in __post_init__
+    raise RuntimeError("NO API Key：")
+RuntimeError: NO API Key：
+===== EXIT CODE: 1 =====
+
+===== STDERR =====
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+rg -n 'HumanEval/132' A4S_update/failed_spec_gpt_4o.jsonl A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl
+===== STDOUT =====
+A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl:6:{"task_id": "HumanEval/132", "entry_point": "is_nested", "error": "AssertionError: ", "traceback": "Traceback (most recent call last):\n  File \"c:\\Users\\ltroi\\Downloads\\A4S\\spec_result_evaluation.py\", line 42, in run_test\n    exec(compile(code_wrapped, \"<eval>\", \"exec\"), ns)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<eval>\", line 134, in <module>\n  File \"<eval>\", line 116, in check\nAssertionError\n", "test": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate('[[]]') == True, \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate('[]]]]]]][[[[[]') == False\n    assert candidate('[][]') == False\n    assert candidate(('[]')) == False\n    assert candidate('[[[[]]]]') == True\n    assert candidate('[]]]]]]]]]]') == False\n    assert candidate('[][][[]]') == True\n    assert candidate('[[]') == False\n    assert candidate('[]]') == False\n    assert candidate('[[]][[') == True\n    assert candidate('[[][]]') == True\n\n    # Check some edge cases that are easy to work out by hand.\n    assert candidate('') == False, \"This prints if this assert fails 2 (also good for debugging!)\"\n    assert candidate('[[[[[[[[') == False\n    assert candidate(']]]]]]]]') == False\n\n", "generated_solution": "def is_nested(string):\n    '''\n    Create a function that takes a string as input which contains only square brackets.\n    The function should return True if and only if there is a valid subsequence of brackets \n    where at least one bracket in the subsequence is nested.\n\n    is_nested('[[]]') ➞ True\n    is_nested('[]]]]]]][[[[[]') ➞ False\n    is_nested('[][]') ➞ False\n    is_nested('[]') ➞ False\n    is_nested('[[][]]') ➞ True\n    is_nested('[[]][[') ➞ True\n    '''\n    # Check for empty string\n    if not string:\n        return False\n    \n    # Function to check if a subsequence has nested brackets\n    def has_nested_subsequence(s):\n        stack = []\n        nesting_level = 0\n        max_nesting = 0\n        \n        for char in s:\n            if char == '[':\n                stack.append(char)\n                nesting_level += 1\n                max_nesting = max(max_nesting, nesting_level)\n            elif char == ']' and stack:\n                stack.pop()\n                nesting_level -= 1\n            else:\n                # Unbalanced closing bracket\n                return False\n        \n        # Check if all brackets were balanced and we had nesting\n        return len(stack) == 0 and max_nesting > 1\n    \n    # Try all possible subsequences\n    n = len(string)\n    \n    # Check the full string first\n    if has_nested_subsequence(string):\n        return True\n    \n    # For optimization, we only need to check subsequences that could potentially be balanced\n    # This means equal numbers of '[' and ']'\n    \n    # Count total brackets\n    open_count = string.count('[')\n    close_count = string.count(']')\n    \n    # If we don't have enough of each type for nesting, return False\n    if min(open_count, close_count) < 2:\n        return False\n    \n    # Check if any subsequence has nested brackets\n    # We'll use a dynamic programming approach to find valid subsequences\n    \n    # Find all valid balanced subsequences\n    def find_valid_subsequences(s, start_idx=0, current=\"\", open_count=0):\n        # If we have a valid balanced sequence with nesting\n        if open_count == 0 and current and has_nested_subsequence(current):\n            return True\n            \n        # If we've reached the end of the string\n        if start_idx >= len(s):\n            return False\n            \n        # Skip current character\n        if find_valid_subsequences(s, start_idx + 1, current, open_count):\n            return True\n            \n        # Include current character\n        char = s[start_idx]\n        if char == '[':\n            if find_valid_subsequences(s, start_idx + 1, current + char, open_count + 1):\n                return True\n        elif char == ']' and open_count > 0:\n            if find_valid_subsequences(s, start_idx + 1, current + char, open_count - 1):\n                return True\n                \n        return False\n    \n    # Optimization: check if the string contains '[[]]' pattern\n    for i in range(len(string) - 3):\n        if string[i:i+4] == '[[]]':\n            return True\n    \n    # For shorter inputs, we can check all subsequences\n    if n <= 10:\n        return find_valid_subsequences(string)\n    \n    # For longer inputs, we need a more efficient approach\n    # We'll check if we can form a nested pattern by removing some brackets\n    stack = []\n    for char in string:\n        if char == '[':\n            stack.append(char)\n        elif char == ']' and stack:\n            # If we have at least one opening bracket\n            if len(stack) >= 2:\n                # We found a nested pattern\n                return True\n            stack.pop()\n    \n    return False", "prompt": "\ndef is_nested(string):\n    '''\n    Create a function that takes a string as input which contains only square brackets.\n    The function should return True if and only if there is a valid subsequence of brackets \n    where at least one bracket in the subsequence is nested.\n\n    is_nested('[[]]') ➞ True\n    is_nested('[]]]]]]][[[[[]') ➞ False\n    is_nested('[][]') ➞ False\n    is_nested('[]') ➞ False\n    is_nested('[[][]]') ➞ True\n    is_nested('[[]][[') ➞ True\n    '''\n"}
+A4S_update/failed_spec_gpt_4o.jsonl:9:{"task_id": "HumanEval/132", "entry_point": "is_nested", "error": "AssertionError: ", "traceback": "Traceback (most recent call last):\n  File \"c:\\Users\\ltroi\\Downloads\\A4S\\spec_result_evaluation.py\", line 42, in run_test\n    exec(compile(code_wrapped, \"<eval>\", \"exec\"), ns)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<eval>\", line 42, in <module>\n  File \"<eval>\", line 24, in check\nAssertionError\n", "test": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate('[[]]') == True, \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate('[]]]]]]][[[[[]') == False\n    assert candidate('[][]') == False\n    assert candidate(('[]')) == False\n    assert candidate('[[[[]]]]') == True\n    assert candidate('[]]]]]]]]]]') == False\n    assert candidate('[][][[]]') == True\n    assert candidate('[[]') == False\n    assert candidate('[]]') == False\n    assert candidate('[[]][[') == True\n    assert candidate('[[][]]') == True\n\n    # Check some edge cases that are easy to work out by hand.\n    assert candidate('') == False, \"This prints if this assert fails 2 (also good for debugging!)\"\n    assert candidate('[[[[[[[[') == False\n    assert candidate(']]]]]]]]') == False\n\n", "generated_solution": "def is_nested(string):\n    counter = 0\n    max_depth = 0\n    \n    for char in string:\n        if char == '[':\n            counter += 1\n            if counter > max_depth:\n                max_depth = counter\n        elif char == ']':\n            counter -= 1\n            if counter < 0:\n                counter = 0\n    \n    return max_depth > 1", "prompt": "\ndef is_nested(string):\n    '''\n    Create a function that takes a string as input which contains only square brackets.\n    The function should return True if and only if there is a valid subsequence of brackets \n    where at least one bracket in the subsequence is nested.\n\n    is_nested('[[]]') ➞ True\n    is_nested('[]]]]]]][[[[[]') ➞ False\n    is_nested('[][]') ➞ False\n    is_nested('[]') ➞ False\n    is_nested('[[][]]') ➞ True\n    is_nested('[[]][[') ➞ True\n    '''\n"}
+===== STDERR =====
+===== EXIT CODE: 0 =====
+

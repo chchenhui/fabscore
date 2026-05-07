@@ -1,0 +1,788 @@
+{
+    "tables": [
+        {
+            "claim_index": 1,
+            "claim": "1. Table 1, GPT-4o, Native: 87%",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The current repository does not provide claim-sufficient evidence for GPT-4o Native = 87%. Its only GPT-4o baseline artifact is an unauthenticated failed run yielding 0/164, but the repo itself labels that baseline artifact as misplaced rather than authoritative. Because the documented regeneration path is also broken in the checked-in code (empty hardcoded API key instead of reading the documented environment variable), this repo state cannot establish the true GPT-4o baseline value, so the claim remains unverified rather than cleanly contradicted.",
+            "evidence": "Paper extraction with PyPDF2 shows the Table 1/body-text claim that GPT-4o Native is 87% and improves to 92% under Self-Spec. The only committed GPT-4o baseline repo artifact is `A4S_update/results_summary_baseline_gpt-4o.txt` with `Total: 164, Passed: 0, Failed: 164`, and a JSONL scan of `A4S_update/all_baseline_gpt-4o.jsonl` found 164/164 records containing the OpenAI 401 message `You didn't provide an API key`. `A4S_update/readme.md` says the GPT-4o baseline artifact was misplaced and should be regenerated with `python evaluation_baseline_pipeline.py`, but `A4S_update/evaluation_baseline_pipeline.py` hardcodes `API_KEY = \"\"` and creates `AsyncOpenAI(api_key=API_KEY)`, so the documented rerun path is not self-contained in the current repo state. Fresh command log saved to `fabscore_codex/workspace/claim_1_command_output.txt`. | Code: A4S_update/readme.md:35-40,61-63,71-76; A4S_update/evaluation_baseline_pipeline.py:8-14,27-50,67-114; A4S_update/baseline_result_evaluation.py:4-35; A4S_update/results_summary_baseline_gpt-4o.txt:1; A4S_update/all_baseline_gpt-4o.jsonl (164/164 entries with 401 API-key errors, logged in fabscore_codex/workspace/claim_1_command_output.txt)",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/readme.md:35-40,61-63,71-76",
+                    "A4S_update/evaluation_baseline_pipeline.py:8-14,27-50,67-114",
+                    "A4S_update/baseline_result_evaluation.py:4-35",
+                    "A4S_update/results_summary_baseline_gpt-4o.txt:1",
+                    "A4S_update/all_baseline_gpt-4o.jsonl (164/164 entries with 401 API-key errors, logged in fabscore_codex/workspace/claim_1_command_output.txt)"
+                ],
+                "commands_executed": [
+                    "python - <<'PY' ... PyPDF2 PdfReader('206_Self_Spec_Model_Authored_S.pdf') ... extract Table 1/body-text lines containing GPT-4o/87%/92% ... PY\nsed -n '1,220p' A4S_update/readme.md\nsed -n '1,220p' A4S_update/evaluation_baseline_pipeline.py\nsed -n '1,220p' A4S_update/baseline_result_evaluation.py\nsed -n '1,40p' A4S_update/results_summary_baseline_gpt-4o.txt\npython - <<'PY' ... scan A4S_update/all_baseline_gpt-4o.jsonl and count 401 API-key errors ... PY\nnl -ba A4S_update/readme.md | sed -n '1,90p'\nnl -ba A4S_update/evaluation_baseline_pipeline.py | sed -n '1,130p'\nnl -ba A4S_update/baseline_result_evaluation.py | sed -n '1,120p'\nnl -ba A4S_update/results_summary_baseline_gpt-4o.txt"
+                ]
+            }
+        },
+        {
+            "claim_index": 2,
+            "claim": "2. Table 1, GPT-4o, Self-Spec: 92%",
+            "verdict": "Result Fabrication",
+            "explanation": "Execution stage: This claim is contradicted by the repository’s own GPT-4o Self-Spec result artifacts. The evaluation path is present and writes a summary from the evaluated JSONL set, and the committed summary plus raw counts imply 91.46%, not the paper’s reported 92%. Because the implementation path exists and the conflict is in the reported number, this is a result-level contradiction.",
+            "evidence": "Paper context extracted from `206_Self_Spec_Model_Authored_S.pdf` shows Table 1 reports `GPT-4o 87% 92% +5`. The committed repository artifacts for the same setting show `A4S_update/results_summary_spec_gpt_4o.txt:1` = `Total: 164, Passed: 150, Failed: 14`; `A4S_update/all_spec_gpt_4o.jsonl` contains 164 task records; `A4S_update/failed_spec_gpt_4o.jsonl` contains 14 failed task records. Fresh session artifact `fabscore_codex/workspace/claim_2_command_output.txt` records these inspections and the computed implied pass rate `150/164 = 91.46341463414635%`. | Code: A4S_update/spec_result_evaluation.py:10-12 defines the claim-relevant input/output files; A4S_update/spec_result_evaluation.py:49-110 loads `all_spec_{MODEL}.jsonl`, evaluates each record, counts passes, and writes `results_summary_spec_{MODEL}.txt` and `failed_spec_{MODEL}.jsonl`; A4S_update/results_summary_spec_gpt_4o.txt:1 records `Total: 164, Passed: 150, Failed: 14`.",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/spec_result_evaluation.py:10-12 defines the claim-relevant input/output files",
+                    "A4S_update/spec_result_evaluation.py:49-110 loads `all_spec_{MODEL}.jsonl`, evaluates each record, counts passes, and writes `results_summary_spec_{MODEL}.txt` and `failed_spec_{MODEL}.jsonl`",
+                    "A4S_update/results_summary_spec_gpt_4o.txt:1 records `Total: 164, Passed: 150, Failed: 14`."
+                ],
+                "commands_executed": [
+                    "python - <<'PY'\nfrom PyPDF2 import PdfReader\nreader = PdfReader('206_Self_Spec_Model_Authored_S.pdf')\nfor i, page in enumerate(reader.pages):\n    text = page.extract_text() or ''\n    if 'Table 1' in text or 'GPT-4o' in text:\n        print(f'--- PAGE {i+1} ---')\n        for line in text.splitlines():\n            if 'Table 1' in line or 'GPT-4o' in line or 'Claude' in line or 'Pass@1' in line or 'Self-Spec' in line:\n                print(line)\nPY\n; sed -n '1,220p' A4S_update/spec_result_evaluation.py\n; sed -n '1,220p' A4S_update/spec_result_generation.py\n; sed -n '1,120p' A4S_update/results_summary_spec_gpt_4o.txt\n; python - <<'PY'\nimport json\nfrom pathlib import Path\nall_path = Path('A4S_update/all_spec_gpt_4o.jsonl')\nfailed_path = Path('A4S_update/failed_spec_gpt_4o.jsonl')\nrecords = [json.loads(line) for line in all_path.open()]\nfailed = [json.loads(line) for line in failed_path.open()]\nprint('all_len', len(records))\nprint('failed_len', len(failed))\nprint('failed_tasks', [r['task_id'] for r in failed])\nprint('inferred_pass_pct', (len(records)-len(failed))/len(records)*100)\nPY\n; nl -ba A4S_update/spec_result_evaluation.py | sed -n '1,140p'\n; nl -ba A4S_update/results_summary_spec_gpt_4o.txt"
+                ]
+            }
+        },
+        {
+            "claim_index": 3,
+            "claim": "3. Table 1, GPT-4o, ∆: +5",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The exact GPT-4o delta claim cannot be settled from repository-side evidence alone. The committed Self-Spec result is concrete at 150/164 = 91.4634%, but the native GPT-4o side needed for the delta is not available as a valid run: the stored baseline artifact is only an authentication-failure run, and the documented regeneration path is not self-contained in this environment. That leaves the exact '+5' unsupported but not decisively reproducible as a repository-side contradiction for this claim.",
+            "evidence": "Claim-specific inspection log saved to fabscore_codex/workspace/claim_3_command_output.txt. Paper context shows GPT-4o '87% 92% +5'. Repository artifacts show GPT-4o Self-Spec = 150/164 from A4S_update/results_summary_spec_gpt_4o.txt:1, while the only GPT-4o baseline artifact is A4S_update/results_summary_baseline_gpt-4o.txt:1 with 0/164, and A4S_update/all_baseline_gpt-4o.jsonl starts with a 401 API-key failure. README says the original GPT-4o baseline artifact was 'misplaced'. | Code: A4S_update/readme.md:35-46; A4S_update/evaluation_baseline_pipeline.py:8-9,14,20; A4S_update/spec_result_evaluation.py:98-106; A4S_update/results_summary_baseline_gpt-4o.txt:1; A4S_update/results_summary_spec_gpt_4o.txt:1",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/readme.md:35-46",
+                    "A4S_update/evaluation_baseline_pipeline.py:8-9,14,20",
+                    "A4S_update/spec_result_evaluation.py:98-106",
+                    "A4S_update/results_summary_baseline_gpt-4o.txt:1",
+                    "A4S_update/results_summary_spec_gpt_4o.txt:1"
+                ],
+                "commands_executed": [
+                    "Reused prior baseline regeneration attempt from existing artifact: `cd /home/chenhui/fabscore/agent4sci_acc/submission_206/A4S_update && timeout 300 python3 evaluation_baseline_pipeline.py` (captured earlier in fabscore_codex/workspace/claim_1_command_output.txt). This session ran claim-specific inspection commands captured in `fabscore_codex/workspace/claim_3_command_output.txt`, including: `python` with `PyPDF2` to extract the Table 1 GPT-4o lines from `206_Self_Spec_Model_Authored_S.pdf`; `nl -ba A4S_update/readme.md | sed -n '30,80p'`; `nl -ba A4S_update/evaluation_baseline_pipeline.py | sed -n '1,30p'`; `nl -ba A4S_update/spec_result_evaluation.py | sed -n '98,110p'`; `nl -ba A4S_update/results_summary_baseline_gpt-4o.txt`; `nl -ba A4S_update/results_summary_spec_gpt_4o.txt`; `python` to inspect `A4S_update/all_baseline_gpt-4o.jsonl`; `python` to compute the 150/164 percentage and candidate deltas; and `rg -n '401|Passed: 0, Failed: 164|API key|misplaced' fabscore_codex/workspace/claim_1_command_output.txt`."
+                ]
+            }
+        },
+        {
+            "claim_index": 8,
+            "claim": "8. Table 1, Claude 3.5, Self-Spec: 89%",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: This claim depends on a missing Claude 3.5 Self-Spec experiment output. The repository does provide a nominal regeneration path, but that path is nonfunctional as released: `spec_result_generation.py` hardcodes an empty API key and raises immediately, even though the README says the result can be regenerated by setting an API key and running the script. Because the exact claim-relevant experiment cannot be executed from the provided code path, the released experiment setup for this table entry conflicts with the paper’s reproducibility claim.",
+            "evidence": "Paper context from `206_Self_Spec_Model_Authored_S.pdf` states Claude 3.5 is `90% -> 89% (-1)` in Table 1 / Section 5. The repository contains only the Claude 3.5 baseline artifacts (`A4S_update/all_baseline_claude_3_5_sonnet_20241022.jsonl`, `A4S_update/results_summary_baseline_claude_3_5_sonnet_20241022.txt`, `A4S_update/failed_baseline_claude_3_5_sonnet_20241022.jsonl`) and does not contain the claim-relevant Self-Spec artifacts (`all_spec_claude_3_5_sonnet_20241022.jsonl`, `results_summary_spec_claude_3_5_sonnet_20241022.txt`, `failed_spec_claude_3_5_sonnet_20241022.jsonl`). Fresh reproduction attempt logged in `fabscore_codex/workspace/claim_8_command_output.txt` shows `cd A4S_update && python3 spec_result_generation.py` exits with `RuntimeError: NO API Key：` before generation starts. | Code: A4S_update/spec_result_generation.py:14-17, 35-50, 516-545 (`MODEL`, `BASEURL`, `GPT5LLM.__post_init__`, `async_main`); A4S_update/spec_result_evaluation.py:7-12 (`MODEL`, `INPUT_PATH`, `SUMMARY_TXT`, `ERROR_PATH`); A4S_update/readme.md (`Heads-up (easy to re-run)` and `Just set your API key` sections for Claude 3.5 spec regeneration)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/spec_result_generation.py:14-17, 35-50, 516-545 (`MODEL`, `BASEURL`, `GPT5LLM.__post_init__`, `async_main`)",
+                    "A4S_update/spec_result_evaluation.py:7-12 (`MODEL`, `INPUT_PATH`, `SUMMARY_TXT`, `ERROR_PATH`)",
+                    "A4S_update/readme.md (`Heads-up (easy to re-run)` and `Just set your API key` sections for Claude 3.5 spec regeneration)"
+                ],
+                "commands_executed": [
+                    "cd A4S_update && python3 spec_result_generation.py  (executed from `/home/chenhui/fabscore/agent4sci_acc/submission_206`; raw stdout/stderr saved to `fabscore_codex/workspace/claim_8_command_output.txt`)"
+                ]
+            }
+        },
+        {
+            "claim_index": 9,
+            "claim": "9. Table 1, Claude 3.5, ∆: −1",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The reported delta depends on the missing Claude 3.5 Self-Spec result. While the baseline 90% side is supported, the released repository cannot generate the corresponding Self-Spec run needed to establish the claimed 89% endpoint, because the provided generation script hardcodes an empty API key and aborts immediately. That is a concrete experiment-path conflict in the repository, not just a missing summary file.",
+            "evidence": "Paper text extracted in `fabscore_codex/workspace/claim_9_command_output.txt` states Claude 3.5 is `90%→89% (-1)` in Table 1 / Section 5. The baseline side is concretely supported by `A4S_update/results_summary_baseline_claude_3_5_sonnet_20241022.txt:1` with `Total: 164, Passed: 147, Failed: 17`, matching the JSONL counts (`147/164 = 89.63414634146342%`, which rounds to 90%). The claim-relevant Claude 3.5 Self-Spec artifacts are absent (`A4S_update/all_spec_claude_3_5_sonnet_20241022.jsonl`, `A4S_update/results_summary_spec_claude_3_5_sonnet_20241022.txt`, `A4S_update/failed_spec_claude_3_5_sonnet_20241022.jsonl` do not exist). The repo-native regeneration attempt for that exact missing run was already executed and logged in `fabscore_codex/workspace/claim_8_command_output.txt`: `cd A4S_update && python3 spec_result_generation.py` fails with `RuntimeError: NO API Key：` before any `all_spec_claude_3_5_sonnet_20241022.jsonl` file can be produced. | Code: A4S_update/results_summary_baseline_claude_3_5_sonnet_20241022.txt:1; A4S_update/readme.md:35-46, 94-106; A4S_update/spec_result_generation.py:14-16, 35-47, 470-545; A4S_update/spec_result_evaluation.py:7-12, 49-110",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/results_summary_baseline_claude_3_5_sonnet_20241022.txt:1",
+                    "A4S_update/readme.md:35-46, 94-106",
+                    "A4S_update/spec_result_generation.py:14-16, 35-47, 470-545",
+                    "A4S_update/spec_result_evaluation.py:7-12, 49-110"
+                ],
+                "commands_executed": [
+                    "Reused prior logged regeneration attempt: `cd A4S_update && python3 spec_result_generation.py` from `fabscore_codex/workspace/claim_8_command_output.txt`. Session-specific evidence collection was run from the repository root via `python3` and logged to `fabscore_codex/workspace/claim_9_command_output.txt`."
+                ]
+            }
+        },
+        {
+            "claim_index": 10,
+            "claim": "10. Table 2, Persistent across all three, Task IDs: 75",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The released repository supports the `HumanEval/75` membership for GPT-4o and Claude 3.7, but the third self-spec log needed for the paper’s three-way persistence claim is missing and cannot be regenerated via the repository’s own advertised path. `readme.md` says Claude 3.5 self-spec is easy to re-run by setting an API key, yet `spec_result_generation.py` hardcodes `API_KEY = \"\"` and aborts immediately. That is a concrete repository-side experiment-path conflict blocking the exact Table 2 claim.",
+            "evidence": "`206_Self_Spec_Model_Authored_S.pdf` page 6 / Table 2 states `Persistent across all three 75, 145, 160`. In this session, `HumanEval/75` was confirmed present in both committed self-spec failure logs: `A4S_update/failed_spec_gpt_4o.jsonl` and `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl`. The claim-relevant Claude 3.5 self-spec artifacts are absent: `A4S_update/all_spec_claude_3_5_sonnet_20241022.jsonl`, `A4S_update/results_summary_spec_claude_3_5_sonnet_20241022.txt`, and `A4S_update/failed_spec_claude_3_5_sonnet_20241022.jsonl` do not exist. Reused prior execution artifact `fabscore_codex/workspace/claim_8_command_output.txt`, which records `cd A4S_update && python3 spec_result_generation.py` failing with `RuntimeError: NO API Key：` before any Claude 3.5 self-spec output is produced. | Code: A4S_update/readme.md:35-46; A4S_update/readme.md:61-63; A4S_update/readme.md:94-106; A4S_update/spec_result_generation.py:14-16; A4S_update/spec_result_generation.py:42-46; A4S_update/spec_result_generation.py:471; A4S_update/spec_result_generation.py:533; A4S_update/spec_result_generation.py:545; A4S_update/spec_result_evaluation.py:7-12",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/readme.md:35-46",
+                    "A4S_update/readme.md:61-63",
+                    "A4S_update/readme.md:94-106",
+                    "A4S_update/spec_result_generation.py:14-16",
+                    "A4S_update/spec_result_generation.py:42-46",
+                    "A4S_update/spec_result_generation.py:471",
+                    "A4S_update/spec_result_generation.py:533",
+                    "A4S_update/spec_result_generation.py:545",
+                    "A4S_update/spec_result_evaluation.py:7-12"
+                ],
+                "commands_executed": [
+                    "Current session: `python3 - <<'PY' ... PyPDF2 extract Table 2 text ... PY`; `python3 - <<'PY' ... inspect failed_spec_gpt_4o.jsonl / failed_spec_claude_3_7_sonnet_20250219.jsonl for HumanEval/75 ... PY`; `ls -l A4S_update/all_spec_claude_3_5_sonnet_20241022.jsonl A4S_update/results_summary_spec_claude_3_5_sonnet_20241022.txt A4S_update/failed_spec_claude_3_5_sonnet_20241022.jsonl`; `sed -n '1,220p' fabscore_codex/workspace/claim_8_command_output.txt`. Reused prior attempted regeneration command from that artifact: `cd A4S_update && python3 spec_result_generation.py`."
+                ]
+            }
+        },
+        {
+            "claim_index": 11,
+            "claim": "11. Table 2, Persistent across all three, Task IDs: 145",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The repository supports `HumanEval/145` for GPT-4o and Claude 3.7, but the third self-spec log needed for the paper’s three-model persistence claim is missing and the repository’s own documented regeneration path is internally broken. `readme.md` says Claude 3.5 self-spec can be regenerated by setting `OPENAI_API_KEY`, yet `spec_result_generation.py` hardcodes `API_KEY = \"\"` and aborts immediately. That is a concrete repository-side conflict in the experiment path for this exact Table 2 claim.",
+            "evidence": "Table 2 text extracted from `206_Self_Spec_Model_Authored_S.pdf` states `Persistent across all three 75, 145, 160`. Fresh inspection in `fabscore_codex/workspace/claim_11_command_output.txt` confirms `HumanEval/145` appears in both committed self-spec failure logs: `A4S_update/failed_spec_gpt_4o.jsonl` and `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl`. The claim-relevant Claude 3.5 self-spec artifacts are missing: `A4S_update/all_spec_claude_3_5_sonnet_20241022.jsonl`, `A4S_update/results_summary_spec_claude_3_5_sonnet_20241022.txt`, and `A4S_update/failed_spec_claude_3_5_sonnet_20241022.jsonl` do not exist. Reused prior execution artifact `fabscore_codex/workspace/claim_8_command_output.txt`, which records `cd A4S_update && python3 spec_result_generation.py` failing with `RuntimeError: NO API Key：` before any Claude 3.5 self-spec output is produced. | Code: A4S_update/readme.md:35-46; A4S_update/readme.md:61-63; A4S_update/readme.md:94-106; A4S_update/spec_result_generation.py:14-16; A4S_update/spec_result_generation.py:42-46; A4S_update/spec_result_generation.py:470-471; A4S_update/spec_result_generation.py:519-545; A4S_update/spec_result_evaluation.py:7-12",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/readme.md:35-46",
+                    "A4S_update/readme.md:61-63",
+                    "A4S_update/readme.md:94-106",
+                    "A4S_update/spec_result_generation.py:14-16",
+                    "A4S_update/spec_result_generation.py:42-46",
+                    "A4S_update/spec_result_generation.py:470-471",
+                    "A4S_update/spec_result_generation.py:519-545",
+                    "A4S_update/spec_result_evaluation.py:7-12"
+                ],
+                "commands_executed": [
+                    "Current session: `python3 - <<'PY' ... PyPDF2 extract Table 2 text ... PY`; `python3 - <<'PY' ... inspect failed_spec_gpt_4o.jsonl / failed_spec_claude_3_7_sonnet_20250219.jsonl for HumanEval/145 ... PY`; `ls -l A4S_update/all_spec_claude_3_5_sonnet_20241022.jsonl A4S_update/results_summary_spec_claude_3_5_sonnet_20241022.txt A4S_update/failed_spec_claude_3_5_sonnet_20241022.jsonl`; `nl -ba A4S_update/readme.md | sed -n '30,110p'`; `nl -ba A4S_update/spec_result_generation.py | sed -n '1,70p'`; `nl -ba A4S_update/spec_result_generation.py | sed -n '460,550p'`; `nl -ba A4S_update/spec_result_evaluation.py | sed -n '1,25p'`; `sed -n '1,220p' fabscore_codex/workspace/claim_8_command_output.txt`. Reused prior attempted regeneration command from that artifact: `cd A4S_update && python3 spec_result_generation.py`."
+                ]
+            }
+        },
+        {
+            "claim_index": 12,
+            "claim": "12. Table 2, Persistent across all three, Task IDs: 160",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The repository supports `HumanEval/160` as a shared self-spec failure for GPT-4o and Claude 3.7, but the third Claude 3.5 self-spec run needed for the paper’s `Persistent across all three` claim is absent and cannot be regenerated from the released code path. `A4S_update/readme.md` says setting `OPENAI_API_KEY` is sufficient, yet `A4S_update/spec_result_generation.py` hardcodes `API_KEY = \"\"` and raises immediately, so the documented experiment path for this claim is internally inconsistent.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_12_command_output.txt` shows Table 2 in `206_Self_Spec_Model_Authored_S.pdf` states `Persistent across all three 75, 145, 160`, and confirms `HumanEval/160` is present in both committed self-spec failure logs: `A4S_update/failed_spec_gpt_4o.jsonl` and `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl`. The same artifact also shows the claim-relevant Claude 3.5 self-spec outputs are missing (`A4S_update/all_spec_claude_3_5_sonnet_20241022.jsonl`, `A4S_update/results_summary_spec_claude_3_5_sonnet_20241022.txt`, `A4S_update/failed_spec_claude_3_5_sonnet_20241022.jsonl`). Reused prior execution artifact `fabscore_codex/workspace/claim_8_command_output.txt`, which records `cd A4S_update && python3 spec_result_generation.py` failing with `RuntimeError: NO API Key：` before any Claude 3.5 self-spec file is produced. | Code: A4S_update/readme.md:35-45; A4S_update/readme.md:61-63; A4S_update/readme.md:94-106; A4S_update/spec_result_generation.py:14-16; A4S_update/spec_result_generation.py:42-46; A4S_update/spec_result_generation.py:470-471; A4S_update/spec_result_generation.py:519-545; A4S_update/spec_result_evaluation.py:7-12",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/readme.md:35-45",
+                    "A4S_update/readme.md:61-63",
+                    "A4S_update/readme.md:94-106",
+                    "A4S_update/spec_result_generation.py:14-16",
+                    "A4S_update/spec_result_generation.py:42-46",
+                    "A4S_update/spec_result_generation.py:470-471",
+                    "A4S_update/spec_result_generation.py:519-545",
+                    "A4S_update/spec_result_evaluation.py:7-12"
+                ],
+                "commands_executed": [
+                    "Current session: `python3 - <<'PY' ... PyPDF2 extract Table 2 text ... PY`; `python3 - <<'PY' ... inspect A4S_update/failed_spec_gpt_4o.jsonl and A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl for HumanEval/160 ... PY`; `ls -l A4S_update/all_spec_claude_3_5_sonnet_20241022.jsonl A4S_update/results_summary_spec_claude_3_5_sonnet_20241022.txt A4S_update/failed_spec_claude_3_5_sonnet_20241022.jsonl`; `nl -ba A4S_update/readme.md | sed -n '35,106p'`; `nl -ba A4S_update/spec_result_generation.py | sed -n '14,50p'`; `nl -ba A4S_update/spec_result_generation.py | sed -n '470,545p'`; `nl -ba A4S_update/spec_result_evaluation.py | sed -n '1,12p'`; `sed -n '1,120p' fabscore_codex/workspace/claim_8_command_output.txt`. Reused prior attempted regeneration command from that artifact: `cd A4S_update && python3 spec_result_generation.py`."
+                ]
+            }
+        },
+        {
+            "claim_index": 13,
+            "claim": "13. Table 2, Shared (Claude 3.7 & GPT-4o), Task IDs: 65",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The repository supports `HumanEval/65` as a self-spec failure shared by GPT-4o and Claude 3.7, but the paper’s exact Table 2 placement requires confirming that Claude 3.5 did not also fail on 65. That third claim-relevant self-spec run is missing, and the released regeneration path is internally broken: `readme.md` says setting `OPENAI_API_KEY` is sufficient, but `spec_result_generation.py` hardcodes an empty API key and aborts before generating the absent Claude 3.5 self-spec outputs. The experiment path needed to support this table entry is therefore not executable as documented.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_13_command_output.txt` shows Table 2 in `206_Self_Spec_Model_Authored_S.pdf` lists `Shared (Claude 3.7 & GPT-4o) 65, 134, 163`, and confirms `HumanEval/65` appears in both committed self-spec failure logs: `A4S_update/failed_spec_gpt_4o.jsonl` and `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl`. The same artifact also shows there are no Claude 3.5 self-spec outputs in `A4S_update/`, only Claude 3.5 baseline files. Reused prior execution artifact `fabscore_codex/workspace/claim_8_command_output.txt`, which records `cd A4S_update && python3 spec_result_generation.py` failing immediately with `RuntimeError: NO API Key：` before any Claude 3.5 self-spec file is produced. | Code: A4S_update/readme.md:35-45; A4S_update/readme.md:61-63; A4S_update/readme.md:94-106; A4S_update/spec_result_generation.py:14-16; A4S_update/spec_result_generation.py:42-46; A4S_update/spec_result_generation.py:470-471",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/readme.md:35-45",
+                    "A4S_update/readme.md:61-63",
+                    "A4S_update/readme.md:94-106",
+                    "A4S_update/spec_result_generation.py:14-16",
+                    "A4S_update/spec_result_generation.py:42-46",
+                    "A4S_update/spec_result_generation.py:470-471"
+                ],
+                "commands_executed": [
+                    "Current session evidence capture was recorded in `fabscore_codex/workspace/claim_13_command_output.txt` from: `python -c \"from PyPDF2 import PdfReader ...\"` to extract Table 2 text; `python -c \"import json ...\"` to inspect `A4S_update/failed_spec_gpt_4o.jsonl` and `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl` for `HumanEval/65`; `ls -l A4S_update/*claude_3_5*`; `nl -ba A4S_update/readme.md | sed -n '35,110p'`; `nl -ba A4S_update/spec_result_generation.py | sed -n '1,60p'`; `nl -ba A4S_update/spec_result_generation.py | sed -n '460,545p'`; `sed -n '1,220p' fabscore_codex/workspace/claim_8_command_output.txt`. Reused prior attempted regeneration command from that artifact: `cd A4S_update && python3 spec_result_generation.py`."
+                ]
+            }
+        },
+        {
+            "claim_index": 14,
+            "claim": "14. Table 2, Shared (Claude 3.7 & GPT-4o), Task IDs: 134",
+            "verdict": "Result Fabrication",
+            "explanation": "Execution stage: The released repository contradicts the paper's Table 2 entry for task 134. Using the repository's own evaluation logic, GPT-4o fails HumanEval/134 but Claude 3.7 passes it, so 134 is not a shared Claude 3.7/GPT-4o self-spec failure.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_14_command_output.txt` records: paper page 6/Table 2 lists `Shared (Claude 3.7 & GPT-4o) 65, 134, 163`; `A4S_update/failed_spec_gpt_4o.jsonl` contains `HumanEval/134`; `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl` does not contain `HumanEval/134`; and a fresh replay of the repository evaluation logic on the committed `all_spec_*.jsonl` task-134 records yields `PASSED False` for GPT-4o but `PASSED True` for Claude 3.7. | Code: 206_Self_Spec_Model_Authored_S.pdf page 6 (Table 2); A4S_update/failed_spec_gpt_4o.jsonl:10; A4S_update/spec_result_evaluation.py:19-47 (`extract_python`, `alias_entry_point_if_needed`, `run_test`); fabscore_codex/workspace/claim_14_command_output.txt",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "206_Self_Spec_Model_Authored_S.pdf page 6 (Table 2)",
+                    "A4S_update/failed_spec_gpt_4o.jsonl:10",
+                    "A4S_update/spec_result_evaluation.py:19-47 (`extract_python`, `alias_entry_point_if_needed`, `run_test`)",
+                    "fabscore_codex/workspace/claim_14_command_output.txt"
+                ],
+                "commands_executed": [
+                    "python - <<'PY'\nfrom PyPDF2 import PdfReader\nreader = PdfReader('206_Self_Spec_Model_Authored_S.pdf')\nfor i, page in enumerate(reader.pages):\n    text = page.extract_text() or ''\n    if 'Table 2' in text:\n        print(f'--- PAGE {i+1} ---')\n        print(text[:5000])\nPY\n\nprintf 'gpt4o\\n' && rg -n 'HumanEval/134|task_id\": 134|\"134\"' A4S_update/failed_spec_gpt_4o.jsonl A4S_update/all_spec_gpt_4o.jsonl ; printf '\\nclaude37\\n' && rg -n 'HumanEval/134|task_id\": 134|\"134\"' A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl ; printf '\\nclaude35 inventory\\n' && find A4S_update -maxdepth 1 -type f | sort | rg 'claude_3_5|claude-3-5'\n\npython - <<'PY'\nimport json, re, traceback\nfrom pathlib import Path\nPRELUDE = ('from typing import *\\n' 'import math, functools, itertools, collections\\n')\ndef extract_python(code: str) -> str:\n    s = code.strip()\n    m = re.match(r'(?s)^\\s*```(?:python)?\\s*(.*?)\\s*```\\s*$', s, flags=re.IGNORECASE)\n    return m.group(1) if m else s\ndef alias_entry_point_if_needed(code: str, entry_point: str) -> str:\n    if re.search(rf'^\\s*def\\s+{re.escape(entry_point)}\\s*\\(', code, flags=re.M) is not None:\n        return code\n    m = re.search(r'^\\s*def\\s+([A-Za-z_]\\w*)\\s*\\(', code, flags=re.M)\n    if m:\n        first_func = m.group(1)\n        if first_func != entry_point:\n            code += f'\\n\\n# auto alias for evaluation\\n{entry_point} = {first_func}\\n'\n    return code\ndef run_test(task, raw_code):\n    ns = {}\n    try:\n        code = extract_python(raw_code)\n        code = alias_entry_point_if_needed(code, task['entry_point'])\n        code_wrapped = f\"{PRELUDE}\\n{code}\\n\\n{task['test']}\\n\\ncheck({task['entry_point']})\"\n        exec(compile(code_wrapped, '<eval>', 'exec'), ns)\n        return True, '', ''\n    except AssertionError as e:\n        return False, f'AssertionError: {e}', traceback.format_exc()\n    except Exception as e:\n        return False, f'{e.__class__.__name__}: {e}', traceback.format_exc()\nfor path in [Path('A4S_update/all_spec_gpt_4o.jsonl'), Path('A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl')]:\n    rec = None\n    with path.open() as f:\n        for line in f:\n            item = json.loads(line)\n            if item.get('task_id') == 'HumanEval/134':\n                rec = item\n                break\n    passed, err, tb = run_test({'entry_point': rec['entry_point'], 'test': rec['test']}, rec['generated_solution'])\n    print(path, rec['task_id'], passed, err)\nPY"
+                ]
+            }
+        },
+        {
+            "claim_index": 15,
+            "claim": "15. Table 2, Shared (Claude 3.7 & GPT-4o), Task IDs: 163",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The repository supports task `163` as a shared self-spec failure for GPT-4o and Claude 3.7, but the exact two-model partition claimed in Table 2 still depends on the missing Claude 3.5 self-spec run. The released repo advertises that Claude 3.5 self-spec can be regenerated by setting an API key and running `spec_result_generation.py`, yet the script hardcodes an empty API key and aborts immediately, so the documented experiment path needed to verify the partition is internally inconsistent.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_15_command_output.txt` shows page 6 / Table 2 of `206_Self_Spec_Model_Authored_S.pdf` places `163` under `Shared (Claude 3.7 & GPT-4o)`, and confirms `HumanEval/163` appears in both committed failure logs: `A4S_update/failed_spec_gpt_4o.jsonl` line 14 and `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl` line 10, both with `AssertionError: Test 1`. The same artifact shows the claim-relevant Claude 3.5 self-spec outputs are absent (`A4S_update/all_spec_claude_3_5_sonnet_20241022.jsonl`, `A4S_update/results_summary_spec_claude_3_5_sonnet_20241022.txt`, `A4S_update/failed_spec_claude_3_5_sonnet_20241022.jsonl`). Reused prior execution artifact `fabscore_codex/workspace/claim_8_command_output.txt`, which records `cd A4S_update && python3 spec_result_generation.py` failing with `RuntimeError: NO API Key：` before any Claude 3.5 self-spec file is produced. | Code: A4S_update/readme.md:35-45; A4S_update/readme.md:61-63; A4S_update/readme.md:94-106; A4S_update/spec_result_generation.py:14-16; A4S_update/spec_result_generation.py:42-46; A4S_update/spec_result_generation.py:470-471; A4S_update/spec_result_generation.py:519-545; A4S_update/spec_result_evaluation.py:7-12",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/readme.md:35-45",
+                    "A4S_update/readme.md:61-63",
+                    "A4S_update/readme.md:94-106",
+                    "A4S_update/spec_result_generation.py:14-16",
+                    "A4S_update/spec_result_generation.py:42-46",
+                    "A4S_update/spec_result_generation.py:470-471",
+                    "A4S_update/spec_result_generation.py:519-545",
+                    "A4S_update/spec_result_evaluation.py:7-12"
+                ],
+                "commands_executed": [
+                    "Current session: `python3 - <<'PY' ... PyPDF2 extract Table 2 lines mentioning Shared (Claude 3.7 & GPT-4o) / 163 ... PY`; `python3 - <<'PY' ... inspect A4S_update/failed_spec_gpt_4o.jsonl and A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl for HumanEval/163 ... PY`; `ls -l A4S_update/all_spec_claude_3_5_sonnet_20241022.jsonl A4S_update/results_summary_spec_claude_3_5_sonnet_20241022.txt A4S_update/failed_spec_claude_3_5_sonnet_20241022.jsonl`; `tail -n 40 fabscore_codex/workspace/claim_8_command_output.txt`. Reused prior attempted regeneration command from that artifact: `cd A4S_update && python3 spec_result_generation.py`."
+                ]
+            }
+        },
+        {
+            "claim_index": 16,
+            "claim": "16. Table 2, Shared (Claude 3.7 & Claude 3.5), Task IDs: 92",
+            "verdict": "Result Fabrication",
+            "explanation": "Execution stage: The paper claims task 92 is a self-spec error shared by Claude 3.7 and Claude 3.5, but the released Claude 3.7 artifacts contradict that claim. Under the repository’s own evaluation logic, Claude 3.7 passes `HumanEval/92`, so task 92 cannot belong in a Claude 3.7/Claude 3.5 shared-failure row.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_16_command_output.txt` shows page 6 / Table 2 of `206_Self_Spec_Model_Authored_S.pdf` places `92` under `Shared (Claude 3.7 & Claude 3.5)`. The same artifact shows `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl` has no `HumanEval/92` entry, while `A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl` contains `HumanEval/92` at line 93. A fresh replay of the repository evaluator via `spec_result_evaluation.py` reports `TASK HumanEval/92`, `ENTRY any_int`, `PASSED True`, `ERROR` empty for the committed Claude 3.7 self-spec solution. | Code: A4S_update/spec_result_evaluation.py:36-47; A4S_update/spec_result_evaluation.py:80-96; A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl:93; A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/spec_result_evaluation.py:36-47",
+                    "A4S_update/spec_result_evaluation.py:80-96",
+                    "A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl:93",
+                    "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl"
+                ],
+                "commands_executed": [
+                    "Executed from repository root and logged in `fabscore_codex/workspace/claim_16_command_output.txt`: `python3 - <<'PY' ... PyPDF2 extract Table 2 lines mentioning Shared (Claude 3.7 & Claude 3.5) / 92 ... PY`; `python3 - <<'PY' ... inspect A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl and A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl for HumanEval/92 ... PY`; `python3 - <<'PY' ... import A4S_update/spec_result_evaluation.py and run mod.run_test(...) on the HumanEval/92 Claude 3.7 record ... PY`."
+                ]
+            }
+        },
+        {
+            "claim_index": 17,
+            "claim": "17. Table 2, Shared (Claude 3.7 & Claude 3.5), Task IDs: 146",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The released artifacts support only part of the table entry: task 146 is a committed Claude 3.7 self-spec failure and is not a committed GPT-4o self-spec failure. But the exact Claude 3.7/Claude 3.5 shared-overlap claim depends on the Claude 3.5 self-spec run, and those outputs are absent. The repository’s own documented regeneration path for that missing run is internally broken, so the experiment path needed to support this specific Table 2 claim is not executable as documented.",
+            "evidence": "Reused prior blocker artifact `fabscore_codex/workspace/claim_8_command_output.txt` and created fresh claim-specific artifact `fabscore_codex/workspace/claim_17_command_output.txt`. In `claim_17_command_output.txt`, line 47 extracts the paper’s Table 2 entry `Shared (Claude 3.7 & Claude 3.5) 92, 146`; lines 58-59 show `HumanEval/146` is present in `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl` and absent from `A4S_update/failed_spec_gpt_4o.jsonl`; lines 62-64 show the claim-relevant Claude 3.5 self-spec outputs are missing; lines 128, 162, 166, 248, 251, 776-777 show the README says rerunning with `OPENAI_API_KEY` should produce `all_spec_claude_3_5_sonnet_20241022.jsonl`, but the released generator hardcodes `API_KEY = \"\"` and aborts with `RuntimeError: NO API Key：`. | Code: A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl:8; A4S_update/readme.md:62,96-100; A4S_update/spec_result_generation.py:43-46,521; fabscore_codex/workspace/claim_8_command_output.txt; fabscore_codex/workspace/claim_17_command_output.txt:47-64,128,162,166,248,251,776-777",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl:8",
+                    "A4S_update/readme.md:62,96-100",
+                    "A4S_update/spec_result_generation.py:43-46,521",
+                    "fabscore_codex/workspace/claim_8_command_output.txt",
+                    "fabscore_codex/workspace/claim_17_command_output.txt:47-64,128,162,166,248,251,776-777"
+                ],
+                "commands_executed": [
+                    "Executed from `/home/chenhui/fabscore/agent4sci_acc/submission_206` and logged in `fabscore_codex/workspace/claim_17_command_output.txt`: `python3 -c \"from PyPDF2 import PdfReader; text='\\n'.join(page.extract_text() or '' for page in PdfReader('206_Self_Spec_Model_Authored_S.pdf').pages); lines=[line for line in text.splitlines() if 'Shared (Claude 3.7 & Claude 3.5)' in line or '146' in line]; print('\\\\n'.join(lines))\"`; `python3 -c \"import json; paths=['A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl','A4S_update/failed_spec_gpt_4o.jsonl']; target='HumanEval/146'; ...\"`; `ls -l A4S_update/all_spec_claude_3_5_sonnet_20241022.jsonl A4S_update/results_summary_spec_claude_3_5_sonnet_20241022.txt A4S_update/failed_spec_claude_3_5_sonnet_20241022.jsonl`; `nl -ba A4S_update/readme.md`; `nl -ba A4S_update/spec_result_generation.py`. Reused prior attempted regeneration command recorded in `fabscore_codex/workspace/claim_8_command_output.txt`: `cd A4S_update && python3 spec_result_generation.py`."
+                ]
+            }
+        },
+        {
+            "claim_index": 18,
+            "claim": "18. Table 2, Shared (GPT-4o & Claude 3.5), Task IDs: 50",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The paper’s exact pairwise Table 2 entry for task 50 requires claim-relevant Claude 3.5 self-spec output. The repository provides GPT-4o evidence for `HumanEval/50` and shows Claude 3.7 does not fail on 50, but the required Claude 3.5 self-spec artifacts are missing. The repository’s own advertised regeneration path for those missing artifacts is internally broken: the README says to set `OPENAI_API_KEY` and run `spec_result_generation.py`, but the script hardcodes `API_KEY = \"\"` and aborts before producing any Claude 3.5 self-spec files. That is a concrete experiment-path conflict with the paper’s claimed table entry.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_18_command_output.txt` shows `206_Self_Spec_Model_Authored_S.pdf` page 6 / Table 2 lists `Shared (GPT-4o & Claude 3.5) 50, 83`; `A4S_update/failed_spec_gpt_4o.jsonl` contains `HumanEval/50` at line 1 with `NameError: name 'encode_shift' is not defined`; `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl` has zero hits for `HumanEval/50`; and the Claude 3.5 self-spec artifacts `all_spec_claude_3_5_sonnet_20241022.jsonl`, `results_summary_spec_claude_3_5_sonnet_20241022.txt`, and `failed_spec_claude_3_5_sonnet_20241022.jsonl` are absent. Reused `fabscore_codex/workspace/claim_8_command_output.txt`, which records the documented regeneration command failing with `RuntimeError: NO API Key：`. | Code: A4S_update/readme.md:35-45; A4S_update/readme.md:61-63; A4S_update/readme.md:94-106; A4S_update/spec_result_generation.py:14-16; A4S_update/spec_result_generation.py:42-46; A4S_update/spec_result_generation.py:471",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/readme.md:35-45",
+                    "A4S_update/readme.md:61-63",
+                    "A4S_update/readme.md:94-106",
+                    "A4S_update/spec_result_generation.py:14-16",
+                    "A4S_update/spec_result_generation.py:42-46",
+                    "A4S_update/spec_result_generation.py:471"
+                ],
+                "commands_executed": [
+                    "Fresh claim-18 commands recorded in `fabscore_codex/workspace/claim_18_command_output.txt`: `python3 - <<'PY' ... PdfReader('206_Self_Spec_Model_Authored_S.pdf') ... PY`; `python3 - <<'PY' ... inspect A4S_update/failed_spec_gpt_4o.jsonl and A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl for HumanEval/50 ... PY`; `ls -l A4S_update/all_spec_claude_3_5_sonnet_20241022.jsonl A4S_update/results_summary_spec_claude_3_5_sonnet_20241022.txt A4S_update/failed_spec_claude_3_5_sonnet_20241022.jsonl`; `nl -ba A4S_update/readme.md | sed -n '34,46p'`; `nl -ba A4S_update/readme.md | sed -n '61,63p'`; `nl -ba A4S_update/readme.md | sed -n '94,106p'`; `nl -ba A4S_update/spec_result_generation.py | sed -n '12,52p'`. Reused prior attempted regeneration command from `fabscore_codex/workspace/claim_8_command_output.txt`: `cd A4S_update && python3 spec_result_generation.py`."
+                ]
+            }
+        },
+        {
+            "claim_index": 19,
+            "claim": "19. Table 2, Shared (GPT-4o & Claude 3.5), Task IDs: 83",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The released repository supports only one side of the claimed overlap directly: GPT-4o fails `HumanEval/83`, while Claude 3.7 does not. Establishing the paper’s claimed GPT-4o/Claude 3.5 shared failure requires the missing Claude 3.5 self-spec run, but that run is not committed and the repository’s own documented regeneration path is broken because `spec_result_generation.py` hardcodes an empty API key and aborts before generation. That is a concrete repository-side experiment-path conflict, not just a missing artifact.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_19_command_output.txt` shows page 6 / Table 2 lists `Shared (GPT-4o & Claude 3.5) 50, 83`; `A4S_update/failed_spec_gpt_4o.jsonl` contains `HumanEval/83` once (line 5, `AssertionError`); `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl` contains no `HumanEval/83`; the Claude 3.5 self-spec artifacts `all_spec_claude_3_5_sonnet_20241022.jsonl`, `results_summary_spec_claude_3_5_sonnet_20241022.txt`, and `failed_spec_claude_3_5_sonnet_20241022.jsonl` are absent; reused prior artifact `fabscore_codex/workspace/claim_8_command_output.txt`, which records `cd A4S_update && python3 spec_result_generation.py` failing with `RuntimeError: NO API Key：`. | Code: A4S_update/spec_result_generation.py:42-46; A4S_update/readme.md:35-45; A4S_update/readme.md:61-63; A4S_update/readme.md:94-106; A4S_update/failed_spec_gpt_4o.jsonl; A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/spec_result_generation.py:42-46",
+                    "A4S_update/readme.md:35-45",
+                    "A4S_update/readme.md:61-63",
+                    "A4S_update/readme.md:94-106",
+                    "A4S_update/failed_spec_gpt_4o.jsonl",
+                    "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl"
+                ],
+                "commands_executed": [
+                    "python3 - <<'PY'\nfrom PyPDF2 import PdfReader\nreader = PdfReader('206_Self_Spec_Model_Authored_S.pdf')\nfor i, page in enumerate(reader.pages, start=1):\n    text = page.extract_text() or ''\n    if 'Shared (GPT-4o & Claude 3.5) 50, 83' in text or 'Table 2:' in text:\n        print(f'--- PAGE {i} ---')\n        for line in text.splitlines():\n            if 'Shared (GPT-4o & Claude 3.5)' in line or 'Table 2:' in line or 'HE/83' in line:\n                print(line)\nPY ; python3 - <<'PY'\nimport json\nfrom pathlib import Path\npairs = [\n    ('A4S_update/failed_spec_gpt_4o.jsonl', 'HumanEval/83'),\n    ('A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl', 'HumanEval/83'),\n]\nfor path_str, target in pairs:\n    path = Path(path_str)\n    hits = []\n    with path.open() as f:\n        for idx, line in enumerate(f, start=1):\n            obj = json.loads(line)\n            if obj.get('task_id') == target:\n                hits.append((idx, obj.get('task_id'), obj.get('error')))\n    print(path_str, 'hits=', len(hits))\n    for item in hits:\n        print('  line', item[0], 'task_id=', item[1], 'error=', item[2])\nPY ; ls -l A4S_update/all_spec_claude_3_5_sonnet_20241022.jsonl A4S_update/results_summary_spec_claude_3_5_sonnet_20241022.txt A4S_update/failed_spec_claude_3_5_sonnet_20241022.jsonl ; nl -ba A4S_update/readme.md | sed -n '35,45p' ; nl -ba A4S_update/readme.md | sed -n '61,63p' ; nl -ba A4S_update/readme.md | sed -n '94,106p' ; nl -ba A4S_update/spec_result_generation.py | sed -n '37,48p' ; sed -n '1,80p' fabscore_codex/workspace/claim_8_command_output.txt"
+                ]
+            }
+        },
+        {
+            "claim_index": 20,
+            "claim": "20. Table 3, Claude 3.7, Task IDs (unique among the three self-spec logs): 10",
+            "verdict": "Result Fabrication",
+            "explanation": "Execution stage: The paper claims task 10 is a Claude 3.7 self-spec failure unique among the model logs, but the released Claude 3.7 self-spec failure log excludes `HumanEval/10`, and the repository’s own evaluator passes the saved Claude 3.7 `HumanEval/10` output. This is a direct mismatch between the reported table entry and the repository-backed result.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_20_command_output.txt` shows Table 3 in `206_Self_Spec_Model_Authored_S.pdf` lists `Claude 3.7 10, 116`, but `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl` has 10 failures and does not include `HumanEval/10`. The same artifact shows `A4S_update/failed_spec_gpt_4o.jsonl` also does not include `HumanEval/10`, and re-evaluating the saved Claude 3.7 generation for `HumanEval/10` from `A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl` returns `passed=True`. | Code: A4S_update/spec_result_evaluation.py:36-47; A4S_update/spec_result_evaluation.py:80-110",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/spec_result_evaluation.py:36-47",
+                    "A4S_update/spec_result_evaluation.py:80-110"
+                ],
+                "commands_executed": [
+                    "Recorded in `fabscore_codex/workspace/claim_20_command_output.txt`: (1) `python3 - <<'PY'` with `PyPDF2` to extract the Table 3 lines from `206_Self_Spec_Model_Authored_S.pdf`; (2) `python3 - <<'PY'` to enumerate task IDs in `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl` and `A4S_update/failed_spec_gpt_4o.jsonl` and check for `HumanEval/10`; (3) `python3 - <<'PY'` to import `run_test` from `A4S_update/spec_result_evaluation.py`, load the `HumanEval/10` record from `A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl`, and evaluate it."
+                ]
+            }
+        },
+        {
+            "claim_index": 21,
+            "claim": "21. Table 3, Claude 3.7, Task IDs (unique among the three self-spec logs): 116",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The released artifacts support `HumanEval/116` as a Claude 3.7 self-spec failure and show it is absent from the committed GPT-4o self-spec failure log, but the paper’s claim is explicitly about uniqueness across all three self-spec logs. The repository provides no Claude 3.5 self-spec log, and its own documented regeneration path is internally inconsistent: `readme.md` says to set an API key and run the script, while `spec_result_generation.py` hardcodes an empty API key and aborts before generating the missing Claude 3.5 files. That breaks the claim-relevant experiment path needed to support the three-way uniqueness statement.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_21_command_output.txt` shows page 6 / Table 3 states `Claude 3.7 10, 116` under `Task IDs (unique among the three self-spec logs)`. The same artifact confirms `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl` contains `HumanEval/116` once with `AssertionError`, while `A4S_update/failed_spec_gpt_4o.jsonl` contains `HumanEval/116` zero times. It also confirms the claim-relevant Claude 3.5 self-spec outputs are absent: `A4S_update/all_spec_claude_3_5_sonnet_20241022.jsonl`, `A4S_update/results_summary_spec_claude_3_5_sonnet_20241022.txt`, and `A4S_update/failed_spec_claude_3_5_sonnet_20241022.jsonl` do not exist. Reused prior artifact `fabscore_codex/workspace/claim_8_command_output.txt`, which records `cd A4S_update && python3 spec_result_generation.py` failing with `RuntimeError: NO API Key：`. | Code: A4S_update/readme.md:94-106; A4S_update/spec_result_generation.py:42-46; A4S_update/spec_result_generation.py:519-545; A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl; A4S_update/failed_spec_gpt_4o.jsonl; fabscore_codex/workspace/claim_8_command_output.txt",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/readme.md:94-106",
+                    "A4S_update/spec_result_generation.py:42-46",
+                    "A4S_update/spec_result_generation.py:519-545",
+                    "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+                    "A4S_update/failed_spec_gpt_4o.jsonl",
+                    "fabscore_codex/workspace/claim_8_command_output.txt"
+                ],
+                "commands_executed": [
+                    "Current session: `python3 - <<'PY' ... PyPDF2 extract Table 3 lines from page 6 ... PY`; `python3 - <<'PY' ... count HumanEval/116 in A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl and A4S_update/failed_spec_gpt_4o.jsonl, and test existence of Claude 3.5 self-spec files ... PY`; `nl -ba A4S_update/readme.md | sed -n '94,106p'`; `nl -ba A4S_update/spec_result_generation.py | sed -n '42,46p'`; `sed -n '1,40p' fabscore_codex/workspace/claim_8_command_output.txt`. Reused prior attempted regeneration command from that artifact: `cd A4S_update && python3 spec_result_generation.py`."
+                ]
+            }
+        },
+        {
+            "claim_index": 22,
+            "claim": "22. Table 3, GPT-4o, Task IDs (unique among the three self-spec logs): 74",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The released artifacts support only a two-log comparison for task 74: present in GPT-4o and absent in Claude 3.7. The paper claims uniqueness among three self-spec logs, but the Claude 3.5 self-spec outputs are missing, and the repository's own advertised regeneration path is broken because `spec_result_generation.py` hardcodes an empty API key instead of using the README-described environment-variable setup. That is a concrete repository-side experiment-path conflict, so the three-way uniqueness claim cannot be supported from the released code and artifacts.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_22_command_output.txt` shows Table 3 on page 6 lists `GPT-4o 74, 91, 102, 115, 132, 141`; `A4S_update/failed_spec_gpt_4o.jsonl` contains `HumanEval/74` once with `AssertionError`; `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl` contains `HumanEval/74` zero times; the claim-relevant Claude 3.5 self-spec files `all_spec_claude_3_5_sonnet_20241022.jsonl`, `results_summary_spec_claude_3_5_sonnet_20241022.txt`, and `failed_spec_claude_3_5_sonnet_20241022.jsonl` do not exist; reused `fabscore_codex/workspace/claim_8_command_output.txt`, which records `cd A4S_update && python3 spec_result_generation.py` failing with `RuntimeError: NO API Key:`. | Code: A4S_update/readme.md:94-100; A4S_update/spec_result_generation.py:42-46 and async_main/build path around line 533/471; A4S_update/failed_spec_gpt_4o.jsonl; A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/readme.md:94-100",
+                    "A4S_update/spec_result_generation.py:42-46 and async_main/build path around line 533/471",
+                    "A4S_update/failed_spec_gpt_4o.jsonl",
+                    "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl"
+                ],
+                "commands_executed": [
+                    "python3 - <<'PY' ... PyPDF2 extract of page 6/Table 3 ... PY; python3 - <<'PY' ... counted `HumanEval/74` in `A4S_update/failed_spec_gpt_4o.jsonl` and `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl`, and checked existence of Claude 3.5 self-spec files ... PY; nl -ba A4S_update/readme.md | sed -n '94,100p'; nl -ba A4S_update/spec_result_generation.py | sed -n '42,46p'; sed -n '1,40p' fabscore_codex/workspace/claim_8_command_output.txt"
+                ]
+            }
+        },
+        {
+            "claim_index": 23,
+            "claim": "23. Table 3, GPT-4o, Task IDs (unique among the three self-spec logs): 91",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The released repository supports only a two-log check for task 91: it is present in the committed GPT-4o self-spec failure log and absent from the committed Claude 3.7 self-spec failure log. The paper’s claim is explicitly about uniqueness among three self-spec logs, but the Claude 3.5 self-spec log is missing and the documented regeneration path is blocked by the released code, so the repository does not provide enough claim-specific evidence to confirm or refute the three-way uniqueness of task 91.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_23_command_output.txt` shows Table 3 in `206_Self_Spec_Model_Authored_S.pdf` lists `GPT-4o 74, 91, 102, 115, 132, 141`; `A4S_update/failed_spec_gpt_4o.jsonl` contains `HumanEval/91` once with `AssertionError: Test 2`; `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl` has no `HumanEval/91`; and the Claude 3.5 self-spec artifacts `all_spec_claude_3_5_sonnet_20241022.jsonl`, `results_summary_spec_claude_3_5_sonnet_20241022.txt`, and `failed_spec_claude_3_5_sonnet_20241022.jsonl` are absent. Reused `fabscore_codex/workspace/claim_8_command_output.txt`, which records `cd A4S_update && python3 spec_result_generation.py` failing with `RuntimeError: NO API Key：`. | Code: A4S_update/failed_spec_gpt_4o.jsonl:6; A4S_update/readme.md:94-100; A4S_update/spec_result_generation.py:42-46; fabscore_codex/workspace/claim_8_command_output.txt",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/failed_spec_gpt_4o.jsonl:6",
+                    "A4S_update/readme.md:94-100",
+                    "A4S_update/spec_result_generation.py:42-46",
+                    "fabscore_codex/workspace/claim_8_command_output.txt"
+                ],
+                "commands_executed": [
+                    "Current session commands captured in `fabscore_codex/workspace/claim_23_command_output.txt`: `python3 - <<'PY' ... PdfReader('206_Self_Spec_Model_Authored_S.pdf').pages[5] ... PY`; `python3 - <<'PY' ... inspect A4S_update/failed_spec_gpt_4o.jsonl and A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl for HumanEval/91 and check Claude 3.5 spec artifact existence ... PY`; `nl -ba A4S_update/readme.md | sed -n '94,100p'`; `nl -ba A4S_update/spec_result_generation.py | sed -n '42,46p'`; `sed -n '1,40p' fabscore_codex/workspace/claim_8_command_output.txt`. Reused prior attempted regeneration command from that artifact: `cd A4S_update && python3 spec_result_generation.py`."
+                ]
+            }
+        },
+        {
+            "claim_index": 24,
+            "claim": "24. Table 3, GPT-4o, Task IDs (unique among the three self-spec logs): 102",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The released repository only supports a two-log check for task 102: it is present in the committed GPT-4o self-spec failure log and absent from the committed Claude 3.7 self-spec failure log. The paper’s claim is explicitly about uniqueness among three self-spec logs, but the Claude 3.5 self-spec log is missing and the documented regeneration path is blocked by the released code, so the repository does not provide enough claim-specific evidence to confirm or refute the three-way uniqueness of task 102.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_24_command_output.txt` shows Table 3 in `206_Self_Spec_Model_Authored_S.pdf` lists `GPT-4o 74, 91, 102, 115, 132, 141`; `A4S_update/failed_spec_gpt_4o.jsonl` contains `HumanEval/102` at line 7 with `AssertionError`; `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl` contains no `HumanEval/102`; and the Claude 3.5 self-spec artifacts `all_spec_claude_3_5_sonnet_20241022.jsonl`, `results_summary_spec_claude_3_5_sonnet_20241022.txt`, and `failed_spec_claude_3_5_sonnet_20241022.jsonl` are absent. Reused `fabscore_codex/workspace/claim_8_command_output.txt`, which records `cd A4S_update && python3 spec_result_generation.py` failing with `RuntimeError: NO API Key：`. | Code: A4S_update/failed_spec_gpt_4o.jsonl:7; A4S_update/readme.md:94-100; A4S_update/spec_result_generation.py:42-46; fabscore_codex/workspace/claim_8_command_output.txt",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/failed_spec_gpt_4o.jsonl:7",
+                    "A4S_update/readme.md:94-100",
+                    "A4S_update/spec_result_generation.py:42-46",
+                    "fabscore_codex/workspace/claim_8_command_output.txt"
+                ],
+                "commands_executed": [
+                    "Commands recorded in `fabscore_codex/workspace/claim_24_command_output.txt`: `python3 - <<'PY' ... PdfReader('206_Self_Spec_Model_Authored_S.pdf').pages[5] ... PY`; `python3 - <<'PY' ... inspect A4S_update/failed_spec_gpt_4o.jsonl and A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl for HumanEval/102 and check Claude 3.5 spec artifact existence ... PY`; `nl -ba A4S_update/readme.md | sed -n '94,100p'`; `nl -ba A4S_update/spec_result_generation.py | sed -n '42,46p'`; `sed -n '1,40p' fabscore_codex/workspace/claim_8_command_output.txt`; `rg -n '\"task_id\": \"HumanEval/102\"' A4S_update/failed_spec_gpt_4o.jsonl A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl`. Reused prior attempted regeneration command from `fabscore_codex/workspace/claim_8_command_output.txt`: `cd A4S_update && python3 spec_result_generation.py`."
+                ]
+            }
+        },
+        {
+            "claim_index": 25,
+            "claim": "25. Table 3, GPT-4o, Task IDs (unique among the three self-spec logs): 115",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The released repository only supports a two-log check for task 115: it is present in the committed GPT-4o self-spec failure log and absent from the committed Claude 3.7 self-spec failure log. The paper’s claim is explicitly about uniqueness among three self-spec logs, but the Claude 3.5 self-spec log is missing and the documented regeneration path is blocked by the released code, so the repository does not provide enough claim-specific evidence to confirm or refute the three-way uniqueness of task 115.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_25_command_output.txt` shows Table 3 in `206_Self_Spec_Model_Authored_S.pdf` lists `GPT-4o 74, 91, 102, 115, 132, 141`; `A4S_update/failed_spec_gpt_4o.jsonl` contains `HumanEval/115` at line 8 with `AssertionError: Error`; `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl` contains no `HumanEval/115`; and the Claude 3.5 self-spec artifacts `all_spec_claude_3_5_sonnet_20241022.jsonl`, `results_summary_spec_claude_3_5_sonnet_20241022.txt`, and `failed_spec_claude_3_5_sonnet_20241022.jsonl` are absent. Reused `fabscore_codex/workspace/claim_8_command_output.txt`, which records `cd A4S_update && python3 spec_result_generation.py` failing with `RuntimeError: NO API Key：`. | Code: A4S_update/failed_spec_gpt_4o.jsonl:8; A4S_update/readme.md:94-100; A4S_update/spec_result_generation.py:42-46; fabscore_codex/workspace/claim_8_command_output.txt",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/failed_spec_gpt_4o.jsonl:8",
+                    "A4S_update/readme.md:94-100",
+                    "A4S_update/spec_result_generation.py:42-46",
+                    "fabscore_codex/workspace/claim_8_command_output.txt"
+                ],
+                "commands_executed": [
+                    "Commands recorded in `fabscore_codex/workspace/claim_25_command_output.txt`: `python3 - <<'PY' ... PdfReader('206_Self_Spec_Model_Authored_S.pdf').pages[5] ... PY`; `python3 - <<'PY' ... inspect A4S_update/failed_spec_gpt_4o.jsonl and A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl for HumanEval/115 and check Claude 3.5 spec artifact existence ... PY`; `rg -n '\"task_id\": \"HumanEval/115\"' A4S_update/failed_spec_gpt_4o.jsonl A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl`; `nl -ba A4S_update/readme.md | sed -n '94,100p'`; `nl -ba A4S_update/spec_result_generation.py | sed -n '42,46p'`; `sed -n '1,40p' fabscore_codex/workspace/claim_8_command_output.txt`. Reused prior attempted regeneration command from `fabscore_codex/workspace/claim_8_command_output.txt`: `cd A4S_update && python3 spec_result_generation.py`."
+                ]
+            }
+        },
+        {
+            "claim_index": 26,
+            "claim": "26. Table 3, GPT-4o, Task IDs (unique among the three self-spec logs): 132",
+            "verdict": "Result Fabrication",
+            "explanation": "Execution stage: The paper claims task 132 is unique to GPT-4o among the three self-spec logs, but the released Claude 3.7 self-spec failure log also contains `HumanEval/132`. That directly breaks uniqueness, so the table entry is contradicted by the repository artifacts.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_26_command_output.txt` shows page 6 / Table 3 lists GPT-4o unique failures as `74, 91, 102, 115, 132, 141`, while `HumanEval/132` appears in both committed self-spec failure logs: `A4S_update/failed_spec_gpt_4o.jsonl:9` and `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl:6`. | Code: A4S_update/failed_spec_gpt_4o.jsonl:9; A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl:6",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/failed_spec_gpt_4o.jsonl:9",
+                    "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl:6"
+                ],
+                "commands_executed": [
+                    "python - <<'PY'\nfrom PyPDF2 import PdfReader\nreader = PdfReader('206_Self_Spec_Model_Authored_S.pdf')\nfor i, page in enumerate(reader.pages):\n    text = page.extract_text() or ''\n    if 'Table 3' in text or 'unique among the three self-spec logs' in text or '74, 91, 102, 115, 132, 141' in text:\n        print(f'===== PAGE {i+1} =====')\n        print(text)\nPY; python - <<'PY'\nimport json\npaths = ['A4S_update/failed_spec_gpt_4o.jsonl', 'A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl']\nfor path in paths:\n    with open(path) as f:\n        for lineno, line in enumerate(f, 1):\n            obj = json.loads(line)\n            if (obj.get('task_id') or obj.get('HumanEval_ID')) == 'HumanEval/132':\n                print(path, lineno, obj.get('task_id'))\nPY; rg -n 'HumanEval/132' A4S_update/failed_spec_gpt_4o.jsonl A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl"
+                ]
+            }
+        },
+        {
+            "claim_index": 27,
+            "claim": "27. Table 3, GPT-4o, Task IDs (unique among the three self-spec logs): 141",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The released artifacts support that `HumanEval/141` is a GPT-4o self-spec failure and not a Claude 3.7 self-spec failure, but the paper claims it is unique among all three self-spec logs. The repository does not include the Claude 3.5 self-spec log needed for that final comparison, and the repository-native regeneration path is blocked by the hardcoded missing API key. That leaves the claim unresolved rather than contradicted.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_27_command_output.txt` shows Table 3 on page 6 lists GPT-4o unique failures as `74, 91, 102, 115, 132, 141`; `HumanEval/141` appears in `A4S_update/failed_spec_gpt_4o.jsonl` at line 11 and is absent from `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl`. The same artifact shows there are no Claude 3.5 self-spec outputs under `A4S_update/*claude_3_5*`, only baseline files. Reused `fabscore_codex/workspace/claim_8_command_output.txt`, which records the documented Claude 3.5 self-spec regeneration command failing with `RuntimeError: NO API Key：`. | Code: A4S_update/failed_spec_gpt_4o.jsonl:11; A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl; A4S_update/spec_result_generation.py:43-46; A4S_update/spec_result_generation.py:521",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/failed_spec_gpt_4o.jsonl:11",
+                    "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+                    "A4S_update/spec_result_generation.py:43-46",
+                    "A4S_update/spec_result_generation.py:521"
+                ],
+                "commands_executed": [
+                    "python - <<'PY' ... PdfReader('206_Self_Spec_Model_Authored_S.pdf') ... print Table 3 page text ... PY; python - <<'PY' ... search `HumanEval/141` in `A4S_update/failed_spec_gpt_4o.jsonl` and `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl` ... PY; python - <<'PY' ... list `A4S_update/*claude_3_5*` ... PY; sed -n '1,120p' fabscore_codex/workspace/claim_8_command_output.txt; rg -n 'API_KEY|NO API Key' A4S_update/spec_result_generation.py fabscore_codex/workspace/claim_8_command_output.txt"
+                ]
+            }
+        },
+        {
+            "claim_index": 28,
+            "claim": "28. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 9",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The released repository supports only the negative part of the uniqueness claim for the two available self-spec failure logs: task 9 is not in GPT-4o or Claude 3.7 failures. But the exact claim requires the missing Claude 3.5 self-spec failure log, and the repository’s documented regeneration path is blocked by the released code hardcoding an empty API key. That makes the claim unrecoverable from the provided artifacts, without yielding a direct contradiction.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_28_command_output.txt` shows Table 3 lists `Claude 3.5 9, 14, 17, 19, 32, 112, 113, 125, 126, 129, 135, 138, 153`; `HumanEval/9` is absent from `A4S_update/failed_spec_gpt_4o.jsonl` and `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl`; both `A4S_update/all_spec_gpt_4o.jsonl` and `A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl` contain a saved self-spec generation for `HumanEval/9`; the Claude 3.5 self-spec files `all_spec_claude_3_5_sonnet_20241022.jsonl`, `results_summary_spec_claude_3_5_sonnet_20241022.txt`, and `failed_spec_claude_3_5_sonnet_20241022.jsonl` do not exist. Reused prior artifact `fabscore_codex/workspace/claim_8_command_output.txt`, which records `cd A4S_update && python3 spec_result_generation.py` failing with `RuntimeError: NO API Key：`. | Code: 206_Self_Spec_Model_Authored_S.pdf page 6 Table 3; A4S_update/readme.md:35-45,61-63,94-95; A4S_update/spec_result_generation.py:42-46; A4S_update/failed_spec_gpt_4o.jsonl; A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl; fabscore_codex/workspace/claim_8_command_output.txt",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "206_Self_Spec_Model_Authored_S.pdf page 6 Table 3",
+                    "A4S_update/readme.md:35-45,61-63,94-95",
+                    "A4S_update/spec_result_generation.py:42-46",
+                    "A4S_update/failed_spec_gpt_4o.jsonl",
+                    "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+                    "fabscore_codex/workspace/claim_8_command_output.txt"
+                ],
+                "commands_executed": [
+                    "python - <<'PY' ... PdfReader('206_Self_Spec_Model_Authored_S.pdf') ... PY; python - <<'PY' ... Path('A4S_update/all_spec_claude_3_5_sonnet_20241022.jsonl').exists() ... PY; rg -n '\"task_id\": \"HumanEval/9\"' A4S_update/failed_spec_gpt_4o.jsonl A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl A4S_update/all_spec_gpt_4o.jsonl A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl || true; nl -ba A4S_update/readme.md | sed -n '30,95p'; nl -ba A4S_update/spec_result_generation.py | sed -n '35,55p'; sed -n '1,220p' fabscore_codex/workspace/claim_8_command_output.txt"
+                ]
+            }
+        },
+        {
+            "claim_index": 29,
+            "claim": "29. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 14",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The released repository supports only the negative side of the uniqueness claim for the two available logs: task 14 is not a GPT-4o or Claude 3.7 self-spec failure. But the exact claim requires the missing Claude 3.5 self-spec failure log, and the repository’s documented regeneration path for that log is blocked by released code that hardcodes an empty API key. That leaves the claim unrecoverable from repository-native evidence without producing a direct contradiction.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_29_command_output.txt` shows `206_Self_Spec_Model_Authored_S.pdf` page 6 / Table 3 lists `Claude 3.5 9, 14, 17, 19, 32, 112, 113, 125, 126, 129, 135, 138, 153`. The same artifact shows `HumanEval/14` is absent from `A4S_update/failed_spec_gpt_4o.jsonl` and `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl`, while both `A4S_update/all_spec_gpt_4o.jsonl:15` and `A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl:15` contain saved self-spec generations for `HumanEval/14`. It also confirms the claim-relevant Claude 3.5 self-spec files `A4S_update/all_spec_claude_3_5_sonnet_20241022.jsonl`, `A4S_update/results_summary_spec_claude_3_5_sonnet_20241022.txt`, and `A4S_update/failed_spec_claude_3_5_sonnet_20241022.jsonl` do not exist. Reused blocker artifact `fabscore_codex/workspace/claim_8_command_output.txt`, which records `cd A4S_update && python3 spec_result_generation.py` failing with `RuntimeError: NO API Key：`. | Code: 206_Self_Spec_Model_Authored_S.pdf page 6 Table 3; A4S_update/all_spec_gpt_4o.jsonl:15; A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl:15; A4S_update/readme.md:35-45,61-63,94-106; A4S_update/spec_result_generation.py:42-46; fabscore_codex/workspace/claim_8_command_output.txt",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "206_Self_Spec_Model_Authored_S.pdf page 6 Table 3",
+                    "A4S_update/all_spec_gpt_4o.jsonl:15",
+                    "A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl:15",
+                    "A4S_update/readme.md:35-45,61-63,94-106",
+                    "A4S_update/spec_result_generation.py:42-46",
+                    "fabscore_codex/workspace/claim_8_command_output.txt"
+                ],
+                "commands_executed": [
+                    "python3 - <<'PY'\nfrom PyPDF2 import PdfReader\nreader = PdfReader('206_Self_Spec_Model_Authored_S.pdf')\nfor i, page in enumerate(reader.pages, start=1):\n    text = page.extract_text() or ''\n    if 'Table 3' in text or 'Task IDs (unique among the three self-spec logs)' in text or 'Claude 3.5' in text:\n        print(f'--- PAGE {i} ---')\n        for line in text.splitlines():\n            if 'Table 3' in line or 'Claude 3.5' in line or 'GPT-4o' in line or 'Claude 3.7' in line or 'Task IDs' in line or 'unique among the three self-spec logs' in line:\n                print(line)\nPY; rg -n '\"task_id\": \"HumanEval/14\"' A4S_update/failed_spec_gpt_4o.jsonl A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl A4S_update/all_spec_gpt_4o.jsonl A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl || true; python3 - <<'PY'\nfrom pathlib import Path\npaths = [\n    'A4S_update/all_spec_claude_3_5_sonnet_20241022.jsonl',\n    'A4S_update/results_summary_spec_claude_3_5_sonnet_20241022.txt',\n    'A4S_update/failed_spec_claude_3_5_sonnet_20241022.jsonl',\n]\nfor p in paths:\n    print(f'{p}: exists={Path(p).exists()}')\nPY; nl -ba A4S_update/readme.md | sed -n '35,106p'; nl -ba A4S_update/spec_result_generation.py | sed -n '35,50p'; sed -n '1,220p' fabscore_codex/workspace/claim_8_command_output.txt"
+                ]
+            }
+        },
+        {
+            "claim_index": 30,
+            "claim": "30. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 17",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The repository supports only part of the uniqueness claim for task 17: it shows task 17 is not a released GPT-4o or Claude 3.7 self-spec failure. But the decisive Claude 3.5 self-spec failure log is missing, and the repo-native regeneration path for that missing artifact is not currently executable from the released code because the generation script hardcodes an empty API key and aborts immediately. That leaves the claim unresolved rather than contradicted.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_30_command_output.txt` records that Table 3 lists Claude 3.5 task `17`, that `HumanEval/17` is absent from `A4S_update/failed_spec_gpt_4o.jsonl` and `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl`, and that task `17` appears in the released generation logs `A4S_update/all_spec_gpt_4o.jsonl:18` and `A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl:18`. The same artifact shows the repository has no Claude 3.5 self-spec outputs, only Claude 3.5 baseline files. Reused prior artifact `fabscore_codex/workspace/claim_8_command_output.txt`, which shows the documented Claude 3.5 regeneration command fails with `RuntimeError: NO API Key：`. | Code: A4S_update/readme.md:35-45,61-63,94-99; A4S_update/spec_result_generation.py:14-16,42-50,470-545; A4S_update/spec_result_evaluation.py:7-12,49-115; A4S_update/all_spec_gpt_4o.jsonl:18; A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl:18",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/readme.md:35-45,61-63,94-99",
+                    "A4S_update/spec_result_generation.py:14-16,42-50,470-545",
+                    "A4S_update/spec_result_evaluation.py:7-12,49-115",
+                    "A4S_update/all_spec_gpt_4o.jsonl:18",
+                    "A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl:18"
+                ],
+                "commands_executed": [
+                    "python - <<'PY' > fabscore_codex/workspace/claim_30_command_output.txt 2>&1\nfrom pathlib import Path\nimport json\nprint('===== COMMAND =====')\nprint('python claim_30 inspection')\nprint('===== STDOUT =====')\npaper = Path('fabscore_codex/workspace/claim_30_paper_excerpt.txt').read_text()\nfor line in paper.splitlines():\n    if 'Claude 3.5 often inserts over-strict' in line or 'HE/9/14/17/19/112/125' in line:\n        print(line)\nprint('\\n[table 3 row from fs_extracted]')\nfs_extracted = json.loads(Path('fabscore_codex/fs_extracted.json').read_text())\nfor row in fs_extracted['tables']:\n    if row.startswith('30. '):\n        print(row)\nprint('\\n[task 17 presence check]')\nfor rel in ['A4S_update/failed_spec_gpt_4o.jsonl','A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl','A4S_update/all_spec_gpt_4o.jsonl','A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl']:\n    path = Path(rel)\n    found = []\n    with path.open() as f:\n        for lineno, line in enumerate(f, 1):\n            if 'HumanEval/17' in line:\n                found.append((lineno, line.strip()))\n    print(f'FILE {rel}: matches={len(found)}')\n    for lineno, line in found[:2]:\n        print(f'  line {lineno}: {line[:600]}')\nprint('\\n[claude 3.5 self-spec artifact inventory]')\nfor rel in sorted(str(p.relative_to(Path('.'))) for p in Path('A4S_update').glob('*claude_3_5*')):\n    print(rel)\nprint('\\n[claim_8 regeneration blocker excerpt]')\nblocker = Path('fabscore_codex/workspace/claim_8_command_output.txt').read_text().splitlines()\nfor line in blocker:\n    if 'COMMAND' in line or 'python3 spec_result_generation.py' in line or 'RuntimeError' in line or 'NO API Key' in line or 'EXIT CODE' in line:\n        print(line)\nprint('===== STDERR =====')\nPY; reused prior attempted regeneration command from `fabscore_codex/workspace/claim_8_command_output.txt`: `cd A4S_update && python3 spec_result_generation.py`"
+                ]
+            }
+        },
+        {
+            "claim_index": 31,
+            "claim": "31. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 19",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The released GPT-4o and Claude 3.7 self-spec failure logs do not contradict the paper’s claim for task 19, but the claim is explicitly about uniqueness among all three self-spec logs. The claim-relevant Claude 3.5 self-spec outputs are missing, and the repository’s documented regeneration path is not runnable as released because `spec_result_generation.py` hardcodes an empty API key and aborts immediately. That leaves a plausible but unrecoverable verification path, so the evidence is insufficient rather than contradictory.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_31_command_output.txt` shows Table 3 lists Claude 3.5 unique tasks `9, 14, 17, 19, 32, 112, 113, 125, 126, 129, 135, 138, 153`; the paper text also cites `HE/19` among Claude 3.5 defensive-guard examples; `HumanEval/19` has 0 matches in `A4S_update/failed_spec_gpt_4o.jsonl` and `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl`, but 1 saved generation each in `A4S_update/all_spec_gpt_4o.jsonl` and `A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl`. The repository contains only Claude 3.5 baseline artifacts, not Claude 3.5 self-spec outputs. Reused blocker artifact `fabscore_codex/workspace/claim_8_command_output.txt`, where `cd A4S_update && python3 spec_result_generation.py` fails with `RuntimeError: NO API Key：`. | Code: A4S_update/spec_result_generation.py:42-48; A4S_update/readme.md:35-46,94-105; A4S_update/failed_spec_gpt_4o.jsonl; A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl; A4S_update/all_spec_gpt_4o.jsonl; A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl; fabscore_codex/fs_extracted.json:30-34",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/spec_result_generation.py:42-48",
+                    "A4S_update/readme.md:35-46,94-105",
+                    "A4S_update/failed_spec_gpt_4o.jsonl",
+                    "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+                    "A4S_update/all_spec_gpt_4o.jsonl",
+                    "A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl",
+                    "fabscore_codex/fs_extracted.json:30-34"
+                ],
+                "commands_executed": [
+                    "python - <<'PY' ... claim_31 inspection over `206_Self_Spec_Model_Authored_S.pdf`, `A4S_update/failed_spec_gpt_4o.jsonl`, `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl`, `A4S_update/all_spec_gpt_4o.jsonl`, `A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl`, and `A4S_update/*claude_3_5*` ... PY (recorded in `fabscore_codex/workspace/claim_31_command_output.txt`); reused prior attempted regeneration command `cd A4S_update && python3 spec_result_generation.py` from `fabscore_codex/workspace/claim_8_command_output.txt`."
+                ]
+            }
+        },
+        {
+            "claim_index": 32,
+            "claim": "32. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 32",
+            "verdict": "Result Fabrication",
+            "explanation": "Execution stage: The paper claims task 32 is unique to Claude 3.5 among the three self-spec failure logs, but the committed Claude 3.7 self-spec failure log already contains `HumanEval/32`. That directly falsifies uniqueness, so the Table 3 entry is contradicted by the released result artifacts.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_32_command_output.txt` shows page 6 / Table 3 lists `Claude 3.5 9, 14, 17, 19, 32, 112, 113, 125, 126, 129, 135, 138, 153` under `Model Task IDs (unique among the three self-spec logs)`. The same inspection found `HumanEval/32` occurs 0 times in `A4S_update/failed_spec_gpt_4o.jsonl` and 1 time in `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl` (line 1, entry point `find_zero`, error `AssertionError: `). | Code: A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl:1; A4S_update/failed_spec_gpt_4o.jsonl; 206_Self_Spec_Model_Authored_S.pdf (page 6, Table 3); fabscore_codex/workspace/claim_32_command_output.txt",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl:1",
+                    "A4S_update/failed_spec_gpt_4o.jsonl",
+                    "206_Self_Spec_Model_Authored_S.pdf (page 6, Table 3)",
+                    "fabscore_codex/workspace/claim_32_command_output.txt"
+                ],
+                "commands_executed": [
+                    "python - <<'PY' > fabscore_codex/workspace/claim_32_command_output.txt 2>&1\nfrom pathlib import Path\nimport json, glob\nfrom PyPDF2 import PdfReader\nroot = Path('.').resolve()\n# extracted Table 3 text from 206_Self_Spec_Model_Authored_S.pdf\n# counted HumanEval/32 in failed_spec_gpt_4o.jsonl and failed_spec_claude_3_7_sonnet_20250219.jsonl\n# listed A4S_update/*claude_3_5* inventory and README note\nPY"
+                ]
+            }
+        },
+        {
+            "claim_index": 33,
+            "claim": "33. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 112",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The released artifacts do not contradict the paper’s Claude 3.5-only listing for task 112, because the two committed self-spec failure logs both omit 112. But the exact claim requires checking uniqueness across all three self-spec failure logs, and the repository is missing the Claude 3.5 self-spec outputs while its documented regeneration path is blocked by a hardcoded empty API key. That leaves the claim unresolved rather than verified or contradicted.",
+            "evidence": "Fresh artifact fabscore_codex/workspace/claim_33_command_output.txt shows Table 3 on page 6 lists Claude 3.5 unique task IDs including 112; rg found no HumanEval/112 entry in A4S_update/failed_spec_gpt_4o.jsonl or A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl; both A4S_update/all_spec_gpt_4o.jsonl and A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl contain a saved HumanEval/112 generation; no Claude 3.5 self-spec artifacts are present. Reused fabscore_codex/workspace/claim_8_command_output.txt, which records the documented Claude 3.5 self-spec regeneration command failing with RuntimeError: NO API Key：. | Code: A4S_update/readme.md:35; A4S_update/readme.md:44; A4S_update/readme.md:61; A4S_update/readme.md:94; A4S_update/spec_result_generation.py:42; A4S_update/spec_result_generation.py:46; A4S_update/spec_result_evaluation.py:7; A4S_update/spec_result_evaluation.py:10",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/readme.md:35",
+                    "A4S_update/readme.md:44",
+                    "A4S_update/readme.md:61",
+                    "A4S_update/readme.md:94",
+                    "A4S_update/spec_result_generation.py:42",
+                    "A4S_update/spec_result_generation.py:46",
+                    "A4S_update/spec_result_evaluation.py:7",
+                    "A4S_update/spec_result_evaluation.py:10"
+                ],
+                "commands_executed": [
+                    "Fresh commands recorded in fabscore_codex/workspace/claim_33_command_output.txt: `python - <<'PY' ... PyPDF2 ... PY`, `rg -n 'HumanEval/112' A4S_update/failed_spec_gpt_4o.jsonl A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl`, `rg -n '\"task_id\": \"HumanEval/112\"' A4S_update/all_spec_gpt_4o.jsonl A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl`, `rg --files A4S_update | rg 'claude_3_5.*spec|spec.*claude_3_5'`. Reused prior attempted regeneration from fabscore_codex/workspace/claim_8_command_output.txt: `cd A4S_update && python3 spec_result_generation.py`."
+                ]
+            }
+        },
+        {
+            "claim_index": 34,
+            "claim": "34. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 113",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The released GPT-4o and Claude 3.7 self-spec failure logs do not contradict task 113, but the paper’s claim is specifically about uniqueness among all three self-spec failure logs. The repository does not include the Claude 3.5 self-spec failure log, and its stated regeneration path is blocked by the released script hardcoding an empty API key, so the claim cannot be verified or falsified from the available repository evidence.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_34_command_output.txt` shows Table 3 lists Claude 3.5 task `113`; `HumanEval/113` is absent from `A4S_update/failed_spec_gpt_4o.jsonl` and `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl`, but present only as saved generations in `A4S_update/all_spec_gpt_4o.jsonl:114` and `A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl:114`. The claim-relevant Claude 3.5 self-spec outputs are missing: `A4S_update/all_spec_claude_3_5_sonnet_20241022.jsonl`, `A4S_update/results_summary_spec_claude_3_5_sonnet_20241022.txt`, and `A4S_update/failed_spec_claude_3_5_sonnet_20241022.jsonl` all do not exist. Reused `fabscore_codex/workspace/claim_8_command_output.txt`, which records the documented regeneration command failing with `RuntimeError: NO API Key:`. | Code: A4S_update/readme.md:35-45; A4S_update/spec_result_generation.py:42-46; A4S_update/failed_spec_gpt_4o.jsonl; A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl; A4S_update/all_spec_gpt_4o.jsonl:114; A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl:114",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/readme.md:35-45",
+                    "A4S_update/spec_result_generation.py:42-46",
+                    "A4S_update/failed_spec_gpt_4o.jsonl",
+                    "A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl",
+                    "A4S_update/all_spec_gpt_4o.jsonl:114",
+                    "A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl:114"
+                ],
+                "commands_executed": [
+                    "python - <<'PY' ... PdfReader('206_Self_Spec_Model_Authored_S.pdf') ... PY; python - <<'PY' ... Path('A4S_update/all_spec_claude_3_5_sonnet_20241022.jsonl').exists() ... PY; rg -n 'HumanEval/113' A4S_update/failed_spec_gpt_4o.jsonl A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl A4S_update/all_spec_gpt_4o.jsonl A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl || true; nl -ba A4S_update/readme.md | sed -n '34,46p'; nl -ba A4S_update/spec_result_generation.py | sed -n '42,48p'; sed -n '1,220p' fabscore_codex/workspace/claim_8_command_output.txt"
+                ]
+            }
+        },
+        {
+            "claim_index": 35,
+            "claim": "35. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 125",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The released artifacts are consistent with task 125 being unique relative to the released GPT-4o and Claude 3.7 self-spec failure logs, but the paper’s claim is uniqueness among all three self-spec logs. The required Claude 3.5 self-spec log is missing, and the repo’s documented regeneration path is blocked by the hardcoded empty API key, so the claim cannot be fully verified or falsified from the repository.",
+            "evidence": "`206_Self_Spec_Model_Authored_S.pdf` page 6 / Table 3 lists Claude 3.5 unique self-spec task IDs including `125`, and the same page’s analysis text cites `HE/125` among Claude 3.5 defensive-guard examples. Fresh claim-35 inspection found `HumanEval/125` absent from `A4S_update/failed_spec_gpt_4o.jsonl` and `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl`. The claim-relevant Claude 3.5 self-spec artifacts `A4S_update/all_spec_claude_3_5_sonnet_20241022.jsonl`, `A4S_update/results_summary_spec_claude_3_5_sonnet_20241022.txt`, and `A4S_update/failed_spec_claude_3_5_sonnet_20241022.jsonl` are missing. Reused prior artifact `fabscore_codex/workspace/claim_8_command_output.txt`, which records `cd A4S_update && python3 spec_result_generation.py` failing with `RuntimeError: NO API Key：`. | Code: `A4S_update/readme.md:35-45`, `A4S_update/readme.md:94-106`, `A4S_update/spec_result_generation.py:14-16`, `A4S_update/spec_result_generation.py:42-46`, `A4S_update/spec_result_evaluation.py:7-12`",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "`A4S_update/readme.md:35-45`, `A4S_update/readme.md:94-106`, `A4S_update/spec_result_generation.py:14-16`, `A4S_update/spec_result_generation.py:42-46`, `A4S_update/spec_result_evaluation.py:7-12`"
+                ],
+                "commands_executed": [
+                    "Fresh command: `python - <<'PY' ... PY` (the claim-35 inspection recorded in `fabscore_codex/workspace/claim_35_command_output.txt`). Reused prior attempted regeneration artifact for the missing Claude 3.5 self-spec log: `cd A4S_update && python3 spec_result_generation.py`."
+                ]
+            }
+        },
+        {
+            "claim_index": 36,
+            "claim": "36. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 126",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The released GPT-4o and Claude 3.7 self-spec failure logs do not contradict task 126 being Claude-3.5-only, but the repository does not contain the Claude 3.5 self-spec generation/evaluation outputs needed to verify uniqueness across all three logs. The documented regeneration path is blocked in the released code because `spec_result_generation.py` hardcodes an empty API key and aborts before producing `all_spec_claude_3_5_sonnet_20241022.jsonl`, so the exact claim cannot be confirmed or falsified from repository-native evidence.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_36_command_output.txt` shows Table 3 on page 6 lists Claude 3.5 task `126` as unique among the three self-spec logs; `HumanEval/126` is absent from `A4S_update/failed_spec_gpt_4o.jsonl` and `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl`, but present in both `A4S_update/all_spec_gpt_4o.jsonl:127` and `A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl:127` as non-failing generated records. The claim-relevant Claude 3.5 files `A4S_update/all_spec_claude_3_5_sonnet_20241022.jsonl` and `A4S_update/failed_spec_claude_3_5_sonnet_20241022.jsonl` are missing. Reused `fabscore_codex/workspace/claim_8_command_output.txt`, which records `python3 spec_result_generation.py` failing with `RuntimeError: NO API Key：`. | Code: A4S_update/spec_result_evaluation.py:7-12,105-110; A4S_update/spec_result_generation.py:42-46; A4S_update/readme.md:93-106",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/spec_result_evaluation.py:7-12,105-110",
+                    "A4S_update/spec_result_generation.py:42-46",
+                    "A4S_update/readme.md:93-106"
+                ],
+                "commands_executed": [
+                    "python - <<'PY'\nfrom pathlib import Path\nfrom PyPDF2 import PdfReader\nreader = PdfReader('206_Self_Spec_Model_Authored_S.pdf')\ntext = reader.pages[5].extract_text() or ''\nprint(text)\nPY\nprintf 'failed/all_spec lookup for HumanEval/126\\n'; rg -n 'HumanEval/126|task_id\": \"HumanEval/126\"' A4S_update/failed_spec_gpt_4o.jsonl A4S_update/all_spec_gpt_4o.jsonl A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl; printf '\\nclaude_3_5 inventory\\n'; ls -1 A4S_update/*claude_3_5*\nsed -n '84,108p' A4S_update/readme.md\nnl -ba A4S_update/spec_result_generation.py | sed -n '35,50p'\nnl -ba A4S_update/spec_result_evaluation.py | sed -n '7,13p;105,110p'\nsed -n '1,220p' fabscore_codex/workspace/claim_8_command_output.txt"
+                ]
+            }
+        },
+        {
+            "claim_index": 37,
+            "claim": "37. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 129",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The released repository is consistent with task 129 not being a GPT-4o or Claude 3.7 self-spec failure, but the claim is specifically about uniqueness among all three self-spec logs. The required Claude 3.5 self-spec outputs are missing, and the repository’s documented regeneration path is blocked by the hardcoded empty API key, so the claim cannot be verified or falsified from the available artifacts.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_37_command_output.txt` captures the paper excerpt showing Table 3 lists Claude 3.5 task `129` as unique among the three self-spec logs; `HumanEval/129` appears in `A4S_update/all_spec_gpt_4o.jsonl:130` and `A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl:130` but has no match in the released failure logs `A4S_update/failed_spec_gpt_4o.jsonl` or `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl`. `A4S_update/spec_result_evaluation.py:7-12` shows the missing claim-relevant outputs should be `all_spec_claude_3_5_sonnet_20241022.jsonl`, `results_summary_spec_claude_3_5_sonnet_20241022.txt`, and `failed_spec_claude_3_5_sonnet_20241022.jsonl`, but `ls A4S_update/*claude_3_5*` shows only baseline Claude 3.5 artifacts. Reused `fabscore_codex/workspace/claim_8_command_output.txt`, where `cd A4S_update && python3 spec_result_generation.py` fails with `RuntimeError: NO API Key：`. | Code: A4S_update/spec_result_evaluation.py:7-12; A4S_update/spec_result_generation.py:43,521; A4S_update/readme.md:62,96-100",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/spec_result_evaluation.py:7-12",
+                    "A4S_update/spec_result_generation.py:43,521",
+                    "A4S_update/readme.md:62,96-100"
+                ],
+                "commands_executed": [
+                    "python - <<'PY' ...PyPDF2 extract of Table 3... PY; rg -n 'HumanEval/129|\"task_id\": ?\"?HumanEval/129' A4S_update/failed_spec_gpt_4o.jsonl A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl A4S_update/all_spec_gpt_4o.jsonl A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl; rg -n 'claude_3_5|OPENAI_API_KEY|API_KEY = \"\"|failed_spec_claude_3_5|all_spec_claude_3_5|results_summary_spec_claude_3_5' A4S_update/readme.md A4S_update/spec_result_generation.py A4S_update/spec_result_evaluation.py; nl -ba A4S_update/spec_result_evaluation.py | sed -n '1,20p'; ls A4S_update/*claude_3_5*; sed -n '1,220p' fabscore_codex/workspace/claim_8_command_output.txt. Reused prior attempted regeneration command from claim_8: `cd A4S_update && python3 spec_result_generation.py`."
+                ]
+            }
+        },
+        {
+            "claim_index": 38,
+            "claim": "38. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 135",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The released repository is consistent with task 135 not being a GPT-4o or Claude 3.7 self-spec failure, but the paper’s claim is specifically about uniqueness among all three self-spec logs. The required Claude 3.5 self-spec outputs are missing, and the repository’s documented regeneration path for them is blocked by the hardcoded empty API key, so the claim cannot be verified or falsified from the available repository evidence.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_38_command_output.txt` shows Table 3 in `206_Self_Spec_Model_Authored_S.pdf` lists Claude 3.5 task `135` under `Model Task IDs (unique among the three self-spec logs)`. The same artifact shows `HumanEval/135` is absent from the released failure logs `A4S_update/failed_spec_gpt_4o.jsonl` and `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl`, while both released generation logs still contain `HumanEval/135` at `A4S_update/all_spec_gpt_4o.jsonl:136` and `A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl:136`. `A4S_update/spec_result_evaluation.py:7-12` shows the missing claim-relevant Claude 3.5 outputs should be `all_spec_claude_3_5_sonnet_20241022.jsonl`, `results_summary_spec_claude_3_5_sonnet_20241022.txt`, and `failed_spec_claude_3_5_sonnet_20241022.jsonl`, but `ls A4S_update/*claude_3_5*` shows only baseline Claude 3.5 artifacts. Reused prior artifact `fabscore_codex/workspace/claim_8_command_output.txt`, which records `cd A4S_update && python3 spec_result_generation.py` failing with `RuntimeError: NO API Key：`. | Code: A4S_update/spec_result_evaluation.py:7-12; A4S_update/spec_result_generation.py:43-46,521,533,545; A4S_update/readme.md:62,96-100",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/spec_result_evaluation.py:7-12",
+                    "A4S_update/spec_result_generation.py:43-46,521,533,545",
+                    "A4S_update/readme.md:62,96-100"
+                ],
+                "commands_executed": [
+                    "From `/home/chenhui/fabscore/agent4sci_acc/submission_206`, created `fabscore_codex/workspace/claim_38_command_output.txt` while running: `python3 - <<'PY' ... PyPDF2 extract of Table 3 lines mentioning Claude 3.5 and 135 ... PY`; `rg -n 'HumanEval/135|\"task_id\": \"HumanEval/135\"' A4S_update/failed_spec_gpt_4o.jsonl A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl A4S_update/all_spec_gpt_4o.jsonl A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl`; `rg -n 'claude_3_5|OPENAI_API_KEY|API_KEY = \"\"|failed_spec_claude_3_5|all_spec_claude_3_5|results_summary_spec_claude_3_5' A4S_update/readme.md A4S_update/spec_result_generation.py A4S_update/spec_result_evaluation.py`; `nl -ba A4S_update/spec_result_evaluation.py | sed -n '1,20p'`; `ls A4S_update/*claude_3_5*`; `sed -n '1,220p' fabscore_codex/workspace/claim_8_command_output.txt`."
+                ]
+            }
+        },
+        {
+            "claim_index": 39,
+            "claim": "39. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 138",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The repository supports that task 138 is not a released GPT-4o or Claude 3.7 self-spec failure, but the claim is specifically about uniqueness among all three self-spec logs. The required Claude 3.5 self-spec outputs are missing, and the repository's own regeneration path for them is blocked by the hardcoded empty API key in `spec_result_generation.py`. That leaves the claim unverifiable from the released repository without establishing a direct contradiction.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_39_command_output.txt` confirms Table 3 in `206_Self_Spec_Model_Authored_S.pdf` lists `Claude 3.5 ... 138 ...` under `Model Task IDs (unique among the three self-spec logs)`. The same artifact shows `HumanEval/138` is absent from `A4S_update/failed_spec_gpt_4o.jsonl` and `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl`, while both released generation logs still contain `HumanEval/138` at `A4S_update/all_spec_gpt_4o.jsonl:139` and `A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl:139`. `A4S_update/spec_result_evaluation.py` points the missing Claude 3.5 self-spec outputs to `all_spec_claude_3_5_sonnet_20241022.jsonl`, `results_summary_spec_claude_3_5_sonnet_20241022.txt`, and `failed_spec_claude_3_5_sonnet_20241022.jsonl`, but only Claude 3.5 baseline artifacts are present. Reused blocker artifact `fabscore_codex/workspace/claim_8_command_output.txt`, which records the documented Claude 3.5 self-spec generation command failing with `RuntimeError: NO API Key：`. | Code: A4S_update/spec_result_evaluation.py:7-12,51-55,105-110; A4S_update/spec_result_generation.py:42-46,519-545; A4S_update/readme.md:96-100",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/spec_result_evaluation.py:7-12,51-55,105-110",
+                    "A4S_update/spec_result_generation.py:42-46,519-545",
+                    "A4S_update/readme.md:96-100"
+                ],
+                "commands_executed": [
+                    "Ran from `/home/chenhui/fabscore/agent4sci_acc/submission_206`: `python3 - <<'PY' ... create fabscore_codex/workspace/claim_39_command_output.txt ... PY` containing these exact repository commands: `python3 -c \"from PyPDF2 import PdfReader; r=PdfReader('206_Self_Spec_Model_Authored_S.pdf'); ... print Table 3 lines for Claude 3.5 and 138 ...\"`; `rg -n 'HumanEval/138|\"task_id\": \"HumanEval/138\"' A4S_update/failed_spec_gpt_4o.jsonl A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl A4S_update/all_spec_gpt_4o.jsonl A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl`; `nl -ba A4S_update/spec_result_evaluation.py`; `ls A4S_update/all_baseline_claude_3_5_sonnet_20241022.jsonl A4S_update/failed_baseline_claude_3_5_sonnet_20241022.jsonl A4S_update/results_summary_baseline_claude_3_5_sonnet_20241022.txt`; `sed -n '1,220p' fabscore_codex/workspace/claim_8_command_output.txt`. Reused prior attempted regeneration command from `claim_8`: `cd A4S_update && python3 spec_result_generation.py`."
+                ]
+            }
+        },
+        {
+            "claim_index": 40,
+            "claim": "40. Table 3, Claude 3.5, Task IDs (unique among the three self-spec logs): 153",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The claim is specifically that task 153 is unique among the three self-spec failure logs for Claude 3.5. The released repository does not contain the claim-deciding Claude 3.5 self-spec files, and the repository-native regeneration path is blocked because `spec_result_generation.py` hardcodes an empty API key. Since the released GPT-4o and Claude 3.7 failure logs do not directly contradict task 153, but the missing Claude 3.5 self-spec log cannot be regenerated from the released code path, the claim remains unverifiable rather than disproven.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_40_command_output.txt` confirms Table 3 on page 6 lists `Claude 3.5 ... 153`; `HumanEval/153` is absent from `A4S_update/failed_spec_gpt_4o.jsonl` and `A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl`, but present only as a generated-record task in `A4S_update/all_spec_gpt_4o.jsonl` and `A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl`. The repository has only Claude 3.5 baseline artifacts (`all_baseline_*`, `failed_baseline_*`, `results_summary_baseline_*`) and no Claude 3.5 self-spec outputs. Reused `fabscore_codex/workspace/claim_8_command_output.txt`, which shows the documented Claude 3.5 self-spec regeneration command fails with `RuntimeError: NO API Key:`. | Code: A4S_update/spec_result_evaluation.py:7-12 (Claude 3.5 self-spec input/output paths); A4S_update/spec_result_generation.py:14,42-46,521,541 (Claude 3.5 model default and hardcoded empty API key); A4S_update/readme.md:96-106 (documented self-spec generation/evaluation path); fabscore_codex/workspace/claim_8_command_output.txt (prior failed regeneration evidence)",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/spec_result_evaluation.py:7-12 (Claude 3.5 self-spec input/output paths)",
+                    "A4S_update/spec_result_generation.py:14,42-46,521,541 (Claude 3.5 model default and hardcoded empty API key)",
+                    "A4S_update/readme.md:96-106 (documented self-spec generation/evaluation path)",
+                    "fabscore_codex/workspace/claim_8_command_output.txt (prior failed regeneration evidence)"
+                ],
+                "commands_executed": [
+                    "python - <<'PY' from PyPDF2 import PdfReader; ... extract Table 3 lines for task 153 ... PY; rg -n 'HumanEval/153' A4S_update/failed_spec_gpt_4o.jsonl A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl A4S_update/all_spec_gpt_4o.jsonl A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl; python - <<'PY' from glob import glob; print(sorted(glob('A4S_update/*claude_3_5*'))) PY; nl -ba A4S_update/spec_result_evaluation.py | sed -n '1,80p'; nl -ba A4S_update/spec_result_generation.py | sed -n '1,80p'; nl -ba A4S_update/readme.md | sed -n '1,120p'; sed -n '1,80p' fabscore_codex/workspace/claim_8_command_output.txt"
+                ]
+            }
+        }
+    ],
+    "figures": [],
+    "results_section": [
+        {
+            "claim_index": 42,
+            "claim": "1. We observe that for two of the models (GPT-4o and Claude 3.7), the Self-Spec approach yields a higher pass@1 compared to the native direct generation.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: Claude 3.7 is supported by the committed artifacts: 151/164 baseline and 154/164 Self-Spec round to 92% and 94%. GPT-4o is not. The committed GPT-4o baseline artifact is a failed 401 run rather than a valid native-generation result, the README says the real GPT-4o baseline artifact was misplaced, and the released baseline script hardcodes an empty API key. The committed GPT-4o Self-Spec summary is 150/164, not the paper's stated 92%. Because the GPT-4o half of the comparison is unsupported by a valid released baseline artifact and cannot be reproduced from the released path as-is, the combined claim cannot be verified from this repository state.",
+            "evidence": "Fresh artifact `fabscore_codex/workspace/claim_42_command_output.txt` captures the paper's Table 1 claim (`GPT-4o 87% -> 92%`, `Claude 3.7 92% -> 94%`), the committed summary files (`A4S_update/results_summary_baseline_claude_3_7_sonnet_20250219.txt` = `151/164`, `A4S_update/results_summary_spec_claude_3_7_sonnet_20250219.txt` = `154/164`, `A4S_update/results_summary_baseline_gpt-4o.txt` = `0/164`, `A4S_update/results_summary_spec_gpt_4o.txt` = `150/164`), and JSONL counts showing `A4S_update/all_baseline_gpt-4o.jsonl` contains 164/164 authentication-error records. Reused `fabscore_codex/workspace/claim_1_command_output.txt` because it already inspects the same GPT-4o native-baseline artifact path relevant to this claim. | Code: A4S_update/evaluation_baseline_pipeline.py:8-15,67-114; A4S_update/readme.md:35-40,71-76,125-127; A4S_update/results_summary_baseline_gpt-4o.txt; A4S_update/results_summary_spec_gpt_4o.txt; A4S_update/results_summary_baseline_claude_3_7_sonnet_20250219.txt; A4S_update/results_summary_spec_claude_3_7_sonnet_20250219.txt",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "A4S_update/evaluation_baseline_pipeline.py:8-15,67-114",
+                    "A4S_update/readme.md:35-40,71-76,125-127",
+                    "A4S_update/results_summary_baseline_gpt-4o.txt",
+                    "A4S_update/results_summary_spec_gpt_4o.txt",
+                    "A4S_update/results_summary_baseline_claude_3_7_sonnet_20250219.txt",
+                    "A4S_update/results_summary_spec_claude_3_7_sonnet_20250219.txt"
+                ],
+                "commands_executed": [
+                    "Created `fabscore_codex/workspace/claim_42_command_output.txt` from repository-root inspections: `python - <<'PY' ... PyPDF2 extract Table 1 / Section 6 lines ... PY`; `python - <<'PY' ... count passed/errors in A4S_update/all_baseline_gpt-4o.jsonl, A4S_update/all_spec_gpt_4o.jsonl, A4S_update/all_baseline_claude_3_7_sonnet_20250219.jsonl ... PY`; `nl -ba A4S_update/evaluation_baseline_pipeline.py | sed -n '6,18p;67,114p'`; `nl -ba A4S_update/readme.md | sed -n '26,46p;69,77p;123,127p'`; `sed -n '1,220p' fabscore_codex/workspace/claim_1_command_output.txt`; and summary-file reads for the four `results_summary_*.txt` files."
+                ]
+            }
+        }
+    ],
+    "summary": {
+        "total": 37,
+        "verified": 0,
+        "data_fabrication": 0,
+        "experiment_fabrication": 12,
+        "result_fabrication": 6,
+        "no_code_files": 0,
+        "insufficient_evidence": 19,
+        "error": 0
+    }
+}

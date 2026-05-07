@@ -1,0 +1,80 @@
+{
+    "CulturalAgent": [
+        {
+            "id": 1,
+            "name": "send_recommendation",
+            "condition": "Triggered by StartEvent",
+            "description": "Sends a cultural recommendation to a selected contact in the agent's social network based on cultural similarity principles from Axelrod's model.",
+            "type": "OR",
+            "required_variables": [
+                {
+                    "name": "cultural_traits",
+                    "type": "dict",
+                    "context": "agent",
+                    "description": "The cultural traits that the agent prefers and will recommend (e.g., music preference, culinary preference, fashion style, political orientation, leisure activity)."
+                },
+                {
+                    "name": "relationships",
+                    "type": "list",
+                    "context": "agent",
+                    "description": "List of connections with their profile information including cultural traits."
+                }
+            ],
+            "output_updates": [
+                {
+                    "name": "recommendation_history",
+                    "type": "list",
+                    "context": "agent",
+                    "description": "Record of all recommendations sent, including target, cultural traits, and reasons."
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "name": "receive_recommendation",
+            "condition": "Triggered by RecommendationEvent",
+            "description": "Processes an incoming cultural recommendation and decides whether to adopt it based on Axelrod's cultural dissemination model principles.",
+            "type": "OR",
+            "required_variables": [
+                {
+                    "name": "current_cultural_traits",
+                    "type": "dict",
+                    "context": "agent",
+                    "description": "The current cultural traits of the agent (e.g., music preference, culinary preference, fashion style, political orientation, leisure activity)."
+                },
+                {
+                    "name": "relationships",
+                    "type": "list",
+                    "context": "agent",
+                    "description": "List of connections with their profile information to calculate social influence."
+                },
+                {
+                    "name": "adoption_history",
+                    "type": "list",
+                    "context": "agent",
+                    "description": "Record of previous adoption decisions to consider stability and past influence."
+                },
+                {
+                    "name": "round_number",
+                    "type": "integer",
+                    "context": "env",
+                    "description": "The current round number in the simulation."
+                }
+            ],
+            "output_updates": [
+                {
+                    "name": "current_cultural_traits",
+                    "type": "dict",
+                    "context": "agent",
+                    "description": "The updated cultural traits of the agent if the recommendation is adopted."
+                },
+                {
+                    "name": "adoption_history",
+                    "type": "list",
+                    "context": "agent",
+                    "description": "Extended with the new adoption decision and reasoning."
+                }
+            ]
+        }
+    ]
+}

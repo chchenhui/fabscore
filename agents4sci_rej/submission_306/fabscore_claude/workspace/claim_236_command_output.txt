@@ -1,0 +1,37 @@
+=== CLAIM 236 VERIFICATION: Table 1, P33225, k: 2 ===
+
+--- COMMAND 1: Check pre-computed CSV files ---
+cat results/bcrparts/topN.csv
+OUTPUT: Only P69924 present (header + 1 row). P33225 not in pre-computed output.
+
+--- COMMAND 2: Fetch P33225 PAE from AlphaFold and run BCR analysis ---
+python3 -c "
+import requests, numpy as np, sys
+sys.path.insert(0, 'for_submission')
+prot = 'P33225'
+# Fetch from AlphaFold v6
+# PAE shape: (848, 848)
+# N=848 (Trimethylamine-N-oxide reductase 1)
+
+# Quick test n_perm=30:
+k=2: bcr_q_ratio=0.485508, z=-0.000000, p_perm=1.000000, blocks=Blocks(blocks=[(0, 431), (431, 848)])
+k=3: bcr_q_ratio=2.014903, z=13.919614, p_perm=0.032258, blocks=Blocks(blocks=[(0, 68), (68, 431), (431, 848)])
+k=4: bcr_q_ratio=2.131627, z=13.420415, p_perm=0.032258, blocks=Blocks(blocks=[(0, 68), (68, 431), (431, 775), (775, 848)])
+
+# Actual run settings (n_perm=1024, rotation - from run_parallel_all.sh):
+[n_perm=1024,rotation] k=2: bcr_q_ratio=0.485508, z=-0.000000, p_perm=1.000000
+[n_perm=1024,rotation] k=3: bcr_q_ratio=2.014903, z=12.475875, p_perm=0.060488
+[n_perm=1024,rotation] k=4: bcr_q_ratio=2.131627, z=12.345579, p_perm=0.069268
+"
+
+KEY FINDINGS:
+1. P33225 (Trimethylamine-N-oxide reductase 1) has length=848.
+2. With actual run settings (n_perm=1024, rotation, --k auto which tries k=2,3):
+   - k=2: p_perm=1.000 (COMPLETELY non-significant, no hinge signal)
+   - k=3: p_perm=0.060488 (lower p_perm → SELECTED by code)
+3. Code's k-selection logic (lines 256-261 of __main__.py): selects k with lowest p_perm.
+   → Code selects k=3 for P33225, NOT k=2 as paper claims.
+4. BCR formula discrepancy confirmed (same as all prior Table 1 claims):
+   - Code: log((Q75_inter+eps)/(Q25_intra+eps)) [log-ratio]
+   - Paper Eq.2: Q75_inter/(Q25_intra+eps) [simple ratio]
+5. This is consistent with Experiment Fabrication pattern seen in all prior Table 1 claims (1-231).

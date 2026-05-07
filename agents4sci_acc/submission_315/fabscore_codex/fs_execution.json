@@ -1,0 +1,206 @@
+{
+    "tables": [
+        {
+            "claim_index": 1,
+            "claim": "1. Table 1, Zero-shot, Plausibility: 7.98 ± 0.62",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The repository contains a plausible Zero-shot/Table 1 pipeline, but the shipped baseline entrypoint is nonfunctional for the exact claimed experiment: it crashes unconditionally at startup on the provided-style output path, so the Zero-shot outputs needed for LLM judging cannot be generated from the repo as provided. With no saved claim-matching judge results present, the reported `7.98 ± 0.62` is not reproducible from the shipped implementation.",
+            "evidence": "No pre-existing `Qwen3-1.7B_results/results_baseline_simple_top_p.json` or `Qwen3-1.7B_results/llm_judge_results.json` was found. The 50-theme test set exists at `code/database/test_themes_qwen1.7b-50.json` (50 items). Fresh reproduction attempt logged in `fabscore_codex/workspace/claim_1_command_output.txt` shows `python code/experiments/run_experiments_baseline.py --modelpath ../../Qwen3-1.7B --dbpath code/database --testfile code/database/test_themes_qwen1.7b-50.json --outfile fabscore_codex/workspace/claim1_results_baseline_simple_top_p.json` fails immediately with `TypeError: makedirs() got an unexpected keyword argument 'exists_ok'` before any model loading or result generation. | Code: code/experiments/run_experiments_baseline.py:68-85 (startup path handling and model load); code/analysis/llm_judge.py:24-28, 218-220 (judge model/output path and requirement that all five method outputs exist)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/experiments/run_experiments_baseline.py:68-85 (startup path handling and model load)",
+                    "code/analysis/llm_judge.py:24-28, 218-220 (judge model/output path and requirement that all five method outputs exist)"
+                ],
+                "commands_executed": [
+                    "Artifact inspection commands were run and logged to `fabscore_codex/workspace/claim_1_command_output.txt`, including the claim-relevant reproduction attempt: `python code/experiments/run_experiments_baseline.py --modelpath ../../Qwen3-1.7B --dbpath code/database --testfile code/database/test_themes_qwen1.7b-50.json --outfile fabscore_codex/workspace/claim1_results_baseline_simple_top_p.json`"
+                ]
+            }
+        },
+        {
+            "claim_index": 2,
+            "claim": "2. Table 1, Zero-shot, Clarity: 8.48 ± 0.68",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: Claim 2 depends on the same Zero-shot baseline generation path as claim 1. The repository-native entrypoint crashes before any outputs are produced, so the Table 1 Zero-shot Clarity score cannot have been generated from the shipped implementation, and no saved claim-matching artifacts are present to support the reported `8.48 ± 0.68`.",
+            "evidence": "Reused existing artifact `fabscore_codex/workspace/claim_1_command_output.txt`, which records the claim-relevant Zero-shot regeneration attempt `python code/experiments/run_experiments_baseline.py --modelpath ../../Qwen3-1.7B --dbpath code/database --testfile code/database/test_themes_qwen1.7b-50.json --outfile fabscore_codex/workspace/claim1_results_baseline_simple_top_p.json` failing with `TypeError: makedirs() got an unexpected keyword argument 'exists_ok'` at `code/experiments/run_experiments_baseline.py:80`. Fresh inspection also found no `Qwen3-1.7B_results/results_baseline_simple_top_p.json` and no `Qwen3-1.7B_results/llm_judge_results.json`, while the downstream pipeline still expects those files. | Code: code/experiments/run_experiments_baseline.py:80; code/analysis/llm_judge.py:24-28,31-37; code/analysis/analyze_results.py:11-17,60-88; fabscore_codex/workspace/claim_1_command_output.txt",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/experiments/run_experiments_baseline.py:80",
+                    "code/analysis/llm_judge.py:24-28,31-37",
+                    "code/analysis/analyze_results.py:11-17,60-88",
+                    "fabscore_codex/workspace/claim_1_command_output.txt"
+                ],
+                "commands_executed": [
+                    "Inspected existing artifacts and source with: `pwd && ls -la && rg --files fabscore_codex && sed -n '1,220p' fabscore_codex/progress.md`; `find fabscore_codex/workspace -maxdepth 3 \\( -type f -o -type l \\) | sort`; `sed -n '1,220p' fabscore_codex/workspace/claim_1_command_output.txt`; `nl -ba code/experiments/run_experiments_baseline.py | sed -n '70,95p'`; `nl -ba code/analysis/llm_judge.py | sed -n '1,90p'`; `nl -ba code/analysis/analyze_results.py | sed -n '1,120p'`; `find . -path './fabscore_codex/workspace' -prune -o \\( -path './Qwen3-1.7B_results*' -o -name 'llm_judge_results.json' -o -name 'results_baseline_simple_top_p.json' \\) -print | sort`; `rg -n \"TypeError|exist_ok|exists_ok|Traceback|results_baseline_simple_top_p|run_experiments_baseline.py\" fabscore_codex/workspace/claim_1_command_output.txt -n -C 3`. Reused prior attempted regeneration command from the existing artifact: `python code/experiments/run_experiments_baseline.py --modelpath ../../Qwen3-1.7B --dbpath code/database --testfile code/database/test_themes_qwen1.7b-50.json --outfile fabscore_codex/workspace/claim1_results_baseline_simple_top_p.json`."
+                ]
+            }
+        },
+        {
+            "claim_index": 3,
+            "claim": "3. Table 1, Zero-shot, Innovation: 7.14 ± 0.78",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The exact repository-native pipeline needed for Table 1 Zero-shot Innovation is broken before any baseline output is produced, so the claimed `7.14 ± 0.78` cannot have been generated from the shipped implementation. This is not just missing artifacts: the provided Zero-shot entrypoint itself crashes at startup, and there are no saved claim-matching baseline/judge outputs to support the reported score.",
+            "evidence": "Reused existing artifact `fabscore_codex/workspace/claim_1_command_output.txt`, which contains the claim-relevant Zero-shot regeneration attempt `python code/experiments/run_experiments_baseline.py --modelpath ../../Qwen3-1.7B --dbpath code/database --testfile code/database/test_themes_qwen1.7b-50.json --outfile fabscore_codex/workspace/claim1_results_baseline_simple_top_p.json` failing immediately with `TypeError: makedirs() got an unexpected keyword argument 'exists_ok'` at `code/experiments/run_experiments_baseline.py:80`. Fresh inspection in `fabscore_codex/workspace/claim_3_command_output.txt` confirmed `code/database/test_themes_qwen1.7b-50.json` has 50 items, `llm_judge.py` still expects `Qwen3-1.7B_results/results_baseline_simple_top_p.json`, and `analyze_results.py` still requires `Qwen3-1.7B_results/llm_judge_results.json` to compute the Innovation mean/std. | Code: code/experiments/run_experiments_baseline.py:68-85 (startup path handling; crash at line 80), code/analysis/llm_judge.py:27-37 (expects `Qwen3-1.7B_results/results_baseline_simple_top_p.json` and writes `llm_judge_results.json`), code/analysis/analyze_results.py:11-17 and 60-84 (loads `Qwen3-1.7B_results/llm_judge_results.json` and computes mean/std for `innovation_potential`).",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/experiments/run_experiments_baseline.py:68-85 (startup path handling",
+                    "crash at line 80), code/analysis/llm_judge.py:27-37 (expects `Qwen3-1.7B_results/results_baseline_simple_top_p.json` and writes `llm_judge_results.json`), code/analysis/analyze_results.py:11-17 and 60-84 (loads `Qwen3-1.7B_results/llm_judge_results.json` and computes mean/std for `innovation_potential`)."
+                ],
+                "commands_executed": [
+                    "Reused prior attempted regeneration command recorded in `fabscore_codex/workspace/claim_1_command_output.txt`: `python code/experiments/run_experiments_baseline.py --modelpath ../../Qwen3-1.7B --dbpath code/database --testfile code/database/test_themes_qwen1.7b-50.json --outfile fabscore_codex/workspace/claim1_results_baseline_simple_top_p.json` ; fresh inspection commands logged in `fabscore_codex/workspace/claim_3_command_output.txt`: `tail -n 80 fabscore_codex/progress.md`; `nl -ba code/experiments/run_experiments_baseline.py | sed -n '68,90p'`; `nl -ba code/analysis/llm_judge.py | sed -n '24,37p'`; `nl -ba code/analysis/analyze_results.py | sed -n '60,88p'`; `python - <<'PY' ... code/database/test_themes_qwen1.7b-50.json ... PY`; `sed -n '1,220p' fabscore_codex/workspace/claim_1_command_output.txt`."
+                ]
+            }
+        },
+        {
+            "claim_index": 4,
+            "claim": "4. Table 1, Zero-shot, Overall: 7.87",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The exact repository-native Zero-shot pipeline needed to compute Table 1’s Overall score is broken before generation starts. Because the shipped baseline entrypoint crashes at startup and the downstream judge/aggregation files it depends on are absent, the reported Zero-shot Overall value `7.87` cannot have been produced from the provided implementation/artifacts.",
+            "evidence": "Reused existing artifact `fabscore_codex/workspace/claim_1_command_output.txt`, which contains the paper’s Table 1 row (`Zero-shot ... Overall 7.87`) and the claim-relevant regeneration attempt `python code/experiments/run_experiments_baseline.py --modelpath ../../Qwen3-1.7B --dbpath code/database --testfile code/database/test_themes_qwen1.7b-50.json --outfile fabscore_codex/workspace/claim1_results_baseline_simple_top_p.json` failing immediately with `TypeError: makedirs() got an unexpected keyword argument 'exists_ok'`. Fresh inspection in `fabscore_codex/workspace/claim_4_command_output.txt` confirmed `code/database/test_themes_qwen1.7b-50.json` has 50 items, and no `Qwen3-1.7B_results/results_baseline_simple_top_p.json` or `Qwen3-1.7B_results/llm_judge_results.json` exists in the repo. | Code: code/experiments/run_experiments_baseline.py:68-80 (startup path handling; crash at line 80), code/analysis/llm_judge.py:27-37 (expects `Qwen3-1.7B_results/results_baseline_simple_top_p.json` and writes `llm_judge_results.json`), code/analysis/analyze_results.py:11-17 and 75-84 (loads `Qwen3-1.7B_results/llm_judge_results.json` and computes Overall as the mean of the three judged dimensions).",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/experiments/run_experiments_baseline.py:68-80 (startup path handling",
+                    "crash at line 80), code/analysis/llm_judge.py:27-37 (expects `Qwen3-1.7B_results/results_baseline_simple_top_p.json` and writes `llm_judge_results.json`), code/analysis/analyze_results.py:11-17 and 75-84 (loads `Qwen3-1.7B_results/llm_judge_results.json` and computes Overall as the mean of the three judged dimensions)."
+                ],
+                "commands_executed": [
+                    "Reused prior attempted regeneration command recorded in `fabscore_codex/workspace/claim_1_command_output.txt`: `python code/experiments/run_experiments_baseline.py --modelpath ../../Qwen3-1.7B --dbpath code/database --testfile code/database/test_themes_qwen1.7b-50.json --outfile fabscore_codex/workspace/claim1_results_baseline_simple_top_p.json`. Fresh inspection commands logged in `fabscore_codex/workspace/claim_4_command_output.txt`: `sed -n '1,260p' fabscore_codex/progress.md`; `sed -n '1,220p' fabscore_codex/workspace/claim_1_command_output.txt`; `rg -n \"makedirs|TypeError|results_baseline_simple_top_p|llm_judge_results|test_themes_qwen1.7b-50|No such file|File not found\" fabscore_codex/workspace/claim_1_command_output.txt`; `python - <<'PY' ... code/database/test_themes_qwen1.7b-50.json ... PY`; `find . -maxdepth 4 -type f | sort | rg 'Qwen3-1.7B_results|results_baseline_simple_top_p\\.json|llm_judge_results\\.json'`; `nl -ba code/experiments/run_experiments_baseline.py | sed -n '67,90p'`; `nl -ba code/analysis/llm_judge.py | sed -n '23,40p'`; `nl -ba code/analysis/analyze_results.py | sed -n '10,88p'`; `sed -n '1,220p' fabscore_codex/execution_log.json`; `tail -n 40 fabscore_codex/progress.md`."
+                ]
+            }
+        },
+        {
+            "claim_index": 5,
+            "claim": "5. Table 1, Zero-shot, Win Rate (%): 0.0%",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: Claim 5 depends on the same Zero-shot baseline pipeline already exercised for claims 1-4. That repository-native pipeline is concretely broken before any baseline output is generated, so the judged file needed to compute Zero-shot win rate cannot be produced from the shipped code. Because `analyze_results.py` derives win rate from judged `is_winner` values, and no claim-matching judged outputs exist, the reported `0.0%` is unsupported by an executable repository path.",
+            "evidence": "Reused exact-match prior execution artifact `fabscore_codex/workspace/claim_1_command_output.txt`, which contains the paper's Table 1 Zero-shot row and the regeneration attempt `python code/experiments/run_experiments_baseline.py --modelpath ../../Qwen3-1.7B --dbpath code/database --testfile code/database/test_themes_qwen1.7b-50.json --outfile fabscore_codex/workspace/claim1_results_baseline_simple_top_p.json`; that run crashes immediately with `TypeError: makedirs() got an unexpected keyword argument 'exists_ok'` at `code/experiments/run_experiments_baseline.py:80`. Fresh inspection in `fabscore_codex/workspace/claim_5_command_output.txt` also confirmed `code/database/test_themes_qwen1.7b-50.json` has 50 items, no `results_baseline_simple_top_p.json` or `llm_judge_results.json` exists in the repository, `llm_judge.py` expects `Qwen3-1.7B_results/results_baseline_simple_top_p.json`, and `analyze_results.py` computes win rate from `is_winner` in `llm_judge_results.json`. | Code: code/experiments/run_experiments_baseline.py:80; code/analysis/llm_judge.py:27-37; code/analysis/analyze_results.py:80-84; fabscore_codex/workspace/claim_1_command_output.txt:466-472",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/experiments/run_experiments_baseline.py:80",
+                    "code/analysis/llm_judge.py:27-37",
+                    "code/analysis/analyze_results.py:80-84",
+                    "fabscore_codex/workspace/claim_1_command_output.txt:466-472"
+                ],
+                "commands_executed": [
+                    "sed -n '1,260p' fabscore_codex/progress.md; rg -n \"Table 1|Zero-shot|Win Rate|results_baseline|llm_judge_results|qwen1.7b-50|test_themes\" -S .; nl -ba code/experiments/run_experiments_baseline.py | sed -n '70,90p'; nl -ba code/analysis/llm_judge.py | sed -n '1,80p'; nl -ba code/analysis/analyze_results.py | sed -n '60,95p'; find . -path './.git' -prune -o \\( -name 'results_baseline_simple_top_p.json' -o -name 'llm_judge_results.json' \\) -print; python - <<'PY'\nimport json\nfrom pathlib import Path\np=Path('code/database/test_themes_qwen1.7b-50.json')\nobj=json.loads(p.read_text())\nprint(type(obj).__name__, len(obj))\nPY; nl -ba fabscore_codex/workspace/claim_1_command_output.txt | rg -n \"run_experiments_baseline.py|TypeError|exists_ok|claim1_results_baseline_simple_top_p\" -n -C 2"
+                ]
+            }
+        },
+        {
+            "claim_index": 6,
+            "claim": "6. Table 1, CoT, Plausibility: 8.66 ± 0.48",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The repository contains a plausible CoT/Table-1 evaluation path, but the shipped CoT entrypoint is concretely broken at startup (`exists_ok` typo in `os.makedirs`). Because the exact CoT generation script cannot produce outputs and there are no saved CoT/judge artifacts matching the paper, the reported Plausibility score `8.66 ± 0.48` is unsupported by the provided implementation.",
+            "evidence": "Created `fabscore_codex/workspace/claim_6_command_output.txt`. Fresh evidence in that log shows: (1) `code/database/test_themes_qwen1.7b-50.json` loads with 50 items; (2) PDF text extracted via `pypdf` contains the exact Table 1 CoT row `CoT 8.66 ± 0.48 9.48 ± 0.54 7.74 ± 0.49 8.63 8.0%`; (3) the repo-native CoT regeneration command crashes immediately with `TypeError: makedirs() got an unexpected keyword argument 'exists_ok'` at `code/experiments/run_experiments_cot.py`, line 84, before any CoT output is produced; (4) downstream code still expects `Qwen3-1.7B_results/results_baseline_cot.json` and `Qwen3-1.7B_results/llm_judge_results.json`, but no such claim-matching artifacts are present. | Code: code/experiments/run_experiments_cot.py:84 (`os.makedirs(..., exists_ok=True)` crash); code/analysis/llm_judge.py:27-33,145 (`INPUT_DIR`, `OUTPUT_FILE`, `METHOD_MAPPING['B'] -> results_baseline_cot.json`); code/analysis/analyze_results.py:11,76-84 (`RESULTS_FILE`, overall/win-rate aggregation from `llm_judge_results.json`).",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/experiments/run_experiments_cot.py:84 (`os.makedirs(..., exists_ok=True)` crash)",
+                    "code/analysis/llm_judge.py:27-33,145 (`INPUT_DIR`, `OUTPUT_FILE`, `METHOD_MAPPING['B'] -> results_baseline_cot.json`)",
+                    "code/analysis/analyze_results.py:11,76-84 (`RESULTS_FILE`, overall/win-rate aggregation from `llm_judge_results.json`)."
+                ],
+                "commands_executed": [
+                    "python code/experiments/run_experiments_cot.py --modelpath ../../Qwen3-1.7B --dbpath code/database --testfile code/database/test_themes_qwen1.7b-50.json --outfile fabscore_codex/workspace/claim6_results_baseline_cot.json; python - <<'PY' ... load code/database/test_themes_qwen1.7b-50.json and count items ... PY; python - <<'PY' ... extract Table 1 text from 315_Magellan_Guided_MCTS_for_L.pdf via pypdf ... PY. Full raw stdout/stderr recorded in fabscore_codex/workspace/claim_6_command_output.txt."
+                ]
+            }
+        },
+        {
+            "claim_index": 7,
+            "claim": "7. Table 1, CoT, Clarity: 9.48 ± 0.54",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: Claim 7 uses the same CoT generation and judging pipeline as claim 6, so the existing execution artifact is sufficient and more specific than rerunning the same broken path. The shipped CoT entrypoint is concretely nonfunctional before model loading or output generation, and the downstream Clarity aggregation cannot run because the expected CoT and judge result files are absent. That makes the reported `9.48 ± 0.54` unsupported by the provided repository implementation.",
+            "evidence": "Reused existing artifact `fabscore_codex/workspace/claim_6_command_output.txt`, which already contains the exact Table 1 CoT row from the paper (`CoT 8.66 ± 0.48 9.48 ± 0.54 7.74 ± 0.49 8.63 8.0%`), confirms `code/database/test_themes_qwen1.7b-50.json` has 50 items, and records the claim-relevant regeneration attempt `python code/experiments/run_experiments_cot.py --modelpath ../../Qwen3-1.7B --dbpath code/database --testfile code/database/test_themes_qwen1.7b-50.json --outfile fabscore_codex/workspace/claim6_results_baseline_cot.json` failing at startup with `TypeError: makedirs() got an unexpected keyword argument 'exists_ok'` at `code/experiments/run_experiments_cot.py:84`. Fresh inspection logged in `fabscore_codex/workspace/claim_7_command_output.txt` confirmed the same broken line is still present, `llm_judge.py` still expects `Qwen3-1.7B_results/results_baseline_cot.json`, `analyze_results.py` still reads `Qwen3-1.7B_results/llm_judge_results.json`, and no such claim-matching artifacts exist. | Code: code/experiments/run_experiments_cot.py:84; code/analysis/llm_judge.py:27-33,145; code/analysis/analyze_results.py:11,15,76-84; fabscore_codex/workspace/claim_6_command_output.txt",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/experiments/run_experiments_cot.py:84",
+                    "code/analysis/llm_judge.py:27-33,145",
+                    "code/analysis/analyze_results.py:11,15,76-84",
+                    "fabscore_codex/workspace/claim_6_command_output.txt"
+                ],
+                "commands_executed": [
+                    "Reused prior attempted regeneration command recorded in `fabscore_codex/workspace/claim_6_command_output.txt`: `python code/experiments/run_experiments_cot.py --modelpath ../../Qwen3-1.7B --dbpath code/database --testfile code/database/test_themes_qwen1.7b-50.json --outfile fabscore_codex/workspace/claim6_results_baseline_cot.json`. Fresh inspection commands run this session and logged in `fabscore_codex/workspace/claim_7_command_output.txt`: `sed -n '60,75p' fabscore_codex/progress.md`; `sed -n '1,220p' fabscore_codex/workspace/claim_6_command_output.txt`; `nl -ba code/experiments/run_experiments_cot.py | sed -n '78,90p'; nl -ba code/analysis/llm_judge.py | sed -n '27,37p'; nl -ba code/analysis/analyze_results.py | sed -n '11,17p;76,84p'`; `find . -path './fabscore_codex/workspace' -prune -o \\( -path './Qwen3-1.7B_results*' -o -name 'results_baseline_cot.json' -o -name 'llm_judge_results.json' \\) -print | sort`."
+                ]
+            }
+        },
+        {
+            "claim_index": 8,
+            "claim": "8. Table 1, CoT, Innovation: 7.74 ± 0.49",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The repository contains a plausible CoT Table 1 pipeline, but its shipped CoT entrypoint is nonfunctional before model loading because it calls `os.makedirs(..., exists_ok=True)` instead of `exist_ok=True`. Since the exact CoT generation step cannot run and no saved `results_baseline_cot.json` or `llm_judge_results.json` exists to support the reported Innovation score, the repository-side experimental implementation conflicts with the paper's claimed executable result.",
+            "evidence": "Reused exact-match artifact fabscore_codex/workspace/claim_6_command_output.txt, which contains the paper's CoT row `CoT 8.66 ± 0.48 9.48 ± 0.54 7.74 ± 0.49 8.63 8.0%` and the failed regeneration command `python code/experiments/run_experiments_cot.py --modelpath ../../Qwen3-1.7B --dbpath code/database --testfile code/database/test_themes_qwen1.7b-50.json --outfile fabscore_codex/workspace/claim6_results_baseline_cot.json` ending at `TypeError: makedirs() got an unexpected keyword argument 'exists_ok'` from `code/experiments/run_experiments_cot.py:84`. Fresh session inspection confirmed `code/database/test_themes_qwen1.7b-50.json` has 50 items and `find . -name 'results_baseline_cot.json' -o -name 'llm_judge_results.json'` returns no claim-matching outputs anywhere in the repo. | Code: code/experiments/run_experiments_cot.py:84; code/analysis/llm_judge.py:27-33,144-145; code/analysis/analyze_results.py:11,76-84",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/experiments/run_experiments_cot.py:84",
+                    "code/analysis/llm_judge.py:27-33,144-145",
+                    "code/analysis/analyze_results.py:11,76-84"
+                ],
+                "commands_executed": [
+                    "Current session: `pwd`; `rg --files fabscore_codex code | sort`; `sed -n '1,220p' fabscore_codex/progress.md`; `ls -R fabscore_codex/workspace`; `sed -n '1,220p' fabscore_codex/workspace/claim_6_command_output.txt`; `nl -ba code/experiments/run_experiments_cot.py | sed -n '70,110p'`; `nl -ba code/analysis/llm_judge.py | sed -n '1,120p'`; `nl -ba code/analysis/analyze_results.py | sed -n '1,140p'`; `find . -name 'results_baseline_cot.json' -o -name 'llm_judge_results.json' | sort`; `python - <<'PY' ... print(len(data)) ... PY`. Reused prior claim-relevant regeneration attempt from `fabscore_codex/workspace/claim_6_command_output.txt`: `python code/experiments/run_experiments_cot.py --modelpath ../../Qwen3-1.7B --dbpath code/database --testfile code/database/test_themes_qwen1.7b-50.json --outfile fabscore_codex/workspace/claim6_results_baseline_cot.json`."
+                ]
+            }
+        },
+        {
+            "claim_index": 9,
+            "claim": "9. Table 1, CoT, Overall: 8.63",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The repository contains a plausible CoT Table 1 pipeline, but its shipped CoT entrypoint is concretely broken before model loading because it calls `os.makedirs(..., exists_ok=True)` instead of `exist_ok=True`. Since the exact CoT generation step cannot execute and no saved `results_baseline_cot.json` or `llm_judge_results.json` exists from which the reported CoT overall value could be computed, the repository-side experimental implementation conflicts with the paper's claimed executable result `8.63`.",
+            "evidence": "Reused exact-match artifact `fabscore_codex/workspace/claim_6_command_output.txt`, which contains the paper's CoT Table 1 row `CoT 8.66 ± 0.48 9.48 ± 0.54 7.74 ± 0.49 8.63 8.0%` and the failed repo-native regeneration command `python code/experiments/run_experiments_cot.py --modelpath ../../Qwen3-1.7B --dbpath code/database --testfile code/database/test_themes_qwen1.7b-50.json --outfile fabscore_codex/workspace/claim6_results_baseline_cot.json`, ending with `TypeError: makedirs() got an unexpected keyword argument 'exists_ok'`. Fresh session artifact `fabscore_codex/workspace/claim_9_command_output.txt` confirms the same startup bug at `code/experiments/run_experiments_cot.py:84`, confirms `code/database/test_themes_qwen1.7b-50.json` has `test_theme_count=50`, shows `llm_judge.py` expects `Qwen3-1.7B_results/results_baseline_cot.json`, shows `analyze_results.py` computes overall score as the mean of the three judged dimensions, and shows `find . \\( -name results_baseline_cot.json -o -name llm_judge_results.json \\) | sort` returns no claim-matching outputs. | Code: code/experiments/run_experiments_cot.py:84; code/analysis/llm_judge.py:27-33,144-145; code/analysis/analyze_results.py:76-84",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/experiments/run_experiments_cot.py:84",
+                    "code/analysis/llm_judge.py:27-33,144-145",
+                    "code/analysis/analyze_results.py:76-84"
+                ],
+                "commands_executed": [
+                    "Current session command logged to `fabscore_codex/workspace/claim_9_command_output.txt`: `python` PDF extraction via `pypdf`; `sed -n '1,220p' fabscore_codex/workspace/claim_6_command_output.txt`; `nl -ba code/experiments/run_experiments_cot.py | sed -n '75,100p'`; `nl -ba code/analysis/llm_judge.py | sed -n '20,40p'`; `nl -ba code/analysis/analyze_results.py | sed -n '70,90p'`; `find . \\( -name results_baseline_cot.json -o -name llm_judge_results.json \\) | sort`; `python` JSON length check for `code/database/test_themes_qwen1.7b-50.json`. Reused prior claim-relevant regeneration attempt from `fabscore_codex/workspace/claim_6_command_output.txt`: `python code/experiments/run_experiments_cot.py --modelpath ../../Qwen3-1.7B --dbpath code/database --testfile code/database/test_themes_qwen1.7b-50.json --outfile fabscore_codex/workspace/claim6_results_baseline_cot.json`."
+                ]
+            }
+        },
+        {
+            "claim_index": 10,
+            "claim": "10. Table 1, CoT, Win Rate (%): 8.0%",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The repository contains a plausible CoT Table 1 evaluation path, but the shipped CoT generation entrypoint is concretely broken before model loading because it calls `os.makedirs(..., exists_ok=True)` instead of `exist_ok=True`. Since the exact CoT generation step cannot execute and no saved `results_baseline_cot.json` or `llm_judge_results.json` exists from which the reported CoT win rate could be computed, the repository-side experimental implementation conflicts with the paper's claimed executable result `8.0%`.",
+            "evidence": "Reused exact-match artifact `fabscore_codex/workspace/claim_6_command_output.txt`, which contains the paper's Table 1 CoT row `CoT 8.66 ± 0.48 9.48 ± 0.54 7.74 ± 0.49 8.63 8.0%` and the failed repo-native regeneration command `python code/experiments/run_experiments_cot.py --modelpath ../../Qwen3-1.7B --dbpath code/database --testfile code/database/test_themes_qwen1.7b-50.json --outfile fabscore_codex/workspace/claim6_results_baseline_cot.json`, ending with `TypeError: makedirs() got an unexpected keyword argument 'exists_ok'` at `code/experiments/run_experiments_cot.py:84`. Fresh session artifact `fabscore_codex/workspace/claim_10_command_output.txt` confirms `code/database/test_themes_qwen1.7b-50.json` has `test_theme_count=50`, `llm_judge.py` expects `Qwen3-1.7B_results/results_baseline_cot.json`, `analyze_results.py` computes win rate from `is_winner`, and `find . \\( -name results_baseline_cot.json -o -name llm_judge_results.json \\) | sort` returns no claim-matching outputs. | Code: code/experiments/run_experiments_cot.py:84; code/analysis/llm_judge.py:27-33,144-145; code/analysis/analyze_results.py:80-84",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "code/experiments/run_experiments_cot.py:84",
+                    "code/analysis/llm_judge.py:27-33,144-145",
+                    "code/analysis/analyze_results.py:80-84"
+                ],
+                "commands_executed": [
+                    "Current session commands logged in `fabscore_codex/workspace/claim_10_command_output.txt`: `sed -n '1,220p' fabscore_codex/workspace/claim_6_command_output.txt`; `nl -ba code/experiments/run_experiments_cot.py | sed -n '75,90p'`; `nl -ba code/analysis/llm_judge.py | sed -n '24,37p'`; `nl -ba code/analysis/analyze_results.py | sed -n '80,84p'`; `find . \\( -name results_baseline_cot.json -o -name llm_judge_results.json \\) | sort`; `python` JSON length check for `code/database/test_themes_qwen1.7b-50.json`. Reused prior claim-relevant regeneration attempt from `fabscore_codex/workspace/claim_6_command_output.txt`: `python code/experiments/run_experiments_cot.py --modelpath ../../Qwen3-1.7B --dbpath code/database --testfile code/database/test_themes_qwen1.7b-50.json --outfile fabscore_codex/workspace/claim6_results_baseline_cot.json`."
+                ]
+            }
+        }
+    ],
+    "figures": [],
+    "results_section": [],
+    "summary": {
+        "total": 10,
+        "verified": 0,
+        "data_fabrication": 0,
+        "experiment_fabrication": 10,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 0,
+        "error": 0
+    }
+}

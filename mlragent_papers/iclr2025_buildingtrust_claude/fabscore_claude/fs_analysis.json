@@ -1,0 +1,413 @@
+{
+    "no_code_files": [],
+    "obvious_hallucination": [
+        {
+            "index": 5,
+            "category": "table",
+            "content": "5. Table 1, TrustPath, Trust Calibration: 0.900",
+            "reason": "The paper (Section 4.2 and 4.4) describes trust calibration as TC = 1 - (1/n)*sum(|t_i - a_i|) where t_i is a real user trust rating from 'a user study with participants of varying AI expertise'. The code in evaluation.py (lines 244-258) explicitly states '# In a real experiment, this would use real user trust ratings / # Here we simulate trust calibration based on system accuracy and transparency', and uses the formula trust_calibration = 1.0 - abs(transparency_score - system_accuracy). The transparency_score is hardcoded in run_experiment.py (lines 408-413) as TrustPath=0.9. No real user study was conducted; the claimed value 0.900 = transparency_score exactly when f1=1.0, meaning it is entirely determined by a hardcoded constant.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-258 (simulated trust calibration, not real user study)",
+                "code/run_experiment.py:408-413 (hardcoded transparency_scores dict: TrustPath=0.9)"
+            ]
+        },
+        {
+            "index": 11,
+            "category": "table",
+            "content": "11. Table 1, simple_fact_checking, Trust Calibration: 0.400",
+            "reason": "Same as claim 5: trust calibration is simulated via hardcoded transparency_score=0.4 for simple_fact_checking, not from a real user study as the paper describes. The claimed value 0.400 = hardcoded transparency_score when f1=1.0.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-258 (simulated trust calibration, comment: '# In a real experiment, this would use real user trust ratings')",
+                "code/run_experiment.py:408-413 (hardcoded transparency_scores: simple_fact_checking=0.4)"
+            ]
+        },
+        {
+            "index": 17,
+            "category": "table",
+            "content": "17. Table 1, uncertainty_estimation, Trust Calibration: 0.500",
+            "reason": "Same as claim 5: trust calibration is simulated via hardcoded transparency_score=0.5 for uncertainty_estimation. The claimed value 0.500 = hardcoded transparency_score when f1=1.0.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-258 (simulated trust calibration formula)",
+                "code/run_experiment.py:408-413 (hardcoded transparency_scores: uncertainty_estimation=0.5)"
+            ]
+        },
+        {
+            "index": 23,
+            "category": "table",
+            "content": "23. Table 1, standard_correction, Trust Calibration: 0.300",
+            "reason": "Same as claim 5: trust calibration is simulated via hardcoded transparency_score=0.3 for standard_correction. The claimed value 0.300 = hardcoded transparency_score when f1=1.0.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/evaluation.py:244-258 (simulated trust calibration formula)",
+                "code/run_experiment.py:408-413 (hardcoded transparency_scores: standard_correction=0.3)"
+            ]
+        },
+        {
+            "index": 28,
+            "category": "figure",
+            "content": "4. ../paper/domain_performance.png: F1 scores for each method across the three evaluated domains: science, history, and current events.",
+            "reason": "The paper (Section 5.4) describes these as actual experimental results across domains. However, run_experiment.py (lines 472-494) shows that domain_results are entirely hardcoded: science TrustPath=0.84, history TrustPath=0.80, current_events TrustPath=0.78 etc. The comment says 'Create domain performance visualization' and these values are passed directly to the visualizer without any per-domain experimental runs. No actual domain-specific evaluation was performed.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/run_experiment.py:472-494 (hardcoded domain_results dict passed directly to visualizer)",
+                "code/visualization.py:visualize_domain_performance (receives hardcoded data)"
+            ]
+        },
+        {
+            "index": 30,
+            "category": "figure",
+            "content": "6. ../paper/learning_curve.png: Improvement in TrustPath's performance with increasing human feedback iterations.",
+            "reason": "The paper (Section 4.5, 5.6) describes a 'longitudinal evaluation measuring how system performance improved with increasing amounts of human feedback' and 'F1 score improved from 0.65 to 0.82 over six feedback iterations'. However, run_experiment.py (lines 463-468) shows this data is hardcoded: learning_data = {'f1_scores': [0.65, 0.70, 0.75, 0.78, 0.80, 0.82], ...} with a comment '# Create a learning curve simulation'. No actual iterative human feedback experiment was conducted.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/run_experiment.py:463-468 (hardcoded learning_data with f1_scores=[0.65, 0.70, 0.75, 0.78, 0.80, 0.82], labeled 'learning curve simulation')"
+            ]
+        },
+        {
+            "index": 31,
+            "category": "results_section",
+            "content": "1. The F1 score improved from 0.65 to 0.82 over six feedback iterations, demonstrating the value of the human-in-the-loop component.",
+            "reason": "The paper claims this as an empirical result from a longitudinal human feedback study. However, run_experiment.py (lines 463-468) shows this is hardcoded simulation data: learning_data = {'f1_scores': [0.65, 0.70, 0.75, 0.78, 0.80, 0.82]}. The comment explicitly says '# Create a learning curve simulation'. The values [0.65, 0.70, 0.75, 0.78, 0.80, 0.82] directly reproduce the paper's claim (0.65 to 0.82) and were never derived from actual iterative human feedback experiments.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "code/run_experiment.py:463-468 (hardcoded f1_scores=[0.65, 0.70, 0.75, 0.78, 0.80, 0.82] labeled as simulation)"
+            ]
+        }
+    ],
+    "static_verifiable": [
+        {
+            "index": 10,
+            "category": "table",
+            "content": "10. Table 1, simple_fact_checking, ROUGE-L: 0.000",
+            "reason": "run_experiment.py (line 224) hardcodes suggested_corrections=[] for simple_fact_checking: '\"suggested_corrections\": []  # No corrections in this baseline'. evaluation.py (lines 144-151) returns {rougeL_f: 0.0, ...} whenever the corrections list is empty. Therefore ROUGE-L=0.0 for simple_fact_checking is guaranteed by code logic and can be confirmed without execution.",
+            "code_evidence": [
+                "code/run_experiment.py:224 ('suggested_corrections': [] hardcoded for simple_fact_checking)",
+                "code/evaluation.py:144-151 (early return of all zeros when corrections list is empty)"
+            ]
+        },
+        {
+            "index": 16,
+            "category": "table",
+            "content": "16. Table 1, uncertainty_estimation, ROUGE-L: 0.000",
+            "reason": "run_experiment.py hardcodes suggested_corrections=[] for uncertainty_estimation (no corrections in this baseline, matching the paper's description). evaluation.py (lines 144-151) returns {rougeL_f: 0.0, ...} for empty corrections. ROUGE-L=0.0 for uncertainty_estimation is guaranteed by code logic.",
+            "code_evidence": [
+                "code/run_experiment.py (suggested_corrections=[] hardcoded for uncertainty_estimation, same pattern as simple_fact_checking)",
+                "code/evaluation.py:144-151 (early return all zeros for empty corrections)"
+            ]
+        }
+    ],
+    "insufficient_evidence": [],
+    "execution_required": [
+        {
+            "index": 1,
+            "category": "table",
+            "content": "1. Table 1, TrustPath, Precision: 1.000",
+            "reason": "Code exists (run_experiment.py, evaluation.py) to compute precision from actual LLM API calls. Precision depends on whether TrustPath's detected_errors match ground_truth_errors, which requires executing the experiment with the Claude API. No result files exist in the repository (RESULTS_DIR is not created).",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py",
+                "code/trust_path.py"
+            ],
+            "suggested_entrypoints": [
+                "python code/run_experiment.py --api-key <KEY>"
+            ]
+        },
+        {
+            "index": 2,
+            "category": "table",
+            "content": "2. Table 1, TrustPath, Recall: 1.000",
+            "reason": "Same as claim 1 — recall depends on actual API execution results.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python code/run_experiment.py --api-key <KEY>"
+            ]
+        },
+        {
+            "index": 3,
+            "category": "table",
+            "content": "3. Table 1, TrustPath, F1 Score: 1.000",
+            "reason": "Same as claim 1 — F1 score depends on actual API execution results.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python code/run_experiment.py --api-key <KEY>"
+            ]
+        },
+        {
+            "index": 4,
+            "category": "table",
+            "content": "4. Table 1, TrustPath, ROUGE-L: 0.000",
+            "reason": "Unlike baselines, TrustPath does generate suggested_corrections from the LLM API (analysis_results.get('suggested_corrections', [])). Whether ROUGE-L=0.0 depends on whether those corrections match ground truth corrections. Requires actual execution to determine.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py",
+                "code/trust_path.py"
+            ],
+            "suggested_entrypoints": [
+                "python code/run_experiment.py --api-key <KEY>"
+            ]
+        },
+        {
+            "index": 6,
+            "category": "table",
+            "content": "6. Table 1, TrustPath, Overall Score: 0.635",
+            "reason": "Overall score = 0.4*f1 + 0.3*(bleu+rougeL)/2 + 0.2*trust_cal + 0.1*efficiency_score. The efficiency component (1/(1 + processing_time/10)) depends on actual API call timing. All components except trust_calibration (which is hardcoded via transparency_score=0.9 when f1=1.0) require execution.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python code/run_experiment.py --api-key <KEY>"
+            ]
+        },
+        {
+            "index": 7,
+            "category": "table",
+            "content": "7. Table 1, simple_fact_checking, Precision: 1.000",
+            "reason": "Precision for simple_fact_checking depends on the API-driven error detection output from SimpleFactChecker.check_response(). No result files exist. Requires execution.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py",
+                "code/baselines.py"
+            ],
+            "suggested_entrypoints": [
+                "python code/run_experiment.py --api-key <KEY>"
+            ]
+        },
+        {
+            "index": 8,
+            "category": "table",
+            "content": "8. Table 1, simple_fact_checking, Recall: 1.000",
+            "reason": "Same as claim 7.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py",
+                "code/baselines.py"
+            ],
+            "suggested_entrypoints": [
+                "python code/run_experiment.py --api-key <KEY>"
+            ]
+        },
+        {
+            "index": 9,
+            "category": "table",
+            "content": "9. Table 1, simple_fact_checking, F1 Score: 1.000",
+            "reason": "Same as claim 7.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py",
+                "code/baselines.py"
+            ],
+            "suggested_entrypoints": [
+                "python code/run_experiment.py --api-key <KEY>"
+            ]
+        },
+        {
+            "index": 12,
+            "category": "table",
+            "content": "12. Table 1, simple_fact_checking, Overall Score: 0.554",
+            "reason": "Overall score depends on F1 (execution-dependent) and efficiency (timing-dependent). Requires execution.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python code/run_experiment.py --api-key <KEY>"
+            ]
+        },
+        {
+            "index": 13,
+            "category": "table",
+            "content": "13. Table 1, uncertainty_estimation, Precision: 1.000",
+            "reason": "Precision depends on the API-driven uncertainty estimation output from UncertaintyEstimator.estimate_uncertainty(). Requires execution.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py",
+                "code/baselines.py"
+            ],
+            "suggested_entrypoints": [
+                "python code/run_experiment.py --api-key <KEY>"
+            ]
+        },
+        {
+            "index": 14,
+            "category": "table",
+            "content": "14. Table 1, uncertainty_estimation, Recall: 1.000",
+            "reason": "Same as claim 13.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python code/run_experiment.py --api-key <KEY>"
+            ]
+        },
+        {
+            "index": 15,
+            "category": "table",
+            "content": "15. Table 1, uncertainty_estimation, F1 Score: 1.000",
+            "reason": "Same as claim 13.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python code/run_experiment.py --api-key <KEY>"
+            ]
+        },
+        {
+            "index": 18,
+            "category": "table",
+            "content": "18. Table 1, uncertainty_estimation, Overall Score: 0.572",
+            "reason": "Depends on F1 and efficiency from actual API runs. Requires execution.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python code/run_experiment.py --api-key <KEY>"
+            ]
+        },
+        {
+            "index": 19,
+            "category": "table",
+            "content": "19. Table 1, standard_correction, Precision: 1.000",
+            "reason": "Precision depends on StandardCorrector's detected_errors from API call. Requires execution.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py",
+                "code/baselines.py"
+            ],
+            "suggested_entrypoints": [
+                "python code/run_experiment.py --api-key <KEY>"
+            ]
+        },
+        {
+            "index": 20,
+            "category": "table",
+            "content": "20. Table 1, standard_correction, Recall: 1.000",
+            "reason": "Same as claim 19.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python code/run_experiment.py --api-key <KEY>"
+            ]
+        },
+        {
+            "index": 21,
+            "category": "table",
+            "content": "21. Table 1, standard_correction, F1 Score: 1.000",
+            "reason": "Same as claim 19.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python code/run_experiment.py --api-key <KEY>"
+            ]
+        },
+        {
+            "index": 22,
+            "category": "table",
+            "content": "22. Table 1, standard_correction, ROUGE-L: 0.000",
+            "reason": "standard_correction's suggested_corrections contains placeholder text '[Standard correction available in full corrected response]' (run_experiment.py lines 347-355), but corrections are only added when has_corrections=True from API. Whether ROUGE-L=0.0 depends on: (a) whether any corrections are generated (API-dependent), (b) whether the placeholder text overlaps with ground truth corrections. Requires execution to verify.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python code/run_experiment.py --api-key <KEY>"
+            ]
+        },
+        {
+            "index": 24,
+            "category": "table",
+            "content": "24. Table 1, standard_correction, Overall Score: 0.514",
+            "reason": "Depends on F1 and efficiency from actual API runs. Requires execution.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python code/run_experiment.py --api-key <KEY>"
+            ]
+        },
+        {
+            "index": 25,
+            "category": "figure",
+            "content": "1. ../paper/overall_performance.png: Overall Performance of each method, combining metrics from all evaluation categories.",
+            "reason": "PNG exists but no underlying metric data files (e.g. evaluation_results.json) are present in the repository. visualization.py has plotting functions that take evaluation_results dict produced by running the experiment. Execution is required to generate the underlying data and verify the figure content.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/visualization.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python code/run_experiment.py --api-key <KEY>"
+            ]
+        },
+        {
+            "index": 26,
+            "category": "figure",
+            "content": "2. ../paper/error_detection_performance.png: Error Detection Performance measured by precision, recall, and F1 score for all methods.",
+            "reason": "PNG exists but no underlying metric data files are present. The error detection metrics depend on actual API calls. Execution required to verify.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/visualization.py",
+                "code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "python code/run_experiment.py --api-key <KEY>"
+            ]
+        },
+        {
+            "index": 27,
+            "category": "figure",
+            "content": "3. ../paper/trust_metrics.png: Trust-related metrics including trust calibration, explanation satisfaction, and transparency scores.",
+            "reason": "PNG exists but no underlying metric data files are present. Although trust calibration values are derived from hardcoded transparency scores (fabrication issue noted separately for individual trust calibration claims), the trust_metrics.png figure still requires running the experiment to generate the evaluation_results dict passed to visualization functions.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/visualization.py"
+            ],
+            "suggested_entrypoints": [
+                "python code/run_experiment.py --api-key <KEY>"
+            ]
+        },
+        {
+            "index": 29,
+            "category": "figure",
+            "content": "5. ../paper/radar_chart.png: Radar chart comparing all methods across five key metrics: error detection (F1 score), correction quality, efficiency, trust calibration, and transparency.",
+            "reason": "PNG exists but no underlying metric data files are present. The radar chart takes evaluation_results dict as input. Five of the dimensions include efficiency (execution-dependent) and error detection F1 (execution-dependent). Execution required.",
+            "candidate_files": [
+                "code/run_experiment.py",
+                "code/visualization.py"
+            ],
+            "suggested_entrypoints": [
+                "python code/run_experiment.py --api-key <KEY>"
+            ]
+        }
+    ],
+    "error": [],
+    "summary": {
+        "total_claims": 31,
+        "no_code_files": 0,
+        "obvious_hallucination": 7,
+        "data_fabrication": 0,
+        "experiment_fabrication": 7,
+        "result_fabrication": 0,
+        "static_verifiable": 2,
+        "insufficient_evidence": 0,
+        "execution_required": 22,
+        "error": 0
+    }
+}

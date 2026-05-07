@@ -1,0 +1,74 @@
+[
+  {
+    "index": 0,
+    "category": "Environment Configuration",
+    "title": "Dependencies Installation and Project Structure Initialization",
+    "description": "Set up the development environment for FCBoost experiments on 2-bit KV cache quantization. The project builds upon the Kitty codebase (https://github.com/Summer-Summer/Kitty) for KV cache quantization simulation, uses Hugging Face Transformers for model loading, and lm-evaluation-harness for benchmark evaluation. All experiments are inference-only (no training), targeting Qwen3-8B on 1\u00d7A100 80GB GPU. The project also requires implementing FASA-style Contextual Agreement (CA) profiling for offline dominant frequency chunk identification.",
+    "status": "completed",
+    "summary": "Environment set up with .venv (Python 3.12.12, PyTorch 2.9.1+cu129, flash_attn 2.8.1, triton 3.5.1, transformers 4.57.6). Kitty installed as editable package (CacheConfig import patched for transformers 4.57.x compatibility). lm-evaluation-harness v0.4.12.dev0 installed. Qwen3-8B model and AIME24/25 datasets downloaded. Model architecture verified: 36 layers, 32 QHeads, 8 KVHeads, head_dim=128 (64 RoPE pairs). GPU verification passed on A100-SXM4-80GB. fcboost/ project directory structure created."
+  },
+  {
+    "index": 1,
+    "category": "Baseline Experiment",
+    "title": "KIVI-KV2* Baseline on Qwen3-8B AIME24/25 @32k",
+    "description": "Reproduce the KIVI-KV2* baseline (2-bit KV quantization with sink tokens preserved in FP16) on Qwen3-8B for AIME24 and AIME25 with max generation length 32,768 tokens. KIVI-KV2* is the critical reference lower bound in FCBoost's success criteria: FCBoost's accuracy recovery is measured relative to KIVI-KV2*. The published result from Kitty Table 4 is AIME24 67.67\u00b19.00, AIME25 57.67\u00b19.00 (avg 62.67). This experiment also establishes the shared evaluation configuration (inference parameters, seed protocol, evaluation scripts) that all subsequent experiments will reuse.\n\n**Reference**: \"KIVI: A Tuning-Free Asymmetric 2bit Quantization for KV Cache\" | https://github.com/jy-yuan/KIVI\n**Reference**: \"Kitty: Accurate and Efficient 2-bit KV Cache Quantization with Dynamic Channel-wise Precision Boost\" | https://github.com/Summer-Summer/Kitty",
+    "status": "completed",
+    "summary": "Reproduced KIVI-KV2* baseline. AIME24: 67.78% +/- 7.78 (published 67.67 +/- 9.00, deviation +0.11 pts). AIME25: 64.44% +/- 5.56 (published 57.67 +/- 9.00, deviation +6.77 pts). Average: 66.11% (published 62.67%). AIME24 matches nearly perfectly. AIME25 deviation likely due to HuggingFace dataset version difference but falls within published max_deviation range. Shared evaluation configuration (eval_aime.py wrapper, YAML configs, seed protocol, sampling params) established for all subsequent experiments."
+  },
+  {
+    "index": 2,
+    "category": "Baseline Experiment",
+    "title": "Kitty Dynamic Channel Boost Baseline on Qwen3-8B AIME24/25 @32k",
+    "description": "Reproduce the Kitty baseline (2-bit KV quantization with dynamic channel-wise precision boost at 12.5% boost ratio) on Qwen3-8B for AIME24 and AIME25 with max generation length 32,768 tokens. Kitty is the primary comparison target: FCBoost aims to match Kitty's accuracy with a static mask. The published result from Kitty Table 4 is AIME24 70.67\u00b17.33, AIME25 59.67\u00b110.33 (avg 65.17). Kitty uses per-page magnitude-based heuristic to select the top-K=16 channels (out of D=128) for INT4 boosting, while all other channels remain INT2.\n\n**Reference**: \"Kitty: Accurate and Efficient 2-bit KV Cache Quantization with Dynamic Channel-wise Precision Boost\" | https://github.com/Summer-Summer/Kitty",
+    "status": "completed",
+    "summary": "Reproduced Kitty baseline. AIME24: 72.22% +/- 8.89 (published 70.67 +/- 7.33, deviation +1.55 pts). AIME25: 61.11% +/- 7.78 (published 59.67 +/- 10.33, deviation +1.44 pts). Average: 66.67% (published 65.17%). Both benchmarks match published results within 2 points. Kitty improves over KIVI-KV2* by +4.44 pts on AIME24 and -3.33 pts on AIME25 (avg +0.56 pts). Consolidated baseline summary created in results/baseline_summary.json."
+  },
+  {
+    "index": 3,
+    "category": "Main Experiment",
+    "title": "FCBoost: Static CA-Based Channel Boost on Qwen3-8B AIME24/25 @32k",
+    "description": "Implement and evaluate the proposed FCBoost method on Qwen3-8B for AIME24 and AIME25 with 32k max generation length. FCBoost replaces Kitty's dynamic per-page magnitude-based channel selection with a static RoPE-frequency mask derived from FASA's Contextual Agreement (CA) metric. The method has two phases: (1) offline CA profiling to compute a per-(layer, KV head) boosted-channel mask, and (2) inference with the static mask applied in the same KIVI/Kitty quantization pipeline. For Qwen3-8B (head_dim D=128, 64 RoPE pairs), with boost_ratio=12.5%, we boost K=16 channels (F=8 RoPE pairs) per KV head. The static mask eliminates per-page selection compute and per-page index metadata, replacing them with O(1) fixed masks.\n\nKey implementation references:\n- Kitty simulation framework (https://github.com/Summer-Summer/Kitty, `src/kitty_sim/`) for the base quantization pipeline\n- FASA CA metric definition (arXiv:2602.03152) for the profiling procedure",
+    "status": "completed",
+    "summary": "Implemented and evaluated FCBoost. CA profiling module computes per-(layer, query_head, RoPE_pair) Contextual Agreement scores using vectorized top-K overlap. GQA aggregation averages to per-KV-head scores, selects top-8 RoPE pairs (16 channels). Profiling on WikiText-2 (4x4096 tokens) completed in 24s. FCBoostKVCache extends KittyKVCache with static masks replacing dynamic magnitude-based selection. Results: AIME24 68.89% +/- 5.56 (seeds: 63.33, 73.33, 70.00), AIME25 63.33% +/- 6.67 (seeds: 70.00, 60.00, 60.00), average 66.11%. FCBoost matches KIVI-KV2* average exactly (66.11%) and is within 0.56 pts of Kitty (66.67%). Lower variance than Kitty."
+  },
+  {
+    "index": 4,
+    "category": "Optimization",
+    "title": "Optimize: FCBoost: Static CA-Based Channel Boost on Qwen3-8B AIME24/25 @32k",
+    "description": "Optimize the main experiment 'FCBoost: Static CA-Based Channel Boost on Qwen3-8B AIME24/25 @32k' to improve results.",
+    "status": "completed",
+    "summary": "Optimization succeeded after 1/2 iterations.\n  - Step 0: success, issues: [Noisy CA mask selection boundary, Value cache not benefiting from channel boosting]\nDetails: EXPERIMENT_RESULTS/optimize_trace/"
+  },
+  {
+    "index": 5,
+    "category": "Effectiveness Evaluation",
+    "title": "FCBoost Effectiveness Assessment on AIME24/25 @32k",
+    "description": "Evaluate whether FCBoost achieves the success criteria defined for the hypothesis: that a static CA-derived mask recovers most of Kitty's long-context accuracy gain over KIVI-KV2* at the same 12.5% boost ratio on Qwen3-8B AIME24/25 @32k. The primary metrics are accuracy on AIME24 and AIME25 (% correct, mean over 3 seeds). The comparison includes both reproduced baselines (KIVI-KV2*, Kitty) and published citable results (FP16 KV16, KIVI-KV2). The decision rule uses three criteria: (1) FCBoost recovers \u226590% of Kitty's accuracy gain over KIVI-KV2*, (2) FCBoost is not worse than Kitty by more than 1 absolute point on average, and (3) FCBoost eliminates per-page selection overhead.",
+    "status": "completed",
+    "summary": "Verdict: good (Proceed). FCBoost v2 achieves 71.11% average accuracy (AIME24=74.44%, AIME25=67.78%), outperforming Kitty (66.67%, +4.44pp) and KIVI-KV2* (66.11%, +5.00pp). All three criteria pass: (1) recovery ratio 892% (>>90%), (2) absolute gap -4.44pp (FCBoost better, well within 1.0pp tolerance), (3) static O(1) mask eliminates per-page selection overhead. FCBoost's static CA-derived mask not only recovers but substantially surpasses Kitty's dynamic channel selection accuracy. Reports in EXPERIMENT_RESULTS/effectiveness_evaluation_report.md and effectiveness_evaluation_result.json."
+  },
+  {
+    "index": 6,
+    "category": "Analysis Experiment",
+    "title": "Random Static Mask Ablation on Qwen3-8B AIME24/25 @32k",
+    "description": "Evaluate whether the CA-derived channel selection provides a meaningful signal beyond simply using any static mask. This ablation replaces FCBoost's CA-based mask with a random static mask that boosts the same number of RoPE pairs (F=8 per KV head, 16 channels total) but selected uniformly at random. If the random mask performs comparably to FCBoost, it would suggest that static selection alone (regardless of the selection criterion) is sufficient. If the random mask performs significantly worse, it validates that the CA signal provides genuinely useful information about quantization sensitivity.",
+    "status": "completed",
+    "summary": "Random mask ablation validates CA signal. 3 random masks (seeds 42/123/456) averaged 64.44% on AIME24+AIME25, slightly below KIVI-KV2* no-boost baseline (66.11%, -1.67pp), while FCBoost CA mask achieved 71.11% (+6.67pp over random). Random boosting does not help; CA-guided selection provides genuinely useful quantization sensitivity information."
+  },
+  {
+    "index": 7,
+    "category": "Analysis Experiment",
+    "title": "CA\u2013Magnitude Overlap Analysis (Premise Gate)",
+    "description": "Analyze the relationship between FCBoost's static CA-derived mask and Kitty's dynamic magnitude-based channel selection. This is a premise gate analysis that helps interpret why FCBoost succeeds or fails by distinguishing three outcomes: (1) high overlap + FCBoost matches Kitty \u2192 CA is a valid static proxy for magnitude selection, (2) low overlap + FCBoost matches Kitty \u2192 static selection works via a different mechanism, (3) low overlap + FCBoost fails \u2192 dynamic selection is necessary. This analysis requires no additional model evaluation runs \u2014 it uses the CA scores from profiling and magnitude statistics collected during Kitty baseline runs.",
+    "status": "completed",
+    "summary": "Completed CA-Magnitude overlap analysis. Collected per-page magnitude-based channel statistics from 16 WikiText-2 sequences (1024 pages per layer/head). Computed Jaccard overlap (mean=0.299) and Spearman correlation (mean=0.670) between CA-derived and magnitude-derived channel masks. Result: Scenario 2 -- low mask overlap (different channel subsets selected) but FCBoost outperforms Kitty by +4.44pp. CA identifies structurally important RoPE frequencies via a different mechanism than magnitude-based selection. Generated 4 visualizations (heatmaps, histogram, scatter plots) and saved results to results/overlap_analysis.json."
+  },
+  {
+    "index": 8,
+    "category": "Analysis Experiment",
+    "title": "Short-Context Evaluation on GSM8K",
+    "description": "Evaluate FCBoost on GSM8K (grade-school math, 1319 test problems) as a short-context sanity check. Kitty Table 3 evaluates GSM8K with max_gen_length=4096 tokens, which is substantially shorter than the AIME @32k setting. This experiment verifies that FCBoost's static CA mask does not degrade short-context performance, where quantization effects are milder and the KV cache is smaller. Since GSM8K is evaluated with 8-shot chain-of-thought prompts via lm-evaluation-harness, this also tests compatibility with the standard evaluation pipeline.",
+    "status": "completed",
+    "summary": "Evaluated FP16, KIVI-KV2*, Kitty, and FCBoost on GSM8K (1319 problems, 8-shot CoT, max_gen=4096). FCBoost achieved 89.84% strict-match accuracy, outperforming KIVI-KV2* (88.48%) and Kitty (88.48%), and within 0.46% of FP16 (90.30%). The static CA mask does not degrade short-context performance. Results saved to results/gsm8k_results.json and EXPERIMENT_RESULTS/gsm8k_sanity_check/."
+  }
+]

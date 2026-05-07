@@ -1,0 +1,201 @@
+# Ablation Study Configuration for BiCA MapTalk
+# Inherits from main config with specific ablation settings
+
+experiment: maptalk_ablation
+
+# Base configuration (inherits from main)
+base_config: "maptalk_main.yaml"
+
+# Ablation variants
+ablation_variants:
+  
+  # Code dimension ablations
+  small_code:
+    model:
+      code_dim: 8
+    experiment_name: "small_code_dim_8"
+  
+  large_code:
+    model:
+      code_dim: 32
+    experiment_name: "large_code_dim_32"
+  
+  # Gumbel temperature ablations
+  high_temp:
+    protocol:
+      gumbel_tau_start: 2.0
+      gumbel_tau_end: 1.0
+      tau_decay: 0.98
+    experiment_name: "high_temperature"
+  
+  low_temp:
+    protocol:
+      gumbel_tau_start: 0.5
+      gumbel_tau_end: 0.1
+      tau_decay: 0.9
+    experiment_name: "low_temperature"
+  
+  # KL budget ablations
+  tight_budgets:
+    regularizers:
+      kl_budget_a: 0.01
+      kl_budget_h: 0.005
+      lambda_A: 0.05
+      lambda_H: 0.02
+    experiment_name: "tight_kl_budgets"
+  
+  loose_budgets:
+    regularizers:
+      kl_budget_a: 0.1
+      kl_budget_h: 0.06
+      lambda_A: 0.01
+      lambda_H: 0.005
+    experiment_name: "loose_kl_budgets"
+  
+  # IB weight ablations
+  low_ib:
+    regularizers:
+      beta_ib: 0.5
+      ib_weight: 0.5
+    experiment_name: "low_ib_weight"
+  
+  high_ib:
+    regularizers:
+      beta_ib: 2.0
+      ib_weight: 2.0
+    experiment_name: "high_ib_weight"
+  
+  # Architecture ablations
+  no_gru:
+    model:
+      use_gru: false
+    experiment_name: "no_gru"
+  
+  small_hidden:
+    model:
+      policy_hidden_dim: 128
+      value_hidden_dim: 128
+      human_gru_hidden: 64
+      protocol_hidden_dim: 64
+    experiment_name: "small_hidden_dims"
+  
+  large_hidden:
+    model:
+      policy_hidden_dim: 512
+      value_hidden_dim: 512
+      human_gru_hidden: 256
+      protocol_hidden_dim: 256
+    experiment_name: "large_hidden_dims"
+  
+  # Regularization ablations
+  no_rep_gap:
+    regularizers:
+      mu_rep: 0.0
+    model:
+      disable_rep_mapper: true
+    experiment_name: "no_representation_gap"
+  
+  high_rep_gap:
+    regularizers:
+      mu_rep: 0.5
+    experiment_name: "high_rep_gap_weight"
+  
+  no_instructor_cost:
+    regularizers:
+      kappa_teach: 0.0
+    experiment_name: "no_instructor_cost"
+  
+  high_instructor_cost:
+    regularizers:
+      kappa_teach: 0.2
+    experiment_name: "high_instructor_cost"
+
+# Environment (use EASIER settings like successful main experiment)
+env:
+  grid_size: 8
+  obstacle_rate: [0.10, 0.15]  # EASIER: Same as successful main experiment
+  max_steps: 80                 # EASIER: More time to succeed
+  reward_step: -0.5             # EASIER: Less harsh step penalty
+  reward_collision: -5.0
+  reward_success: 50.0
+  reward_token_cost: -0.05
+  ood:
+    obstacle_rate: [0.25, 0.35]  # EASIER: Reduced OOD obstacles
+    sensor_flip: 0.1
+    patterns: ["corridor", "rooms"]
+
+# Training settings for ablations (FULL MODE - 300 epochs)
+train:
+  episodes: 9600  # 300 epochs * 32 batch_episodes = 9600 (FULL MODE)
+  batch_episodes: 32
+  eval_interval: 320  # Evaluate every 10 epochs
+  
+  # Faster convergence settings
+  lr: 5e-4
+  ppo_epochs: 3
+  
+  # Early stopping (enabled for full training)
+  early_stopping:
+    enabled: true
+    patience: 20  # Reduced patience for faster convergence detection
+    min_improvement: 0.01
+
+# Evaluation settings (FULL MODE - comprehensive evaluation)
+evaluation:
+  num_episodes: 50  # More episodes for reliable evaluation
+  ood_variants: ["high_obstacles", "sensor_noise"]  # Multiple variants for robustness
+
+# Logging
+logging:
+  use_wandb: true
+  project: "bica-maptalk-ablations"
+  tags: ["maptalk", "ablation"]
+
+# Statistical analysis
+statistics:
+  num_seeds: 3  # Fewer seeds for ablations
+  confidence_level: 0.95
+  multiple_comparisons_correction: "bonferroni"
+  
+  # Significance testing
+  significance_tests:
+    - "paired_t_test"
+    - "wilcoxon_signed_rank"
+  
+  # Effect size computation
+  effect_sizes:
+    - "cohen_d"
+    - "glass_delta"
+
+# Ablation-specific metrics
+ablation_metrics:
+  # Performance degradation tolerance
+  max_performance_drop: 0.15  # 15% max drop acceptable
+  
+  # Convergence criteria
+  convergence_window: 100  # Episodes to check convergence
+  convergence_threshold: 0.02  # Metric stability threshold
+  
+  # Computational efficiency
+  track_training_time: true
+  track_memory_usage: true
+  track_flops: false
+
+# Grid search settings (for hyperparameter ablations)
+grid_search:
+  enabled: false  # Enable for systematic hyperparameter search
+  
+  # Parameter ranges
+  parameters:
+    learning_rate: [1e-4, 3e-4, 5e-4, 1e-3]
+    code_dim: [8, 12, 16, 24, 32]
+    beta_ib: [0.5, 1.0, 1.5, 2.0]
+    kl_budget_a: [0.01, 0.03, 0.05, 0.07, 0.1]
+  
+  # Search strategy
+  strategy: "grid"  # grid, random, bayesian
+  max_trials: 50
+  
+  # Optimization objective
+  objective: "bas_score"  # Metric to optimize
+  direction: "maximize"

@@ -1,0 +1,183 @@
+===== COMMAND =====
+python3 - <<'PY'
+from PyPDF2 import PdfReader
+reader = PdfReader('206_Self_Spec_Model_Authored_S.pdf')
+for i, page in enumerate(reader.pages, start=1):
+    text = page.extract_text() or ''
+    if 'Table 2' in text or 'Shared (Claude 3.7 & Claude 3.5)' in text or '92' in text:
+        print(f'--- PAGE {i} ---')
+        for line in text.splitlines():
+            if 'Table 2' in line or 'Persistent across all three' in line or 'Shared (Claude 3.7 & Claude 3.5)' in line or '92' in line:
+                print(line)
+PY
+===== STDOUT =====
+--- PAGE 1 ---
+for stronger models: GPT-4o 87%→92% (+5) and Claude 3.7 92%→94%
+--- PAGE 2 ---
+baseline (direct NL →code) againstSelf-Spec.Results:GPT-4o improves from 87% to92% (+5);
+Claude 3.7 improves from 92% to94% (+2); Claude 3.5 dips slightly from 90% to89% (−1). We
+--- PAGE 5 ---
+generation. GPT-4o improves from 87% to 92% (a +5 point gain), and Claude 3.7 rises from 92% to
+--- PAGE 6 ---
+GPT-4o 87% 92% +5
+Claude 3.7 92% 94% +2
+Persistent across all three 75, 145, 160
+Shared (Claude 3.7 & Claude 3.5) 92, 146
+Table 2: Common errors across models (self-spec only)
+===== STDERR =====
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+python3 - <<'PY'
+import json
+from pathlib import Path
+for path_str in [
+    'A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl',
+    'A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl',
+]:
+    path = Path(path_str)
+    hits = []
+    with path.open() as f:
+        for idx, line in enumerate(f, start=1):
+            obj = json.loads(line)
+            if obj.get('task_id') == 'HumanEval/92':
+                hits.append((idx, obj.get('task_id'), obj.get('passed'), obj.get('error')))
+    print(path_str, 'hits=', len(hits))
+    for item in hits:
+        print('  line', item[0], 'task_id=', item[1], 'passed=', item[2], 'error=', item[3])
+PY
+===== STDOUT =====
+A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl hits= 0
+A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl hits= 1
+  line 93 task_id= HumanEval/92 passed= None error= None
+===== STDERR =====
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+python3 - <<'PY'
+import json, re, traceback
+from pathlib import Path
+PRELUDE = (
+    'from typing import *\n'
+    'import math, functools, itertools, collections\n'
+)
+def extract_python(code: str) -> str:
+    s = code.strip()
+    m = re.match(r'(?s)^\s*\s*$', s, flags=re.IGNORECASE)
+    return m.group(1) if m else s
+
+def alias_entry_point_if_needed(code: str, entry_point: str) -> str:
+    if re.search(rf'^\s*def\s+{re.escape(entry_point)}\s*\(', code, flags=re.M) is not None:
+        return code
+    m = re.search(r'^\s*def\s+([A-Za-z_]\w*)\s*\(', code, flags=re.M)
+    if m:
+        first_func = m.group(1)
+        if first_func != entry_point:
+            code += f'\n\n# auto alias for evaluation\n{entry_point} = {first_func}\n'
+    return code
+
+def run_test(task, raw_code):
+    ns = {}
+    try:
+        code = extract_python(raw_code)
+        code = alias_entry_point_if_needed(code, task['entry_point'])
+        code_wrapped = f"{PRELUDE}\n{code}\n\n{task['test']}\n\ncheck({task['entry_point']})"
+        exec(compile(code_wrapped, '<eval>', 'exec'), ns)
+        return True, '', ''
+    except AssertionError as e:
+        return False, f'AssertionError: {e}', traceback.format_exc()
+    except Exception as e:
+        return False, f'{e.__class__.__name__}: {e}', traceback.format_exc()
+
+path = Path('A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl')
+rec = None
+with path.open() as f:
+    for line in f:
+        item = json.loads(line)
+        if item.get('task_id') == 'HumanEval/92':
+            rec = item
+            break
+if rec is None:
+    raise SystemExit('HumanEval/92 missing from all_spec_claude_3_7_sonnet_20250219.jsonl')
+passed, err, tb = run_test({'entry_point': rec['entry_point'], 'test': rec['test']}, rec['generated_solution'])
+print('FILE', path)
+print('TASK', rec['task_id'])
+print('ENTRY', rec['entry_point'])
+print('PASSED', passed)
+print('ERROR', err)
+if not passed:
+    print('TRACEBACK_HEAD')
+    print('\n'.join(tb.splitlines()[:8]))
+print('GENERATED_SOLUTION')
+print(rec['generated_solution'])
+PY
+===== STDOUT =====
+FILE A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl
+TASK HumanEval/92
+ENTRY any_int
+PASSED True
+ERROR 
+GENERATED_SOLUTION
+def any_int(x, y, z):
+    '''
+    Create a function that takes 3 numbers.
+    Returns true if one of the numbers is equal to the sum of the other two, and all numbers are integers.
+    Returns false in any other cases.
+    
+    Examples
+    any_int(5, 2, 7) ➞ True
+    
+    any_int(3, 2, 2) ➞ False
+
+    any_int(3, -2, 1) ➞ True
+    
+    any_int(3.6, -2.2, 2) ➞ False
+  
+
+    
+    '''
+    # Check if all inputs are integers
+    if not (isinstance(x, int) and isinstance(y, int) and isinstance(z, int)):
+        return False
+    
+    # Check if one number equals the sum of the other two
+    if x == y + z or y == x + z or z == x + y:
+        return True
+    
+    return False
+===== STDERR =====
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+python3 - <<'PY'
+import json, importlib.util
+from pathlib import Path
+spec = importlib.util.spec_from_file_location('spec_eval', 'A4S_update/spec_result_evaluation.py')
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+path = Path('A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl')
+rec = None
+with path.open() as f:
+    for line in f:
+        item = json.loads(line)
+        if item.get('task_id') == 'HumanEval/92':
+            rec = item
+            break
+if rec is None:
+    raise SystemExit('HumanEval/92 missing from all_spec_claude_3_7_sonnet_20250219.jsonl')
+passed, err, tb = mod.run_test({'entry_point': rec['entry_point'], 'test': rec['test']}, rec['generated_solution'])
+print('MODULE_MODEL', mod.MODEL)
+print('TASK', rec['task_id'])
+print('ENTRY', rec['entry_point'])
+print('PASSED', passed)
+print('ERROR', err)
+PY
+===== STDOUT =====
+MODULE_MODEL claude-3-5-sonnet-20241022
+TASK HumanEval/92
+ENTRY any_int
+PASSED True
+ERROR 
+===== STDERR =====
+===== EXIT CODE: 0 =====
+

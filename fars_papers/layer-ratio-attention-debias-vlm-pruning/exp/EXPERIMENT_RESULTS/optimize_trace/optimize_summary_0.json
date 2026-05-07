@@ -1,0 +1,16 @@
+{
+  "optimize_index": 0,
+  "issues": [
+    {
+      "title": "Wrong use of shallow attention as bias denominator",
+      "description": "The ratio formula A_mid / (A_shallow + eps) destroys useful saliency signal. Phase-0 confirmed shallow attention is NOT position-correlated (Spearman rho ~0.17), so dividing by it removes semantic information rather than positional bias. Fixed by implementing alternative combination strategies (weighted_combo, residual) and ultimately discovering that raw mid-layer attention without any debiasing performs best at deeper layers."
+    },
+    {
+      "title": "Pruning layer too early (L4 instead of L12)",
+      "description": "The original method pruned at layer 4 out of 32 layers. Systematic layer sweep showed massive monotonic improvement with deeper pruning: L4=58.5%, L6=66%, L8=69%, L10=84.5%, L12=90%, L16=88.5% (200-sample debug). At layer 12, mid-layer attention is semantically rich enough that raw attention + MIS diversity selection achieves 66.32% avg on full eval, surpassing D2Pruner (55.03%) without any offline calibration."
+    }
+  ],
+  "experiment_result_path": "EXPERIMENT_RESULTS/optimize_trace/iteration_0/",
+  "success": true,
+  "summary": "Fixed two compounding issues: (1) replaced destructive ratio debiasing with raw attention scoring, and (2) moved pruning from layer 4 to layer 12. The optimized method (raw MIS at L12) achieves 66.32% avg accuracy across 8 RefCOCO splits, up from 13.24% (+53 points) and exceeding D2Pruner baseline (55.03%) by +11.3 points. It retains 92% of no-pruning accuracy (72.06%) while keeping only 10% of visual tokens, without requiring any offline calibration data."
+}

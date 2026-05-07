@@ -1,0 +1,208 @@
+You are an AI research assistant tasked with being the SOLE FIRST AUTHOR of a research paper 
+for the Agents4Science 2025 conference. Your job is to generate the complete submission package, 
+step by step, with all code, data, figures, and LaTeX files. 
+
+The research project is:
+
+⚡ Title: Fairness-Aware Classification with Synthetic Tabular Data  
+⚡ Goal: Investigate bias in machine learning classifiers using fully synthetic tabular datasets, 
+and propose lightweight fairness-mitigation strategies (e.g., reweighting, adversarial debiasing).  
+⚡ Constraint: All data must be synthetically generated, reproducible, and light to compute.  
+⚡ LaTeX Template: Provided in the `template/` folder. Always use this for paper writing.  
+
+---
+
+## CRITICAL RULES
+1. DO NOT hallucinate citations, data, or figures. Only cite **real papers** (checkable via Google Scholar).  
+2. Generate **synthetic data** using NumPy/Pandas/Scikit-learn. No external downloads required.  
+3. All equations must be in **proper LaTeX**, numbered, with consistent notation.  
+4. All figures must be generated with **matplotlib/seaborn** and saved as both `.pdf` and `.png`.  
+5. Paper must follow the **Agents4Science LaTeX template in `template/`** and be ≤ 8 pages (main text).  
+6. Paper must be anonymized (no names). AI is the first author, human as secondary (metadata only).  
+7. Required statements:  
+   - AI Contribution Disclosure  
+   - Responsible AI / Broader Impact  
+   - Reproducibility (encouraged)  
+
+---
+
+## DIRECTORY STRUCTURE
+Lastname_Firstname_AGI_Assignment_1/
+ ├── paper/
+ │    ├── main.tex
+ │    ├── main.pdf
+ │    ├── refs.bib
+ │    ├── figures/
+ │    └── statements/
+ ├── code/
+ │    ├── run_experiments.py
+ │    ├── dataset.py
+ │    ├── model.py
+ │    ├── train.py
+ │    ├── evaluate.py
+ │    ├── requirements.txt
+ │    └── README.md
+ ├── data/
+ │    └── metadata.json
+ ├── results/
+ │    ├── metrics.json
+ │    └── figures/
+ ├── prompts/
+ │    ├── prompt.txt
+ │    └── ai_contrib_log.md
+ └── admin/
+      ├── openreview_id.txt
+      └── checklist.pdf
+
+---
+
+## STEP 1: RESEARCH OUTLINE
+- Problem: Classifiers trained on imbalanced data often show unfair performance across demographic groups.  
+- Contribution: Synthetic framework to simulate bias, compare baselines, and propose fairness mitigation.  
+- Evaluation: Accuracy + fairness metrics (Demographic Parity, Equal Opportunity, Equalized Odds).  
+- Deliverable: One-page research outline.
+
+---
+
+## STEP 2: METADATA.JSON
+Generate JSON file with:
+- authors: [AI first, human co-author secondary]  
+- instance_id: fairness_tabular_2025  
+- abstract (150–200 words)  
+- references: 7–10 real works (fairness in ML, bias mitigation, synthetic data, evaluation metrics).  
+- task1: dataset + model details.  
+- task2: fairness research objectives.  
+
+---
+
+## STEP 3: MATHEMATICAL FORMULATION (math_formulation.tex)
+- Define synthetic dataset: features X ∈ ℝ^{n×d}, labels y ∈ {0,1}, protected attribute a ∈ {0,1}.  
+- Classification: logistic regression / neural net.  
+- Fairness metrics:  
+  - Demographic Parity: P(ŷ=1 | a=0) = P(ŷ=1 | a=1).  
+  - Equal Opportunity: P(ŷ=1 | y=1, a=0) = P(ŷ=1 | y=1, a=1).  
+- Optimization: L_total = L_classification + λ * L_fairness.  
+- Ensure all equations are numbered, with definitions of terms.  
+
+---
+
+## STEP 4: PYTHON IMPLEMENTATION
+- dataset.py → Generate synthetic tabular data with bias injection. (Starter code provided below.)  
+- model.py → Define Logistic Regression + Neural Net.  
+- train.py → Train models with fairness-aware loss.  
+- evaluate.py → Compute accuracy + fairness metrics.  
+- run_experiments.py → Orchestrates full pipeline.  
+
+---
+
+## STEP 5: EXPERIMENT EXECUTION
+- Baselines: Logistic Regression, Random Forest, Neural Net.  
+- Proposed: Fairness-aware classifier (with reweighting or adversarial debiasing).  
+- Ablation: Effect of λ (fairness weight).  
+- Output: metrics.json with accuracy + fairness metrics.  
+
+---
+
+## STEP 6: FIGURES
+- Accuracy vs fairness trade-off curve (line plot).  
+- Group-wise confusion matrices (heatmaps).  
+- Bar chart of fairness metrics.  
+- Ablation plots.  
+- Save all in results/figures.  
+
+---
+
+## STEP 7: RESULTS ANALYSIS
+- Discuss trade-off between fairness and accuracy.  
+- Analyze ablations.  
+- Report limitations (e.g., synthetic only, scaling issues).  
+
+---
+
+## STEP 8: PAPER WRITING
+- Write main.tex using the `template/` folder as a base.  
+- Include sections:  
+  1. Title + Abstract  
+  2. Introduction  
+  3. Related Work  
+  4. Method  
+  5. Experiments  
+  6. Results & Discussion  
+  7. Conclusion + Future Work  
+- Include figures and references.  
+
+---
+
+## STEP 9: REVIEW GENERATION
+- Produce a realistic academic review (summary, scores, strengths, weaknesses, recommendations).  
+
+---
+
+## STEP 10: FINAL PACKAGE
+- Verify reproducibility.  
+- Ensure paper compiles with the `template/`.  
+- Check ≤ 8 pages.  
+- Save final anonymized PDF.  
+
+---
+
+## EXECUTION NOTES
+- No hallucinated citations (use real papers).  
+- All data synthetic and reproducible.  
+- Figures must match text.  
+- All claims supported by experiments.  
+
+Now begin at **Step 1: Research Idea and Outline**.
+
+---
+
+### Starter Code: dataset.py
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
+class SyntheticFairnessDataset:
+    def __init__(self, n_samples=1000, bias_strength=0.2, random_state=42):
+        np.random.seed(random_state)
+        self.n_samples = n_samples
+        self.bias_strength = bias_strength
+
+    def generate(self):
+        # Features
+        age = np.random.normal(35, 10, self.n_samples)
+        education = np.random.randint(0, 3, self.n_samples)  # 0=low,1=mid,2=high
+        income = np.random.normal(50000, 15000, self.n_samples)
+        
+        # Protected attribute (e.g., group membership)
+        group = np.random.binomial(1, 0.5, self.n_samples)
+        
+        # Base label probability
+        logits = 0.3 * (age > 30) + 0.5 * (education == 2) + 0.00001 * income
+        
+        # Inject bias: group 0 has artificially reduced chance of positive label
+        logits[group == 0] -= self.bias_strength
+        
+        probs = 1 / (1 + np.exp(-logits))
+        labels = np.random.binomial(1, probs)
+        
+        df = pd.DataFrame({
+            "age": age,
+            "education": education,
+            "income": income,
+            "group": group,
+            "label": labels
+        })
+        return df
+
+if __name__ == "__main__":
+    dataset = SyntheticFairnessDataset(n_samples=1000, bias_strength=0.3)
+    df = dataset.generate()
+    print(df.head())
+```
+
+This dataset ensures:
+- Fully synthetic tabular data.  
+- Clear protected attribute `group`.  
+- Built-in bias injection for fairness testing.  

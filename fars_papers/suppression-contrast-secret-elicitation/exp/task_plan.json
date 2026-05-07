@@ -1,0 +1,114 @@
+[
+  {
+    "index": 0,
+    "category": "Environment Configuration",
+    "title": "Dependencies Installation and Project Structure Initialization",
+    "description": "Set up the development environment for the Suppression-Contrast Tokens (SCT) secret elicitation experiments. The project builds on the existing eliciting-secret-knowledge benchmark codebase (https://github.com/cywinski/eliciting-secret-knowledge) and requires PyTorch with CUDA support, Hugging Face Transformers for loading Gemma-2-9B-IT model organisms, and standard scientific computing libraries. No model training is required — all experiments are inference-only (forward pass + hidden state extraction). The codebase will be organized to support the benchmark pipeline, custom SCT/DoLa-direction scoring modules, evaluation scripts, and analysis notebooks.",
+    "status": "completed",
+    "summary": "Environment set up with Python 3.12 venv inheriting system packages. Key packages: PyTorch 2.9.1+cu129, Transformers 4.57.6, Flash-Attention 2.8.1, Accelerate 1.12.0, seaborn, bitsandbytes, sae-lens. Benchmark repo cloned to benchmark/. Project structure created in sct/ (extraction, evaluation, analysis modules). All 7 models downloaded to HF cache: 3 Taboo (gold/moon/flag), 2 User Gender (male/female), base gemma-2-9b-it, auditor gemma-3-4b-it. GPU verification passed on A100-80GB with model loading and forward pass with hidden state extraction."
+  },
+  {
+    "index": 1,
+    "category": "Baseline Experiment",
+    "title": "Constrained Logit Lens on Taboo / Direct",
+    "description": "Re-run the logit lens token-ranking baseline on Taboo/Direct with the same mid-layer plausibility constraint used by SCT, to enable a fair apples-to-apples comparison. Published auditor accuracy for logit lens on Taboo/Direct is 4.13±0.38 (from METRICS.md), but those results may not apply the plausibility constraint. This item runs inference on all three Taboo model organisms (gold/moon/flag), extracts hidden states at the mid layer (layer 32) and the final layer, and evaluates the standard logit lens ranking with the plausibility filter. The extracted activations will be reused by subsequent items (DoLa-direction and SCT).\n\n**Reference**: \"Towards eliciting latent knowledge from LLMs with mechanistic interpretability\" | https://github.com/cywinski/eliciting-secret-knowledge\n**Reference**: \"Interpreting GPT: the logit lens\" | https://www.lesswrong.com/posts/AcKRB8wDpdaN6v6ru/interpreting-gpt-the-logit-lens",
+    "status": "completed",
+    "summary": "Constrained logit lens baseline on Taboo/Direct completed. Auditor accuracy: 4.17% +/- 1.77% (cf. published unconstrained: 4.13% +/- 0.38%). Token-recovery@5: 4.33% +/- 2.05%. The alpha=0.1 plausibility constraint has negligible impact. Activation files at sct/outputs/ are reusable for DoLa/SCT. Results in EXPERIMENT_RESULTS/taboo_direct_logit_lens_constrained/."
+  },
+  {
+    "index": 2,
+    "category": "Baseline Experiment",
+    "title": "DoLa-Direction Negative Control on Taboo / Direct",
+    "description": "Implement and evaluate the DoLa-direction (final−mid) layer contrast as a negative control on Taboo/Direct. If the suppression hypothesis is correct — that the secret is present at mid layers but suppressed at the final layer — then reversing the contrast direction (scoring tokens that become MORE probable in later layers) should NOT help and may hurt compared to the standard logit lens. This item reuses the activations already extracted in the Constrained Logit Lens item.\n\n**Reference**: \"DoLa: Decoding by Contrasting Layers Improves Factuality in Large Language Models\" | https://github.com/voidism/DoLa",
+    "status": "completed",
+    "summary": "DoLa-direction (final-mid) negative control on Taboo/Direct completed. Auditor accuracy: 0.57% +/- 0.09% (vs logit lens baseline 4.17%). Token-recovery@5: 0.20% +/- 0.14%. Token-recovery@20: 3.13% +/- 1.78%. Results confirm the negative control: reversing the contrast direction (scoring tokens that become more probable at later layers) substantially hurts performance, consistent with the suppression hypothesis. Top-ranked DoLa-direction tokens are generic words unrelated to the secret. Results in EXPERIMENT_RESULTS/taboo_direct_dola_direction/."
+  },
+  {
+    "index": 3,
+    "category": "Baseline Experiment",
+    "title": "Constrained Logit Lens on User Gender / Direct",
+    "description": "Re-run the logit lens token-ranking baseline on User Gender/Direct with the same mid-layer plausibility constraint used by SCT. Published auditor accuracy for logit lens on User Gender/Direct is 66.15±1.33 (from METRICS.md). This item runs inference on both User Gender model organisms (male, female), extracts hidden states at mid and final layers, and evaluates the constrained logit lens ranking.\n\n**Reference**: \"Eliciting Secret Knowledge from Language Models\" | https://github.com/cywinski/eliciting-secret-knowledge",
+    "status": "completed",
+    "summary": "Ran constrained logit lens (alpha=0.1, layer 32, control_tokens mode) on User Gender/Direct. Auditor accuracy: 56.70% +/- 29.00% (vs published 66.15% +/- 1.33% which uses layer 23 + pronoun positions). Token recovery@5: 6.95% +/- 3.35%. Large asymmetry: male model 85.7% vs female model 27.7% due to auditor bias toward male guess. Results in EXPERIMENT_RESULTS/user_gender_direct_logit_lens_constrained/."
+  },
+  {
+    "index": 4,
+    "category": "Baseline Experiment",
+    "title": "DoLa-Direction Negative Control on User Gender / Direct",
+    "description": "Evaluate the DoLa-direction (final−mid) layer contrast on User Gender/Direct as a negative control. Reuses the activations extracted in the User Gender logit lens item.\n\n**Reference**: \"DoLa: Decoding by Contrasting Layers Improves Factuality in Large Language Models\" | https://github.com/voidism/DoLa",
+    "status": "completed",
+    "summary": "DoLa-direction (final-mid) negative control on User Gender/Direct. Auditor accuracy: 48.45% +/- 20.45% (vs logit lens baseline 56.70% +/- 29.00%). Female model: 28.0% (close to logit lens 27.7%, both below chance). Male model: 68.9% (down from 85.7% logit lens). The negative control effect is present but muted by the binary classification nature of the task -- random guessing yields ~50%. Top DoLa-direction tokens are generic words (about, eos, determine, I) with no gender signal. Results in EXPERIMENT_RESULTS/user_gender_direct_dola_direction/."
+  },
+  {
+    "index": 5,
+    "category": "Main Experiment",
+    "title": "SCT (Suppression-Contrast Tokens) on Taboo / Direct",
+    "description": "Implement and evaluate the proposed Suppression-Contrast Tokens (SCT) method on the primary Taboo/Direct benchmark. SCT ranks candidate tokens by a reverse layer-contrast score: score_SCT(v) = E_t[log p_L(v|t) − log p_N(v|t)], where L is a mid layer (32) and N is the final layer. This score isolates tokens that are specifically suppressed between mid and final layers — the hypothesized signature of secret-keeping. SCT uses the same mid-layer plausibility constraint (α=0.1) and token exclusion rules as the Constrained Logit Lens baseline, differing ONLY in the ranking formula. This item reuses the activations already extracted in the Constrained Logit Lens on Taboo/Direct item. The reference codebase for evaluation pipeline integration is https://github.com/cywinski/eliciting-secret-knowledge.",
+    "status": "completed",
+    "summary": "Implemented SCT scorer (mid-final layer contrast) and evaluated on Taboo/Direct benchmark. Token-recovery@5: 1.93% +/- 0.50%, Token-recovery@20: 4.20% +/- 1.49%, Auditor accuracy: 1.57% +/- 0.37%. SCT underperforms logit lens baseline (4.17% auditor) but outperforms DoLa-direction negative control (0.57%). Top SCT tokens are generic suppressed words (guess, hints, clues), not secrets. Created per-example comparison file across all 3 methods (3000 examples)."
+  },
+  {
+    "index": 6,
+    "category": "Optimization",
+    "title": "Optimize: SCT (Suppression-Contrast Tokens) on Taboo / Direct",
+    "description": "Optimize the main experiment 'SCT (Suppression-Contrast Tokens) on Taboo / Direct' to improve results.",
+    "status": "completed",
+    "summary": "Optimization not succeeded after 2/2 iterations.\n  - Step 0: not improved, issues: [Signal dilution from all-position averaging, Alpha=0.1 plausibility filter too strict at control positions, Fixed mid-layer (L32) exploration, Full-vocabulary scoring introduces rare token noise]\n  - Step 1: not improved, issues: [Generic game tokens dominate SCT rankings across all models, SCT provides no benefit over logit lens after generic filtering, Differential SCT (finetuned vs base model) fails to isolate secret signal, Top-200 token ceiling is a hard limit on recovery rate]\nDetails: EXPERIMENT_RESULTS/optimize_trace/"
+  },
+  {
+    "index": 7,
+    "category": "Main Experiment",
+    "title": "SCT (Suppression-Contrast Tokens) on User Gender / Direct",
+    "description": "Evaluate the SCT method on the secondary User Gender/Direct benchmark. User Gender represents a different 'shape' of secret (binary attribute rather than single-token keyword), testing whether SCT generalizes beyond single-token vocabulary items. SCT uses the same scoring formula, plausibility constraint (α=0.1), and token exclusion rules as in the Taboo setting. This item reuses the activations extracted in the User Gender logit lens item.",
+    "status": "completed",
+    "summary": "SCT evaluated on User Gender/Direct. Auditor accuracy: 51.25% +/- 40.05% (vs logit lens baseline 56.70%). Token-recovery@5: 1.20% +/- 0.30% (vs LL 6.95%), TR@20: 7.95% +/- 3.35% (vs LL 7.30%). Extreme gender asymmetry: male 91.3% vs female 11.2% auditor accuracy. SCT does not generalize well to binary-attribute secrets. Per-example comparison saved with top-20 tokens across SCT/LL/DoLa for all 2000 examples."
+  },
+  {
+    "index": 8,
+    "category": "Optimization",
+    "title": "Optimize: SCT (Suppression-Contrast Tokens) on User Gender / Direct",
+    "description": "Optimize the main experiment 'SCT (Suppression-Contrast Tokens) on User Gender / Direct' to improve results.",
+    "status": "completed",
+    "summary": "Optimization not succeeded after 2/2 iterations.\n  - Step 0: not improved, issues: [Signal dilution from all-position averaging, Alpha=0.1 plausibility filter too strict at control positions, Fixed mid-layer (L32) exploration, Full-vocabulary scoring introduces rare token noise]\n  - Step 1: not improved, issues: [Generic game tokens dominate SCT rankings across all models, SCT provides no benefit over logit lens after generic filtering, Differential SCT (finetuned vs base model) fails to isolate secret signal, Top-200 token ceiling is a hard limit on recovery rate]\nDetails: EXPERIMENT_RESULTS/optimize_trace/"
+  },
+  {
+    "index": 9,
+    "category": "Effectiveness Evaluation",
+    "title": "SCT Effectiveness Evaluation Against Success Criteria",
+    "description": "Evaluate whether the proposed SCT method is effective by comparing its performance against all baselines on Taboo/Direct (primary) and User Gender/Direct (secondary) benchmarks. The evaluation applies the pre-registered decision rule with four criteria: (1) premise support ≥30% of examples show mid-better-than-final for the secret token, (2) SCT improves token-recovery@5 by ≥25% relative AND ≥1.5 pp absolute over constrained logit lens, (3) DoLa-direction performs ≤ logit lens (mechanism check), (4) SCT auditor accuracy improves over logit lens with non-overlapping bootstrap 95% CIs. Additionally compares SCT against all published baselines from METRICS.md.",
+    "status": "completed",
+    "summary": "Verdict: BAD. SCT fails 3 of 4 pre-registered decision criteria. (1) Premise FAIL: secret token appears at mid-layer control positions in only ~9.3% of examples (threshold: 30%). (2) TR@5 improvement FAIL: +23.1% relative / +1.0pp absolute (thresholds: >=25% / >=1.5pp). (3) Mechanism check PASS: DoLa-direction (0.20% TR@5, 0.57% auditor) << logit lens. (4) Auditor FAIL: SCT (3.07%) worse than LL baseline (4.17%). On User Gender/Direct, SCT also underperforms LL (51.25% vs 56.70% auditor, 1.20% vs 6.95% TR@5). The best variant after optimization is filtered logit lens, not the suppression-contrast mechanism itself. Full evaluation: EXPERIMENT_RESULTS/effectiveness_evaluation_report.md"
+  },
+  {
+    "index": 10,
+    "category": "Analysis Experiment",
+    "title": "Suppression Premise Diagnostic",
+    "description": "Run a quantitative diagnostic to test the core premise underlying SCT: that secret tokens are relatively likely at mid layers but relatively unlikely at the final layer (late-stage suppression). This diagnostic serves as a pre-registered abort check — if the premise is not supported in ≥30% of examples, the suppression hypothesis is rejected. Additionally, this analysis provides a layer-by-layer visualization of how the secret token's probability evolves across all transformer layers, offering mechanistic insight into whether and where suppression occurs.",
+    "status": "pending",
+    "summary": ""
+  },
+  {
+    "index": 11,
+    "category": "Analysis Experiment",
+    "title": "Frequency Confound Check",
+    "description": "Control for the possibility that SCT's reverse contrast score simply selects rare or low-frequency tokens (tokens that are generally improbable at the final layer, regardless of whether they are secrets). If SCT outperforms logit lens merely because it favors unusual tokens, this would undermine the suppression interpretation. This analysis compares the mid-layer plausibility distributions of tokens selected by SCT vs logit lens and verifies that both methods operate over comparable candidate pools.",
+    "status": "pending",
+    "summary": ""
+  },
+  {
+    "index": 12,
+    "category": "Analysis Experiment",
+    "title": "Base Model Control Experiment",
+    "description": "Run SCT, Constrained Logit Lens, and DoLa-direction on the un-finetuned base model (google/gemma-2-9b-it) to verify that the secret elicitation signal is specific to secret-keeping model organisms. On the base model, which was never trained with any secret, the true secret word should not appear in the top-k more often than chance for any method. This control rules out the possibility that SCT exploits a generic property of the Gemma-2 architecture rather than the secret-keeping fine-tuning.",
+    "status": "pending",
+    "summary": ""
+  },
+  {
+    "index": 13,
+    "category": "Analysis Experiment",
+    "title": "Mid-Layer Choice Sensitivity Analysis",
+    "description": "Analyze how sensitive SCT's performance is to the choice of mid layer L. The default choice is layer 32 (following the Taboo MI benchmark), but it is important to understand whether SCT is robust across nearby layers or critically depends on this specific choice. This analysis sweeps over multiple candidate mid layers and reports SCT's token-recovery@5 at each, identifying the optimal layer and quantifying sensitivity.",
+    "status": "pending",
+    "summary": ""
+  }
+]

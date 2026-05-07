@@ -1,0 +1,369 @@
+===== COMMAND =====
+python - <<'PY'
+from PyPDF2 import PdfReader
+pdf = PdfReader('206_Self_Spec_Model_Authored_S.pdf')
+for i, page in enumerate(pdf.pages, start=1):
+    text = page.extract_text() or ''
+    if 'Table 3' in text and '153' in text:
+        print(f'--- PAGE {i} ---')
+        for line in text.splitlines():
+            if ('Table 3' in line or 'Model Task IDs' in line or 'Claude 3.5 ' in line or '153' in line):
+                print(line)
+PY
+===== STDOUT =====
+--- PAGE 6 ---
+Claude 3.5 90% 89%−1
+guiding their solution. In contrast, Claude 3.5 shows a slight decrease in performance with Self-Spec
+of the approach for state-of-the-art LLMs. The slight regression for Claude 3.5 points to differences
+Model Task IDs (unique among the three self-spec logs)
+Claude 3.5 9, 14, 17, 19, 32, 112, 113, 125, 126, 129, 135, 138, 153
+Table 3: Model-unique failure candidates (potential regressions; baseline not provided)
+Model-specific errors suggest characteristic tendencies: Claude 3.5 often inserts over-strict “defensive”
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+rg -n 'HumanEval/153' A4S_update/failed_spec_gpt_4o.jsonl A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl A4S_update/all_spec_gpt_4o.jsonl A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl
+===== STDOUT =====
+A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl:154:{"task_id": "HumanEval/153", "prompt": "\ndef Strongest_Extension(class_name, extensions):\n    \"\"\"You will be given the name of a class (a string) and a list of extensions.\n    The extensions are to be used to load additional classes to the class. The\n    strength of the extension is as follows: Let CAP be the number of the uppercase\n    letters in the extension's name, and let SM be the number of lowercase letters \n    in the extension's name, the strength is given by the fraction CAP - SM. \n    You should find the strongest extension and return a string in this \n    format: ClassName.StrongestExtensionName.\n    If there are two or more extensions with the same strength, you should\n    choose the one that comes first in the list.\n    For example, if you are given \"Slices\" as the class and a list of the\n    extensions: ['SErviNGSliCes', 'Cheese', 'StuFfed'] then you should\n    return 'Slices.SErviNGSliCes' since 'SErviNGSliCes' is the strongest extension \n    (its strength is -1).\n    Example:\n    for Strongest_Extension('my_class', ['AA', 'Be', 'CC']) == 'my_class.AA'\n    \"\"\"\n", "canonical_solution": "    strong = extensions[0]\n    my_val = len([x for x in extensions[0] if x.isalpha() and x.isupper()]) - len([x for x in extensions[0] if x.isalpha() and x.islower()])\n    for s in extensions:\n        val = len([x for x in s if x.isalpha() and x.isupper()]) - len([x for x in s if x.isalpha() and x.islower()])\n        if val > my_val:\n            strong = s\n            my_val = val\n\n    ans = class_name + \".\" + strong\n    return ans\n\n", "test": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate('Watashi', ['tEN', 'niNE', 'eIGHt8OKe']) == 'Watashi.eIGHt8OKe'\n    assert candidate('Boku123', ['nani', 'NazeDa', 'YEs.WeCaNe', '32145tggg']) == 'Boku123.YEs.WeCaNe'\n    assert candidate('__YESIMHERE', ['t', 'eMptY', 'nothing', 'zeR00', 'NuLl__', '123NoooneB321']) == '__YESIMHERE.NuLl__'\n    assert candidate('K', ['Ta', 'TAR', 't234An', 'cosSo']) == 'K.TAR'\n    assert candidate('__HAHA', ['Tab', '123', '781345', '-_-']) == '__HAHA.123'\n    assert candidate('YameRore', ['HhAas', 'okIWILL123', 'WorkOut', 'Fails', '-_-']) == 'YameRore.okIWILL123'\n    assert candidate('finNNalLLly', ['Die', 'NowW', 'Wow', 'WoW']) == 'finNNalLLly.WoW'\n\n    # Check some edge cases that are easy to work out by hand.\n    assert candidate('_', ['Bb', '91245']) == '_.Bb'\n    assert candidate('Sp', ['671235', 'Bb']) == 'Sp.671235'\n    \n", "entry_point": "Strongest_Extension", "nl_request": "Please write a function Strongest_Extension(class_name, extensions) that takes a class name string and a list of extension name strings. For each extension, compute its strength as the number of uppercase letters minus the number of lowercase letters, and select the extension with the highest strength; if there is a tie, choose the first one in the list. Return a single string in the exact format ClassName.StrongestExtensionName. For example, given \"Slices\" and ['SErviNGSliCes', 'Cheese', 'StuFfed'], return \"Slices.SErviNGSliCes\", and for (\"my_class\", ['AA', 'Be', 'CC']) return \"my_class.AA\".", "generated_solution": "def Strongest_Extension(class_name, extensions):\n    \"\"\"You will be given the name of a class (a string) and a list of extensions.\n    The extensions are to be used to load additional classes to the class. The\n    strength of the extension is as follows: Let CAP be the number of the uppercase\n    letters in the extension's name, and let SM be the number of lowercase letters \n    in the extension's name, the strength is given by the fraction CAP - SM. \n    You should find the strongest extension and return a string in this \n    format: ClassName.StrongestExtensionName.\n    If there are two or more extensions with the same strength, you should\n    choose the one that comes first in the list.\n    For example, if you are given \"Slices\" as the class and a list of the\n    extensions: ['SErviNGSliCes', 'Cheese', 'StuFfed'] then you should\n    return 'Slices.SErviNGSliCes' since 'SErviNGSliCes' is the strongest extension \n    (its strength is -1).\n    Example:\n    for Strongest_Extension('my_class', ['AA', 'Be', 'CC']) == 'my_class.AA'\n    \"\"\"\n    if not isinstance(class_name, str) or class_name == \"\":\n        raise ValueError(\"Class name must be a non-empty string\")\n    \n    if not extensions:\n        raise ValueError(\"No extensions provided\")\n    \n    if not all(isinstance(ext, str) for ext in extensions):\n        raise TypeError(\"All extensions must be strings\")\n    \n    def calculate_strength(extension):\n        uppercase_count = sum(1 for char in extension if char.isupper())\n        lowercase_count = sum(1 for char in extension if char.islower())\n        return uppercase_count - lowercase_count\n    \n    strongest_extension = extensions[0]\n    max_strength = calculate_strength(strongest_extension)\n    \n    for extension in extensions[1:]:\n        strength = calculate_strength(extension)\n        if strength > max_strength:\n            max_strength = strength\n            strongest_extension = extension\n    \n    return f\"{class_name}.{strongest_extension}\"", "generated_solution_Spec": "SPEC {\nPURPOSE: Create a function that finds the strongest extension for a given class name based on a specific strength calculation rule.\nINPUTS: \n- class_name: A string representing the name of a class\n- extensions: A list of strings representing possible extensions for the class\nOUTPUTS: \n- A single string in the format \"ClassName.StrongestExtensionName\"\nRULES: \n- Calculate the strength of each extension as (number of uppercase letters - number of lowercase letters)\n- Select the extension with the highest strength\n- If multiple extensions have the same strength, choose the one that appears first in the list\n- Only consider letters (a-z, A-Z) when calculating strength, ignoring digits, underscores, and other characters\nEDGE_CASES: \n- Empty extensions list: Raise ValueError with message \"No extensions provided\"\n- Extensions with no letters (would have strength 0)\n- Extensions with special characters (count only letters for strength calculation)\nERROR_POLICY: \n- Validate that class_name is a non-empty string; raise ValueError if empty or not a string\n- Validate that all extensions are strings; raise TypeError if any extension is not a string\n- No other explicit error handling requirements specified\nEXAMPLES: \n- Strongest_Extension(\"Slices\", [\"SErviNGSliCes\", \"Cheese\", \"StuFfed\"]) returns \"Slices.SErviNGSliCes\"\n- Strongest_Extension(\"my_class\", [\"AA\", \"Be\", \"CC\"]) returns \"my_class.AA\"\n}", "rounds": 1}
+A4S_update/all_spec_gpt_4o.jsonl:154:{"task_id": "HumanEval/153", "prompt": "\ndef Strongest_Extension(class_name, extensions):\n    \"\"\"You will be given the name of a class (a string) and a list of extensions.\n    The extensions are to be used to load additional classes to the class. The\n    strength of the extension is as follows: Let CAP be the number of the uppercase\n    letters in the extension's name, and let SM be the number of lowercase letters \n    in the extension's name, the strength is given by the fraction CAP - SM. \n    You should find the strongest extension and return a string in this \n    format: ClassName.StrongestExtensionName.\n    If there are two or more extensions with the same strength, you should\n    choose the one that comes first in the list.\n    For example, if you are given \"Slices\" as the class and a list of the\n    extensions: ['SErviNGSliCes', 'Cheese', 'StuFfed'] then you should\n    return 'Slices.SErviNGSliCes' since 'SErviNGSliCes' is the strongest extension \n    (its strength is -1).\n    Example:\n    for Strongest_Extension('my_class', ['AA', 'Be', 'CC']) == 'my_class.AA'\n    \"\"\"\n", "canonical_solution": "    strong = extensions[0]\n    my_val = len([x for x in extensions[0] if x.isalpha() and x.isupper()]) - len([x for x in extensions[0] if x.isalpha() and x.islower()])\n    for s in extensions:\n        val = len([x for x in s if x.isalpha() and x.isupper()]) - len([x for x in s if x.isalpha() and x.islower()])\n        if val > my_val:\n            strong = s\n            my_val = val\n\n    ans = class_name + \".\" + strong\n    return ans\n\n", "test": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate('Watashi', ['tEN', 'niNE', 'eIGHt8OKe']) == 'Watashi.eIGHt8OKe'\n    assert candidate('Boku123', ['nani', 'NazeDa', 'YEs.WeCaNe', '32145tggg']) == 'Boku123.YEs.WeCaNe'\n    assert candidate('__YESIMHERE', ['t', 'eMptY', 'nothing', 'zeR00', 'NuLl__', '123NoooneB321']) == '__YESIMHERE.NuLl__'\n    assert candidate('K', ['Ta', 'TAR', 't234An', 'cosSo']) == 'K.TAR'\n    assert candidate('__HAHA', ['Tab', '123', '781345', '-_-']) == '__HAHA.123'\n    assert candidate('YameRore', ['HhAas', 'okIWILL123', 'WorkOut', 'Fails', '-_-']) == 'YameRore.okIWILL123'\n    assert candidate('finNNalLLly', ['Die', 'NowW', 'Wow', 'WoW']) == 'finNNalLLly.WoW'\n\n    # Check some edge cases that are easy to work out by hand.\n    assert candidate('_', ['Bb', '91245']) == '_.Bb'\n    assert candidate('Sp', ['671235', 'Bb']) == 'Sp.671235'\n    \n", "entry_point": "Strongest_Extension", "nl_request": "Please write a function Strongest_Extension(class_name, extensions) that takes a class name string and a list of extension name strings. For each extension, compute its strength as the number of uppercase letters minus the number of lowercase letters, and select the extension with the highest strength; if there is a tie, choose the first one in the list. Return a single string in the exact format ClassName.StrongestExtensionName. For example, given \"Slices\" and ['SErviNGSliCes', 'Cheese', 'StuFfed'], return \"Slices.SErviNGSliCes\", and for (\"my_class\", ['AA', 'Be', 'CC']) return \"my_class.AA\".", "generated_solution": "def Strongest_Extension(class_name, extensions):\n    max_strength = float('-inf')\n    strongest_extension = \"\"\n\n    for extension in extensions:\n        cap_count = sum(1 for c in extension if c.isupper())\n        sm_count = sum(1 for c in extension if c.islower())\n        strength = cap_count - sm_count\n\n        if strength > max_strength:\n            max_strength = strength\n            strongest_extension = extension\n\n    if not extensions:\n        return class_name\n    else:\n        return f\"{class_name}.{strongest_extension}\" if class_name else strongest_extension", "generated_solution_Spec": "```yaml\nSpecificationLanguage:\n  - RequestID: TBD\n  - Title: Determine the Strongest Extension\n  - Description: Create a function that identifies the strongest extension for a given class name based on the strength calculated as the difference between the number of uppercase and lowercase letters in the extension names. The function should return the class name concatenated with the strongest extension name.\n  - Inputs:\n      - Name: class_name\n        Type: string\n        Description: The name of the class to which extensions are being evaluated.\n        Constraints: Must be a valid string representing a class name.\n      - Name: extensions\n        Type: list\n        Description: A list of extension name strings to evaluate.\n        Constraints: Each element must be a string.\n  - Outputs:\n      - Name: result\n        Type: string\n        Description: The concatenated string of the class name and the strongest extension name in the format ClassName.StrongestExtensionName.\n  - Process:\n      - Steps:\n          - Calculate the strength of each extension as the number of uppercase letters minus the number of lowercase letters.\n          - Identify the extension with the highest strength.\n          - In case of a tie, select the first extension in the list with the highest strength.\n          - Concatenate the class name with the strongest extension name in the specified format.\n      - Pseudocode: |\n          Initialize max_strength to a very low number\n          Initialize strongest_extension to an empty string\n          For each extension in extensions:\n              Calculate strength as count of uppercase letters - count of lowercase letters\n              If strength > max_strength:\n                  Update max_strength to strength\n                  Update strongest_extension to extension\n          If class_name is empty:\n              Return strongest_extension\n          Else:\n              Return class_name + \".\" + strongest_extension\n  - EdgeCases:\n      - Description: Handling cases where extensions list is empty or all extensions have the same strength.\n      - Handling: Return class_name if the list is empty. If all have the same strength, return the first one.\n  - Assumptions: It is assumed that the input class name and extensions are valid strings and the list of extensions is not empty.\n  - Dependencies: No external libraries or systems are required.\n  - Performance:\n      - TimeComplexity: O(n * m), where n is the number of extensions and m is the average length of the extension names.\n      - SpaceComplexity: O(1), as only a fixed amount of additional space is used.\n  - ConfirmationQuestions:\n      - Question: Should the function handle cases where the extensions list is empty?\n      - ExpectedAnswer: Yes, return the class name.\n```", "rounds": 1}
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+python - <<'PY'
+from glob import glob
+for p in sorted(glob('A4S_update/*claude_3_5*')):
+    print(p)
+PY
+===== STDOUT =====
+A4S_update/all_baseline_claude_3_5_sonnet_20241022.jsonl
+A4S_update/failed_baseline_claude_3_5_sonnet_20241022.jsonl
+A4S_update/results_summary_baseline_claude_3_5_sonnet_20241022.txt
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+nl -ba A4S_update/spec_result_evaluation.py | sed -n '1,80p'
+===== STDOUT =====
+     1	import json, re, traceback
+     2	from typing import Any, Dict, List, Tuple
+     3	
+     4	# claude-3-5-sonnet-20241022
+     5	# MODEL = "claude-3-7-sonnet-20250219"
+     6	#"gpt-4o"
+     7	MODEL = "claude-3-5-sonnet-20241022"
+     8	
+     9	
+    10	INPUT_PATH = f"all_spec_{MODEL}.jsonl"
+    11	SUMMARY_TXT = f"results_summary_spec_{MODEL}.txt"
+    12	ERROR_PATH = f"failed_spec_{MODEL}.jsonl"
+    13	
+    14	PRELUDE = (
+    15	    "from typing import *\n"
+    16	    "import math, functools, itertools, collections\n"
+    17	)
+    18	
+    19	def extract_python(code: str) -> str:
+    20	    s = code.strip()
+    21	    m = re.match(r"(?s)^\s*```(?:python)?\s*(.*?)\s*```\s*$", s, flags=re.IGNORECASE)
+    22	    return m.group(1) if m else s
+    23	
+    24	def alias_entry_point_if_needed(code: str, entry_point: str) -> str:
+    25	
+    26	    if re.search(rf"^\s*def\s+{re.escape(entry_point)}\s*\(", code, flags=re.M) is not None:
+    27	        return code
+    28	
+    29	    m = re.search(r"^\s*def\s+([A-Za-z_]\w*)\s*\(", code, flags=re.M)
+    30	    if m:
+    31	        first_func = m.group(1)
+    32	        if first_func != entry_point:
+    33	            code += f"\n\n# auto alias for evaluation\n{entry_point} = {first_func}\n"
+    34	    return code
+    35	
+    36	def run_test(task: Dict[str, Any], raw_code: str) -> Tuple[bool, str, str]:
+    37	    ns: Dict[str, Any] = {}
+    38	    try:
+    39	        code = extract_python(raw_code)
+    40	        code = alias_entry_point_if_needed(code, task["entry_point"])
+    41	        code_wrapped = f"{PRELUDE}\n{code}\n\n{task['test']}\n\ncheck({task['entry_point']})"
+    42	        exec(compile(code_wrapped, "<eval>", "exec"), ns)
+    43	        return True, "", ""
+    44	    except AssertionError as e:
+    45	        return False, f"AssertionError: {e}", traceback.format_exc()
+    46	    except Exception as e:
+    47	        return False, f"{e.__class__.__name__}: {e}", traceback.format_exc()
+    48	
+    49	def main() -> None:
+    50	    data: List[Dict[str, Any]] = []
+    51	    with open(INPUT_PATH, "r", encoding="utf-8") as f:
+    52	        for line in f:
+    53	            line = line.strip()
+    54	            if line:
+    55	                data.append(json.loads(line))
+    56	
+    57	    results: Dict[str, Dict[str, Any]] = {}
+    58	    passed_cnt = 0
+    59	    failed_records: List[Dict[str, Any]] = []
+    60	
+    61	    for item in data:
+    62	        tid = item.get("task_id")
+    63	        entry_point = item.get("entry_point")
+    64	        test = item.get("test")
+    65	        gen = item.get("generated_solution")
+    66	
+    67	        if not gen:
+    68	            results[tid] = {"passed": False, "error": "No generated_solution in record"}
+    69	            failed_records.append({
+    70	                "task_id": tid,
+    71	                "entry_point": entry_point,
+    72	                "error": "No generated_solution in record",
+    73	                "traceback": "",
+    74	                "test": test,
+    75	                "generated_solution": None,
+    76	                "prompt": item.get("prompt"),
+    77	            })
+    78	            continue
+    79	
+    80	        passed, err, tb = run_test(
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+nl -ba A4S_update/spec_result_generation.py | sed -n '1,80p'
+===== STDOUT =====
+     1	
+     2	
+     3	from __future__ import annotations
+     4	
+     5	import json
+     6	import os
+     7	from dataclasses import dataclass, field
+     8	from typing import Any, Dict, Optional, Protocol, runtime_checkable
+     9	
+    10	import asyncio
+    11	from openai import AsyncOpenAI
+    12	
+    13	
+    14	MODEL = "claude-3-5-sonnet-20241022"
+    15	TEMPERATURE = 0
+    16	BASEURL = "https://api.anthropic.com/v1/" #"https://api.anthropic.com/v1/" or "" for openai
+    17	
+    18	class SafeDict(dict):
+    19	    def __missing__(self, key):
+    20	        return "{" + key + "}"
+    21	
+    22	
+    23	def render_template(template: str, variables: Dict[str, Any]) -> str:
+    24	
+    25	    template = template.replace("{{", "{").replace("}}", "}")
+    26	
+    27	    return template.format_map(SafeDict({k: str(v) for k, v in variables.items()}))
+    28	
+    29	@runtime_checkable
+    30	class LLM(Protocol):
+    31	    async def generate_text(self, *, prompt: str, model: Optional[str] = None) -> str:
+    32	        ...
+    33	
+    34	
+    35	@dataclass
+    36	class GPT5LLM:
+    37	    api_key: Optional[str] = None
+    38	    default_model: str = MODEL
+    39	    base_url: Optional[str] = None
+    40	    concurrency: int = 8
+    41	
+    42	    def __post_init__(self):
+    43	        API_KEY = ""
+    44	
+    45	        if not API_KEY:
+    46	            raise RuntimeError("NO API Key：")
+    47	        if self.base_url:
+    48	            self.client = AsyncOpenAI(api_key=API_KEY, base_url=self.base_url)
+    49	        else:
+    50	            self.client = AsyncOpenAI(api_key=API_KEY)
+    51	        self._sem = asyncio.Semaphore(self.concurrency)
+    52	
+    53	    async def generate_text(self, *, prompt: str, model: Optional[str] = None) -> str:
+    54	
+    55	        model_name = model or self.default_model
+    56	
+    57	
+    58	        async def _call():
+    59	            return await self.client.chat.completions.create(
+    60	                model=model_name,
+    61	                messages=[{"role": "user", "content": prompt}],
+    62	                temperature=TEMPERATURE,
+    63	            )
+    64	        if self._sem:
+    65	            async with self._sem:
+    66	                resp = await _call()
+    67	        else:
+    68	            resp = await _call()
+    69	
+    70	        return (resp.choices[0].message.content or "").strip()
+    71	
+    72	@dataclass
+    73	class AgentTemplates:
+    74	    tpl_spec_designer: str = """
+    75	
+    76	    [SYSTEM]
+    77	
+    78	    Create and define an intermediate specification language that you, as the model, consider maximally readable and reliable for your own use in an NL → Spec ↔ NL confirmation → Code pipeline. Use any notation you prefer.
+    79	
+    80	    [INSTRUCTIONS] 
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+nl -ba A4S_update/readme.md | sed -n '1,120p'
+===== STDOUT =====
+     1	# Vibe Programming · HumanEval Pipeline (Baseline & Spec-Driven)
+     2	
+     3	A reproducible pipeline for evaluating LLM code generation on **HumanEval** with two modes:
+     4	
+     5	- **Baseline:** generate code directly from original HumanEval prompts.
+     6	- **Spec-Driven (Vibe Programming):** first convert prompts to natural language requests, then run a specification-guided generation pipeline.
+     7	
+     8	It supports parallel runs and logs all generations for re-evaluation.
+     9	
+    10	---
+    11	
+    12	## What’s Included
+    13	
+    14	**Data**
+    15	- `HumanEval.jsonl` — Original HumanEval tasks (prompts / solutions / tests).
+    16	- `HumanEval_with_nl.jsonl` — HumanEval with added natural-language requests (`nl_request`) produced by `humaneval_convert.py`.
+    17	
+    18	**Pipelines & Utils**
+    19	- `humaneval.py` — Utilities for HumanEval format.
+    20	- `humaneval_convert.py` — Convert code prompts → natural language (`nl_request`) for spec pipeline.
+    21	- `spec_result_generation.py` — Generate **spec-driven** solutions (defaults configured for Claude Sonnet; see below).
+    22	- `spec_result_evaluation.py` — Evaluate spec-driven generations.
+    23	- `evaluation_baseline_pipeline.py` — Run **baseline** generation + evaluation for (e.g.) GPT‑4o.
+    24	- `baseline_result_evaluation.py` — Evaluate existing baseline generations in `all_baseline_*.jsonl`.
+    25	
+    26	**Results (examples already in repo)**
+    27	- `all_baseline_claude_3_5_sonnet_20241022.jsonl` — baseline generations (Claude 3.5 Sonnet 2024-10-22).
+    28	- `all_baseline_claude_3_7_sonnet_20250219.jsonl` — baseline generations (Claude 3.7 Sonnet 2025-02-19).
+    29	- `all_spec_claude_3_7_sonnet_20250219.jsonl` — spec-driven generations (Claude 3.7 Sonnet 2025-02-19).
+    30	- `all_spec_gpt_4o.jsonl` — spec-driven generations (GPT-4o).
+    31	- `results_summary_*.txt` — one-line summary: `Total / Passed / Failed`.
+    32	- `failed_*.jsonl` — failing cases for quick inspection.
+    33	
+    34	---
+    35	> **Heads-up (easy to re-run):** Two artifacts are not committed — **GPT-4o baseline** and **Claude 3.5 spec**.  
+    36	> These files were originally saved but later misplaced. If you wish to verify, you can easily regenerate them:
+    37	>
+    38	> **GPT-4o baseline**:
+    39	> ```bash
+    40	> python evaluation_baseline_pipeline.py
+    41	> ```
+    42	> **Claude 3.5 spec**
+    43	> ```bash
+    44	> python spec_result_generation.py
+    45	> python spec_result_evaluation.py
+    46	> ```
+    47	
+    48	---
+    49	
+    50	## Requirements
+    51	
+    52	- Python **3.8+**
+    53	- Python packages: `openai`  *(native Anthropic SDK not required if you’re using an OpenAI‑compatible endpoint via `base_url`)*
+    54	
+    55	```bash
+    56	pip install -U openai
+    57	# optional, if you prefer .env management
+    58	pip install -U python-dotenv
+    59	```
+    60	
+    61	**Environment variables**
+    62	- `OPENAI_API_KEY` — used for both OpenAI and OpenAI‑compatible endpoints (e.g., Claude via `base_url`).
+    63	- (Optional) `OPENAI_BASE_URL` — if you prefer to set the endpoint globally; otherwise the scripts have it inline.
+    64	
+    65	---
+    66	
+    67	## Quickstart
+    68	
+    69	### A) Baseline Pipeline (e.g., GPT‑4o)
+    70	
+    71	**Option 1 (one-shot, recommended):**
+    72	```bash
+    73	python evaluation_baseline_pipeline.py
+    74	```
+    75	- Uses GPT‑4o by default.
+    76	- Produces `all_baseline_<model>.jsonl`, `results_summary_baseline_<model>.txt`, and `failed_baseline_<model>.jsonl`.
+    77	
+    78	**Option 2 (evaluate an existing result file):**
+    79	```bash
+    80	python baseline_result_evaluation.py
+    81	```
+    82	- Reads `all_baseline_*.jsonl` files and writes summaries + failures.
+    83	
+    84	---
+    85	
+    86	### B) Spec-Driven (Vibe Programming) Pipeline
+    87	
+    88	1) **Convert prompts → natural language (`nl_request`)**  
+    89	   (Skip if `HumanEval_with_nl.jsonl` already exists.)
+    90	```bash
+    91	python humaneval_convert.py
+    92	```
+    93	
+    94	2) **Generate spec-driven solutions**  
+    95	   `spec_result_generation.py` already sets **Claude 3.5 Sonnet** model name and **base_url**.  
+    96	   **Just set your API key** (e.g., `OPENAI_API_KEY`) and run:
+    97	```bash
+    98	python spec_result_generation.py
+    99	```
+   100	This writes `all_spec_<model>.jsonl` (e.g., `all_spec_claude_3_5_sonnet_20241022.jsonl`).
+   101	
+   102	3) **Evaluate**
+   103	```bash
+   104	python spec_result_evaluation.py
+   105	```
+   106	This writes `results_summary_spec_<model>.txt` and `failed_spec_<model>.jsonl`.
+   107	
+   108	---
+   109	
+   110	## File Naming Conventions
+   111	
+   112	- **Generations:**  
+   113	  `all_baseline_<model>.jsonl` · `all_spec_<model>.jsonl`
+   114	- **Summaries:**  
+   115	  `results_summary_baseline_<model>.txt` · `results_summary_spec_<model>.txt`
+   116	- **Failures (per-case debug):**  
+   117	  `failed_baseline_<model>.jsonl` · `failed_spec_<model>.jsonl`
+   118	
+   119	Each `all_*.jsonl` line contains the full prompt, model settings, the model output, and bookkeeping fields used by the evaluators.
+   120	
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+sed -n '1,80p' fabscore_codex/workspace/claim_8_command_output.txt
+===== STDOUT =====
+===== COMMAND =====
+cd A4S_update && python3 spec_result_generation.py
+===== STDOUT =====
+===== STDERR =====
+Traceback (most recent call last):
+  File "/home/chenhui/fabscore/agent4sci_acc/submission_206/A4S_update/spec_result_generation.py", line 545, in <module>
+    asyncio.run(async_main())
+    ~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/home/chenhui/miniconda3/lib/python3.13/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/home/chenhui/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/chenhui/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/chenhui/fabscore/agent4sci_acc/submission_206/A4S_update/spec_result_generation.py", line 533, in async_main
+    orch = config.build()
+  File "/home/chenhui/fabscore/agent4sci_acc/submission_206/A4S_update/spec_result_generation.py", line 471, in build
+    llm = GPT5LLM(api_key=self.api_key, default_model=self.model, base_url=self.base_url,concurrency=self.concurrency)
+  File "<string>", line 7, in __init__
+  File "/home/chenhui/fabscore/agent4sci_acc/submission_206/A4S_update/spec_result_generation.py", line 46, in __post_init__
+    raise RuntimeError("NO API Key：")
+RuntimeError: NO API Key：
+===== EXIT CODE: 1 =====
+
+===== EXIT CODE: 0 =====
+

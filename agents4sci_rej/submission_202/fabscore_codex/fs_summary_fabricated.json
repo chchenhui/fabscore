@@ -1,0 +1,256 @@
+{
+  "tables": [
+    {
+      "claim_index": 2,
+      "claim": "2. Table 1, Simple Concat, Fashion-MNIST: 62.3",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The paper says the simple-concat baseline is trained on MNIST and then evaluated on Fashion-MNIST without fine-tuning. The repo's closest simple-concat multi-dataset scripts instead train a separate Fashion-MNIST model via `run_experiment_on_dataset(\"fashion_mnist\", ...)`; there is no code path reusing an MNIST-trained simple-concat checkpoint for this number. That is a concrete evaluation-protocol mismatch.",
+      "evidence": "logs/0-run/experiment_results/experiment_272875af61684c03898c49779a68b795_proc_1514333/experiment_code.py; logs/0-run/experiment_results/experiment_787c7a47f00e4c4cba895078ef763dff_proc_1514333/experiment_code.py; logs/0-run/stage_3_creative_research_1_first_attempt/best_solution_5d63515e2e1a419abdebbeac6bebe10c.py",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "logs/0-run/experiment_results/experiment_272875af61684c03898c49779a68b795_proc_1514333/experiment_code.py",
+          "logs/0-run/experiment_results/experiment_787c7a47f00e4c4cba895078ef763dff_proc_1514333/experiment_code.py",
+          "logs/0-run/stage_3_creative_research_1_first_attempt/best_solution_5d63515e2e1a419abdebbeac6bebe10c.py"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 3,
+      "claim": "3. Table 1, Simple Concat, SVHN: 58.9",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The paper says the simple-concat baseline is trained on MNIST and then evaluated on SVHN without fine-tuning. The repo's closest simple-concat multi-dataset scripts instead train a separate SVHN model via `run_experiment_on_dataset(\"svhn\", ...)`; there is no code path reusing an MNIST-trained simple-concat checkpoint for SVHN evaluation. That is a concrete evaluation-protocol mismatch.",
+      "evidence": "logs/0-run/experiment_results/experiment_272875af61684c03898c49779a68b795_proc_1514333/experiment_code.py; logs/0-run/experiment_results/experiment_787c7a47f00e4c4cba895078ef763dff_proc_1514333/experiment_code.py; logs/0-run/stage_3_creative_research_1_first_attempt/best_solution_5d63515e2e1a419abdebbeac6bebe10c.py",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "logs/0-run/experiment_results/experiment_272875af61684c03898c49779a68b795_proc_1514333/experiment_code.py",
+          "logs/0-run/experiment_results/experiment_787c7a47f00e4c4cba895078ef763dff_proc_1514333/experiment_code.py",
+          "logs/0-run/stage_3_creative_research_1_first_attempt/best_solution_5d63515e2e1a419abdebbeac6bebe10c.py"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 4,
+      "claim": "4. Table 1, Simple Concat, Permuted SVHN: 51.4",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The paper's permutation test is described as a test-time perturbation. In the repo, `PermuteOrderClaimDataset` and `PermuteOrderSVHNClaimDataset` unconditionally apply `torch.randperm(3)` inside `__getitem__`, and the wrapped dataset is then split and used for both training and validation. There is no if/elif or probability gate here: permutation probability is 1 on every sample retrieval, so the repo trains and validates on continuously permuted inputs instead of evaluating a fixed MNIST-trained baseline under test-time permutation.",
+      "evidence": "logs/0-run/experiment_results/experiment_b13540f014c245cd92fd745ad33c32f8_proc_1522608/experiment_code.py; logs/0-run/experiment_results/experiment_787c7a47f00e4c4cba895078ef763dff_proc_1514333/experiment_code.py; 202_SciVerify_Digits_A_Benchma.pdf",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "logs/0-run/experiment_results/experiment_b13540f014c245cd92fd745ad33c32f8_proc_1522608/experiment_code.py",
+          "logs/0-run/experiment_results/experiment_787c7a47f00e4c4cba895078ef763dff_proc_1514333/experiment_code.py",
+          "202_SciVerify_Digits_A_Benchma.pdf"
+        ],
+        "commands_executed": []
+      }
+    }
+  ],
+  "figures": [
+    {
+      "claim_index": 17,
+      "claim": "1. Figure 1: Performance of the simple concatenation baseline. (a) The model quickly overfits on the MNIST training set. (b) Performance drops sharply on out-of-distribution datasets (Fashion-MNIST, SVHN), indicating poor generalization.",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The repo has an MNIST epoch-tuning figure for panel (a), but the only matching cross-dataset comparison for panel (b) plots separately trained MNIST, Fashion-MNIST, and SVHN models. `experiment_272875.../experiment_code.py` explicitly calls `run_experiment_on_dataset` three times, once per dataset, instead of evaluating a single MNIST-trained simple-concat model out of distribution. That contradicts the paper caption's claimed OOD generalization figure.",
+      "evidence": "logs/0-run/experiment_results/experiment_23b7cc9670dc469d91f273d62ad1176e_proc_1502176/plotting_code.py; logs/0-run/experiment_results/experiment_272875af61684c03898c49779a68b795_proc_1514333/plotting_code.py; logs/0-run/experiment_results/experiment_272875af61684c03898c49779a68b795_proc_1514333/experiment_code.py",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "logs/0-run/experiment_results/experiment_23b7cc9670dc469d91f273d62ad1176e_proc_1502176/plotting_code.py",
+          "logs/0-run/experiment_results/experiment_272875af61684c03898c49779a68b795_proc_1514333/plotting_code.py",
+          "logs/0-run/experiment_results/experiment_272875af61684c03898c49779a68b795_proc_1514333/experiment_code.py"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 18,
+      "claim": "2. Figure 2: Robustness analysis. (a) Performance degrades when input order is permuted, especially for models without built-in invariance. (b) Accuracy plummets on adversarial claims, exposing the model’s reliance on superficial correlations.",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Both robustness sub-experiments are implemented differently from the paper description. The permutation wrapper always applies `torch.randperm(3)` on every sample access and is used during both train and validation after `random_split`; there is no probability branch, so permutation probability is 1 rather than a separate test-time perturbation. The adversarial-claim ablation always replaces the claim with random word strings from `random_semantically_uninformative_string()` during both train and validation, which is not a set of structurally similar but logically distinct adversarial claims. The repo also has no permutation-invariant comparison model, so the caption's model-comparison interpretation is unsupported.",
+      "evidence": "logs/0-run/experiment_results/experiment_b13540f014c245cd92fd745ad33c32f8_proc_1522608/experiment_code.py; logs/0-run/experiment_results/experiment_308a27ddfc324b599284897fa2919013_proc_1522608/experiment_code.py; 202_SciVerify_Digits_A_Benchma.pdf",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "logs/0-run/experiment_results/experiment_b13540f014c245cd92fd745ad33c32f8_proc_1522608/experiment_code.py",
+          "logs/0-run/experiment_results/experiment_308a27ddfc324b599284897fa2919013_proc_1522608/experiment_code.py",
+          "202_SciVerify_Digits_A_Benchma.pdf"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 20,
+      "claim": "4. Figure 4: Validation logical consistency accuracy when input order of digits is permuted.",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The underlying repo ablation does not implement the paper's stated test-time permutation protocol. `PermuteOrderClaimDataset.__getitem__` and `PermuteOrderSVHNClaimDataset.__getitem__` always permute with `torch.randperm(3)`, and `train_on_dataset` splits that already-permuting dataset into train and validation. Because this is unconditional and applied during training as well as validation, the saved figure is not a pure validation-only permutation test.",
+      "evidence": "logs/0-run/experiment_results/experiment_b13540f014c245cd92fd745ad33c32f8_proc_1522608/experiment_code.py; logs/0-run/experiment_results/experiment_b13540f014c245cd92fd745ad33c32f8_proc_1522608/plotting_code.py; 202_SciVerify_Digits_A_Benchma.pdf",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "logs/0-run/experiment_results/experiment_b13540f014c245cd92fd745ad33c32f8_proc_1522608/experiment_code.py",
+          "logs/0-run/experiment_results/experiment_b13540f014c245cd92fd745ad33c32f8_proc_1522608/plotting_code.py",
+          "202_SciVerify_Digits_A_Benchma.pdf"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 21,
+      "claim": "5. Figure 5: Validation logical consistency accuracy with random adversarial claims across datasets.",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The repo's 'adversarial' setup is not the paper's described claim-generation protocol. `RandomizedClaimDataset` and `RandomizedSVHNClaimDataset` always replace the claim text with random word strings generated by `random_semantically_uninformative_string()`, and `train_on_dataset` uses that modified dataset for both training and validation. There is no if/elif branch or probabilistic mixture here either: replacement probability is 1. This is not validation on logically distinct adversarial claims derived from the benchmark templates.",
+      "evidence": "logs/0-run/experiment_results/experiment_308a27ddfc324b599284897fa2919013_proc_1522608/experiment_code.py; logs/0-run/experiment_results/experiment_308a27ddfc324b599284897fa2919013_proc_1522608/plotting_code.py; 202_SciVerify_Digits_A_Benchma.pdf",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "logs/0-run/experiment_results/experiment_308a27ddfc324b599284897fa2919013_proc_1522608/experiment_code.py",
+          "logs/0-run/experiment_results/experiment_308a27ddfc324b599284897fa2919013_proc_1522608/plotting_code.py",
+          "202_SciVerify_Digits_A_Benchma.pdf"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 22,
+      "claim": "6. Figure 6: Confusion matrices showing ground truth vs. predictions without logical consistency enforcement.",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: Appendix E and the figure caption call these confusion matrices, but the plotting code uses `plt.scatter(gt, preds)` and saves `*_no_logic_val_gt_vs_pred.png`. The repo stores raw prediction and ground-truth vectors, not a confusion-matrix computation or matrix heatmap. The visualization procedure conflicts with the paper claim.",
+      "evidence": "logs/0-run/experiment_results/experiment_7b1f855ebccc4df58e5a7f7e69167e93_proc_1522608/plotting_code.py; logs/0-run/experiment_results/experiment_7b1f855ebccc4df58e5a7f7e69167e93_proc_1522608/experiment_data.npy; 202_SciVerify_Digits_A_Benchma.pdf",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "logs/0-run/experiment_results/experiment_7b1f855ebccc4df58e5a7f7e69167e93_proc_1522608/plotting_code.py",
+          "logs/0-run/experiment_results/experiment_7b1f855ebccc4df58e5a7f7e69167e93_proc_1522608/experiment_data.npy",
+          "202_SciVerify_Digits_A_Benchma.pdf"
+        ],
+        "commands_executed": []
+      }
+    }
+  ],
+  "results_section": [],
+  "summary": {
+    "total": 22,
+    "verified": 1,
+    "data_fabrication": 0,
+    "experiment_fabrication": 8,
+    "result_fabrication": 0,
+    "no_code_files": 12,
+    "insufficient_evidence": 1
+  },
+  "analysis_summary": {
+    "total_claims": 22,
+    "no_code_files": 12,
+    "obvious_hallucination": 8,
+    "data_fabrication": 0,
+    "experiment_fabrication": 8,
+    "result_fabrication": 0,
+    "static_verifiable": 1,
+    "insufficient_evidence": 0,
+    "execution_required": 1,
+    "error": 0
+  },
+  "execution_summary": {
+    "total": 1,
+    "verified": 0,
+    "data_fabrication": 0,
+    "experiment_fabrication": 0,
+    "result_fabrication": 0,
+    "no_code_files": 0,
+    "insufficient_evidence": 1,
+    "error": 0
+  },
+  "final_assessment": {
+    "fab_score": 0.0455,
+    "total_claims": 22,
+    "verified": 1,
+    "data_fabrication": 0,
+    "experiment_fabrication": 8,
+    "result_fabrication": 0,
+    "no_code_files": 12,
+    "insufficient_evidence": 1,
+    "static_code_analysis_breakdown": {
+      "verified": 1,
+      "no_code_files": 12,
+      "data_fabrication": 0,
+      "experiment_fabrication": 8,
+      "result_fabrication": 0,
+      "insufficient_evidence": 0
+    },
+    "execution_artifact_analysis_breakdown": {
+      "verified": 0,
+      "no_code_files": 0,
+      "data_fabrication": 0,
+      "experiment_fabrication": 0,
+      "result_fabrication": 0,
+      "insufficient_evidence": 0
+    },
+    "code_execution_breakdown": {
+      "verified": 0,
+      "no_code_files": 0,
+      "data_fabrication": 0,
+      "experiment_fabrication": 0,
+      "result_fabrication": 0,
+      "insufficient_evidence": 1
+    }
+  },
+  "filtered_summary": {
+    "total_claims": 8,
+    "tables": 3,
+    "figures": 5,
+    "results_section": 0,
+    "verdict_breakdown": {
+      "Verified": 0,
+      "Data Fabrication": 0,
+      "Experiment Fabrication": 8,
+      "Result Fabrication": 0,
+      "No Code Files": 0,
+      "Insufficient Evidence": 0,
+      "Error": 0,
+      "Other": 0
+    }
+  }
+}

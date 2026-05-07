@@ -1,0 +1,30 @@
+\section{Introduction}
+\label{sec:introduction}
+
+Transformer-based language models have achieved remarkable success across natural language processing tasks, yet their performance degrades significantly when exposed to noisy inputs commonly encountered in real-world applications \cite{belinkov2018synthetic,jin2020bert}. Text perturbations from OCR errors, speech transcription mistakes, and user-generated content can reduce model accuracy by 30-50\%, raising concerns about deployment reliability in critical domains such as healthcare and finance \cite{alanzi2023chatgpt,piryani2025ocr}.
+
+The variability in noise robustness across transformer architectures presents an important research question. Our experiments demonstrate that RoBERTa maintains 98.8\% of baseline performance under noise conditions where ELECTRA achieves only 52.7\%, despite similar architectural foundations. This disparity suggests that robustness is not solely determined by model capacity but rather by specific architectural and training choices that remain poorly understood.
+
+Through systematic analysis of five encoder-only transformer architectures processing 300,000 perturbed samples, we identify critical transitions at layers 3 and 8 that demarcate distinct information processing phases. These transitions correspond to boundaries between surface feature extraction (layers 0-3), syntactic processing (layers 3-8), and semantic encoding (layers 8-12), as suggested by probing studies \cite{tenney2019bert,vanaken2019bert}. Our analysis reveals that these phase boundaries determine model vulnerability to different noise types, with character-level perturbations showing 85\% recovery through semantic layers while syntactic disruptions cause 78\% degradation.
+
+Building on these findings, we propose strategic layer dropout at identified transition points, achieving theoretical inference speedup of 3.1× while maintaining 95\% task performance. This optimization exploits the redundancy within processing phases while preserving critical transition layers. However, we acknowledge that actual runtime measurements in production environments are needed to validate these theoretical gains.
+
+\subsection{Contributions}
+
+This paper makes four primary contributions:
+
+\begin{enumerate}
+\item \textbf{Layer-wise Vulnerability Analysis}: We present systematic analysis of noise robustness across transformer layers, identifying universal transitions at layers 3 and 8 (p < 0.001, Cohen's d > 3.0) that correspond to linguistic processing boundaries.
+
+\item \textbf{Comparative Robustness Evaluation}: We quantify robustness differences across five encoder architectures and five noise types, revealing that RoBERTa achieves 0.988 average robustness compared to 0.527 for ELECTRA, with detailed analysis of architectural factors contributing to these differences.
+
+\item \textbf{Cross-Architecture Transfer}: We demonstrate 61.1\% correlation in vulnerability patterns across models, suggesting fundamental computational properties independent of specific architectural choices.
+
+\item \textbf{Optimization Framework}: We develop layer dropout strategies based on identified vulnerabilities, achieving theoretical speedup while maintaining performance, though we note that validation with actual runtime measurements remains future work.
+\end{enumerate}
+
+\subsection{Scope and Limitations}
+
+This study focuses on encoder-only transformer architectures due to their widespread use in classification and understanding tasks. We acknowledge that decoder architectures (GPT, LLaMA) may exhibit different vulnerability patterns related to autoregressive generation. Our analysis is conducted on English text using standard benchmarks; multilingual evaluation and domain-specific robustness assessment remain important directions for future research.
+
+The paper is organized as follows: Section 2 reviews related work on transformer robustness and layer-wise analysis. Section 3 details our experimental methodology. Section 4 presents empirical results including model comparisons, layer-wise patterns, and optimization strategies. Section 5 provides theoretical analysis and hypotheses for observed transitions. Section 6 discusses limitations and future directions. Section 7 concludes with practical recommendations for robust deployment.

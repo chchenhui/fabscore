@@ -1,0 +1,129 @@
+===== COMMAND: sed -n '382,389p' results/paper.md =====
+Figures 17-20 show how each model's value representation responded to these complex value dynamics.
+
+![static_alignment Value Evolution](./figures/model_value_evolution_static_alignment_value_conflict.png)
+*Figure 17: Evolution of static_alignment values in value_conflict scenario*
+
+![adaptive_alignment Value Evolution](./figures/model_value_evolution_adaptive_alignment_value_conflict.png)
+*Figure 18: Evolution of adaptive_alignment values in value_conflict scenario*
+
+
+===== COMMAND: nl -ba claude_code/evaluation.py | sed -n '140,156p' =====
+   140	                end_time = time.time()
+   141	                response_time = end_time - start_time
+   142	                
+   143	                # Update model based on human values
+   144	                model.update(human_values)
+   145	                
+   146	                # Record model values and metrics
+   147	                if model.name not in results["raw_data"]["model_values"]:
+   148	                    results["raw_data"]["model_values"][model.name] = []
+   149	                    results["raw_data"]["alignment_scores"][model.name] = []
+   150	                    results["raw_data"]["response_times"][model.name] = []
+   151	                    results["raw_data"]["responses"][model.name] = []
+   152	                
+   153	                results["raw_data"]["model_values"][model.name].append(model.value_system.values.copy())
+   154	                results["raw_data"]["alignment_scores"][model.name].append(model.alignment_scores[-1])
+   155	                results["raw_data"]["response_times"][model.name].append(response_time)
+   156	                results["raw_data"]["responses"][model.name].append(response)
+
+===== COMMAND: nl -ba claude_code/alignment_models.py | sed -n '183,229p' =====
+   183	class AdaptiveAlignmentModel(BaseAlignmentModel):
+   184	    """
+   185	    Simple adaptive alignment model that uniformly adapts to changes in human values.
+   186	    """
+   187	    def __init__(
+   188	        self,
+   189	        value_dimensions: List[str],
+   190	        update_rate: float = 0.5,
+   191	        name: str = "adaptive_alignment",
+   192	        description: str = "Simple adaptive alignment model - uniform adaptation",
+   193	        random_seed: Optional[int] = None
+   194	    ):
+   195	        """
+   196	        Initialize an adaptive alignment model.
+   197	        
+   198	        Args:
+   199	            value_dimensions: List of value dimension names
+   200	            update_rate: Rate at which the model adapts to human values (0-1)
+   201	            name: Model name
+   202	            description: Model description
+   203	            random_seed: Random seed for reproducibility
+   204	        """
+   205	        super().__init__(value_dimensions, name, description, random_seed)
+   206	        self.update_rate = update_rate
+   207	    
+   208	    def update(self, human_values: ValueSystem) -> None:
+   209	        """
+   210	        Update the model's value system based on human values.
+   211	        
+   212	        Args:
+   213	            human_values: Human value system to align with
+   214	        """
+   215	        # Update each value dimension
+   216	        for dim in self.value_dimensions:
+   217	            current_value = self.value_system.get_value(dim)
+   218	            human_value = human_values.get_value(dim)
+   219	            
+   220	            # Linear interpolation between current and target values
+   221	            new_value = (1 - self.update_rate) * current_value + self.update_rate * human_value
+   222	            self.value_system.set_value(dim, new_value)
+   223	            
+   224	        # Record current values in history
+   225	        self.value_history.append(self.value_system.values.copy())
+   226	        
+   227	        # Calculate and record alignment score
+   228	        alignment_score = self.calculate_alignment_score(human_values)
+   229	        self.alignment_scores.append(alignment_score)
+
+===== COMMAND: nl -ba claude_code/visualization.py | sed -n '387,396p' =====
+   387	        # Plot model value evolution for each model
+   388	        for model_name in scenario_results['models']:
+   389	            model_values = np.array(scenario_results['raw_data']['model_values'][model_name])
+   390	            model_df = pd.DataFrame(
+   391	                model_values,
+   392	                columns=results['overall']['value_dimensions']
+   393	            )
+   394	            
+   395	            figure_paths[f'model_values_{model_name}_{scenario_name}'] = plot_value_evolution(
+   396	                model_df,
+
+===== COMMAND: nl -ba claude_code/run_experiment.py | sed -n '90,112p' =====
+    90	    # Save raw results as JSON
+    91	    with open(results_dir / 'results.json', 'w') as f:
+    92	        # Convert numpy arrays to lists for JSON serialization
+    93	        results_copy = results.copy()
+    94	        
+    95	        # Process raw data
+    96	        for scenario_name, scenario_data in results_copy['scenarios'].items():
+    97	            raw_data = scenario_data['raw_data']
+    98	            
+    99	            # Convert human values
+   100	            raw_data['human_values'] = [
+   101	                [[float(v) for v in agent_values] for agent_values in step_values]
+   102	                for step_values in raw_data['human_values']
+   103	            ]
+   104	            
+   105	            # Convert model values
+   106	            for model_name in raw_data['model_values']:
+   107	                raw_data['model_values'][model_name] = [
+   108	                    [float(v) for v in step_values]
+   109	                    for step_values in raw_data['model_values'][model_name]
+   110	                ]
+   111	        
+   112	        # Serialize to JSON
+
+===== COMMAND: python -c "import json; from pathlib import Path; p=Path('fabscore_codex/workspace/claim_23_run_json/results/results.json'); obj=json.loads(p.read_text()); series=obj['scenarios']['value_conflict']['raw_data']['model_values']['adaptive_alignment']; dims=obj['overall']['value_dimensions']; print('artifact=', p); print('num_steps=', len(series)); print('num_dims=', len(series[0]) if series else 0); print('dims=', dims); [print(label, '=', series[idx]) for label, idx in [('first',0), ('step_30',30), ('step_60',60), ('last', len(series)-1)]]; [print(dim, 'first=', vals[0], 'step_30=', vals[30], 'step_60=', vals[60], 'last=', vals[-1], 'min=', min(vals), 'max=', max(vals)) for dim, vals in ((dim, [step[i] for step in series]) for i, dim in enumerate(dims))]" =====
+artifact= fabscore_codex/workspace/claim_23_run_json/results/results.json
+num_steps= 100
+num_dims= 5
+dims= ['autonomy', 'benevolence', 'security', 'achievement', 'conformity']
+first = [0.22302738464821506, 0.17941676163727477, 0.2676923861897992, 0.15704917182742156, 0.17281429569728948]
+step_30 = [0.29318969549770435, 0.12096660321153327, 0.16733315986421593, 0.18203842924326755, 0.23647211218327893]
+step_60 = [0.16661058268570367, 0.014922254638221548, 0.16565902431000146, 0.2948194897898284, 0.35798864857624496]
+last = [0.2845183919174946, 0.09130370050063952, 0.29985696380665827, 0.3094857991086353, 0.014835144666572306]
+autonomy first= 0.22302738464821506 step_30= 0.29318969549770435 step_60= 0.16661058268570367 last= 0.2845183919174946 min= 0.0784918095372753 max= 0.3654452019046276
+benevolence first= 0.17941676163727477 step_30= 0.12096660321153327 step_60= 0.014922254638221548 last= 0.09130370050063952 min= 0.00860328861641143 max= 0.31497101552349294
+security first= 0.2676923861897992 step_30= 0.16733315986421593 step_60= 0.16565902431000146 last= 0.29985696380665827 min= 0.005126916307163233 max= 0.306882680577818
+achievement first= 0.15704917182742156 step_30= 0.18203842924326755 step_60= 0.2948194897898284 last= 0.3094857991086353 min= 0.010814193299429748 max= 0.48686025484017603
+conformity first= 0.17281429569728948 step_30= 0.23647211218327893 step_60= 0.35798864857624496 last= 0.014835144666572306 min= 0.007068759686896823 max= 0.41709017765408496

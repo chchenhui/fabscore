@@ -1,0 +1,317 @@
+===== COMMAND =====
+python - <<'PY'
+from PyPDF2 import PdfReader
+reader = PdfReader('206_Self_Spec_Model_Authored_S.pdf')
+for i, page in enumerate(reader.pages):
+    text = page.extract_text() or ''
+    if 'Table 2' in text:
+        print(f'--- PAGE {i+1} ---')
+        print(text[:5000])
+PY
+===== STDOUT =====
+--- PAGE 6 ---
+Model Native Self-Spec∆
+GPT-4o 87% 92% +5
+Claude 3.7 92% 94% +2
+Claude 3.5 90% 89%−1
+Table 1:HumanEval pass@1 (single sample, T= 0 ).Each model is evaluated on 164 HumanEval
+problems under two conditions: direct code generation (Native) vs. the Self-Spec pipeline. ∆denotes
+the percentage point difference. GPT-4o and Claude 3.7 clearly benefit from Self-Spec, while Claude
+3.5 sees a negligible drop.
+guiding their solution. In contrast, Claude 3.5 shows a slight decrease in performance with Self-Spec
+(90% down to 89%, i.e. −1 point). In absolute terms, this drop is very small (essentially one fewer
+problem solved) and suggests that for this less capable model, the additional spec process did not
+yield an immediate benefit. We analyze these patterns further in the next section.
+Overall, two out of three models saw an accuracy gain by using Self-Spec, highlighting the potential
+of the approach for state-of-the-art LLMs. The slight regression for Claude 3.5 points to differences
+in how smaller/older models handle the spec process.
+6 Analysis
+Category Task IDs
+Persistent across all three 75, 145, 160
+Shared (Claude 3.7 & GPT-4o) 65, 134, 163
+Shared (Claude 3.7 & Claude 3.5) 92, 146
+Shared (GPT-4o & Claude 3.5) 50, 83
+Table 2: Common errors across models (self-spec only)
+Model Task IDs (unique among the three self-spec logs)
+Claude 3.7 10, 116
+GPT-4o 74, 91, 102, 115, 132, 141
+Claude 3.5 9, 14, 17, 19, 32, 112, 113, 125, 126, 129, 135, 138, 153
+Table 3: Model-unique failure candidates (potential regressions; baseline not provided)
+Error analysis.Baseline runs often fail for orchestration reasons—entry-point hijacking, template
+bleed, helper-bridging failures, or environment drift—but these largely vanish under Self-Spec,
+which pins entry points, fixes helper usage, and enforces return types and operation order. The
+remaining errors are genuine specification-following mistakes. We observe three persistent classes:
+(i)constraint misreads, where models over-interpret bounds (e.g., HE/75, treating “ a <100 ” as
+a hard precondition and rejecting larger cases); (ii)tie-break and sign semantics, where sorting or
+aggregation misaligns with hidden conventions (e.g., HE/145, mishandling negatives in digit-sum
+tie-breaking); and (iii)operator precedence, where left-to-right folding replaces standard rules (e.g.,
+HE/160, producing 15instead of the expected 9for “+,∗,− ”). Two-model overlaps further reveal
+systematic pitfalls: HE/65 (rule-priority mistakes in circular shifts and leading zeros), HE/134
+(single-letter tail cases), HE/163 (misreading “even digits” as characters rather than integers), HE/50
+(dependency coupling on helpers), and HE/83 (tokenization/case-sensitivity for sentence starts).
+Model-specific errors suggest characteristic tendencies: Claude 3.5 often inserts over-strict “defensive”
+guards (e.g., raising on empty input in HE/9/14/17/19/112/125), a side-effect of self-specification;
+GPT-4o shows localized logic slips (per-row vs. global accounting in HE/115, filename rules in
+HE/141); Claude 3.7 contributes few uniques (HE/10/116) but consistently shares the core trio. In
+sum, persistent failures cluster on compressed prompts with multiple constraints or counter-intuitive
+exceptions, making them prime candidates for templated Self-Spec guidance. Without baseline error
+IDs, model-unique failures are conservatively treated as regression candidates.
+6
+===== STDERR =====
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+printf 'gpt4o\n' && rg -n 'HumanEval/134|task_id": 134|"134"' A4S_update/failed_spec_gpt_4o.jsonl A4S_update/all_spec_gpt_4o.jsonl ; printf '\nclaude37\n' && rg -n 'HumanEval/134|task_id": 134|"134"' A4S_update/failed_spec_claude_3_7_sonnet_20250219.jsonl A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl ; printf '\nclaude35 inventory\n' && find A4S_update -maxdepth 1 -type f | sort | rg 'claude_3_5|claude-3-5'
+===== STDOUT =====
+gpt4o
+A4S_update/failed_spec_gpt_4o.jsonl:10:{"task_id": "HumanEval/134", "entry_point": "check_if_last_char_is_a_letter", "error": "AssertionError: ", "traceback": "Traceback (most recent call last):\n  File \"c:\\Users\\ltroi\\Downloads\\A4S\\spec_result_evaluation.py\", line 42, in run_test\n    exec(compile(code_wrapped, \"<eval>\", \"exec\"), ns)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<eval>\", line 32, in <module>\n  File \"<eval>\", line 23, in check\nAssertionError\n", "test": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate(\"apple\") == False\n    assert candidate(\"apple pi e\") == True\n    assert candidate(\"eeeee\") == False\n    assert candidate(\"A\") == True\n    assert candidate(\"Pumpkin pie \") == False\n    assert candidate(\"Pumpkin pie 1\") == False\n    assert candidate(\"\") == False\n    assert candidate(\"eeeee e \") == False\n    assert candidate(\"apple pie\") == False\n    assert candidate(\"apple pi e \") == False\n\n    # Check some edge cases that are easy to work out by hand.\n    assert True\n\n", "generated_solution": "def check_if_last_char_is_a_letter(txt):\n    trimmed_txt = txt.rstrip()\n    if len(trimmed_txt) == 0:\n        return False\n    last_char = trimmed_txt[-1]\n    if last_char.isalpha() and (len(trimmed_txt) == 1 or not trimmed_txt[-2].isalpha()):\n        return True\n    return False", "prompt": "\ndef check_if_last_char_is_a_letter(txt):\n    '''\n    Create a function that returns True if the last character\n    of a given string is an alphabetical character and is not\n    a part of a word, and False otherwise.\n    Note: \"word\" is a group of characters separated by space.\n\n    Examples:\n    check_if_last_char_is_a_letter(\"apple pie\") ➞ False\n    check_if_last_char_is_a_letter(\"apple pi e\") ➞ True\n    check_if_last_char_is_a_letter(\"apple pi e \") ➞ False\n    check_if_last_char_is_a_letter(\"\") ➞ False \n    '''\n"}
+A4S_update/all_spec_gpt_4o.jsonl:135:{"task_id": "HumanEval/134", "prompt": "\ndef check_if_last_char_is_a_letter(txt):\n    '''\n    Create a function that returns True if the last character\n    of a given string is an alphabetical character and is not\n    a part of a word, and False otherwise.\n    Note: \"word\" is a group of characters separated by space.\n\n    Examples:\n    check_if_last_char_is_a_letter(\"apple pie\") ➞ False\n    check_if_last_char_is_a_letter(\"apple pi e\") ➞ True\n    check_if_last_char_is_a_letter(\"apple pi e \") ➞ False\n    check_if_last_char_is_a_letter(\"\") ➞ False \n    '''\n", "canonical_solution": " \n    check = txt.split(' ')[-1]\n    return True if len(check) == 1 and (97 <= ord(check.lower()) <= 122) else False\n", "test": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate(\"apple\") == False\n    assert candidate(\"apple pi e\") == True\n    assert candidate(\"eeeee\") == False\n    assert candidate(\"A\") == True\n    assert candidate(\"Pumpkin pie \") == False\n    assert candidate(\"Pumpkin pie 1\") == False\n    assert candidate(\"\") == False\n    assert candidate(\"eeeee e \") == False\n    assert candidate(\"apple pie\") == False\n    assert candidate(\"apple pi e \") == False\n\n    # Check some edge cases that are easy to work out by hand.\n    assert True\n\n", "entry_point": "check_if_last_char_is_a_letter", "nl_request": "Please write a function check_if_last_char_is_a_letter(txt) that returns True if the last character of a given string is an alphabetical character and is not a part of a word, and False otherwise. Treat a \"word\" as a group of characters separated by space, and ensure it matches these cases: \"apple pie\" ➞ False, \"apple pi e\" ➞ True, \"apple pi e \" ➞ False, and \"\" ➞ False.", "generated_solution": "def check_if_last_char_is_a_letter(txt):\n    trimmed_txt = txt.rstrip()\n    if len(trimmed_txt) == 0:\n        return False\n    last_char = trimmed_txt[-1]\n    if last_char.isalpha() and (len(trimmed_txt) == 1 or not trimmed_txt[-2].isalpha()):\n        return True\n    return False", "generated_solution_Spec": "```yaml\nSpecificationLanguage:\n  - RequestID: 001\n  - Title: Check if Last Character is a Letter\n  - Description: A function that determines if the last character of a given string is an alphabetical character and is not part of a word. A \"word\" is defined as a group of characters separated by spaces or punctuation.\n  - Inputs:\n      - Name: txt\n        Type: string\n        Description: The input string to be checked.\n        Constraints: The string can be empty or contain any characters, including non-ASCII alphabetical characters.\n  - Outputs:\n      - Name: result\n        Type: boolean\n        Description: Returns True if the last character is an alphabetical character and not part of a word, otherwise False.\n  - Process:\n      - Steps:\n          - Trim any trailing spaces from the input string.\n          - Check if the last character is an alphabetical character.\n          - Ensure the last character is not part of a word by checking the character before it, considering punctuation as a separator.\n          - Return True if conditions are met, otherwise return False.\n      - Pseudocode: |\n          trimmed_txt = txt.rstrip()\n          if len(trimmed_txt) == 0:\n              return False\n          last_char = trimmed_txt[-1]\n          if last_char.isalpha() and (len(trimmed_txt) == 1 or not trimmed_txt[-2].isalpha()):\n              return True\n          return False\n  - EdgeCases:\n      - Description: Handle cases where the string is empty, ends with spaces, or has a single character.\n      - Handling: Return False for empty strings and strings ending with spaces. Check single character strings for being alphabetical.\n  - Assumptions: The input string may contain any characters, including spaces, punctuation, and non-ASCII alphabetical characters.\n  - Dependencies: None\n  - Performance:\n      - TimeComplexity: O(n), where n is the length of the string due to trimming.\n      - SpaceComplexity: O(1), as no additional space is required beyond input.\n  - ConfirmationQuestions:\n      - Question: Should the function consider punctuation as part of a word?\n      - ExpectedAnswer: No, punctuation is considered a separator, not part of a word.\n```", "rounds": 1}
+
+claude37
+A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl:135:{"task_id": "HumanEval/134", "prompt": "\ndef check_if_last_char_is_a_letter(txt):\n    '''\n    Create a function that returns True if the last character\n    of a given string is an alphabetical character and is not\n    a part of a word, and False otherwise.\n    Note: \"word\" is a group of characters separated by space.\n\n    Examples:\n    check_if_last_char_is_a_letter(\"apple pie\") ➞ False\n    check_if_last_char_is_a_letter(\"apple pi e\") ➞ True\n    check_if_last_char_is_a_letter(\"apple pi e \") ➞ False\n    check_if_last_char_is_a_letter(\"\") ➞ False \n    '''\n", "canonical_solution": " \n    check = txt.split(' ')[-1]\n    return True if len(check) == 1 and (97 <= ord(check.lower()) <= 122) else False\n", "test": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate(\"apple\") == False\n    assert candidate(\"apple pi e\") == True\n    assert candidate(\"eeeee\") == False\n    assert candidate(\"A\") == True\n    assert candidate(\"Pumpkin pie \") == False\n    assert candidate(\"Pumpkin pie 1\") == False\n    assert candidate(\"\") == False\n    assert candidate(\"eeeee e \") == False\n    assert candidate(\"apple pie\") == False\n    assert candidate(\"apple pi e \") == False\n\n    # Check some edge cases that are easy to work out by hand.\n    assert True\n\n", "entry_point": "check_if_last_char_is_a_letter", "nl_request": "Please write a function check_if_last_char_is_a_letter(txt) that returns True if the last character of a given string is an alphabetical character and is not a part of a word, and False otherwise. Treat a \"word\" as a group of characters separated by space, and ensure it matches these cases: \"apple pie\" ➞ False, \"apple pi e\" ➞ True, \"apple pi e \" ➞ False, and \"\" ➞ False.", "generated_solution": "def check_if_last_char_is_a_letter(txt):\n    '''\n    Create a function that returns True if the last character\n    of a given string is an alphabetical character and is not\n    a part of a word, and False otherwise.\n    Note: \"word\" is a group of characters separated by space.\n\n    Examples:\n    check_if_last_char_is_a_letter(\"apple pie\") ➞ False\n    check_if_last_char_is_a_letter(\"apple pi e\") ➞ True\n    check_if_last_char_is_a_letter(\"apple pi e \") ➞ False\n    check_if_last_char_is_a_letter(\"\") ➞ False \n    '''\n    # Check if string is empty\n    if not txt:\n        return False\n    \n    # Check if last character is a space\n    if txt[-1] == ' ':\n        return False\n    \n    # Check if last character is alphabetical\n    if not txt[-1].isalpha():\n        return False\n    \n    # Check if the last character is a standalone letter\n    # (preceded by a space or is the only character)\n    if len(txt) == 1 or txt[-2] == ' ':\n        return True\n    \n    return False", "generated_solution_Spec": "SPEC {\nPURPOSE: Create a function that checks if the last character of a string is an alphabetical character and is not part of a word.\nINPUTS: txt (string) - The input string to check.\nOUTPUTS: Boolean - True if the last character is an alphabetical character and is not part of a word, False otherwise.\nRULES: \n- A \"word\" is defined as a group of characters separated by space.\n- Return True only if the last character is alphabetical AND is separated by a space from the previous characters (a standalone letter).\n- Return False if the string is empty.\n- Return False if the last character is not alphabetical.\n- Return False if the last character is alphabetical but is part of a word.\n- Return False if the last character is a space.\nEDGE_CASES: \n- Empty string should return False.\n- String with only spaces should return False.\n- Single alphabetical character should return True.\nERROR_POLICY: No explicit error handling required as the function only needs to return a boolean value.\nEXAMPLES: \n- check_if_last_char_is_a_letter(\"apple pie\") ➞ False\n- check_if_last_char_is_a_letter(\"apple pi e\") ➞ True\n- check_if_last_char_is_a_letter(\"apple pi e \") ➞ False\n- check_if_last_char_is_a_letter(\"\") ➞ False\n}", "rounds": 1}
+
+claude35 inventory
+A4S_update/all_baseline_claude_3_5_sonnet_20241022.jsonl
+A4S_update/failed_baseline_claude_3_5_sonnet_20241022.jsonl
+A4S_update/results_summary_baseline_claude_3_5_sonnet_20241022.txt
+===== STDERR =====
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+python - <<'PY'
+import json, re, traceback
+from pathlib import Path
+PRELUDE = ('from typing import *\n' 'import math, functools, itertools, collections\n')
+def extract_python(code: str) -> str:
+    s = code.strip()
+    m = re.match(r'(?s)^\s*\s*$', s, flags=re.IGNORECASE)
+    return m.group(1) if m else s
+def alias_entry_point_if_needed(code: str, entry_point: str) -> str:
+    if re.search(rf'^\s*def\s+{re.escape(entry_point)}\s*\(', code, flags=re.M) is not None:
+        return code
+    m = re.search(r'^\s*def\s+([A-Za-z_]\w*)\s*\(', code, flags=re.M)
+    if m:
+        first_func = m.group(1)
+        if first_func != entry_point:
+            code += f'\n\n# auto alias for evaluation\n{entry_point} = {first_func}\n'
+    return code
+def run_test(task, raw_code):
+    ns = {}
+    try:
+        code = extract_python(raw_code)
+        code = alias_entry_point_if_needed(code, task['entry_point'])
+        code_wrapped = f"{PRELUDE}\n{code}\n\n{task['test']}\n\ncheck({task['entry_point']})"
+        exec(compile(code_wrapped, '<eval>', 'exec'), ns)
+        return True, '', ''
+    except AssertionError as e:
+        return False, f'AssertionError: {e}', traceback.format_exc()
+    except Exception as e:
+        return False, f'{e.__class__.__name__}: {e}', traceback.format_exc()
+for path in [Path('A4S_update/all_spec_gpt_4o.jsonl'), Path('A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl')]:
+    rec = None
+    with path.open() as f:
+        for line in f:
+            item = json.loads(line)
+            if item.get('task_id') == 'HumanEval/134':
+                rec = item
+                break
+    if rec is None:
+        print(path, 'MISSING TASK 134')
+        continue
+    passed, err, tb = run_test({'entry_point': rec['entry_point'], 'test': rec['test']}, rec['generated_solution'])
+    print('FILE', path)
+    print('TASK', rec['task_id'])
+    print('ENTRY', rec['entry_point'])
+    print('PASSED', passed)
+    print('ERROR', err)
+    if not passed:
+        print('TRACEBACK_HEAD')
+        print('\n'.join(tb.splitlines()[:8]))
+    print('GENERATED_SOLUTION')
+    print(rec['generated_solution'])
+    print('---')
+PY
+===== STDOUT =====
+FILE A4S_update/all_spec_gpt_4o.jsonl
+TASK HumanEval/134
+ENTRY check_if_last_char_is_a_letter
+PASSED False
+ERROR AssertionError: 
+TRACEBACK_HEAD
+Traceback (most recent call last):
+  File "<stdin>", line 23, in run_test
+  File "<eval>", line 32, in <module>
+  File "<eval>", line 23, in check
+AssertionError
+GENERATED_SOLUTION
+def check_if_last_char_is_a_letter(txt):
+    trimmed_txt = txt.rstrip()
+    if len(trimmed_txt) == 0:
+        return False
+    last_char = trimmed_txt[-1]
+    if last_char.isalpha() and (len(trimmed_txt) == 1 or not trimmed_txt[-2].isalpha()):
+        return True
+    return False
+---
+FILE A4S_update/all_spec_claude_3_7_sonnet_20250219.jsonl
+TASK HumanEval/134
+ENTRY check_if_last_char_is_a_letter
+PASSED True
+ERROR 
+GENERATED_SOLUTION
+def check_if_last_char_is_a_letter(txt):
+    '''
+    Create a function that returns True if the last character
+    of a given string is an alphabetical character and is not
+    a part of a word, and False otherwise.
+    Note: "word" is a group of characters separated by space.
+
+    Examples:
+    check_if_last_char_is_a_letter("apple pie") ➞ False
+    check_if_last_char_is_a_letter("apple pi e") ➞ True
+    check_if_last_char_is_a_letter("apple pi e ") ➞ False
+    check_if_last_char_is_a_letter("") ➞ False 
+    '''
+    # Check if string is empty
+    if not txt:
+        return False
+    
+    # Check if last character is a space
+    if txt[-1] == ' ':
+        return False
+    
+    # Check if last character is alphabetical
+    if not txt[-1].isalpha():
+        return False
+    
+    # Check if the last character is a standalone letter
+    # (preceded by a space or is the only character)
+    if len(txt) == 1 or txt[-2] == ' ':
+        return True
+    
+    return False
+---
+===== STDERR =====
+===== EXIT CODE: 0 =====
+
+===== COMMAND =====
+nl -ba A4S_update/spec_result_evaluation.py | sed -n '1,120p'
+===== STDOUT =====
+     1	import json, re, traceback
+     2	from typing import Any, Dict, List, Tuple
+     3	
+     4	# claude-3-5-sonnet-20241022
+     5	# MODEL = "claude-3-7-sonnet-20250219"
+     6	#"gpt-4o"
+     7	MODEL = "claude-3-5-sonnet-20241022"
+     8	
+     9	
+    10	INPUT_PATH = f"all_spec_{MODEL}.jsonl"
+    11	SUMMARY_TXT = f"results_summary_spec_{MODEL}.txt"
+    12	ERROR_PATH = f"failed_spec_{MODEL}.jsonl"
+    13	
+    14	PRELUDE = (
+    15	    "from typing import *\n"
+    16	    "import math, functools, itertools, collections\n"
+    17	)
+    18	
+    19	def extract_python(code: str) -> str:
+    20	    s = code.strip()
+    21	    m = re.match(r"(?s)^\s*```(?:python)?\s*(.*?)\s*```\s*$", s, flags=re.IGNORECASE)
+    22	    return m.group(1) if m else s
+    23	
+    24	def alias_entry_point_if_needed(code: str, entry_point: str) -> str:
+    25	
+    26	    if re.search(rf"^\s*def\s+{re.escape(entry_point)}\s*\(", code, flags=re.M) is not None:
+    27	        return code
+    28	
+    29	    m = re.search(r"^\s*def\s+([A-Za-z_]\w*)\s*\(", code, flags=re.M)
+    30	    if m:
+    31	        first_func = m.group(1)
+    32	        if first_func != entry_point:
+    33	            code += f"\n\n# auto alias for evaluation\n{entry_point} = {first_func}\n"
+    34	    return code
+    35	
+    36	def run_test(task: Dict[str, Any], raw_code: str) -> Tuple[bool, str, str]:
+    37	    ns: Dict[str, Any] = {}
+    38	    try:
+    39	        code = extract_python(raw_code)
+    40	        code = alias_entry_point_if_needed(code, task["entry_point"])
+    41	        code_wrapped = f"{PRELUDE}\n{code}\n\n{task['test']}\n\ncheck({task['entry_point']})"
+    42	        exec(compile(code_wrapped, "<eval>", "exec"), ns)
+    43	        return True, "", ""
+    44	    except AssertionError as e:
+    45	        return False, f"AssertionError: {e}", traceback.format_exc()
+    46	    except Exception as e:
+    47	        return False, f"{e.__class__.__name__}: {e}", traceback.format_exc()
+    48	
+    49	def main() -> None:
+    50	    data: List[Dict[str, Any]] = []
+    51	    with open(INPUT_PATH, "r", encoding="utf-8") as f:
+    52	        for line in f:
+    53	            line = line.strip()
+    54	            if line:
+    55	                data.append(json.loads(line))
+    56	
+    57	    results: Dict[str, Dict[str, Any]] = {}
+    58	    passed_cnt = 0
+    59	    failed_records: List[Dict[str, Any]] = []
+    60	
+    61	    for item in data:
+    62	        tid = item.get("task_id")
+    63	        entry_point = item.get("entry_point")
+    64	        test = item.get("test")
+    65	        gen = item.get("generated_solution")
+    66	
+    67	        if not gen:
+    68	            results[tid] = {"passed": False, "error": "No generated_solution in record"}
+    69	            failed_records.append({
+    70	                "task_id": tid,
+    71	                "entry_point": entry_point,
+    72	                "error": "No generated_solution in record",
+    73	                "traceback": "",
+    74	                "test": test,
+    75	                "generated_solution": None,
+    76	                "prompt": item.get("prompt"),
+    77	            })
+    78	            continue
+    79	
+    80	        passed, err, tb = run_test(
+    81	            {"entry_point": entry_point, "test": test},
+    82	            gen
+    83	        )
+    84	        results[tid] = {"passed": passed, "error": err}
+    85	        if passed:
+    86	            passed_cnt += 1
+    87	        else:
+    88	            failed_records.append({
+    89	                "task_id": tid,
+    90	                "entry_point": entry_point,
+    91	                "error": err,                
+    92	                "traceback": tb,              
+    93	                "test": test,
+    94	                "generated_solution": gen,
+    95	                "prompt": item.get("prompt"), 
+    96	            })
+    97	
+    98	    total = len(results)
+    99	    print(f"Total: {total}, Passed: {passed_cnt}, Failed: {total - passed_cnt}")
+   100	    for tid, res in results.items():
+   101	        mark = "✅" if res["passed"] else "❌"
+   102	        detail = "" if res["passed"] else f" {res['error']}"
+   103	        print(f"{tid} {mark}{detail}")
+   104	
+   105	    with open(SUMMARY_TXT, "w", encoding="utf-8") as f:
+   106	        f.write(f"Total: {total}, Passed: {passed_cnt}, Failed: {total - passed_cnt}\n")
+   107	
+   108	    with open(ERROR_PATH, "w", encoding="utf-8") as f:
+   109	        for rec in failed_records:
+   110	            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+   111	
+   112	    print(f"\nerror saved to: {ERROR_PATH}（Total: {len(failed_records)} ）")
+   113	
+   114	if __name__ == "__main__":
+   115	    main()
+===== STDERR =====
+===== EXIT CODE: 0 =====
+

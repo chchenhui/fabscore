@@ -1,0 +1,65 @@
+{
+    "no_code_files": [],
+    "obvious_hallucination": [],
+    "static_verifiable": [],
+    "insufficient_evidence": [],
+    "execution_required": [
+        {
+            "index": 1,
+            "category": "figure",
+            "content": "1. figures/acknowledgment_time.png: Figure 2 shows the average time taken by users to acknowledge deprecation notifications",
+            "reason": "The PNG artifact exists at results/figures/acknowledgment_time.png. The underlying acknowledgment_time data also exists in results/experiment_results.json under aggregate_metrics.user_response.{CONTROL,BASIC,FULL}.acknowledgment_time (means: CONTROL=30.45, BASIC=23.96, FULL=18.56 days). However, the evaluation.py:generate_all_figures() generates acknowledgment_time.png by loading results from strategy-specific timestamped directories (not directly from experiment_results.json), and those directories are absent from the repo. Static inspection cannot confirm the existing PNG was produced from this specific data. The code path via run_experiment.py → evaluation.py:generate_all_figures() can regenerate the figure and verify agreement.",
+            "candidate_files": [
+                "claude_code/run_experiment.py",
+                "claude_code/evaluation.py",
+                "results/experiment_results.json"
+            ],
+            "suggested_entrypoints": [
+                "cd claude_code && python run_experiment.py --simulations 50"
+            ]
+        },
+        {
+            "index": 2,
+            "category": "figure",
+            "content": "2. figures/access_control_grant_rate.png: Figure 3 shows the access control grant rates for the full framework implementation",
+            "reason": "The PNG artifact exists at results/figures/access_control_grant_rate.png. However, the access_control_grant_rate metric is NOT present in results/experiment_results.json (which only has recommendation_accuracy, processing_time, notification_success in system_performance). The data originates from framework.py line 750 where results['access_control']['grant_rate'] is computed from self.access_logs during the FULL framework simulation, saved in strategy-specific evaluation directories. Those directories are not present in the repo. evaluation.py:generate_all_figures() generates access_control_grant_rate.png from compare_system_performance() which reads system_performance.get('access_control',{}) from the loaded strategy data. The run_experiment.py code path can regenerate these directories and the figure.",
+            "candidate_files": [
+                "claude_code/run_experiment.py",
+                "claude_code/framework.py",
+                "claude_code/evaluation.py"
+            ],
+            "suggested_entrypoints": [
+                "cd claude_code && python run_experiment.py --simulations 50"
+            ]
+        },
+        {
+            "index": 3,
+            "category": "figure",
+            "content": "3. figures/citation_patterns.png: Figure 4 shows citation patterns over time for deprecated datasets under different strategies",
+            "reason": "The PNG artifact exists at results/figures/citation_patterns.png. The underlying citation_pattern data exists in results/experiment_results.json under aggregate_metrics.research_impact.{CONTROL,BASIC,FULL}.citation_pattern with mean and std arrays over 6 time periods. Both create_visualizations.py and evaluation.py contain plot_citation_patterns logic. However, evaluation.py:plot_citation_patterns() reads from strategy-specific loaded results (not experiment_results.json directly), and create_visualizations.py:plot_citation_patterns_by_strategy() reads from research_impact per-simulation records (also in experiment_results.json). Static inspection cannot confirm the existing PNG matches the current data file. The run_experiment.py + evaluation.py code path can regenerate and verify.",
+            "candidate_files": [
+                "claude_code/run_experiment.py",
+                "claude_code/evaluation.py",
+                "claude_code/create_visualizations.py",
+                "results/experiment_results.json"
+            ],
+            "suggested_entrypoints": [
+                "cd claude_code && python run_experiment.py --simulations 50",
+                "cd claude_code && python create_visualizations.py"
+            ]
+        }
+    ],
+    "error": [],
+    "summary": {
+        "total_claims": 3,
+        "no_code_files": 0,
+        "obvious_hallucination": 0,
+        "data_fabrication": 0,
+        "experiment_fabrication": 0,
+        "result_fabrication": 0,
+        "static_verifiable": 0,
+        "insufficient_evidence": 0,
+        "execution_required": 3,
+        "error": 0
+    }
+}

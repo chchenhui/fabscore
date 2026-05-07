@@ -1,0 +1,1 @@
+from .paradigm3_agent import Paradigm3Agent

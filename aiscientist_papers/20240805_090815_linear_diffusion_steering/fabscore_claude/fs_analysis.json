@@ -1,0 +1,438 @@
+{
+    "no_code_files": [],
+    "obvious_hallucination": [
+        {
+            "index": 33,
+            "category": "table",
+            "content": "33. Table 2, Path Adherence (MSE), Circle: 1.667 ± 0.024",
+            "reason": "run_4.py (circular guidance) computes path_adherence at line 289 as MSE against the LINEAR path np.linspace([-1,-1],[1,1],10000), not against the circular guidance path (cos(2πt), sin(2πt)). The paper (Section 5.5) states path adherence is 'Measured as the mean squared error (MSE) between generated samples and the nearest points on the guidance path.' For circular guidance, the guidance path is circular, but the code uses the linear path as reference. The value 1.667 ≈ 5/3 is analytically explained by samples collapsing to (1,0) (the circular endpoint at t=1) and the MSE of (1,0) against the linear path being exactly 5/3. This is an evaluation protocol conflict.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_4.py:289 (path_adherence = np.mean(np.sum((sample - np.linspace([-1, -1], [1, 1], config.eval_batch_size))**2, axis=1)))",
+                "run_4.py:24-26 (circular_path function defined for guidance)",
+                "run_4.py:278 (target_point = circular_path(...) used for guidance)",
+                "run_4/final_info.json (all path_adherence values ≈ 1.6668000133...)"
+            ]
+        },
+        {
+            "index": 34,
+            "category": "table",
+            "content": "34. Table 2, Path Adherence (MSE), Dino: 1.667 ± 0.024",
+            "reason": "Same as claim 33. run_4.py computes path_adherence against the linear path, not the circular guidance path. The paper claims this measures circular path adherence but the code uses linear path as reference.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_4.py:289 (path_adherence = np.mean(np.sum((sample - np.linspace([-1, -1], [1, 1], config.eval_batch_size))**2, axis=1)))",
+                "run_4/final_info.json (dino.path_adherence = 1.666800013316863)"
+            ]
+        },
+        {
+            "index": 35,
+            "category": "table",
+            "content": "35. Table 2, Path Adherence (MSE), Line: 1.667 ± 0.024",
+            "reason": "Same as claim 33. run_4.py computes path_adherence against the linear path, not the circular guidance path.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_4.py:289 (path_adherence = np.mean(np.sum((sample - np.linspace([-1, -1], [1, 1], config.eval_batch_size))**2, axis=1)))",
+                "run_4/final_info.json (line.path_adherence = 1.6668000133152352)"
+            ]
+        },
+        {
+            "index": 36,
+            "category": "table",
+            "content": "36. Table 2, Path Adherence (MSE), Moons: 1.667 ± 0.024",
+            "reason": "Same as claim 33. run_4.py computes path_adherence against the linear path, not the circular guidance path.",
+            "fabrication_type": "experiment_fabrication",
+            "code_evidence": [
+                "run_4.py:289 (path_adherence = np.mean(np.sum((sample - np.linspace([-1, -1], [1, 1], config.eval_batch_size))**2, axis=1)))",
+                "run_4/final_info.json (moons.path_adherence = 1.6668000133141803)"
+            ]
+        }
+    ],
+    "static_verifiable": [
+        {
+            "index": 1,
+            "category": "table",
+            "content": "1. Table 1, Baseline (KL), Circle: 0.359 ± 0.012",
+            "reason": "run_0/final_info.json contains circle.kl_divergence = 0.35930819035619976 ≈ 0.359. The value matches the paper exactly.",
+            "code_evidence": [
+                "run_0/final_info.json (circle.means.kl_divergence = 0.35930819035619976)"
+            ]
+        },
+        {
+            "index": 2,
+            "category": "table",
+            "content": "2. Table 1, Baseline (KL), Dino: 1.060 ± 0.025",
+            "reason": "run_0/final_info.json contains dino.kl_divergence = 1.060376674621348 ≈ 1.060.",
+            "code_evidence": [
+                "run_0/final_info.json (dino.means.kl_divergence = 1.060376674621348)"
+            ]
+        },
+        {
+            "index": 3,
+            "category": "table",
+            "content": "3. Table 1, Baseline (KL), Line: 0.157 ± 0.008",
+            "reason": "run_0/final_info.json contains line.kl_divergence = 0.15692256311119815 ≈ 0.157.",
+            "code_evidence": [
+                "run_0/final_info.json (line.means.kl_divergence = 0.15692256311119815)"
+            ]
+        },
+        {
+            "index": 4,
+            "category": "table",
+            "content": "4. Table 1, Baseline (KL), Moons: 0.095 ± 0.006",
+            "reason": "run_0/final_info.json contains moons.kl_divergence = 0.09455949519397541 ≈ 0.095.",
+            "code_evidence": [
+                "run_0/final_info.json (moons.means.kl_divergence = 0.09455949519397541)"
+            ]
+        },
+        {
+            "index": 5,
+            "category": "table",
+            "content": "5. Table 1, Linear 0.1 (KL), Circle: 17.288 ± 0.231",
+            "reason": "run_2/final_info.json contains circle.kl_divergence = 17.288345063542696 ≈ 17.288. run_2.py confirmed to use guidance_strength=0.1 (linear). notes.txt confirms run_2 = Linear Guidance (strength 0.1).",
+            "code_evidence": [
+                "run_2/final_info.json (circle.means.kl_divergence = 17.288345063542696)",
+                "notes.txt (Run 2: Linear Guidance strength 0.1)"
+            ]
+        },
+        {
+            "index": 6,
+            "category": "table",
+            "content": "6. Table 1, Linear 0.1 (KL), Dino: 16.365 ± 0.198",
+            "reason": "run_2/final_info.json contains dino.kl_divergence = 16.365373241231307 ≈ 16.365.",
+            "code_evidence": [
+                "run_2/final_info.json (dino.means.kl_divergence = 16.365373241231307)"
+            ]
+        },
+        {
+            "index": 7,
+            "category": "table",
+            "content": "7. Table 1, Linear 0.1 (KL), Line: 9.706 ± 0.145",
+            "reason": "run_2/final_info.json contains line.kl_divergence = 9.7063613595054 ≈ 9.706.",
+            "code_evidence": [
+                "run_2/final_info.json (line.means.kl_divergence = 9.7063613595054)"
+            ]
+        },
+        {
+            "index": 8,
+            "category": "table",
+            "content": "8. Table 1, Linear 0.1 (KL), Moons: 11.909 ± 0.176",
+            "reason": "run_2/final_info.json contains moons.kl_divergence = 11.908892623193323 ≈ 11.909.",
+            "code_evidence": [
+                "run_2/final_info.json (moons.means.kl_divergence = 11.908892623193323)"
+            ]
+        },
+        {
+            "index": 9,
+            "category": "table",
+            "content": "9. Table 1, Linear 0.5 (KL), Circle: 17.516 ± 0.224",
+            "reason": "run_1/final_info.json contains circle.kl_divergence = 17.515974234063908 ≈ 17.516. run_1.py confirmed to use guidance_strength=0.5.",
+            "code_evidence": [
+                "run_1/final_info.json (circle.means.kl_divergence = 17.515974234063908)",
+                "notes.txt (Run 1: Linear Guidance strength 0.5)"
+            ]
+        },
+        {
+            "index": 10,
+            "category": "table",
+            "content": "10. Table 1, Linear 0.5 (KL), Dino: 16.918 ± 0.205",
+            "reason": "run_1/final_info.json contains dino.kl_divergence = 16.91786197748861 ≈ 16.918.",
+            "code_evidence": [
+                "run_1/final_info.json (dino.means.kl_divergence = 16.91786197748861)"
+            ]
+        },
+        {
+            "index": 11,
+            "category": "table",
+            "content": "11. Table 1, Linear 0.5 (KL), Line: 10.160 ± 0.152",
+            "reason": "run_1/final_info.json contains line.kl_divergence = 10.159697932805406 ≈ 10.160.",
+            "code_evidence": [
+                "run_1/final_info.json (line.means.kl_divergence = 10.159697932805406)"
+            ]
+        },
+        {
+            "index": 12,
+            "category": "table",
+            "content": "12. Table 1, Linear 0.5 (KL), Moons: 12.549 ± 0.183",
+            "reason": "run_1/final_info.json contains moons.kl_divergence = 12.548853760689656 ≈ 12.549.",
+            "code_evidence": [
+                "run_1/final_info.json (moons.means.kl_divergence = 12.548853760689656)"
+            ]
+        },
+        {
+            "index": 13,
+            "category": "table",
+            "content": "13. Table 1, Linear 1.0 (KL), Circle: 17.542 ± 0.226",
+            "reason": "run_3/final_info.json contains circle.kl_divergence = 17.541999380394806 ≈ 17.542. run_3.py confirmed to use guidance_strength=1.0.",
+            "code_evidence": [
+                "run_3/final_info.json (circle.means.kl_divergence = 17.541999380394806)",
+                "notes.txt (Run 3: Linear Guidance strength 1.0)"
+            ]
+        },
+        {
+            "index": 14,
+            "category": "table",
+            "content": "14. Table 1, Linear 1.0 (KL), Dino: 16.971 ± 0.207",
+            "reason": "run_3/final_info.json contains dino.kl_divergence = 16.97088819693374 ≈ 16.971.",
+            "code_evidence": [
+                "run_3/final_info.json (dino.means.kl_divergence = 16.97088819693374)"
+            ]
+        },
+        {
+            "index": 15,
+            "category": "table",
+            "content": "15. Table 1, Linear 1.0 (KL), Line: 10.210 ± 0.153",
+            "reason": "run_3/final_info.json contains line.kl_divergence = 10.210457162439498 ≈ 10.210.",
+            "code_evidence": [
+                "run_3/final_info.json (line.means.kl_divergence = 10.210457162439498)"
+            ]
+        },
+        {
+            "index": 16,
+            "category": "table",
+            "content": "16. Table 1, Linear 1.0 (KL), Moons: 12.588 ± 0.184",
+            "reason": "run_3/final_info.json contains moons.kl_divergence = 12.587895729546517 ≈ 12.588.",
+            "code_evidence": [
+                "run_3/final_info.json (moons.means.kl_divergence = 12.587895729546517)"
+            ]
+        },
+        {
+            "index": 17,
+            "category": "table",
+            "content": "17. Table 1, Linear 0.1 (MSE), Circle: 1.035 ± 0.018",
+            "reason": "run_2/final_info.json contains circle.path_adherence = 1.0345632309035553 ≈ 1.035. Metric is MSE against linear path, correct for linear guidance.",
+            "code_evidence": [
+                "run_2/final_info.json (circle.means.path_adherence = 1.0345632309035553)"
+            ]
+        },
+        {
+            "index": 18,
+            "category": "table",
+            "content": "18. Table 1, Linear 0.1 (MSE), Dino: 1.772 ± 0.025",
+            "reason": "run_2/final_info.json contains dino.path_adherence = 1.7720649566405584 ≈ 1.772.",
+            "code_evidence": [
+                "run_2/final_info.json (dino.means.path_adherence = 1.7720649566405584)"
+            ]
+        },
+        {
+            "index": 19,
+            "category": "table",
+            "content": "19. Table 1, Linear 0.1 (MSE), Line: 2.029 ± 0.028",
+            "reason": "run_2/final_info.json contains line.path_adherence = 2.028955484070001 ≈ 2.029.",
+            "code_evidence": [
+                "run_2/final_info.json (line.means.path_adherence = 2.028955484070001)"
+            ]
+        },
+        {
+            "index": 20,
+            "category": "table",
+            "content": "20. Table 1, Linear 0.1 (MSE), Moons: 1.471 ± 0.022",
+            "reason": "run_2/final_info.json contains moons.path_adherence = 1.4711351961414003 ≈ 1.471.",
+            "code_evidence": [
+                "run_2/final_info.json (moons.means.path_adherence = 1.4711351961414003)"
+            ]
+        },
+        {
+            "index": 21,
+            "category": "table",
+            "content": "21. Table 1, Linear 0.5 (MSE), Circle: 2.674 ± 0.031",
+            "reason": "run_1/final_info.json contains circle.path_adherence = 2.67429567551963 ≈ 2.674.",
+            "code_evidence": [
+                "run_1/final_info.json (circle.means.path_adherence = 2.67429567551963)"
+            ]
+        },
+        {
+            "index": 22,
+            "category": "table",
+            "content": "22. Table 1, Linear 0.5 (MSE), Dino: 2.635 ± 0.030",
+            "reason": "run_1/final_info.json contains dino.path_adherence = 2.6348314171342224 ≈ 2.635.",
+            "code_evidence": [
+                "run_1/final_info.json (dino.means.path_adherence = 2.6348314171342224)"
+            ]
+        },
+        {
+            "index": 23,
+            "category": "table",
+            "content": "23. Table 1, Linear 0.5 (MSE), Line: 2.588 ± 0.029",
+            "reason": "run_1/final_info.json contains line.path_adherence = 2.5881052239642055 ≈ 2.588.",
+            "code_evidence": [
+                "run_1/final_info.json (line.means.path_adherence = 2.5881052239642055)"
+            ]
+        },
+        {
+            "index": 24,
+            "category": "table",
+            "content": "24. Table 1, Linear 0.5 (MSE), Moons: 2.650 ± 0.030",
+            "reason": "run_1/final_info.json contains moons.path_adherence = 2.6499252183728186 ≈ 2.650.",
+            "code_evidence": [
+                "run_1/final_info.json (moons.means.path_adherence = 2.6499252183728186)"
+            ]
+        },
+        {
+            "index": 25,
+            "category": "table",
+            "content": "25. Table 1, Linear 1.0 (MSE), Circle: 2.667 ± 0.031",
+            "reason": "run_3/final_info.json contains circle.path_adherence = 2.666800013334667 ≈ 2.667. The uniform value across datasets is explained by guidance_strength=1.0 causing all samples to collapse to the path endpoint [1,1], giving MSE = 8/3 ≈ 2.667 against the linear path. The metric is correctly applied to the linear guidance.",
+            "code_evidence": [
+                "run_3/final_info.json (circle.means.path_adherence = 2.666800013334667)",
+                "run_3.py:292 (path_adherence against linear path)"
+            ]
+        },
+        {
+            "index": 26,
+            "category": "table",
+            "content": "26. Table 1, Linear 1.0 (MSE), Dino: 2.667 ± 0.031",
+            "reason": "run_3/final_info.json contains dino.path_adherence = 2.666800013334667 ≈ 2.667. Same explanation as claim 25.",
+            "code_evidence": [
+                "run_3/final_info.json (dino.means.path_adherence = 2.666800013334667)"
+            ]
+        },
+        {
+            "index": 27,
+            "category": "table",
+            "content": "27. Table 1, Linear 1.0 (MSE), Line: 2.667 ± 0.031",
+            "reason": "run_3/final_info.json contains line.path_adherence = 2.666800013334667 ≈ 2.667. Same explanation as claim 25.",
+            "code_evidence": [
+                "run_3/final_info.json (line.means.path_adherence = 2.666800013334667)"
+            ]
+        },
+        {
+            "index": 28,
+            "category": "table",
+            "content": "28. Table 1, Linear 1.0 (MSE), Moons: 2.667 ± 0.031",
+            "reason": "run_3/final_info.json contains moons.path_adherence = 2.666800013334667 ≈ 2.667. Same explanation as claim 25.",
+            "code_evidence": [
+                "run_3/final_info.json (moons.means.path_adherence = 2.666800013334667)"
+            ]
+        },
+        {
+            "index": 29,
+            "category": "table",
+            "content": "29. Table 2, KL Divergence, Circle: 17.578 ± 0.227",
+            "reason": "run_4/final_info.json contains circle.kl_divergence = 17.5779328241281 ≈ 17.578. KL divergence computation is correct and identical across all runs.",
+            "code_evidence": [
+                "run_4/final_info.json (circle.means.kl_divergence = 17.5779328241281)",
+                "notes.txt (Run 4: Circular Guidance strength 1.0)"
+            ]
+        },
+        {
+            "index": 30,
+            "category": "table",
+            "content": "30. Table 2, KL Divergence, Dino: 16.810 ± 0.204",
+            "reason": "run_4/final_info.json contains dino.kl_divergence = 16.810326505794283 ≈ 16.810.",
+            "code_evidence": [
+                "run_4/final_info.json (dino.means.kl_divergence = 16.810326505794283)"
+            ]
+        },
+        {
+            "index": 31,
+            "category": "table",
+            "content": "31. Table 2, KL Divergence, Line: 10.120 ± 0.151",
+            "reason": "run_4/final_info.json contains line.kl_divergence = 10.119635704510038 ≈ 10.120.",
+            "code_evidence": [
+                "run_4/final_info.json (line.means.kl_divergence = 10.119635704510038)"
+            ]
+        },
+        {
+            "index": 32,
+            "category": "table",
+            "content": "32. Table 2, KL Divergence, Moons: 12.642 ± 0.185",
+            "reason": "run_4/final_info.json contains moons.kl_divergence = 12.642125176993625 ≈ 12.642.",
+            "code_evidence": [
+                "run_4/final_info.json (moons.means.kl_divergence = 12.642125176993625)"
+            ]
+        },
+        {
+            "index": 37,
+            "category": "table",
+            "content": "37. Table 3, Without Guidance, KL Divergence: 0.157 ± 0.008",
+            "reason": "run_0/final_info.json contains line.kl_divergence = 0.15692256311119815 ≈ 0.157. Table 3 uses Line dataset for the ablation study, and this matches exactly.",
+            "code_evidence": [
+                "run_0/final_info.json (line.means.kl_divergence = 0.15692256311119815)"
+            ]
+        },
+        {
+            "index": 39,
+            "category": "table",
+            "content": "39. Table 3, With Guidance (λ = 0.5), KL Divergence: 10.160 ± 0.152",
+            "reason": "run_1/final_info.json contains line.kl_divergence = 10.159697932805406 ≈ 10.160. This is the Line dataset with Linear 0.5 guidance.",
+            "code_evidence": [
+                "run_1/final_info.json (line.means.kl_divergence = 10.159697932805406)"
+            ]
+        },
+        {
+            "index": 40,
+            "category": "table",
+            "content": "40. Table 3, With Guidance (λ = 0.5), Path Adherence (MSE): 2.588 ± 0.029",
+            "reason": "run_1/final_info.json contains line.path_adherence = 2.5881052239642055 ≈ 2.588. Metric correctly uses linear path reference for linear guidance.",
+            "code_evidence": [
+                "run_1/final_info.json (line.means.path_adherence = 2.5881052239642055)"
+            ]
+        }
+    ],
+    "insufficient_evidence": [
+        {
+            "index": 38,
+            "category": "table",
+            "content": "38. Table 3, Without Guidance, Path Adherence (MSE): 3.842 ± 0.045",
+            "reason": "The run_0/final_info.json for the baseline does NOT contain path_adherence — only kl_divergence, training_time, eval_loss, and inference_time are stored. No all_results.pkl files exist in any run directory (confirmed by glob search). The baseline script (which generated run_0) did not compute path_adherence. No repo-native code path can verify this value without both retraining the baseline model and adding path_adherence computation to the baseline script. The value 3.842 cannot be traced to any stored artifact in the repository.",
+            "code_evidence": [
+                "run_0/final_info.json (no path_adherence key present)",
+                "notes.txt Run 0 (no path_adherence in stored results)",
+                "glob(**/all_results.pkl) returned empty (no pkl files exist anywhere)"
+            ]
+        }
+    ],
+    "execution_required": [
+        {
+            "index": 41,
+            "category": "figure",
+            "content": "1. Figure 1: Generated samples for different datasets and guidance methods. Rows from top to bottom: baseline (no guidance), linear guidance with strengths 0.5, 0.1, 1.0, and circular guidance with strength 1.0. Red dashed lines indicate target paths.",
+            "reason": "The generated_samples.png file exists but all_results.pkl files are missing from all run directories (confirmed by glob search). plot.py requires all_results.pkl files (line 30) to generate Figure 1. Verification of the figure content would require rerunning run_0.py through run_4.py to regenerate the sample data, then running plot.py. The figure image file alone is insufficient for static verification.",
+            "candidate_files": [
+                "plot.py",
+                "run_1.py",
+                "run_2.py",
+                "run_3.py",
+                "run_4.py",
+                "experiment.py"
+            ],
+            "suggested_entrypoints": [
+                "python run_1.py --out_dir run_1",
+                "python run_2.py --out_dir run_2",
+                "python run_3.py --out_dir run_3",
+                "python run_4.py --out_dir run_4",
+                "python plot.py"
+            ]
+        },
+        {
+            "index": 42,
+            "category": "figure",
+            "content": "2. Figure 2: Trade-off between KL divergence and path adherence for different guidance methods and strengths. Points closer to the origin represent better overall performance. Error bars represent standard deviation over 5 runs.",
+            "reason": "The kl_path_tradeoff.png file exists. The underlying KL and path_adherence data is in the final_info.json files for runs 1-4, which match the paper's table values. However, plot.py requires all_results.pkl (line 30) even for Plot 4 (trade-off scatter), so it cannot be run without the pkl files. Additionally, the error bars require 5 replications of each experiment which are not present in the repository. Note: the path_adherence data for circular guidance (run_4) was measured against the linear path rather than the circular path (see claims 33-36).",
+            "candidate_files": [
+                "plot.py",
+                "run_1/final_info.json",
+                "run_2/final_info.json",
+                "run_3/final_info.json",
+                "run_4/final_info.json"
+            ],
+            "suggested_entrypoints": [
+                "python plot.py"
+            ]
+        }
+    ],
+    "error": [],
+    "summary": {
+        "total_claims": 42,
+        "no_code_files": 0,
+        "obvious_hallucination": 4,
+        "data_fabrication": 0,
+        "experiment_fabrication": 4,
+        "result_fabrication": 0,
+        "static_verifiable": 35,
+        "insufficient_evidence": 1,
+        "execution_required": 2,
+        "error": 0
+    }
+}

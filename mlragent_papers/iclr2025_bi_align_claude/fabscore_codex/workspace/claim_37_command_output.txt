@@ -1,0 +1,238 @@
+===== COMMAND =====
+nl -ba results/paper.md | sed -n '368,388p'
+===== STDOUT/STDERR =====
+   368	#### 5.2.3 Value Conflict Scenario
+   369	
+   370	Figure 15 shows the alignment scores for the value_conflict scenario, which features tensions between different value dimensions.
+   371	
+   372	![Alignment Comparison](./figures/alignment_comparison_value_conflict.png)
+   373	*Figure 15: Comparison of alignment scores for value_conflict scenario*
+   374	
+   375	In this scenario, the adaptive models generally maintained higher alignment scores than the static model, but with more fluctuation than in other scenarios, reflecting the challenge of adapting to conflicting value signals.
+   376	
+   377	The human value evolution in this scenario (Figure 16) shows complex patterns of interaction between different value dimensions.
+   378	
+   379	![Human Value Evolution](./figures/human_value_evolution_value_conflict.png)
+   380	*Figure 16: Evolution of human values in value_conflict scenario*
+   381	
+   382	Figures 17-20 show how each model's value representation responded to these complex value dynamics.
+   383	
+   384	![static_alignment Value Evolution](./figures/model_value_evolution_static_alignment_value_conflict.png)
+   385	*Figure 17: Evolution of static_alignment values in value_conflict scenario*
+   386	
+   387	![adaptive_alignment Value Evolution](./figures/model_value_evolution_adaptive_alignment_value_conflict.png)
+   388	*Figure 18: Evolution of adaptive_alignment values in value_conflict scenario*
+
+===== END COMMAND =====
+
+===== COMMAND =====
+nl -ba claude_code/evaluation.py | sed -n '100,160p'
+===== STDOUT/STDERR =====
+   100	        """
+   101	        # Initialize results dictionary
+   102	        results = {
+   103	            "scenario_name": self.name,
+   104	            "scenario_description": self.description,
+   105	            "duration": self.duration,
+   106	            "models": {},
+   107	            "raw_data": {
+   108	                "human_values": [],
+   109	                "model_values": {},
+   110	                "alignment_scores": {},
+   111	                "response_times": {},
+   112	                "responses": {}
+   113	            }
+   114	        }
+   115	        
+   116	        # Run simulation step by step
+   117	        for t in range(self.duration):
+   118	            # Step the human value simulation forward
+   119	            self.simulation.step()
+   120	            
+   121	            # Record human values for each agent
+   122	            human_values_at_t = []
+   123	            for agent in self.simulation.agents:
+   124	                human_values_at_t.append(agent.value_system.values.copy())
+   125	            results["raw_data"]["human_values"].append(human_values_at_t)
+   126	            
+   127	            # Update each model with current human values
+   128	            for model in models:
+   129	                # We'll use the first agent's values for simplicity
+   130	                # In a more complex evaluation, we might consider aggregating across agents
+   131	                human_values = self.simulation.agents[0].value_system
+   132	                
+   133	                # Generate a query for response time measurement
+   134	                # (This is a placeholder - in a real system, we'd have actual queries)
+   135	                query = f"Query at time {t}"
+   136	                
+   137	                # Measure response time
+   138	                start_time = time.time()
+   139	                response = model.generate_response(query, human_values)
+   140	                end_time = time.time()
+   141	                response_time = end_time - start_time
+   142	                
+   143	                # Update model based on human values
+   144	                model.update(human_values)
+   145	                
+   146	                # Record model values and metrics
+   147	                if model.name not in results["raw_data"]["model_values"]:
+   148	                    results["raw_data"]["model_values"][model.name] = []
+   149	                    results["raw_data"]["alignment_scores"][model.name] = []
+   150	                    results["raw_data"]["response_times"][model.name] = []
+   151	                    results["raw_data"]["responses"][model.name] = []
+   152	                
+   153	                results["raw_data"]["model_values"][model.name].append(model.value_system.values.copy())
+   154	                results["raw_data"]["alignment_scores"][model.name].append(model.alignment_scores[-1])
+   155	                results["raw_data"]["response_times"][model.name].append(response_time)
+   156	                results["raw_data"]["responses"][model.name].append(response)
+   157	                
+   158	        # Calculate evaluation metrics for each model
+   159	        for model in models:
+   160	            model_metrics = self._calculate_metrics(model, results["raw_data"])
+
+===== END COMMAND =====
+
+===== COMMAND =====
+nl -ba claude_code/alignment_models.py | sed -n '117,170p'
+===== STDOUT/STDERR =====
+   117	class StaticAlignmentModel(BaseAlignmentModel):
+   118	    """
+   119	    Traditional static alignment model that does not adapt to changes in human values.
+   120	    Once initial alignment is established, the model's values remain fixed.
+   121	    """
+   122	    def __init__(
+   123	        self,
+   124	        value_dimensions: List[str],
+   125	        name: str = "static_alignment",
+   126	        description: str = "Traditional static alignment model - no adaptation",
+   127	        random_seed: Optional[int] = None
+   128	    ):
+   129	        """Initialize a static alignment model."""
+   130	        super().__init__(value_dimensions, name, description, random_seed)
+   131	        self.initialized = False
+   132	    
+   133	    def update(self, human_values: ValueSystem) -> None:
+   134	        """
+   135	        Update the model's value system based on human values.
+   136	        For static alignment, this only happens once at initialization.
+   137	        
+   138	        Args:
+   139	            human_values: Human value system to align with
+   140	        """
+   141	        # Only align once at the beginning
+   142	        if not self.initialized:
+   143	            # Copy human values exactly
+   144	            for dim in self.value_dimensions:
+   145	                self.value_system.set_value(dim, human_values.get_value(dim))
+   146	            self.initialized = True
+   147	            
+   148	        # Record current values in history
+   149	        self.value_history.append(self.value_system.values.copy())
+   150	        
+   151	        # Calculate and record alignment score
+   152	        alignment_score = self.calculate_alignment_score(human_values)
+   153	        self.alignment_scores.append(alignment_score)
+   154	        
+   155	    def generate_response(self, query: str, human_values: ValueSystem) -> Dict:
+   156	        """
+   157	        Generate a response to a user query based on the current value system.
+   158	        
+   159	        Args:
+   160	            query: User query
+   161	            human_values: Human value system to consider
+   162	            
+   163	        Returns:
+   164	            Dictionary with response text and metadata
+   165	        """
+   166	        # Calculate alignment score
+   167	        alignment_score = self.calculate_alignment_score(human_values)
+   168	        
+   169	        # Simplified response generation:
+   170	        # Response quality depends on alignment score
+
+===== END COMMAND =====
+
+===== COMMAND =====
+nl -ba claude_code/visualization.py | sed -n '362,401p'
+===== STDOUT/STDERR =====
+   362	    for scenario_name, scenario_results in results['scenarios'].items():
+   363	        # Plot alignment comparison for this scenario
+   364	        figure_paths[f'alignment_{scenario_name}'] = plot_comparative_alignment(
+   365	            scenario_results,
+   366	            f'alignment_comparison_{scenario_name}',
+   367	            figures_dir,
+   368	            config,
+   369	            title="Alignment Score Comparison"
+   370	        )
+   371	        
+   372	        # Plot human value evolution
+   373	        human_values = np.array(scenario_results['raw_data']['human_values'])[:, 0, :]  # First agent only
+   374	        human_df = pd.DataFrame(
+   375	            human_values,
+   376	            columns=results['overall']['value_dimensions']
+   377	        )
+   378	        
+   379	        figure_paths[f'human_values_{scenario_name}'] = plot_value_evolution(
+   380	            human_df,
+   381	            f'human_value_evolution_{scenario_name}',
+   382	            figures_dir,
+   383	            config,
+   384	            title="Human Value Evolution"
+   385	        )
+   386	        
+   387	        # Plot model value evolution for each model
+   388	        for model_name in scenario_results['models']:
+   389	            model_values = np.array(scenario_results['raw_data']['model_values'][model_name])
+   390	            model_df = pd.DataFrame(
+   391	                model_values,
+   392	                columns=results['overall']['value_dimensions']
+   393	            )
+   394	            
+   395	            figure_paths[f'model_values_{model_name}_{scenario_name}'] = plot_value_evolution(
+   396	                model_df,
+   397	                f'model_value_evolution_{model_name}_{scenario_name}',
+   398	                figures_dir,
+   399	                config,
+   400	                title=f"{model_name} Value Evolution"
+   401	            )
+
+===== END COMMAND =====
+
+===== COMMAND =====
+python - <<'PY'
+import json
+from pathlib import Path
+p = Path('fabscore_codex/workspace/claim_23_run_json/results/results.json')
+obj = json.loads(p.read_text())
+series = obj['scenarios']['value_conflict']['raw_data']['model_values']['static_alignment']
+dims = obj['overall']['value_dimensions']
+print('artifact=', p)
+print('num_steps=', len(series))
+print('num_dims=', len(series[0]) if series else 0)
+print('dims=', dims)
+for idx in [0, 30, 60, 99]:
+    print(f'step_{idx}=', series[idx])
+all_same = all(step == series[0] for step in series)
+print('all_steps_identical=', all_same)
+for i, dim in enumerate(dims):
+    vals = [step[i] for step in series]
+    print(f'{dim}: min={min(vals)} max={max(vals)}')
+PY
+===== STDOUT/STDERR =====
+artifact= fabscore_codex/workspace/claim_23_run_json/results/results.json
+num_steps= 100
+num_dims= 5
+dims= ['autonomy', 'benevolence', 'security', 'achievement', 'conformity']
+step_0= [0.2460547692964301, 0.15883352327454953, 0.33538477237959835, 0.11409834365484313, 0.14562859139457895]
+step_30= [0.2460547692964301, 0.15883352327454953, 0.33538477237959835, 0.11409834365484313, 0.14562859139457895]
+step_60= [0.2460547692964301, 0.15883352327454953, 0.33538477237959835, 0.11409834365484313, 0.14562859139457895]
+step_99= [0.2460547692964301, 0.15883352327454953, 0.33538477237959835, 0.11409834365484313, 0.14562859139457895]
+all_steps_identical= True
+autonomy: min=0.2460547692964301 max=0.2460547692964301
+benevolence: min=0.15883352327454953 max=0.15883352327454953
+security: min=0.33538477237959835 max=0.33538477237959835
+achievement: min=0.11409834365484313 max=0.11409834365484313
+conformity: min=0.14562859139457895 max=0.14562859139457895
+
+===== END COMMAND =====
+

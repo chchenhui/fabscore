@@ -1,0 +1,55 @@
+{
+    "tables": [],
+    "figures": [
+        {
+            "claim_index": 41,
+            "claim": "2. Figure 2: Pareto frontier of oversight risk vs. cost.",
+            "verdict": "Insufficient Evidence",
+            "explanation": "Execution stage: The repository contains plausible risk/cost machinery, but after reasonable execution attempts it still does not generate claim-specific evidence for Figure 2. The successful demo run yields only degenerate depth-0, zero-cost episode metrics and no underlying risk-vs-cost frontier artifact, so the claimed Pareto frontier cannot be verified from this repository.",
+            "evidence": "Fresh execution log at fabscore_codex/workspace/claim_41_command_output.txt shows the repo-native entrypoint first failed with ModuleNotFoundError: No module named 'nsrag'. A bounded follow-up run with PYTHONPATH='325_Scalable_Oversight_in_Mult_Supplementary Material/code' completed and regenerated 325_Scalable_Oversight_in_Mult_Supplementary Material/outputs/hdo_demo_results.json and hdo_evaluation_report.txt, but those outputs contain only 6 episode records, all with total_cost=0.0 and delegation_depth=0, plus aggregate metrics; no Pareto-frontier table, sweep, plot data, CSV, NPY, or plotting script was produced. | Code: 325_Scalable_Oversight_in_Mult_Supplementary Material/scripts/hdo_demo.py:21-24,233-330; 325_Scalable_Oversight_in_Mult_Supplementary Material/code/nsrag/hdo/hdo_system.py:180-235,291-346,401-474; 325_Scalable_Oversight_in_Mult_Supplementary Material/code/nsrag/hdo/routing.py:101-187,189-215; 325_Scalable_Oversight_in_Mult_Supplementary Material/code/nsrag/hdo/risk_bounds.py:353-396",
+            "detection_mode": "code_execution",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "325_Scalable_Oversight_in_Mult_Supplementary Material/scripts/hdo_demo.py:21-24,233-330",
+                    "325_Scalable_Oversight_in_Mult_Supplementary Material/code/nsrag/hdo/hdo_system.py:180-235,291-346,401-474",
+                    "325_Scalable_Oversight_in_Mult_Supplementary Material/code/nsrag/hdo/routing.py:101-187,189-215",
+                    "325_Scalable_Oversight_in_Mult_Supplementary Material/code/nsrag/hdo/risk_bounds.py:353-396"
+                ],
+                "commands_executed": [
+                    "python3 '325_Scalable_Oversight_in_Mult_Supplementary Material/scripts/hdo_demo.py'; PYTHONPATH='325_Scalable_Oversight_in_Mult_Supplementary Material/code' python3 '325_Scalable_Oversight_in_Mult_Supplementary Material/scripts/hdo_demo.py'"
+                ]
+            }
+        }
+    ],
+    "results_section": [
+        {
+            "claim_index": 47,
+            "claim": "6. we observe diminishing returns beyond depth ≈ 3.",
+            "verdict": "Experiment Fabrication",
+            "explanation": "Execution stage: The paper’s claim is an empirical Section 6.3 observation about diminishing returns beyond depth ≈ 3. The repository’s claim-relevant depth-analysis path exists (`analyze_depth_scaling`), but a minimal reproduction of that path crashes due to an internal code defect before producing any depth-vs-benefit measurements. With no shipped raw ablation data to fall back on, the experiment path needed to support this claim is not executable as provided.",
+            "evidence": "`fabscore_codex/workspace/claim_47_command_output.txt` captures a fresh execution attempt of `PAC_BayesianRiskBound.analyze_depth_scaling(...)` that fails with `NameError: name 'NodeStatus' is not defined` in `risk_bounds.py`. The repository also contains no saved depth-sweep/raw ablation artifact for the Section 6.3 claim; the shipped demo outputs only depth-0 episodes. | Code: 325_Scalable_Oversight_in_Mult_Supplementary Material/code/nsrag/hdo/risk_bounds.py:165-180 (`_calculate_empirical_risk`, references `NodeStatus` without import); 325_Scalable_Oversight_in_Mult_Supplementary Material/code/nsrag/hdo/risk_bounds.py:353-403 (`analyze_depth_scaling`)",
+            "detection_mode": "execution_artifact_analysis",
+            "decision_stage": "execution",
+            "verification_process": {
+                "files_analyzed": [
+                    "325_Scalable_Oversight_in_Mult_Supplementary Material/code/nsrag/hdo/risk_bounds.py:165-180 (`_calculate_empirical_risk`, references `NodeStatus` without import)",
+                    "325_Scalable_Oversight_in_Mult_Supplementary Material/code/nsrag/hdo/risk_bounds.py:353-403 (`analyze_depth_scaling`)"
+                ],
+                "commands_executed": [
+                    "mkdir -p fabscore_codex/workspace && { echo '===== COMMAND ====='; echo 'PYTHONPATH=\"325_Scalable_Oversight_in_Mult_Supplementary Material/code\" python3 - <<'\"'\"'PY'\"'\"''; PYTHONPATH=\"325_Scalable_Oversight_in_Mult_Supplementary Material/code\" python3 - <<'PY'\nimport json\nfrom pathlib import Path\nfrom nsrag.hdo.risk_bounds import PAC_BayesianRiskBound\nfrom nsrag.hdo.debate_tree import DebateTree, ClaimType, NodeStatus\nfrom nsrag.hdo.verifiers import VerificationResult, VerifierType\n\nOUT = Path('fabscore_codex/workspace/claim_47_depth_sweep.json')\ncalc = PAC_BayesianRiskBound()\n\ndef build_chain(depth: int):\n    tree = DebateTree(root_claim='claim_47_depth_sweep')\n    root = tree.root_node\n    root.status = NodeStatus.VERIFIED\n    root.verification_result = True\n    root.confidence = 0.95\n    root.uncertainty = 0.05\n    root.verification_cost = 1.0\n    tree.total_cost = 1.0\n    parent_id = tree.root_id\n    for i in range(depth):\n        child_id = tree.add_node(f'subclaim_{i}', ClaimType.ALIGNMENT, parent_id)\n        node = tree.nodes[child_id]\n        node.status = NodeStatus.VERIFIED\n        node.verification_result = True\n        node.confidence = 0.95\n        node.uncertainty = 0.05\n        node.verification_cost = 1.0\n        tree.total_cost += 1.0\n        parent_id = child_id\n    verification_results = {}\n    aggregations = {}\n    for node in tree.nodes.values():\n        verification_results[node.id] = [VerificationResult(claim_id=node.id, verifier_id='synthetic', verifier_type=VerifierType.NLI, is_valid=True, confidence=node.confidence, uncertainty=node.uncertainty, cost=node.verification_cost, latency=0.0, evidence=[], explanation='synthetic fixed verification for claim 47 depth sweep', method_details={'depth': depth})]\n    return tree, verification_results, aggregations\n\ntrees_by_depth = {}\nresults_by_tree = {}\naggregations_by_tree = {}\nfor depth in range(0, 7):\n    tree, verification_results, aggregations = build_chain(depth)\n    trees_by_depth[depth] = [tree]\n    results_by_tree[tree.root_id] = verification_results\n    aggregations_by_tree[tree.root_id] = aggregations\n\nanalysis = calc.analyze_depth_scaling(trees_by_depth, results_by_tree, aggregations_by_tree)\nprint(json.dumps(analysis, indent=2))\nPY\n echo '===== END COMMAND ====='; } 2>&1 | tee fabscore_codex/workspace/claim_47_command_output.txt"
+                ]
+            }
+        }
+    ],
+    "summary": {
+        "total": 2,
+        "verified": 0,
+        "data_fabrication": 0,
+        "experiment_fabrication": 1,
+        "result_fabrication": 0,
+        "no_code_files": 0,
+        "insufficient_evidence": 1,
+        "error": 0
+    }
+}

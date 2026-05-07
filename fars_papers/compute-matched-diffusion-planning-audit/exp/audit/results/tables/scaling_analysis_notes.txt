@@ -1,0 +1,91 @@
+Scaling Analysis: Qwen2.5-7B Best-of-k Accuracy vs. Number of Samples
+=====================================================================
+
+Data source: optimized best-of-k outputs (temperature=1.2, top_p=0.95, stop=["\n\n"])
+Seeds: 42, 123, 456 (mean +/- std reported)
+k_max: 35 (Countdown), 39 (Mini Sudoku)
+
+--- Countdown ---
+j       Mean Acc    Std
+1       2.3%        1.7%
+2       5.1%        2.1%
+4       9.1%        1.4%
+8       17.3%       0.7%
+16      27.3%       1.2%
+32      37.9%       1.4%
+35      39.1%       1.4%
+
+Dream accuracy: 6.6%
+Qwen greedy accuracy: 6.0%
+
+--- Mini Sudoku ---
+j       Mean Acc    Std
+1       7.3%        1.6%
+2       13.0%       0.8%
+4       23.0%       1.9%
+8       34.5%       2.7%
+16      46.9%       2.1%
+32      62.5%       0.3%
+39      67.2%       0.4%
+
+Dream accuracy: 77.6%
+Qwen greedy accuracy: 16.8%
+
+
+ANALYSIS
+========
+
+1. Does Qwen best-of-k accuracy plateau before reaching Dream's level?
+
+   Countdown: NO. The curve rises steeply throughout the range j=1..35 with no
+   sign of plateau. The marginal gain from j=16 to j=32 is +10.6pp, indicating
+   strong continued scaling. Qwen massively exceeds Dream (39.1% vs 6.6%) well
+   before reaching the compute budget.
+
+   Mini Sudoku: PARTIAL DECELERATION. The curve shows decelerating growth: gains
+   of +15.6pp from j=16 to j=32, but only +4.7pp from j=32 to j=39. The curve
+   has not fully plateaued, but the marginal returns are diminishing. At k=39,
+   Qwen (67.2%) is still 10.4pp below Dream (77.6%).
+
+2. Does Qwen best-of-k cross Dream's accuracy before or after the compute-matched k?
+
+   Countdown: WELL BEFORE. Qwen crosses Dream's 6.6% at approximately j=3-4,
+   requiring only ~10% of the compute-matched budget to surpass Dream. By the
+   compute-matched k=35, Qwen is 32.5pp ahead of Dream.
+
+   Mini Sudoku: DOES NOT CROSS by the compute-matched k. At k=39 (compute-matched),
+   Qwen achieves 67.2%, still 10.4pp below Dream's 77.6%. The compute-matched
+   budget is insufficient for the AR model to match diffusion on this task.
+
+3. Approximate k at which Qwen would match Dream (extrapolation)?
+
+   Countdown: Already matched at j~4. No extrapolation needed.
+
+   Mini Sudoku: Log-linear regression (acc = 0.168 * ln(j) + 0.027, R on data
+   j=1..39) estimates Qwen would reach 77.6% at approximately j=87. This is
+   roughly 2.2x the compute-matched budget (k=39). While not trivially small,
+   it is feasible (under 100 samples) and suggests the diffusion advantage on
+   Sudoku could in principle be closed by spending ~2x more AR compute. However,
+   this is extrapolation beyond the observed range and actual convergence may be
+   slower due to diminishing returns.
+
+SUMMARY
+=======
+
+The scaling behavior is task-dependent:
+
+- On Countdown (arithmetic reasoning), Qwen best-of-k scales efficiently and
+  surpasses Dream at j~4, long before compute matching. The curve shows no
+  saturation. The diffusion model has no advantage here.
+
+- On Mini Sudoku (constraint satisfaction), Qwen best-of-k scales consistently
+  but cannot reach Dream's level within the compute-matched budget. The curve
+  shows deceleration but no hard plateau, suggesting the gap could close with
+  roughly 2x more compute (estimated k~87). This implies the diffusion advantage
+  on Sudoku is real but not insurmountable -- it reflects a moderate efficiency
+  gap rather than a fundamental capability difference.
+
+The key insight: Dream's advantage on Sudoku appears to be a compute-efficiency
+advantage (it solves the task in fewer "effective attempts") rather than a
+capability ceiling that AR sampling cannot reach. The scaling curve has not
+saturated, meaning more AR compute would continue to close the gap.

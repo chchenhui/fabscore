@@ -1,0 +1,97 @@
+# Simple One-Way Baseline for Quick Comparison
+# 简化的单向基线，用于快速对比
+
+experiment: simple_one_way_baseline
+
+# Environment (same as main experiment)
+env:
+  grid_size: 8
+  obstacle_rate: [0.2, 0.3]
+  max_steps: 60
+  reward_step: -1.0
+  reward_collision: -5.0
+  reward_success: 50.0
+  reward_token_cost: -0.05
+
+# Model configuration (simplified)
+model:
+  embed_dim: 128
+  message_embed_dim: 32
+  ai_message_embed_dim: 32
+  instructor_embed_dim: 16
+  hidden_dim: 256
+  gru_hidden: 128
+  code_dim: 16
+  gumbel_tau_start: 1.0
+  gumbel_tau_end: 0.3
+  tau_decay: 0.95
+  use_gru: true
+  human_latent_dim: 256
+  ai_latent_dim: 256
+  ai_obs_dim: 22
+  human_obs_dim: 192
+
+# Training configuration (quick)
+train:
+  episodes: 6  # Same as BiCA for fair comparison
+  batch_episodes: 8
+  optimizer: adamw
+  lr: 3e-4
+  weight_decay: 1e-5
+  ppo_clip: 0.2
+  value_loss_coef: 0.5
+  entropy_coef: 0.01
+  gamma: 0.99
+  gae_lambda: 0.95
+  update_frequency: 32
+  gradient_clip: 0.5
+
+# Single directional configuration - KEY DIFFERENCES
+single_directional:
+  # Disable bidirectional components
+  disable_protocol_learning: true    # No mutual protocol learning
+  disable_instructor: true          # No adaptive teaching
+  disable_rep_mapper: true          # No representation alignment
+  unidirectional_adaptation: true   # Only AI adapts to human
+  
+  # Human policy is fixed/simple
+  fixed_human_policy: true
+  human_adapts_to_ai: false
+  ai_adapts_to_human: true
+
+# Regularization weights (single directional)
+regularizers:
+  lambda_A: 0.1      # High constraint on AI (forced adaptation)
+  lambda_H: 0.0      # No constraint on human
+  beta_IB: 0.0       # No information bottleneck
+  mu_rep: 0.0        # No representation gap
+  kappa_teach: 0.0   # No teaching cost
+  perturbation_kl_target: 0.02
+  perturbation_tolerance: 0.005
+
+# Logging configuration
+logging:
+  checkpoint_interval: 2
+  log_interval: 1
+  eval_interval: 2
+  save_best: true
+  use_wandb: true
+  project: bica-baselines
+  tags: [single_directional, one_way, baseline, rlhf_style]
+
+# Evaluation configuration
+evaluation:
+  num_episodes: 10   # Quick evaluation
+  eval_frequency: 2
+  metrics:
+    - success_rate
+    - collision_rate
+    - avg_steps
+    - avg_tokens
+    - bas_score
+    - ccm_score
+
+# Output configuration
+output_dir: results
+save_trajectories: false
+save_models: true

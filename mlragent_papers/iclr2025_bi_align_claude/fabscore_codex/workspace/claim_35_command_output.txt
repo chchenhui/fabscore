@@ -1,0 +1,128 @@
+===== COMMAND: sed -n '364,376p' results/paper.md =====
+*Figure 14: Evolution of ceva_full values in rapid_shift scenario*
+
+The adaptive models showed different patterns of response to the rapid shifts. The adaptive_alignment model closely followed the human values, while the CEVA models showed more gradual adaptation to the shifts, particularly for values that might be categorized at higher levels in the multi-level representation.
+
+#### 5.2.3 Value Conflict Scenario
+
+Figure 15 shows the alignment scores for the value_conflict scenario, which features tensions between different value dimensions.
+
+![Alignment Comparison](./figures/alignment_comparison_value_conflict.png)
+*Figure 15: Comparison of alignment scores for value_conflict scenario*
+
+In this scenario, the adaptive models generally maintained higher alignment scores than the static model, but with more fluctuation than in other scenarios, reflecting the challenge of adapting to conflicting value signals.
+
+===== COMMAND: nl -ba claude_code/evaluation.py | sed -n '102,156p' =====
+   102	        results = {
+   103	            "scenario_name": self.name,
+   104	            "scenario_description": self.description,
+   105	            "duration": self.duration,
+   106	            "models": {},
+   107	            "raw_data": {
+   108	                "human_values": [],
+   109	                "model_values": {},
+   110	                "alignment_scores": {},
+   111	                "response_times": {},
+   112	                "responses": {}
+   113	            }
+   114	        }
+   115	        
+   116	        # Run simulation step by step
+   117	        for t in range(self.duration):
+   118	            # Step the human value simulation forward
+   119	            self.simulation.step()
+   120	            
+   121	            # Record human values for each agent
+   122	            human_values_at_t = []
+   123	            for agent in self.simulation.agents:
+   124	                human_values_at_t.append(agent.value_system.values.copy())
+   125	            results["raw_data"]["human_values"].append(human_values_at_t)
+   126	            
+   127	            # Update each model with current human values
+   128	            for model in models:
+   129	                # We'll use the first agent's values for simplicity
+   130	                # In a more complex evaluation, we might consider aggregating across agents
+   131	                human_values = self.simulation.agents[0].value_system
+   132	                
+   133	                # Generate a query for response time measurement
+   134	                # (This is a placeholder - in a real system, we'd have actual queries)
+   135	                query = f"Query at time {t}"
+   136	                
+   137	                # Measure response time
+   138	                start_time = time.time()
+   139	                response = model.generate_response(query, human_values)
+   140	                end_time = time.time()
+   141	                response_time = end_time - start_time
+   142	                
+   143	                # Update model based on human values
+   144	                model.update(human_values)
+   145	                
+   146	                # Record model values and metrics
+   147	                if model.name not in results["raw_data"]["model_values"]:
+   148	                    results["raw_data"]["model_values"][model.name] = []
+   149	                    results["raw_data"]["alignment_scores"][model.name] = []
+   150	                    results["raw_data"]["response_times"][model.name] = []
+   151	                    results["raw_data"]["responses"][model.name] = []
+   152	                
+   153	                results["raw_data"]["model_values"][model.name].append(model.value_system.values.copy())
+   154	                results["raw_data"]["alignment_scores"][model.name].append(model.alignment_scores[-1])
+   155	                results["raw_data"]["response_times"][model.name].append(response_time)
+   156	                results["raw_data"]["responses"][model.name].append(response)
+
+===== COMMAND: nl -ba claude_code/visualization.py | sed -n '116,140p; 360,372p' =====
+   116	    """
+   117	    fig, ax = plt.subplots()
+   118	    
+   119	    # Extract alignment scores for each model
+   120	    models = list(scenario_results["models"].keys())
+   121	    n_steps = len(scenario_results["raw_data"]["alignment_scores"][models[0]])
+   122	    
+   123	    # Plot alignment scores for each model
+   124	    for model_name in models:
+   125	        scores = scenario_results["raw_data"]["alignment_scores"][model_name]
+   126	        ax.plot(range(n_steps), scores, label=model_name)
+   127	        
+   128	    # Add labels and legend
+   129	    ax.set_xlabel("Time Step")
+   130	    ax.set_ylabel("Alignment Score")
+   131	    ax.set_title(f"{title}: {scenario_results['scenario_name']}")
+   132	    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+   133	    ax.grid(True, alpha=0.3)
+   134	    
+   135	    # Adjust layout to make room for the legend
+   136	    plt.tight_layout()
+   137	    
+   138	    # Save and return figure path
+   139	    return save_figure(fig, filename, figures_dir, config)
+   140	
+   360	    
+   361	    # Plot individual scenario results
+   362	    for scenario_name, scenario_results in results['scenarios'].items():
+   363	        # Plot alignment comparison for this scenario
+   364	        figure_paths[f'alignment_{scenario_name}'] = plot_comparative_alignment(
+   365	            scenario_results,
+   366	            f'alignment_comparison_{scenario_name}',
+   367	            figures_dir,
+   368	            config,
+   369	            title="Alignment Score Comparison"
+   370	        )
+   371	        
+   372	        # Plot human value evolution
+
+===== COMMAND: python - <<'PY'
+import json
+from pathlib import Path
+p = Path('fabscore_codex/workspace/claim_23_run_json/results/results.json')
+obj = json.loads(p.read_text())
+series = obj['scenarios']['value_conflict']['raw_data']['alignment_scores']
+print('artifact=', p)
+print('models=', list(series))
+for model, vals in series.items():
+    print(model, 'num_steps=', len(vals), 'first=', vals[0], 'step_30=', vals[30], 'step_60=', vals[60], 'last=', vals[-1], 'min=', min(vals), 'max=', max(vals))
+PY =====
+artifact= fabscore_codex/workspace/claim_23_run_json/results/results.json
+models= ['static_alignment', 'adaptive_alignment', 'ceva_basic', 'ceva_full']
+static_alignment num_steps= 100 first= 1.0 step_30= 0.8513617013613246 step_60= 0.726760107186597 last= 0.8078755819468628 min= 0.6102163382204872 max= 1.0
+adaptive_alignment num_steps= 100 first= 0.9362817708483384 step_30= 0.949856523265819 step_60= 0.9692884966590485 last= 0.9584697028513812 min= 0.9141252934989603 max= 0.9896918922301003
+ceva_basic num_steps= 100 first= 0.8899520526590265 step_30= 0.9352578490701586 step_60= 0.9493808200043609 last= 0.8952308876014802 min= 0.8528691727724261 max= 0.9820326135528341
+ceva_full num_steps= 100 first= 0.8899520526590265 step_30= 0.9352578490701586 step_60= 0.9493808200043609 last= 0.8952308876014802 min= 0.8528691727724261 max= 0.9820326135528341

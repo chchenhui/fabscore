@@ -1,0 +1,23 @@
+## Command 1
+cd /home/chenhui/fabscore/agent4sci_acc/submission_145/anon-submission-1-main && python -c "
+import json
+from greenhouse.runners import eval_rule
+from greenhouse.dsl import Rule
+from greenhouse.optimizers import baseline_rules
+
+# Load the evolved rule
+br = json.load(open('artifacts/best_rule_v02.json'))
+evolved_rule = Rule(**br['best_rule'])
+
+# Run with seeds=(0,1) (paper's 2-seed pattern)
+loss_2seed, _ = eval_rule(evolved_rule, 'rastrigin', dim=20, steps=300, seeds=(0,1))
+print(f'Evolved rastrigin dim=20 steps=300 seeds=(0,1): {loss_2seed:.4f}')
+
+# Also try seeds=(0,1,2) for comparison
+loss_3seed, _ = eval_rule(evolved_rule, 'rastrigin', dim=20, steps=300, seeds=(0,1,2))
+print(f'Evolved rastrigin dim=20 steps=300 seeds=(0,1,2): {loss_3seed:.4f}')
+"
+
+## Output
+Evolved rastrigin dim=20 steps=300 seeds=(0,1): 65.6671
+Evolved rastrigin dim=20 steps=300 seeds=(0,1,2): 59.6974

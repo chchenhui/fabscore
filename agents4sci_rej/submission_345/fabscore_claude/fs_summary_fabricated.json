@@ -1,0 +1,417 @@
+{
+  "tables": [],
+  "figures": [
+    {
+      "claim_index": 2,
+      "claim": "2. Figure 2: Global sensitivity of NPV to key drivers (market size, list price, GTN, adherence, SG&A) showing the impact of each parameter on NPV variance.",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The figure generation script (reports/generate_paper_figures.py, lines 195-234) uses completely hardcoded sensitivity impact values (market_size=1.8, list_price=1.5, gtn=1.2, adherence=0.9, wacc=0.8, etc.) rather than actually computing NPV sensitivity. The code comment says 'Simplified NPV calculation for tornado' and never calls any actual NPV function with varied parameters. The figure purports to show computed sensitivity analysis but every bar value is a hardcoded constant.",
+      "evidence": "reports/generate_paper_figures.py:195-234 (generate_shap_summary function with hardcoded impacts)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "reports/generate_paper_figures.py:195-234 (generate_shap_summary function with hardcoded impacts)"
+        ],
+        "commands_executed": []
+      }
+    }
+  ],
+  "results_section": [
+    {
+      "claim_index": 3,
+      "claim": "1. Multi-agent System: 41.3% MAPE (approaching 40% consultant baseline)",
+      "verdict": "Experiment Fabrication",
+      "explanation": "Analysis stage: The validation script phase5_historical_validation.py explicitly bypasses the actual multi-agent system. In test_multi_agent_system() (lines 168-202), the code states: 'For Phase 5, we'll simulate multi-agent performance...But for validation, we use a representative simulation.' It then returns hardcoded trajectories: $20B for blockbusters, $5B for oncology, $1B for rare disease, $2B for other - never calling the GPT5Orchestrator. The reported 41.3% MAPE is derived from this simulation, not from actual multi-agent execution.",
+      "evidence": "validation/phase5_historical_validation.py:168-202 (test_multi_agent_system with hardcoded simulation); validation/phase5_historical_validation.py:171-172 (explicit comment: 'we use a representative simulation')",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "experiment_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "validation/phase5_historical_validation.py:168-202 (test_multi_agent_system with hardcoded simulation)",
+          "validation/phase5_historical_validation.py:171-172 (explicit comment: 'we use a representative simulation')"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 8,
+      "claim": "6. Keytruda (Oncology - Blockbuster): Actual peak revenue: $25.0B (Year 5)",
+      "verdict": "Data Fabrication",
+      "explanation": "Analysis stage: The repository's golden_drugs.csv (the manually verified reference data) shows Keytruda Y5 revenue as $14.4B, not $25.0B. Keytruda was approved in 2014, so Year 5 = 2019, when actual Keytruda revenue was ~$11-14.4B. Keytruda did not reach $25B annual revenue until ~2023 (Year 9 post-launch). Furthermore, gpt5_orchestrator.py comments (line 669) reveal '$25B actual' is used as the calibration TARGET, not an independently measured actual value. The build_dataset.py (line 192) caps revenues at $25B, further distorting the actual reference values.",
+      "evidence": "data_raw/golden_drugs.csv:2 (Keytruda Y5=14.4B, not 25B); ai_scientist/gpt5_orchestrator.py:669 (comment: 'Keytruda: $25B actual' used as calibration target); ai_scientist/gpt5_orchestrator.py:694,759 (drug-specific multipliers calibrated to hit $25B target); src/data/build_dataset.py:192 (revenue capped at $25B)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "data_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "data_raw/golden_drugs.csv:2 (Keytruda Y5=14.4B, not 25B)",
+          "ai_scientist/gpt5_orchestrator.py:669 (comment: 'Keytruda: $25B actual' used as calibration target)",
+          "ai_scientist/gpt5_orchestrator.py:694,759 (drug-specific multipliers calibrated to hit $25B target)",
+          "src/data/build_dataset.py:192 (revenue capped at $25B)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 9,
+      "claim": "7. Keytruda: Multi-agent forecast: $16.3B peak (65% of actual, 34.6% peak APE)",
+      "verdict": "Data Fabrication",
+      "explanation": "Analysis stage: The claimed percentages (65% of actual, 34.6% peak APE) are computed using $25.0B as the actual reference, which is wrong. Golden_drugs.csv shows Keytruda Y5=$14.4B. Using the correct actual, $16.3B/$14.4B=113% (not 65%), and peak APE would be 13.2% (not 34.6%). Additionally, the historical_validation.py multi-agent simulation returns $20B for blockbusters, not $16.3B, meaning the number doesn't even match what the simulation code would produce.",
+      "evidence": "data_raw/golden_drugs.csv:2 (Keytruda Y5=14.4B, not 25B); validation/phase5_historical_validation.py:179-188 (blockbuster simulation returns $20B peak, not $16.3B); ai_scientist/gpt5_orchestrator.py:669 ($25B used as calibration target)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "data_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "data_raw/golden_drugs.csv:2 (Keytruda Y5=14.4B, not 25B)",
+          "validation/phase5_historical_validation.py:179-188 (blockbuster simulation returns $20B peak, not $16.3B)",
+          "ai_scientist/gpt5_orchestrator.py:669 ($25B used as calibration target)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 10,
+      "claim": "8. Keytruda: Multi-agent MAPE: 41.1% (approaching consultant-level accuracy)",
+      "verdict": "Data Fabrication",
+      "explanation": "Analysis stage: The MAPE calculation uses $25.0B as Keytruda's actual reference value. Golden_drugs.csv shows the real Y5 value as $14.4B, making the MAPE denominator wrong. The multi-agent system was also calibrated with $25B as its target (gpt5_orchestrator.py:694,759), making the evaluation non-blind. The MAPE of 41.1% is therefore computed against a fabricated reference value.",
+      "evidence": "data_raw/golden_drugs.csv:2 (Keytruda Y5=14.4B, not 25B); ai_scientist/gpt5_orchestrator.py:669,694,759 (calibrated to $25B target)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "data_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "data_raw/golden_drugs.csv:2 (Keytruda Y5=14.4B, not 25B)",
+          "ai_scientist/gpt5_orchestrator.py:669,694,759 (calibrated to $25B target)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 11,
+      "claim": "9. Keytruda: Peak heuristic: $4.6B peak (18% of actual, 81.5% peak APE)",
+      "verdict": "Data Fabrication",
+      "explanation": "Analysis stage: The 18% and 81.5% figures use $25.0B as the actual denominator. With correct actual=$14.4B from golden_drugs.csv, $4.6B/$14.4B=32% (not 18%) and peak APE=68.1% (not 81.5%). The percentages are inconsistent with the repository's own reference data.",
+      "evidence": "data_raw/golden_drugs.csv:2 (Keytruda Y5=14.4B, not 25B)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "data_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "data_raw/golden_drugs.csv:2 (Keytruda Y5=14.4B, not 25B)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 12,
+      "claim": "10. Keytruda: Enhanced analog: $3.6B peak (14% of actual, 85.7% peak APE)",
+      "verdict": "Data Fabrication",
+      "explanation": "Analysis stage: Same data conflict: 14% and 85.7% use $25.0B as denominator. With correct actual=$14.4B: $3.6B/$14.4B=25% (not 14%) and peak APE=75% (not 85.7%).",
+      "evidence": "data_raw/golden_drugs.csv:2 (Keytruda Y5=14.4B, not 25B)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "data_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "data_raw/golden_drugs.csv:2 (Keytruda Y5=14.4B, not 25B)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 13,
+      "claim": "11. Repatha (Cardiovascular - Moderate): Actual peak revenue: $1.5B (Year 4)",
+      "verdict": "Data Fabrication",
+      "explanation": "Analysis stage: Golden_drugs.csv shows Repatha Y4=1.0B and Y5=1.23B. The peak within the 5-year window is $1.23B at Year 5, not $1.5B at Year 4. Repatha (approved 2015) actual 2019 revenue (Y4) was ~$1.02B. Repatha did not reach $1.5B until 2022 (Year 7). The code comment in gpt5_orchestrator.py (line 669) confirms '$1.5B actual' was used as the calibration target, not the measured actual.",
+      "evidence": "data_raw/golden_drugs.csv:7 (Repatha Y4=1.0B, Y5=1.23B, peak not 1.5B at Y4); ai_scientist/gpt5_orchestrator.py:669 ('Repatha: $1.5B actual' as calibration target)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "data_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "data_raw/golden_drugs.csv:7 (Repatha Y4=1.0B, Y5=1.23B, peak not 1.5B at Y4)",
+          "ai_scientist/gpt5_orchestrator.py:669 ('Repatha: $1.5B actual' as calibration target)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 14,
+      "claim": "12. Repatha: Multi-agent forecast: $996M peak (66% of actual, 33.6% peak APE)",
+      "verdict": "Data Fabrication",
+      "explanation": "Analysis stage: The 66% and 33.6% figures use $1.5B as the actual denominator. With correct actual=$1.23B from golden_drugs.csv: $996M/$1.23B=81% (not 66%) and peak APE=19% (not 33.6%). The percentages are inconsistent with the repository's own reference data.",
+      "evidence": "data_raw/golden_drugs.csv:7 (Repatha Y5=1.23B, not 1.5B); ai_scientist/gpt5_orchestrator.py:669 ($1.5B used as calibration target)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "data_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "data_raw/golden_drugs.csv:7 (Repatha Y5=1.23B, not 1.5B)",
+          "ai_scientist/gpt5_orchestrator.py:669 ($1.5B used as calibration target)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 15,
+      "claim": "13. Repatha: Multi-agent MAPE: 41.5% (approaching consultant-level accuracy)",
+      "verdict": "Data Fabrication",
+      "explanation": "Analysis stage: The MAPE uses $1.5B as the actual reference. Correct actual from golden_drugs.csv is $1.23B (Y5). Using the correct denominator changes MAPE significantly. Additionally, the multi-agent system was calibrated with $1.5B as the Repatha target (gpt5_orchestrator.py:669), making the evaluation non-blind.",
+      "evidence": "data_raw/golden_drugs.csv:7 (Repatha Y5=1.23B, not 1.5B); ai_scientist/gpt5_orchestrator.py:669 (calibrated to $1.5B Repatha target)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "data_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "data_raw/golden_drugs.csv:7 (Repatha Y5=1.23B, not 1.5B)",
+          "ai_scientist/gpt5_orchestrator.py:669 (calibrated to $1.5B Repatha target)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 16,
+      "claim": "14. Repatha: Peak heuristic: $218M peak (15% of actual, 85.4% peak APE)",
+      "verdict": "Data Fabrication",
+      "explanation": "Analysis stage: The 15% and 85.4% use $1.5B as denominator. With correct actual=$1.23B: $218M/$1.23B=17.7% (not 15%) and peak APE=82.3% (not 85.4%). The percentages are inconsistent with the repository's own reference data.",
+      "evidence": "data_raw/golden_drugs.csv:7 (Repatha Y5=1.23B, not 1.5B)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "data_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "data_raw/golden_drugs.csv:7 (Repatha Y5=1.23B, not 1.5B)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 17,
+      "claim": "15. Repatha: Enhanced analog: $3.6B peak (238% of actual, 138.3% peak APE)",
+      "verdict": "Data Fabrication",
+      "explanation": "Analysis stage: The 238% and 138.3% use $1.5B as denominator. With correct actual=$1.23B: $3.6B/$1.23B=293% (not 238%) and peak APE=193% (not 138.3%). The percentages are inconsistent with the repository's own reference data.",
+      "evidence": "data_raw/golden_drugs.csv:7 (Repatha Y5=1.23B, not 1.5B)",
+      "detection_mode": "static_code_analysis",
+      "decision_stage": "analysis",
+      "analysis_classification": {
+        "bucket": "obvious_hallucination",
+        "fabrication_type": "data_fabrication"
+      },
+      "verification_process": {
+        "files_analyzed": [
+          "data_raw/golden_drugs.csv:7 (Repatha Y5=1.23B, not 1.5B)"
+        ],
+        "commands_executed": []
+      }
+    },
+    {
+      "claim_index": 4,
+      "claim": "2. Peak Heuristic Baseline: 71.2% MAPE (industry standard method)",
+      "verdict": "Data Fabrication",
+      "explanation": "Execution stage: The paper claims to validate the Peak Heuristic Baseline on real pharmaceutical launch data (2015-2020) and reports 71.2% MAPE. However, build_dataset.py explicitly generates synthetic data (not real historical data) via _create_synthetic_launches() and _create_synthetic_revenues(). Fresh execution produced peak_heuristic MAPE values of 1110%-2307%, nowhere near the claimed 71.2%. The validation dataset itself is fabricated rather than real historical pharmaceutical data.",
+      "evidence": "Executed build_dataset.py + phase5_historical_validation.py. build_dataset.py:75-79 explicitly uses _create_synthetic_launches() and _create_synthetic_revenues() (comment: 'For now, create synthetic data that looks real'). Actual peak_heuristic MAPE values ranged from 1110% to 2307% across 10 drugs, all filtered out of the validation summary as >500%. No result near 71.2% MAPE was observed. | Code: src/data/build_dataset.py:75-79 (_create_synthetic_launches, _create_synthetic_revenues); validation/phase5_historical_validation.py:35-36 (reads data_proc/*.parquet)",
+      "detection_mode": "execution_artifact_analysis",
+      "decision_stage": "execution",
+      "verification_process": {
+        "files_analyzed": [
+          "src/data/build_dataset.py:75-79 (_create_synthetic_launches, _create_synthetic_revenues)",
+          "validation/phase5_historical_validation.py:35-36 (reads data_proc/*.parquet)"
+        ],
+        "commands_executed": [
+          "cd '345_Multi_Agent_AI_System_for__Supplementary Material' && python src/data/build_dataset.py && python validation/phase5_historical_validation.py"
+        ]
+      }
+    },
+    {
+      "claim_index": 5,
+      "claim": "3. Ensemble Baseline: 80.8% MAPE (traditional ensemble approach)",
+      "verdict": "Data Fabrication",
+      "explanation": "Execution stage: The claimed 80.8% ensemble baseline MAPE cannot be reproduced because the dataset is synthetically generated, not real 2015-2020 pharmaceutical launch data as the paper claims. The actual ensemble MAPE values range from 647% to 1165% on the synthetic data. This is a data fabrication issue: the paper reports results as if validated against real historical pharmaceutical launch data, but the repository's build_dataset.py generates synthetic data with a Bass diffusion formula and random noise.",
+      "evidence": "Reused claim_4_command_output.txt from Session 4 (same validation run). Per-drug ensemble MAPE values: Drug 8 (Repatha) 647.2%, Drug 9 (Keytruda) 1165.6%, Drug 10 (Repatha) 711.6% — all vastly different from the claimed 80.8%. build_dataset.py explicitly uses _create_synthetic_launches() and _create_synthetic_revenues() with comment 'For now, create synthetic data that looks real. In production, this would load actual scraped data'. | Code: src/data/build_dataset.py:75-79 (_create_synthetic_launches, _create_synthetic_revenues); src/models/baselines.py:323-373 (ensemble_baseline function)",
+      "detection_mode": "execution_artifact_analysis",
+      "decision_stage": "execution",
+      "verification_process": {
+        "files_analyzed": [
+          "src/data/build_dataset.py:75-79 (_create_synthetic_launches, _create_synthetic_revenues)",
+          "src/models/baselines.py:323-373 (ensemble_baseline function)"
+        ],
+        "commands_executed": [
+          "No new command executed — reused existing artifact from Session 4: python src/data/build_dataset.py && python validation/phase5_historical_validation.py"
+        ]
+      }
+    },
+    {
+      "claim_index": 6,
+      "claim": "4. Enhanced Analog Forecasting: 100.2% MAPE (TA priors with DTW similarity)",
+      "verdict": "Data Fabrication",
+      "explanation": "Execution stage: The paper claims Enhanced Analog Forecasting achieves 100.2% MAPE with TA priors and DTW similarity, validated against real 2015-2020 pharmaceutical launch data. The actual dataset is synthetically generated (not real historical data), and execution with synthetic data produces 16.4% MAPE — not 100.2%. The claimed result cannot be reproduced because the underlying dataset is fabricated synthetic data rather than real pharmaceutical launches.",
+      "evidence": "Session 4 execution (claim_4_command_output.txt) shows analog_enhanced Average MAPE: 16.4% across 10 drugs using synthetic data. README.md:87 confirms the claimed 100.2% MAPE. Individual drug results: Drug 8 (Repatha) 32.5%, Drug 9 (Keytruda) 13.3%, Drug 10 (Repatha) 21.1%. build_dataset.py explicitly uses _create_synthetic_launches() and _create_synthetic_revenues() with comment 'For now, create synthetic data that looks real.' | Code: src/data/build_dataset.py:75-79 (_create_synthetic_launches, _create_synthetic_revenues); validation/phase5_historical_validation.py:151-164 (analog_enhanced); README.md:87",
+      "detection_mode": "execution_artifact_analysis",
+      "decision_stage": "execution",
+      "verification_process": {
+        "files_analyzed": [
+          "src/data/build_dataset.py:75-79 (_create_synthetic_launches, _create_synthetic_revenues)",
+          "validation/phase5_historical_validation.py:151-164 (analog_enhanced)",
+          "README.md:87"
+        ],
+        "commands_executed": [
+          "Reused existing artifact from Session 4: python src/data/build_dataset.py && python validation/phase5_historical_validation.py"
+        ]
+      }
+    },
+    {
+      "claim_index": 7,
+      "claim": "5. Golden Validation: 76.9% pass rate (10/13 tests within ±10% tolerance)",
+      "verdict": "Data Fabrication",
+      "explanation": "Execution stage: The golden validation requires data_proc/golden_set.parquet which does not exist. The only available related dataset (golden_drugs.csv) shows values that completely contradict the implicit 'actual' values needed to produce the claimed 76.9% pass rate. Three of the five tested drugs (Mounjaro, Trikafta, Verzenio, accounting for 9/13 tests) do not appear in golden_drugs.csv. For the two drugs that do appear (Repatha, Ibrance), the real CSV values differ drastically from the values that would be needed to yield the claimed result. The 76.9% claim can only be reproduced if the parquet file uses fabricated actual values specifically crafted to pass 10/13 tests, not real pharmaceutical data.",
+      "evidence": "golden_set.parquet does not exist. create_test_forecasts() in golden_framework.py defines 13 tests across 5 drugs (Repatha, Ibrance, Mounjaro, Trikafta, Verzenio). The 76.9% result (10/13) is mathematically reproduced ONLY using fabricated 'actual' values from code comments. Real data in golden_drugs.csv yields 0/3 pass for available drugs: Repatha y2 real=$0.61B vs comment-implied=$1.0B (80.3% error), Repatha y3 real=$0.82B vs comment-implied=$4.2B (387.8% error), Ibrance y5 real=$5.07B vs comment-implied=$0.2B (95.1% error). Mounjaro, Trikafta, Verzenio are absent from golden_drugs.csv. | Code: src/validation/golden_framework.py:487-514 (create_test_forecasts()), data_raw/golden_drugs.csv",
+      "detection_mode": "code_execution",
+      "decision_stage": "execution",
+      "verification_process": {
+        "files_analyzed": [
+          "src/validation/golden_framework.py:487-514 (create_test_forecasts()), data_raw/golden_drugs.csv"
+        ],
+        "commands_executed": [
+          "python3 -c \"...(mathematical analysis of test forecasts vs. golden_drugs.csv values and code comment actuals)...\""
+        ]
+      }
+    },
+    {
+      "claim_index": 19,
+      "claim": "17. Current validation results show 76.9% pass rate (10/13 tests passed) across 5 drugs: Mounjaro (100% pass rate, 3/3 tests), Verzenio (100% pass rate, 3/3 tests), Trikafta (66.7% pass rate, 2/3 tests), Repatha (50% pass rate, 1/2 tests), and Ibrance (50% pass rate, 1/2 tests).",
+      "verdict": "Data Fabrication",
+      "explanation": "Execution stage: The 76.9% pass rate is only achievable using fabricated 'actual' revenue values hardcoded in code comments, not from real pharmaceutical data. With the actual CSV data available (golden_drugs.csv), the pass rate is 0% for the drugs present, and three of the five drugs (Mounjaro, Verzenio, Trikafta) don't even exist in the real dataset. Furthermore, the per-drug breakdown in the claim conflicts with what even the fabricated code-comment actuals produce: Verzenio shows 66.7% (not 100%) and Repatha shows 100% (not 50%), confirming the claimed per-drug results were separately fabricated.",
+      "evidence": "Session 7's claim_7_command_output.txt already executed the golden validation analysis. Code output using fabricated comment 'actuals': Mounjaro 3/3=100% (matches claim), Trikafta 2/3=66.7% (matches), Ibrance 1/2=50% (matches), BUT Verzenio 2/3=66.7% (claim says 100%/3/3) and Repatha 2/2=100% (claim says 50%/1/2). Total 10/13=76.9% matches. With real CSV data (golden_drugs.csv): 0/3 available tests pass (0%); Mounjaro, Trikafta, and Verzenio are absent from the real dataset. golden_set.parquet does not exist. | Code: src/validation/golden_framework.py (create_test_forecasts function); data_raw/golden_drugs.csv (missing Mounjaro, Trikafta, Verzenio); data_proc/golden_set.parquet (does not exist)",
+      "detection_mode": "execution_artifact_analysis",
+      "decision_stage": "execution",
+      "verification_process": {
+        "files_analyzed": [
+          "src/validation/golden_framework.py (create_test_forecasts function)",
+          "data_raw/golden_drugs.csv (missing Mounjaro, Trikafta, Verzenio)",
+          "data_proc/golden_set.parquet (does not exist)"
+        ],
+        "commands_executed": [
+          "Reused artifact from Session 7: python3 mathematical analysis of golden_framework.py's create_test_forecasts() function comparing code comment 'actuals' vs real CSV data"
+        ]
+      }
+    }
+  ],
+  "summary": {
+    "total": 19,
+    "verified": 1,
+    "data_fabrication": 15,
+    "experiment_fabrication": 2,
+    "result_fabrication": 0,
+    "no_code_files": 0,
+    "insufficient_evidence": 1
+  },
+  "analysis_summary": {
+    "total_claims": 19,
+    "no_code_files": 0,
+    "obvious_hallucination": 12,
+    "data_fabrication": 10,
+    "experiment_fabrication": 2,
+    "result_fabrication": 0,
+    "static_verifiable": 0,
+    "insufficient_evidence": 1,
+    "execution_required": 6,
+    "error": 0
+  },
+  "execution_summary": {
+    "total": 6,
+    "verified": 1,
+    "data_fabrication": 5,
+    "experiment_fabrication": 0,
+    "result_fabrication": 0,
+    "no_code_files": 0,
+    "insufficient_evidence": 0,
+    "error": 0
+  },
+  "final_assessment": {
+    "fab_score": 0.0526,
+    "total_claims": 19,
+    "verified": 1,
+    "data_fabrication": 15,
+    "experiment_fabrication": 2,
+    "result_fabrication": 0,
+    "no_code_files": 0,
+    "insufficient_evidence": 1,
+    "static_code_analysis_breakdown": {
+      "verified": 0,
+      "no_code_files": 0,
+      "data_fabrication": 10,
+      "experiment_fabrication": 2,
+      "result_fabrication": 0,
+      "insufficient_evidence": 1
+    },
+    "execution_artifact_analysis_breakdown": {
+      "verified": 1,
+      "no_code_files": 0,
+      "data_fabrication": 4,
+      "experiment_fabrication": 0,
+      "result_fabrication": 0,
+      "insufficient_evidence": 0
+    },
+    "code_execution_breakdown": {
+      "verified": 0,
+      "no_code_files": 0,
+      "data_fabrication": 1,
+      "experiment_fabrication": 0,
+      "result_fabrication": 0,
+      "insufficient_evidence": 0
+    }
+  },
+  "filtered_summary": {
+    "total_claims": 17,
+    "tables": 0,
+    "figures": 1,
+    "results_section": 16,
+    "verdict_breakdown": {
+      "Verified": 0,
+      "Data Fabrication": 15,
+      "Experiment Fabrication": 2,
+      "Result Fabrication": 0,
+      "No Code Files": 0,
+      "Insufficient Evidence": 0,
+      "Error": 0,
+      "Other": 0
+    }
+  }
+}

@@ -1,0 +1,211 @@
+===== COMMAND: nl -ba claude_code/evaluation.py | sed -n '100,170p' =====
+   100	        """
+   101	        # Initialize results dictionary
+   102	        results = {
+   103	            "scenario_name": self.name,
+   104	            "scenario_description": self.description,
+   105	            "duration": self.duration,
+   106	            "models": {},
+   107	            "raw_data": {
+   108	                "human_values": [],
+   109	                "model_values": {},
+   110	                "alignment_scores": {},
+   111	                "response_times": {},
+   112	                "responses": {}
+   113	            }
+   114	        }
+   115	        
+   116	        # Run simulation step by step
+   117	        for t in range(self.duration):
+   118	            # Step the human value simulation forward
+   119	            self.simulation.step()
+   120	            
+   121	            # Record human values for each agent
+   122	            human_values_at_t = []
+   123	            for agent in self.simulation.agents:
+   124	                human_values_at_t.append(agent.value_system.values.copy())
+   125	            results["raw_data"]["human_values"].append(human_values_at_t)
+   126	            
+   127	            # Update each model with current human values
+   128	            for model in models:
+   129	                # We'll use the first agent's values for simplicity
+   130	                # In a more complex evaluation, we might consider aggregating across agents
+   131	                human_values = self.simulation.agents[0].value_system
+   132	                
+   133	                # Generate a query for response time measurement
+   134	                # (This is a placeholder - in a real system, we'd have actual queries)
+   135	                query = f"Query at time {t}"
+   136	                
+   137	                # Measure response time
+   138	                start_time = time.time()
+   139	                response = model.generate_response(query, human_values)
+   140	                end_time = time.time()
+   141	                response_time = end_time - start_time
+   142	                
+   143	                # Update model based on human values
+   144	                model.update(human_values)
+   145	                
+   146	                # Record model values and metrics
+   147	                if model.name not in results["raw_data"]["model_values"]:
+   148	                    results["raw_data"]["model_values"][model.name] = []
+   149	                    results["raw_data"]["alignment_scores"][model.name] = []
+   150	                    results["raw_data"]["response_times"][model.name] = []
+   151	                    results["raw_data"]["responses"][model.name] = []
+   152	                
+   153	                results["raw_data"]["model_values"][model.name].append(model.value_system.values.copy())
+   154	                results["raw_data"]["alignment_scores"][model.name].append(model.alignment_scores[-1])
+   155	                results["raw_data"]["response_times"][model.name].append(response_time)
+   156	                results["raw_data"]["responses"][model.name].append(response)
+   157	                
+   158	        # Calculate evaluation metrics for each model
+   159	        for model in models:
+   160	            model_metrics = self._calculate_metrics(model, results["raw_data"])
+   161	            results["models"][model.name] = {
+   162	                "model_description": model.description,
+   163	                "metrics": model_metrics
+   164	            }
+   165	            
+   166	        return results
+   167	    
+   168	    def _calculate_metrics(self, model: BaseAlignmentModel, raw_data: Dict) -> Dict[str, float]:
+   169	        """
+   170	        Calculate evaluation metrics for a model based on raw simulation data.
+
+===== COMMAND: nl -ba claude_code/visualization.py | sed -n '387,401p' =====
+   387	        # Plot model value evolution for each model
+   388	        for model_name in scenario_results['models']:
+   389	            model_values = np.array(scenario_results['raw_data']['model_values'][model_name])
+   390	            model_df = pd.DataFrame(
+   391	                model_values,
+   392	                columns=results['overall']['value_dimensions']
+   393	            )
+   394	            
+   395	            figure_paths[f'model_values_{model_name}_{scenario_name}'] = plot_value_evolution(
+   396	                model_df,
+   397	                f'model_value_evolution_{model_name}_{scenario_name}',
+   398	                figures_dir,
+   399	                config,
+   400	                title=f"{model_name} Value Evolution"
+   401	            )
+
+===== COMMAND: nl -ba claude_code/run_experiment.py | sed -n '98,110p' =====
+    98	            
+    99	            # Convert human values
+   100	            raw_data['human_values'] = [
+   101	                [[float(v) for v in agent_values] for agent_values in step_values]
+   102	                for step_values in raw_data['human_values']
+   103	            ]
+   104	            
+   105	            # Convert model values
+   106	            for model_name in raw_data['model_values']:
+   107	                raw_data['model_values'][model_name] = [
+   108	                    [float(v) for v in step_values]
+   109	                    for step_values in raw_data['model_values'][model_name]
+   110	                ]
+
+===== COMMAND: nl -ba claude_code/alignment_models.py | sed -n '120,190p' =====
+   120	    Once initial alignment is established, the model's values remain fixed.
+   121	    """
+   122	    def __init__(
+   123	        self,
+   124	        value_dimensions: List[str],
+   125	        name: str = "static_alignment",
+   126	        description: str = "Traditional static alignment model - no adaptation",
+   127	        random_seed: Optional[int] = None
+   128	    ):
+   129	        """Initialize a static alignment model."""
+   130	        super().__init__(value_dimensions, name, description, random_seed)
+   131	        self.initialized = False
+   132	    
+   133	    def update(self, human_values: ValueSystem) -> None:
+   134	        """
+   135	        Update the model's value system based on human values.
+   136	        For static alignment, this only happens once at initialization.
+   137	        
+   138	        Args:
+   139	            human_values: Human value system to align with
+   140	        """
+   141	        # Only align once at the beginning
+   142	        if not self.initialized:
+   143	            # Copy human values exactly
+   144	            for dim in self.value_dimensions:
+   145	                self.value_system.set_value(dim, human_values.get_value(dim))
+   146	            self.initialized = True
+   147	            
+   148	        # Record current values in history
+   149	        self.value_history.append(self.value_system.values.copy())
+   150	        
+   151	        # Calculate and record alignment score
+   152	        alignment_score = self.calculate_alignment_score(human_values)
+   153	        self.alignment_scores.append(alignment_score)
+   154	        
+   155	    def generate_response(self, query: str, human_values: ValueSystem) -> Dict:
+   156	        """
+   157	        Generate a response to a user query based on the current value system.
+   158	        
+   159	        Args:
+   160	            query: User query
+   161	            human_values: Human value system to consider
+   162	            
+   163	        Returns:
+   164	            Dictionary with response text and metadata
+   165	        """
+   166	        # Calculate alignment score
+   167	        alignment_score = self.calculate_alignment_score(human_values)
+   168	        
+   169	        # Simplified response generation:
+   170	        # Response quality depends on alignment score
+   171	        # In a real implementation, this would involve more sophisticated language generation
+   172	        response_quality = alignment_score
+   173	        
+   174	        # Return response with metadata
+   175	        return {
+   176	            "response": f"Static model response (alignment: {alignment_score:.2f})",
+   177	            "alignment_score": alignment_score,
+   178	            "satisfaction_score": response_quality,
+   179	            "adaptation": 0.0  # No adaptation happens
+   180	        }
+   181	
+   182	
+   183	class AdaptiveAlignmentModel(BaseAlignmentModel):
+   184	    """
+   185	    Simple adaptive alignment model that uniformly adapts to changes in human values.
+   186	    """
+   187	    def __init__(
+   188	        self,
+   189	        value_dimensions: List[str],
+   190	        update_rate: float = 0.5,
+
+===== COMMAND: python - <<'PY'
+import json
+from pathlib import Path
+p = Path('fabscore_codex/workspace/claim_23_run_json/results/results.json')
+obj = json.loads(p.read_text())
+series = obj['scenarios']['gradual_drift']['raw_data']['model_values']['static_alignment']
+dims = obj['overall']['value_dimensions']
+print('artifact=', p)
+print('num_steps=', len(series))
+print('num_dims=', len(series[0]) if series else 0)
+print('dims=', dims)
+print('first=', series[0])
+print('mid=', series[len(series)//2])
+print('last=', series[-1])
+print('all_steps_identical=', all(step == series[0] for step in series))
+for i, dim in enumerate(dims):
+    vals = [step[i] for step in series]
+    print(dim, 'first=', vals[0], 'mid=', vals[len(vals)//2], 'last=', vals[-1], 'min=', min(vals), 'max=', max(vals))
+PY =====
+artifact= fabscore_codex/workspace/claim_23_run_json/results/results.json
+num_steps= 100
+num_dims= 5
+dims= ['autonomy', 'benevolence', 'security', 'achievement', 'conformity']
+first= [0.11281465019647657, 0.3602153928587097, 0.2701306036688883, 0.18859679734908463, 0.06824255592684077]
+mid= [0.11281465019647657, 0.3602153928587097, 0.2701306036688883, 0.18859679734908463, 0.06824255592684077]
+last= [0.11281465019647657, 0.3602153928587097, 0.2701306036688883, 0.18859679734908463, 0.06824255592684077]
+all_steps_identical= True
+autonomy first= 0.11281465019647657 mid= 0.11281465019647657 last= 0.11281465019647657 min= 0.11281465019647657 max= 0.11281465019647657
+benevolence first= 0.3602153928587097 mid= 0.3602153928587097 last= 0.3602153928587097 min= 0.3602153928587097 max= 0.3602153928587097
+security first= 0.2701306036688883 mid= 0.2701306036688883 last= 0.2701306036688883 min= 0.2701306036688883 max= 0.2701306036688883
+achievement first= 0.18859679734908463 mid= 0.18859679734908463 last= 0.18859679734908463 min= 0.18859679734908463 max= 0.18859679734908463
+conformity first= 0.06824255592684077 mid= 0.06824255592684077 last= 0.06824255592684077 min= 0.06824255592684077 max= 0.06824255592684077
+
