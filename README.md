@@ -24,9 +24,11 @@ There are six verdict categories:
 
 ## Evaluation Results
 
-**Evaluation Data**: we conduct a comprehensive evaluation on 144 papers with accompanying code from multiple sources, including [AI Scientist](https://github.com/sakanaai/ai-scientist), [MLR-Agent](https://github.com/chchenhui/mlrbench), [Agents4Science](https://agents4science.stanford.edu), and [FARS](https://analemma.ai/fars/). For Agents4Science, we collect all 27 accepted submissions with available code, and additionally sampled 27 rejected submissions to balance accepted and rejected papers. For AI Scientist MLR-Agent, and FARS, we collect 30 papers each.
+### Evaluation Data
+we conduct a comprehensive evaluation on 144 papers with accompanying code from multiple sources, including [AI Scientist](https://github.com/sakanaai/ai-scientist), [MLR-Agent](https://github.com/chchenhui/mlrbench), [Agents4Science](https://agents4science.stanford.edu), and [FARS](https://analemma.ai/fars/). For Agents4Science, we collect all 27 accepted submissions with available code, and additionally sampled 27 rejected submissions to balance accepted and rejected papers. For AI Scientist MLR-Agent, and FARS, we collect 30 papers each.
 
-**Overall Performance:** As shown in Figure 2, the overall fabrication rate reaches 21.2%, where experiment fabrication accounts for the majority. 
+### Overall Performance
+As shown in Figure 2, the overall fabrication rate reaches 21.2%, where experiment fabrication accounts for the majority. 
 
 <div align="left">
   <img src="assets/overall_performance.jpg" width="50%" ></img>
@@ -37,7 +39,8 @@ There are six verdict categories:
 </div>
 <br>
 
-**Claim-level and Paper-level Performance:** As shown in Figure 3, claim-level fabrication rates range from 0.4% to 53.6% and paper-level rates from 10.0% to 81.5%. 70.4% of the 54 real conference submissions contain fabrications.
+### Claim-level and Paper-level Performance
+As shown in Figure 3, claim-level fabrication rates range from 0.4% to 53.6% and paper-level rates from 10.0% to 81.5%. 70.4% of the 54 real conference submissions contain fabrications.
 
 <div align="center">
   <img src="assets/combined_performance.jpg" width="100%" ></img>
@@ -49,7 +52,8 @@ There are six verdict categories:
 <br>
 
 
-**Review Interface**: We have developed a unified interface to support human review. If you would like to check out the evaluation results using our interface, please click this [link](https://chchenhui.github.io/fabscore/fabscore_viewer.html).
+### Review Interface
+We have developed a unified interface to support human review. If you would like to check out the evaluation results using our interface, please click this [link](https://chchenhui.github.io/fabscore/fabscore_viewer.html).
 
 
 ## Installation
