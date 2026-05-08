@@ -2,6 +2,8 @@
 
 This repository contains the official implementation and data of FabScore.
 
+If you would like to check out the evaluation results using our interface, please click this [link](https://chchenhui.github.io/fabscore/fabscore_viewer.html).
+
 ## Installation
 Commands for ```uv``` tool.
 ```shell
