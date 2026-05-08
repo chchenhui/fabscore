@@ -1,11 +1,59 @@
 # FabScore: Fine-Grained Evaluation of Fabrications in Automated AI Research
 
-This repository contains the official implementation and data of FabScore.
 
-If you would like to check out the evaluation results using our interface, please click this [link](https://chchenhui.github.io/fabscore/fabscore_viewer.html).
+## Introduction
+**FabScore** is a fine-grained evaluation framework that measures the extent to which AI-generated papers contain fabrications. Given a research paper and its associate code, FabScore executes the following four stages by a coding agent: 1. **Result Extraction**; 2. **Static Analysis**; 3. **Code Execution**; 4. **Verdict Generation**.
+
+<div align="center">
+  <img src="assets/fabscore_overview.jpg" width="100%" ></img>
+  <br>
+  <em>
+      Figure 1: An overview of the FabScore framework, illustrating our four-stage evaluation pipeline.
+  </em>
+</div>
+<br>
+
+There are six verdict categories:
+- **Data fabrication:** The input data referenced in the paper does not match what the code actually uses.
+- **Experiment fabrication:** The experimental procedure described in the paper does not match what the code actually implements.
+- **Result fabrication:** The reported results in the paper do not match those produced by actual execution.
+- **No code files:** No relevant code files can be located, and the claim is thus Unverifiable.
+- **Insufficient evidence:** Some relevant code can be located, but is insufficient to reach a definitive conclusion. The claim is thus also considered Unverifiable.
+- **Verified:** The claim is supported by sufficient evidence from code analysis or execution.
+
+
+## Evaluation Results
+
+**Evaluation Data**: we conduct a comprehensive evaluation on 144 papers with accompanying code from multiple sources, including [AI Scientist](https://github.com/sakanaai/ai-scientist), [MLR-Agent](https://github.com/chchenhui/mlrbench), [Agents4Science](https://agents4science.stanford.edu), and [FARS](https://analemma.ai/fars/). For Agents4Science, we collect all 27 accepted submissions with available code, and additionally sampled 27 rejected submissions to balance accepted and rejected papers. For AI Scientist MLR-Agent, and FARS, we collect 30 papers each.
+
+**Overall Performance:** As shown in Figure 2, the overall fabrication rate reaches 21.2%, where experiment fabrication accounts for the majority. 
+
+<div align="left">
+  <img src="assets/overall_performance.jpg" width="50%" ></img>
+  <br>
+  <em>
+      Figure 2: Proportion of each verdict category among 6,978 extracted claims from 144 AI-generated papers..
+  </em>
+</div>
+<br>
+
+**Claim-level and Paper-level Performance:** As shown in Figure 3, claim-level fabrication rates range from 0.4% to 53.6% and paper-level rates from 10.0% to 81.5%. 70.4% of the 54 real conference submissions contain fabrications.
+
+<div align="center">
+  <img src="assets/combined_performance.jpg" width="100%" ></img>
+  <br>
+  <em>
+      Figure 3: Claim-level verdict distribution and paper-level fabrication frequency across five data sources, where paper-level fabrication frequency is defined as the proportion of papers containing at least one fabrication.
+  </em>
+</div>
+<br>
+
+
+**Review Interface**: We have developed a unified interface to support human review. If you would like to check out the evaluation results using our interface, please click this [link](https://chchenhui.github.io/fabscore/fabscore_viewer.html).
+
 
 ## Installation
-Commands for ```uv``` tool.
+We use ```uv``` to manage the environment of this repository. Here are commands for initialing ```uv``` in this project.
 ```shell
 1. uv init
 2. uv venv
@@ -31,7 +79,7 @@ The evaluation pipeline consists of **4 modular steps**. You can run them all at
 ### Full Pipeline Run (Recommended)
 Run the entire 4-step process automatically:
 ```shell
-uv run python main.py --task_path <path_to_task_directory> --paper_filename <paper_filename_or_relative_path> --judge_type claude
+uv run python main.py --task_path <path_to_task_directory> --paper_filename <paper_filename_or_relative_path> [--judge_type claude]
 ```
 Key optional arguments:
 - `--judge_type` — Agent to use: `claude`, or `codex` (default: `claude`)
@@ -43,3 +91,25 @@ Key optional arguments:
 Required arguments:
 - `--task_path` — Task root directory
 - `--paper_filename` — Paper filename or relative path inside the task directory, for example `paper.pdf`, `results/paper.md`, or `data_augmentation_grokking.pdf`
+
+
+### Individual Step Usage
+
+You may also execute each stage individually by running:
+```shell
+1. uv run python fabscore/eval/extraction.py --task_path <task_dir> --paper_filename <relative_paper_path> [--judge_type claude] [--model_name <model>]  # Result Extraction
+2. uv run python fabscore/eval/analysis.py --task_path <task_dir> --paper_file <relative_paper_path> [--judge_type claude] [--model_name <model>]  # Static Analysis
+3. uv run python fabscore/eval/execution.py --task_path <task_dir> --paper_file <relative_paper_path> [--analysis_path <analysis_json>] [--extracted_path <extracted_json>] [--judge_type claude]  # Code Execution
+```
+
+## Citation
+Please cite our paper if you find our work helpful:
+```bibtex
+@article{chen2026fabscore,
+      title={FabScore: Fine-Grained Evaluation of Fabrications in Automated AI Research}, 
+      author={Chen, Hui and Zhao, James Xu and Jiang, Dongfu and Guo, Qianyun and Chen, Jiefeng and Wang, Yiwei and Chen, Muhao and Ng, See-Kiong and Koh, Pang Wei and Hooi, Bryan},
+      link={https://github.com/chchenhui/fabscore},
+      year={2026}
+}
+```
+Please feel free to contact hui.chen@nus.edu.sg if you have any questions.
