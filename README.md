@@ -5,9 +5,9 @@
   </picture>
 </p>
 
-<h1 align="left">
+<h2 align="center">
 FabScore: Fine-Grained Evaluation of Fabrications in Automated AI Research
-</h1>
+</h2>
 
 [![MIT](https://img.shields.io/badge/License-MIT-4E94CE.svg)](https://opensource.org/license/mit-0)
 [![Paper](https://img.shields.io/badge/Paper-Arxiv-darkred.svg)]()
