@@ -1,11 +1,17 @@
-<!-- # FabScore: Fine-Grained Evaluation of Fabrications in Automated AI Research -->
-<div align="center">
-  <img src="assets/fabscore_logo.jpg" width="30%" ></img>
-</div>
-<br>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/fabscore_logo.jpg">
+    <img alt="FabScore" src="assets/fabscore_logo.jpg" width=30%>
+  </picture>
+</p>
+
+<h2 align="center">
+FabScore: Fine-Grained Evaluation of Fabrications in Automated AI Research
+</h2>
 
 [![MIT](https://img.shields.io/badge/License-MIT-4E94CE.svg)](https://opensource.org/license/mit-0)
 [![Paper](https://img.shields.io/badge/Paper-Arxiv-darkred.svg)]()
+
 
 ## Introduction
 **FabScore** is a fine-grained evaluation framework that measures the extent to which AI-generated papers contain fabrications. Given a research paper and its associate code, FabScore executes the following four stages by a coding agent: 1. **Result Extraction**; 2. **Static Analysis**; 3. **Code Execution**; 4. **Verdict Generation**.
