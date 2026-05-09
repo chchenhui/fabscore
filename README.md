@@ -1,8 +1,5 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/fabscore_logo.jpg">
-    <img alt="FabScore" src="assets/fabscore_logo.jpg" width=30%>
-  </picture>
+  <img alt="FabScore" src="assets/fabscore_logo.jpg" width=30%>
 </p>
 
 <h2 align="center">
