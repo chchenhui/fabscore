@@ -43,7 +43,7 @@ As shown in Figure 2, the overall fabrication rate reaches 21.2%, where experime
   <img src="assets/overall_performance.jpg" width="40%" ></img>
   <br>
   <em>
-      Figure 2: Proportion of each verdict category among 6,978 extracted claims from 144 AI-generated papers..
+      Figure 2: Proportion of each verdict category among 6,978 extracted claims from 144 AI-generated papers.
   </em>
 </div>
 <br>
