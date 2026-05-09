@@ -68,6 +68,39 @@ As shown in Figure 3, claim-level fabrication rates range from 0.4% to 53.6% and
 We have developed a unified interface to support human review. If you would like to check out the evaluation results using our interface, please click this [link](https://chchenhui.github.io/fabscore/fabscore_viewer.html).
 
 
+## Repository Structure
+
+```
+fabscore/
+├── fabscore/                    # Core Python package (evaluation pipeline)
+│   └── eval/
+│       ├── extraction.py        # Stage 1: Result extraction from paper
+│       ├── analysis.py          # Stage 2: Static code analysis
+│       ├── execution.py         # Stage 3: Code execution
+│       └── summarization.py     # Stage 4: Verdict generation & result summarization
+├── agents4sci_acc/              # Agents4Science accepted submissions (paper PDFs + code)
+├── agents4sci_rej/              # Agents4Science rejected submissions (paper PDFs + code)
+├── agents4sci_aireviews/        # AI-generated reviews for Agents4Science submissions
+├── aiscientist_papers/          # AI Scientist papers (paper PDFs + code)
+├── fars_papers/                 # FARS papers (paper PDFs + code)
+├── mlragent_papers/             # MLR-Agent papers (paper PDFs + code)
+├── human_eval/                  # Human evaluation annotations
+├── analysis/                    # Analysis scripts and aggregated results
+├── plots/                       # Generated figures and plots
+├── assets/                      # Images used in README and paper
+├── main.py                      # Main orchestrator for the full 4-step pipeline
+├── run_agents4sci_acc.sh        # Batch eval script for Agents4Science accepted papers
+├── run_agents4sci_rej.sh        # Batch eval script for Agents4Science rejected papers
+├── run_aiscientist_papers.sh    # Batch eval script for AI Scientist papers
+├── run_fars_papers.sh           # Batch eval script for FARS papers
+├── run_mlragent_papers.sh       # Batch eval script for MLR-Agent papers
+├── download_aireviews.py        # Script to download AI reviews from OpenReview
+├── generate_index_for_viewer.py # Script to build paper_index.json for the viewer
+├── paper_index.json             # Index of all evaluated papers (used by viewer)
+├── fabscore_viewer.html         # Web-based interface for browsing evaluation results
+└── pyproject.toml               # Project dependencies (managed by uv)
+```
+
 ## Installation
 We use ```uv``` to manage the environment of this repository. Here are commands for initialing ```uv``` in this project.
 ```shell
