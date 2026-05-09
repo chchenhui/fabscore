@@ -1,6 +1,6 @@
 <!-- # FabScore: Fine-Grained Evaluation of Fabrications in Automated AI Research -->
 <div align="center">
-  <img src="assets/fabscore_logo.jpg" width="20%" ></img>
+  <img src="assets/fabscore_logo.jpg" width="30%" ></img>
 </div>
 <br>
 
