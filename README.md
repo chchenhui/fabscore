@@ -80,7 +80,7 @@ fabscore/
 ├── agents4sci_aireviews/        # AI-generated reviews for Agents4Science submissions
 ├── aiscientist_papers/          # AI Scientist papers (paper PDFs + code)
 ├── fars_papers/                 # FARS papers (paper PDFs + code)
-├── mlragent_papers/             # MLR-Agent papers (paper PDFs + code)
+├── mlragent_papers/             # MLR-Agent papers (paper Markdowns + code)
 ├── human_eval/                  # Human evaluation annotations
 ├── analysis/                    # Analysis scripts and aggregated results
 ├── plots/                       # Generated figures and plots
