@@ -1,5 +1,5 @@
 <p align="center">
-  <img alt="FabScore" src="assets/fabscore_logo.jpg" width=30%>
+  <img alt="FabScore" src="assets/fabscore_logo.jpg" width="30%">
 </p>
 
 <h2 align="center">
