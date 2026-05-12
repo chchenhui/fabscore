@@ -7,7 +7,7 @@ FabScore: Fine-Grained Evaluation of Fabrications in Automated AI Research
 </h2>
 
 [![MIT](https://img.shields.io/badge/License-MIT-4E94CE.svg)](https://opensource.org/license/mit-0)
-[![Paper](https://img.shields.io/badge/Paper-Arxiv-darkred.svg)]()
+[![Paper](https://img.shields.io/badge/Paper-Preprint-darkred.svg)](https://chchenhui.github.io/papers/FabScore.pdf)
 
 
 ## Introduction
@@ -80,7 +80,7 @@ fabscore/
 ├── agents4sci_aireviews/        # AI-generated reviews for Agents4Science submissions
 ├── aiscientist_papers/          # AI Scientist papers (paper PDFs + code)
 ├── fars_papers/                 # FARS papers (paper PDFs + code)
-├── mlragent_papers/             # MLR-Agent papers (paper PDFs + code)
+├── mlragent_papers/             # MLR-Agent papers (paper Markdowns + code)
 ├── human_eval/                  # Human evaluation annotations
 ├── analysis/                    # Analysis scripts and aggregated results
 ├── plots/                       # Generated figures and plots
