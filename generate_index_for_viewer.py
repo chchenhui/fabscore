@@ -68,7 +68,7 @@ def generate_index():
         'agents4sci_acc', 
         'agents4sci_rej', 
         'aiscientist_papers',
-        'mlrbench_papers',
+        'mlragent_papers',
         'fars_papers'
     ]
 
