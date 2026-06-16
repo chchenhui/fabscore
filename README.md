@@ -151,11 +151,13 @@ You may also execute each stage individually by running:
 ## Citation
 Please cite our paper if you find our work helpful:
 ```bibtex
-@article{chen2026fabscore,
-      title={FabScore: Fine-Grained Evaluation of Fabrications in Automated AI Research}, 
-      author={Chen, Hui and Zhao, James Xu and Jiang, Dongfu and Guo, Qianyun and Chen, Jiefeng and Wang, Yiwei and Chen, Muhao and Ng, See-Kiong and Koh, Pang Wei and Hooi, Bryan},
-      link={https://github.com/chchenhui/fabscore},
-      year={2026}
+@inproceedings{
+chen2026fabscore,
+title={FabScore: Fine-Grained Evaluation of Fabrications in Automated {AI} Research},
+author={Hui Chen and James Xu Zhao and Dongfu Jiang and Qianyun Guo and Jiefeng Chen and Yiwei Wang and Muhao Chen and See-Kiong Ng and Pang Wei Koh and Bryan Hooi},
+booktitle={ICML 2026 AI for Science Workshop},
+year={2026},
+url={https://openreview.net/forum?id=6gYWcYQcWM}
 }
 ```
 Please feel free to contact chchenhui233@gmail.com if you have any questions.
