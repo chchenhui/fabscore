@@ -160,4 +160,4 @@ year={2026},
 url={https://openreview.net/forum?id=6gYWcYQcWM}
 }
 ```
-Please feel free to contact chchenhui233@gmail.com if you have any questions.
+Please feel free to contact hui.chen@nus.edu.sg if you have any questions.
