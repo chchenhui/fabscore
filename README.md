@@ -14,7 +14,7 @@ FabScore: Fine-Grained Evaluation of Fabrications in Automated AI Research
 **FabScore** is a fine-grained evaluation framework that measures the extent to which AI-generated papers contain fabrications. Given a research paper and its associate code, FabScore executes the following four stages by a coding agent: 1. **Result Extraction**; 2. **Static Analysis**; 3. **Code Execution**; 4. **Verdict Generation**.
 
 <div align="center">
-  <img src="assets/fabscore_overview.jpg" width="100%" ></img>
+  <img src="assets/fabscore_overview.jpg" width="100%" >
   <br>
   <em>
       Figure 1: An overview of the FabScore framework, illustrating our four-stage evaluation pipeline.
@@ -40,7 +40,7 @@ we conduct a comprehensive evaluation on 144 papers with accompanying code from 
 As shown in Figure 2, the overall fabrication rate reaches 21.2%, where experiment fabrication accounts for the majority. 
 
 <div align="left">
-  <img src="assets/overall_performance.jpg" width="40%" ></img>
+  <img src="assets/overall_performance.jpg" width="40%" >
   <br>
   <em>
       Figure 2: Proportion of each verdict category among 6,978 extracted claims from 144 AI-generated papers.
@@ -52,7 +52,7 @@ As shown in Figure 2, the overall fabrication rate reaches 21.2%, where experime
 As shown in Figure 3, claim-level fabrication rates range from 0.4% to 53.6% and paper-level rates from 10.0% to 81.5%. 70.4% of the 54 real conference submissions contain fabrications.
 
 <div align="center">
-  <img src="assets/combined_performance.jpg" width="100%" ></img>
+  <img src="assets/combined_performance.jpg" width="100%" >
   <br>
   <em>
       Figure 3: Claim-level verdict distribution and paper-level fabrication frequency across five data sources, where paper-level fabrication frequency is defined as the proportion of papers containing at least one fabrication.
